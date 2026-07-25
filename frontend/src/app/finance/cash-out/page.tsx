@@ -116,7 +116,7 @@ export default function FinanceCashOut() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category" className="text-slate-700 dark:text-slate-300">Kategori Biaya</Label>
-                <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val})}>
+                <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val || ""})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih Kategori" />
                   </SelectTrigger>
