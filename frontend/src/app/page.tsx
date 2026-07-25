@@ -97,9 +97,9 @@ export default function OwnerDashboard() {
     )
   }
 
-  // Gunakan data dari API, jika undefined (fallback ke mock untuk mencegah crash chart)
-  const displaySales = kpi?.salesData || fallbackSalesData;
-  const displayExpense = kpi?.expenseData || fallbackExpenseData;
+  // Use data strictly from API
+  const displaySales = kpi?.chartData || [];
+  const displayExpense = kpi?.chartData || [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-10">
@@ -133,7 +133,7 @@ export default function OwnerDashboard() {
           </div>
           <CardHeader className="pb-2 relative z-10">
             <CardDescription className="text-indigo-100 font-medium tracking-wide uppercase text-xs">Penjualan Hari Ini</CardDescription>
-            <CardTitle className="text-3xl font-bold">{formatIDR(kpi?.currentRevenue || 12500000)}</CardTitle>
+            <CardTitle className="text-3xl font-bold">{formatIDR(kpi?.currentRevenue || 0)}</CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="flex items-center gap-2 text-sm">
@@ -151,7 +151,7 @@ export default function OwnerDashboard() {
           </div>
           <CardHeader className="pb-2 relative z-10">
             <CardDescription className="text-emerald-100 font-medium tracking-wide uppercase text-xs">Profit Bulan Ini</CardDescription>
-            <CardTitle className="text-3xl font-bold">{formatIDR(kpi?.netProfit || 45800000)}</CardTitle>
+            <CardTitle className="text-3xl font-bold">{formatIDR(kpi?.netProfit || 0)}</CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="flex items-center gap-2 text-sm">
@@ -169,7 +169,7 @@ export default function OwnerDashboard() {
           </div>
           <CardHeader className="pb-2">
             <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500">Total Cash Flow</CardDescription>
-            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">{formatIDR(kpi?.cashPosition || 185000000)}</CardTitle>
+            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">{formatIDR(kpi?.cashPosition || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-sm">
@@ -187,7 +187,7 @@ export default function OwnerDashboard() {
           </div>
           <CardHeader className="pb-2">
             <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500">Total Nilai Stok</CardDescription>
-            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">{formatIDR(kpi?.inventoryValue || 850500000)}</CardTitle>
+            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">{formatIDR(kpi?.inventoryValue || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-sm">

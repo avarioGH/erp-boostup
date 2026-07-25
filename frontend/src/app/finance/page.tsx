@@ -82,13 +82,8 @@ export default function FinanceDashboard() {
     )
   }
 
-  // Fallback data if DB returns empty
-  const displayCashFlow = summary?.cashFlowChart || [
-    { name: "Minggu 1", income: 15000000, expense: 8000000 },
-    { name: "Minggu 2", income: 12000000, expense: 9000000 },
-    { name: "Minggu 3", income: 25000000, expense: 12000000 },
-    { name: "Minggu 4", income: 32000000, expense: 15000000 },
-  ]
+  // Use data strictly from DB
+  const displayCashFlow = summary?.chartData || [];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-10">
@@ -116,7 +111,7 @@ export default function FinanceDashboard() {
           </div>
           <CardHeader className="pb-2 relative z-10">
             <CardDescription className="text-blue-100 font-medium tracking-wide uppercase text-xs">Total Saldo Kas & Bank</CardDescription>
-            <CardTitle className="text-3xl font-bold">{formatIDR(summary?.totalCash || 185000000)}</CardTitle>
+            <CardTitle className="text-3xl font-bold">{formatIDR(summary?.totalCash || 0)}</CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="flex items-center gap-2 text-sm">
@@ -134,7 +129,7 @@ export default function FinanceDashboard() {
           </div>
           <CardHeader className="pb-2">
             <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500">Pemasukan (Bulan Ini)</CardDescription>
-            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">{formatIDR(summary?.totalIncomeMtd || 42500000)}</CardTitle>
+            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">{formatIDR(summary?.totalIncomeMtd || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-sm">
@@ -152,7 +147,7 @@ export default function FinanceDashboard() {
           </div>
           <CardHeader className="pb-2">
             <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500">Pengeluaran (Bulan Ini)</CardDescription>
-            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">{formatIDR(summary?.totalExpensesMtd || 18200000)}</CardTitle>
+            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">{formatIDR(summary?.totalExpensesMtd || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-sm">
@@ -170,7 +165,7 @@ export default function FinanceDashboard() {
           </div>
           <CardHeader className="pb-2 relative z-10">
             <CardDescription className="text-emerald-100 font-medium tracking-wide uppercase text-xs">Laba Bersih (Bulan Ini)</CardDescription>
-            <CardTitle className="text-3xl font-bold">{formatIDR((summary?.totalIncomeMtd || 42500000) - (summary?.totalExpensesMtd || 18200000))}</CardTitle>
+            <CardTitle className="text-3xl font-bold">{formatIDR((summary?.totalIncomeMtd || 0) - (summary?.totalExpensesMtd || 0))}</CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="flex items-center gap-2 text-sm">
