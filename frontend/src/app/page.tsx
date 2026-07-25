@@ -131,9 +131,9 @@ export default function OwnerDashboard() {
           <div className="absolute top-0 right-0 p-4 opacity-20">
             <ShoppingCart className="w-16 h-16" />
           </div>
-          <CardHeader className="pb-2 relative z-10">
-            <CardDescription className="text-indigo-100 font-medium tracking-wide uppercase text-xs">Penjualan Hari Ini</CardDescription>
-            <CardTitle className="text-3xl font-bold">{formatIDR(kpi?.currentRevenue || 0)}</CardTitle>
+          <CardHeader className="pb-2 relative z-10 overflow-hidden">
+            <CardDescription className="text-indigo-100 font-medium tracking-wide uppercase text-xs truncate">Penjualan Hari Ini</CardDescription>
+            <CardTitle className="text-3xl font-bold truncate" title={formatIDR(kpi?.currentRevenue || 0)}>{formatIDR(kpi?.currentRevenue || 0)}</CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="flex items-center gap-2 text-sm">
@@ -149,9 +149,9 @@ export default function OwnerDashboard() {
           <div className="absolute top-0 right-0 p-4 opacity-20">
             <TrendingUp className="w-16 h-16" />
           </div>
-          <CardHeader className="pb-2 relative z-10">
-            <CardDescription className="text-emerald-100 font-medium tracking-wide uppercase text-xs">Profit Bulan Ini</CardDescription>
-            <CardTitle className="text-3xl font-bold">{formatIDR(kpi?.netProfit || 0)}</CardTitle>
+          <CardHeader className="pb-2 relative z-10 overflow-hidden">
+            <CardDescription className="text-emerald-100 font-medium tracking-wide uppercase text-xs truncate">Profit Bulan Ini</CardDescription>
+            <CardTitle className="text-3xl font-bold truncate" title={formatIDR(kpi?.netProfit || 0)}>{formatIDR(kpi?.netProfit || 0)}</CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="flex items-center gap-2 text-sm">
@@ -167,9 +167,9 @@ export default function OwnerDashboard() {
           <div className="absolute top-4 right-4 p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
             <CreditCard className="w-5 h-5" />
           </div>
-          <CardHeader className="pb-2">
-            <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500">Total Cash Flow</CardDescription>
-            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">{formatIDR(kpi?.cashPosition || 0)}</CardTitle>
+          <CardHeader className="pb-2 overflow-hidden">
+            <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500 truncate">Total Cash Flow</CardDescription>
+            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white truncate" title={formatIDR(kpi?.cashPosition || 0)}>{formatIDR(kpi?.cashPosition || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-sm">
@@ -185,9 +185,9 @@ export default function OwnerDashboard() {
           <div className="absolute top-4 right-4 p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-amber-600 dark:text-amber-400">
             <Package className="w-5 h-5" />
           </div>
-          <CardHeader className="pb-2">
-            <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500">Total Nilai Stok</CardDescription>
-            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">{formatIDR(kpi?.inventoryValue || 0)}</CardTitle>
+          <CardHeader className="pb-2 overflow-hidden">
+            <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500 truncate">Total Nilai Stok</CardDescription>
+            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white truncate" title={formatIDR(kpi?.inventoryValue || 0)}>{formatIDR(kpi?.inventoryValue || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-sm">

@@ -109,9 +109,9 @@ export default function FinanceDashboard() {
           <div className="absolute top-0 right-0 p-4 opacity-20">
             <DollarSign className="w-16 h-16" />
           </div>
-          <CardHeader className="pb-2 relative z-10">
-            <CardDescription className="text-blue-100 font-medium tracking-wide uppercase text-xs">Total Saldo Kas & Bank</CardDescription>
-            <CardTitle className="text-3xl font-bold">{formatIDR(summary?.totalCash || 0)}</CardTitle>
+          <CardHeader className="pb-2 relative z-10 overflow-hidden">
+            <CardDescription className="text-blue-100 font-medium tracking-wide uppercase text-xs truncate">Total Saldo Kas & Bank</CardDescription>
+            <CardTitle className="text-3xl font-bold truncate" title={formatIDR(summary?.totalCash || 0)}>{formatIDR(summary?.totalCash || 0)}</CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="flex items-center gap-2 text-sm">
@@ -127,9 +127,9 @@ export default function FinanceDashboard() {
           <div className="absolute top-4 right-4 p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400">
             <TrendingUp className="w-5 h-5" />
           </div>
-          <CardHeader className="pb-2">
-            <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500">Pemasukan (Bulan Ini)</CardDescription>
-            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">{formatIDR(summary?.totalIncomeMtd || 0)}</CardTitle>
+          <CardHeader className="pb-2 overflow-hidden">
+            <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500 truncate">Pemasukan (Bulan Ini)</CardDescription>
+            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white truncate" title={formatIDR(summary?.totalIncomeMtd || 0)}>{formatIDR(summary?.totalIncomeMtd || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-sm">
@@ -145,9 +145,9 @@ export default function FinanceDashboard() {
           <div className="absolute top-4 right-4 p-2 bg-rose-100 dark:bg-rose-900/30 rounded-lg text-rose-600 dark:text-rose-400">
             <TrendingDown className="w-5 h-5" />
           </div>
-          <CardHeader className="pb-2">
-            <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500">Pengeluaran (Bulan Ini)</CardDescription>
-            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white">{formatIDR(summary?.totalExpensesMtd || 0)}</CardTitle>
+          <CardHeader className="pb-2 overflow-hidden">
+            <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500 truncate">Pengeluaran (Bulan Ini)</CardDescription>
+            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white truncate" title={formatIDR(summary?.totalExpensesMtd || 0)}>{formatIDR(summary?.totalExpensesMtd || 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2 text-sm">
@@ -163,9 +163,9 @@ export default function FinanceDashboard() {
           <div className="absolute top-0 right-0 p-4 opacity-20">
             <CreditCard className="w-16 h-16" />
           </div>
-          <CardHeader className="pb-2 relative z-10">
-            <CardDescription className="text-emerald-100 font-medium tracking-wide uppercase text-xs">Laba Bersih (Bulan Ini)</CardDescription>
-            <CardTitle className="text-3xl font-bold">{formatIDR((summary?.totalIncomeMtd || 0) - (summary?.totalExpensesMtd || 0))}</CardTitle>
+          <CardHeader className="pb-2 relative z-10 overflow-hidden">
+            <CardDescription className="text-emerald-100 font-medium tracking-wide uppercase text-xs truncate">Laba Bersih (Bulan Ini)</CardDescription>
+            <CardTitle className="text-3xl font-bold truncate" title={formatIDR((summary?.totalIncomeMtd || 0) - (summary?.totalExpensesMtd || 0))}>{formatIDR((summary?.totalIncomeMtd || 0) - (summary?.totalExpensesMtd || 0))}</CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="flex items-center gap-2 text-sm">
