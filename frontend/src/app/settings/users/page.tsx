@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 
 export default function UsersManagementPage() {
   const [users, setUsers] = useState<any[]>([])
+  const [warehouses, setWarehouses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [currentUserRole, setCurrentUserRole] = useState("")
@@ -21,7 +22,8 @@ export default function UsersManagementPage() {
     username: "",
     email: "",
     password: "",
-    modules: [] as string[]
+    modules: [] as string[],
+    warehouse_ids: [] as string[]
   })
 
   const AVAILABLE_MODULES = [
@@ -75,8 +77,24 @@ export default function UsersManagementPage() {
     }
   }
 
+  const fetchWarehouses = async () => {
+    try {
+      const token = getToken()
+      const res = await fetch("http://194.233.85.181:3001/inventory/warehouses", {
+        headers: { "Authorization": `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setWarehouses(data)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   useEffect(() => {
     fetchUsers()
+    fetchWarehouses()
   }, [])
 
   const handleCreateAdmin = async () => {
@@ -104,7 +122,7 @@ export default function UsersManagementPage() {
       if (res.ok) {
         setOpen(false)
         fetchUsers()
-        setFormData({ name: "", username: "", email: "", password: "", modules: [] })
+        setFormData({ name: "", username: "", email: "", password: "", modules: [], warehouse_ids: [] })
       } else {
         const err = await res.json()
         alert(err.message)
@@ -125,51 +143,62 @@ export default function UsersManagementPage() {
     })
   }
 
+  const toggleWarehouse = (warehouseId: string) => {
+    setFormData(prev => {
+      if (prev.warehouse_ids.includes(warehouseId)) {
+        return { ...prev, warehouse_ids: prev.warehouse_ids.filter(id => id !== warehouseId) }
+      } else {
+        return { ...prev, warehouse_ids: [...prev.warehouse_ids, warehouseId] }
+      }
+    })
+  }
+
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Manajemen Pengguna & Akses</h2>
         
         {currentUserRole === "Owner" && (
           <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger render={<Button>+ Create Admin</Button>} />
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogTrigger render={<Button className="bg-indigo-600 hover:bg-indigo-700 text-white">+ Create Admin</Button>} />
+            <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Create New Admin</DialogTitle>
+                <DialogTitle>Buat Akun Admin Baru</DialogTitle>
                 <DialogDescription>
-                  Create a new admin account to manage this tenant.
+                  Tambahkan admin baru dan atur akses modul serta gudang yang diizinkan.
                 </DialogDescription>
               </DialogHeader>
               
-              {/* Form replaced with div to fix Next.js server action errors on submit */}
-              <div className="space-y-4 py-4">
+              <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-2">
                 <div className="space-y-2">
-                  <Label>Full Name</Label>
+                  <Label>Nama Lengkap</Label>
                   <Input 
                     value={formData.name} 
                     onChange={e => setFormData({...formData, name: e.target.value})} 
                     className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800"
-                    placeholder="Enter full name"
+                    placeholder="Masukkan nama lengkap"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Username</Label>
-                  <Input 
-                    value={formData.username} 
-                    onChange={e => setFormData({...formData, username: e.target.value})} 
-                    className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800"
-                    placeholder="Enter username"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input 
-                    type="email" 
-                    value={formData.email} 
-                    onChange={e => setFormData({...formData, email: e.target.value})} 
-                    className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800"
-                    placeholder="admin@example.com"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Username</Label>
+                    <Input 
+                      value={formData.username} 
+                      onChange={e => setFormData({...formData, username: e.target.value})} 
+                      className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800"
+                      placeholder="Username unik"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input 
+                      type="email" 
+                      value={formData.email} 
+                      onChange={e => setFormData({...formData, email: e.target.value})} 
+                      className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800"
+                      placeholder="admin@example.com"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Password</Label>
@@ -178,23 +207,47 @@ export default function UsersManagementPage() {
                     value={formData.password} 
                     onChange={e => setFormData({...formData, password: e.target.value})} 
                     className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800"
-                    placeholder="Enter secure password"
+                    placeholder="Masukkan password aman"
                   />
                 </div>
                 
-                <div className="space-y-3 pt-2">
-                  <Label>Accessible Modules</Label>
+                <div className="space-y-3 pt-4 border-t">
+                  <Label className="font-semibold text-slate-900 dark:text-white">Akses Gudang (RBAC)</Label>
+                  <p className="text-xs text-slate-500">Pilih gudang mana saja yang boleh dilihat dan dikelola oleh admin ini.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {warehouses.length > 0 ? warehouses.map(wh => (
+                      <div key={wh.id} className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                        <Checkbox 
+                          id={`wh-${wh.id}`} 
+                          checked={formData.warehouse_ids.includes(wh.id)}
+                          onCheckedChange={() => toggleWarehouse(wh.id)}
+                        />
+                        <label
+                          htmlFor={`wh-${wh.id}`}
+                          className="text-sm font-medium leading-none cursor-pointer text-slate-700 dark:text-slate-300"
+                        >
+                          {wh.name}
+                        </label>
+                      </div>
+                    )) : (
+                      <p className="text-sm text-slate-500">Belum ada gudang terdaftar.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-4 border-t">
+                  <Label className="font-semibold text-slate-900 dark:text-white">Akses Modul</Label>
                   <div className="grid grid-cols-2 gap-3">
                     {AVAILABLE_MODULES.map(mod => (
                       <div key={mod.id} className="flex items-center space-x-2">
                         <Checkbox 
-                          id={mod.id} 
+                          id={`mod-${mod.id}`} 
                           checked={formData.modules.includes(mod.id)}
                           onCheckedChange={() => toggleModule(mod.id)}
                         />
                         <label
-                          htmlFor={mod.id}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          htmlFor={`mod-${mod.id}`}
+                          className="text-sm font-medium leading-none cursor-pointer"
                         >
                           {mod.label}
                         </label>
@@ -204,7 +257,7 @@ export default function UsersManagementPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" onClick={handleCreateAdmin}>Save Admin</Button>
+                <Button type="button" onClick={handleCreateAdmin} className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto">Simpan Admin</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -213,24 +266,25 @@ export default function UsersManagementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Active Users</CardTitle>
-          <CardDescription>Manage your team members and their roles.</CardDescription>
+          <CardTitle>Daftar Pengguna Aktif</CardTitle>
+          <CardDescription>Kelola anggota tim dan hak akses mereka.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead>Nama</TableHead>
                 <TableHead>Username</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Peran (Role)</TableHead>
+                <TableHead>Akses Gudang</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={4} className="text-center py-4">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-4">Memuat data...</TableCell></TableRow>
               ) : users.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center py-4">No users found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-4">Tidak ada pengguna ditemukan</TableCell></TableRow>
               ) : users.map(user => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
@@ -241,8 +295,23 @@ export default function UsersManagementPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={user.status ? "outline" : "destructive"}>
-                      {user.status ? "Active" : "Inactive"}
+                    <div className="flex flex-wrap gap-1">
+                      {user.role?.name === "Owner" ? (
+                        <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">Semua Akses</Badge>
+                      ) : user.warehouse_accesses && user.warehouse_accesses.length > 0 ? (
+                        user.warehouse_accesses.map((wa: any) => (
+                          <Badge key={wa.warehouse?.id} variant="outline" className="bg-slate-50">
+                            {wa.warehouse?.name}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-xs text-slate-400">Tidak ada akses</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={user.status ? "outline" : "destructive"} className={user.status ? "border-emerald-200 text-emerald-700 bg-emerald-50" : ""}>
+                      {user.status ? "Aktif" : "Nonaktif"}
                     </Badge>
                   </TableCell>
                 </TableRow>

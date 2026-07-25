@@ -13,7 +13,15 @@ export class AuthService {
   async validateUser(username: string, pass: string): Promise<any> {
     const user = await this.prisma.user.findUnique({
       where: { username },
-      include: { role: true, company: true }
+      include: { 
+        role: true, 
+        company: true,
+        warehouse_accesses: {
+          include: {
+            warehouse: true
+          }
+        }
+      }
     });
 
     if (user && await bcrypt.compare(pass, user.password)) {
@@ -37,7 +45,12 @@ export class AuthService {
         id: user.id,
         username: user.username,
         name: user.name,
-        role: user.role?.name || 'User'
+        role: user.role?.name || 'User',
+        accessible_warehouses: user.warehouse_accesses?.map((wa: any) => ({
+          id: wa.warehouse.id,
+          name: wa.warehouse.name,
+          code: wa.warehouse.code
+        })) || []
       }
     };
   }

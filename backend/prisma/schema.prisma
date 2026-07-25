@@ -208,8 +208,11 @@ model User {
   approval_history         ApprovalLog[]       @relation("ApprovalHistory")
   inbox_messages           InternalInbox[]     @relation("UserInbox")
   tasks                    UserTask[]          @relation("UserTasks")
-  pos_shifts               PosShift[]          @relation("UserPosShifts")
+  // Phase 10 AI
   ai_chats                 AiChatHistory[]     @relation("UserAiChats")
+
+  // RBAC Warehouse Access
+  warehouse_accesses       UserWarehouseAccess[]
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -237,11 +240,24 @@ model Warehouse {
   employees              Employee[]
   pos_shifts             PosShift[]
 
+  user_accesses          UserWarehouseAccess[]
+
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
   @@unique([company_id, code])
+}
+
+model UserWarehouseAccess {
+  id           String    @id @default(uuid())
+  user_id      String
+  user         User      @relation(fields: [user_id], references: [id])
+  warehouse_id String
+  warehouse    Warehouse @relation(fields: [warehouse_id], references: [id])
+  created_at   DateTime  @default(now())
+
+  @@unique([user_id, warehouse_id])
 }
 
 model Supplier {

@@ -37,25 +37,42 @@ export class UsersService {
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    return this.prisma.user.create({
-      data: {
-        username: data.username,
-        email: data.email,
-        name: data.name,
-        password: hashedPassword,
-        company_id: creatorCompanyId,
-        role_id: adminRole.id,
-        status: true,
-        accessible_modules: data.modules || [],
-      },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        name: true,
-        role: { select: { name: true } },
-        created_at: true,
+    return this.prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          username: data.username,
+          email: data.email,
+          name: data.name,
+          password: hashedPassword,
+          company_id: creatorCompanyId,
+          role_id: adminRole.id,
+          status: true,
+          accessible_modules: data.modules || [],
+        },
+      });
+
+      if (data.warehouse_ids && Array.isArray(data.warehouse_ids)) {
+        const accessData = data.warehouse_ids.map((wId: string) => ({
+          user_id: newUser.id,
+          warehouse_id: wId
+        }));
+        await tx.userWarehouseAccess.createMany({
+          data: accessData
+        });
       }
+
+      return tx.user.findUnique({
+        where: { id: newUser.id },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          name: true,
+          role: { select: { name: true } },
+          warehouse_accesses: { select: { warehouse_id: true } },
+          created_at: true,
+        }
+      });
     });
   }
 
@@ -68,7 +85,12 @@ export class UsersService {
         email: true,
         name: true,
         status: true,
-        role: { select: { name: true } }
+        role: { select: { name: true } },
+        warehouse_accesses: {
+          select: {
+            warehouse: { select: { id: true, name: true, code: true } }
+          }
+        }
       }
     });
   }
