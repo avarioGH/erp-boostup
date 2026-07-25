@@ -146,6 +146,32 @@ async function main() {
     });
   }
 
+  // 7. Create Finance Categories
+  const categoriesData = [
+    { name: 'Pendapatan Penjualan', type: 'Income', color: '#10B981', icon: 'ShoppingCart' },
+    { name: 'Pendapatan Lainnya', type: 'Income', color: '#3B82F6', icon: 'TrendingUp' },
+    { name: 'Biaya Gaji Karyawan', type: 'Expense', color: '#EF4444', icon: 'Users' },
+    { name: 'Biaya Operasional (Listrik, Air, Internet)', type: 'Expense', color: '#F59E0B', icon: 'Zap' },
+    { name: 'Biaya Marketing', type: 'Expense', color: '#8B5CF6', icon: 'Megaphone' },
+    { name: 'Pajak & Retribusi', type: 'Expense', color: '#6366F1', icon: 'FileText' },
+    { name: 'Transfer Kas/Bank', type: 'Transfer', color: '#6B7280', icon: 'Repeat' }
+  ];
+
+  for (const cat of categoriesData) {
+    const exists = await prisma.financeCategory.findFirst({ where: { company_id: company.id, name: cat.name }});
+    if (!exists) {
+      await prisma.financeCategory.create({
+        data: {
+          company_id: company.id,
+          name: cat.name,
+          type: cat.type,
+          color: cat.color,
+          icon: cat.icon,
+        }
+      });
+    }
+  }
+
   console.log('Seeding finished.');
 }
 

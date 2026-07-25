@@ -63,7 +63,7 @@ export class FinanceService {
           approved_at: new Date(),
           items: {
             create: [{
-              category_id: data.categoryId,
+              category_id: catId,
               amount: data.amount,
               description: data.description,
             }]
@@ -154,7 +154,7 @@ export class FinanceService {
           approved_at: new Date(),
           items: {
             create: [{
-              category_id: data.categoryId,
+              category_id: catId,
               amount: data.amount,
               description: data.description,
             }]
