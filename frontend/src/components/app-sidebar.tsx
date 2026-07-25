@@ -41,8 +41,8 @@ const items: MenuItem[] = [
     subItems: [
       { title: "Dashboard Keuangan", url: "/finance" },
       { title: "Kas & Bank", url: "/finance/cash" },
-      { title: "Pemasukan", url: "/finance/income" },
-      { title: "Pengeluaran", url: "/finance/expense" },
+      { title: "Pemasukan", url: "/finance/cash-in" },
+      { title: "Pengeluaran", url: "/finance/cash-out" },
       { title: "Transfer", url: "/finance/transfer" },
       { title: "Laporan Keuangan", url: "/finance/reports" }
     ]
