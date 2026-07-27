@@ -15,6 +15,7 @@ COPY . .
 
 # Generate Prisma Client & Build NestJS app
 RUN npx prisma generate
+RUN npx tsc prisma/seed.ts
 RUN npm run build
 
 # Production Stage
@@ -27,7 +28,7 @@ WORKDIR /usr/src/app
 
 # Install only production dependencies
 COPY package*.json ./
-RUN npm install --omit=dev && npm install -g prisma ts-node typescript
+RUN npm install --omit=dev && npm install -g prisma
 
 # Copy built artifacts from the builder stage
 COPY --from=builder /usr/src/app/prisma ./prisma
