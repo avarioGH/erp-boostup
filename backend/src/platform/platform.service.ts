@@ -173,7 +173,7 @@ export class PlatformService {
     });
   }
 
-  async generateAiInsight(prompt: string, contextData: any, companyId: string) {
+  async generateSimulatedAiInsight(prompt: string, contextData: any, companyId: string) {
     const lowercasePrompt = prompt.toLowerCase();
     let response = "Maaf, saya tidak mengerti pertanyaan Anda.";
     let module = "General";

@@ -76,7 +76,7 @@ export class InventoryService {
       where: { id },
       data: {
         name: data.name,
-        location: data.location
+        address: data.location || data.address
       }
     });
   }
@@ -339,6 +339,10 @@ export class InventoryService {
           entity_id: transaction.id,
         }
       });
+
+      return transaction;
+    });
+  }
 
   async createTransfer(data: CreateTransferDto) {
     return this.prisma.$transaction(async (tx) => {
