@@ -129,7 +129,7 @@ export default function WarehouseSettings() {
         </div>
         
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild>
+          <DialogTrigger>
             <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20">
               <Plus className="w-4 h-4" /> Tambah Gudang
             </Button>
