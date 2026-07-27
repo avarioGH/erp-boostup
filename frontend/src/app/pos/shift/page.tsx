@@ -228,7 +228,7 @@ export default function PosShiftPage() {
               
               <div className="space-y-2">
                 <Label className="font-semibold">Lokasi Toko / Gudang</Label>
-                <Select value={openFormData.warehouseId} onValueChange={(val) => setOpenFormData({...openFormData, warehouseId: val})}>
+                <Select value={openFormData.warehouseId} onValueChange={(val) => setOpenFormData({...openFormData, warehouseId: val as string})}>
                   <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 h-12">
                     <SelectValue placeholder="Pilih Lokasi" />
                   </SelectTrigger>
@@ -250,7 +250,7 @@ export default function PosShiftPage() {
                     required
                     placeholder="Misal: 500000"
                     value={openFormData.startingCash}
-                    onChange={(e) => setOpenFormData({startingCash: e.target.value})}
+                    onChange={(e) => setOpenFormData({...openFormData, startingCash: e.target.value})}
                     className="pl-12 h-14 text-xl font-bold bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 focus-visible:ring-emerald-500"
                   />
                 </div>

@@ -188,7 +188,7 @@ export default function StockAdjustmentPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label>Gudang Pelaksanaan Opname</Label>
-                <Select value={formData.warehouseId} onValueChange={(val) => setFormData({...formData, warehouseId: val})}>
+                <Select value={formData.warehouseId} onValueChange={(val) => setFormData({...formData, warehouseId: val as string})}>
                   <SelectTrigger className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800">
                     <SelectValue placeholder="Pilih Gudang" />
                   </SelectTrigger>
@@ -234,7 +234,7 @@ export default function StockAdjustmentPage() {
                     
                     <div className="space-y-2 flex-1 w-full">
                       <Label className="text-xs">Produk</Label>
-                      <Select value={item.productId} onValueChange={(val) => updateItem(index, 'productId', val)}>
+                      <Select value={item.productId} onValueChange={(val) => updateItem(index, 'productId', val as string)}>
                         <SelectTrigger className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800">
                           <SelectValue placeholder="Pilih Produk" />
                         </SelectTrigger>
@@ -256,7 +256,7 @@ export default function StockAdjustmentPage() {
 
                     <div className="space-y-2 w-full sm:w-32">
                       <Label className="text-xs">Jenis Selisih</Label>
-                      <Select value={item.adjustmentType} onValueChange={(val) => updateItem(index, 'adjustmentType', val)}>
+                      <Select value={item.adjustmentType} onValueChange={(val) => updateItem(index, 'adjustmentType', val as string)}>
                         <SelectTrigger className={`bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 font-medium ${item.adjustmentType === 'IN' ? 'text-emerald-600' : 'text-rose-600'}`}>
                           <SelectValue placeholder="Pilih Jenis" />
                         </SelectTrigger>

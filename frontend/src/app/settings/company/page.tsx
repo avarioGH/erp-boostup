@@ -125,7 +125,7 @@ export default function CompanySettingsPage() {
                   <Label className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
                     <Globe className="w-4 h-4 text-slate-400" /> Zona Waktu Sistem
                   </Label>
-                  <Select value={formData.timezone} onValueChange={val => setFormData({...formData, timezone: val})}>
+                  <Select value={formData.timezone} onValueChange={val => setFormData({...formData, timezone: val as string})}>
                     <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 h-11">
                       <SelectValue placeholder="Pilih Zona Waktu" />
                     </SelectTrigger>
@@ -144,7 +144,7 @@ export default function CompanySettingsPage() {
                   <Label className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-300">
                     <Banknote className="w-4 h-4 text-slate-400" /> Format Mata Uang Utama
                   </Label>
-                  <Select value={formData.currency} onValueChange={val => setFormData({...formData, currency: val})}>
+                  <Select value={formData.currency} onValueChange={val => setFormData({...formData, currency: val as string})}>
                     <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 h-11">
                       <SelectValue placeholder="Pilih Mata Uang" />
                     </SelectTrigger>

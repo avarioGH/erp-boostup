@@ -186,7 +186,7 @@ export default function StockOutPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label>Gudang Asal</Label>
-                <Select value={formData.warehouseId} onValueChange={(val) => setFormData({...formData, warehouseId: val})}>
+                <Select value={formData.warehouseId} onValueChange={(val) => setFormData({...formData, warehouseId: val as string})}>
                   <SelectTrigger className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800">
                     <SelectValue placeholder="Pilih Gudang" />
                   </SelectTrigger>
@@ -232,7 +232,7 @@ export default function StockOutPage() {
                     
                     <div className="space-y-2 flex-1 w-full">
                       <Label className="text-xs">Produk</Label>
-                      <Select value={item.productId} onValueChange={(val) => updateItem(index, 'productId', val)}>
+                      <Select value={item.productId} onValueChange={(val) => updateItem(index, 'productId', val as string)}>
                         <SelectTrigger className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800">
                           <SelectValue placeholder="Pilih Produk" />
                         </SelectTrigger>

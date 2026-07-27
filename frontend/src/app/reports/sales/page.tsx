@@ -179,7 +179,7 @@ export default function SalesReportPage() {
                     tickFormatter={(value) => `Rp${(value/1000000).toFixed(1)}M`}
                   />
                   <RechartsTooltip 
-                    formatter={(value: number) => [formatIDR(value), "Pendapatan"]}
+                    formatter={(value: any) => [formatIDR(value), "Pendapatan"]}
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
                   <Line type="monotone" dataKey="Pendapatan" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />

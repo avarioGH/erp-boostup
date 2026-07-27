@@ -145,7 +145,7 @@ export default function VouchersPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800">
                 <div className="space-y-2">
                   <Label>Tipe Diskon</Label>
-                  <Select value={formData.discount_type} onValueChange={val => setFormData({...formData, discount_type: val})}>
+                  <Select value={formData.discount_type} onValueChange={(val) => setFormData({...formData, discount_type: val as string})}>
                     <SelectTrigger className="bg-white dark:bg-slate-950">
                       <SelectValue placeholder="Pilih Tipe" />
                     </SelectTrigger>

@@ -5,7 +5,7 @@ import {
   Card, CardContent, CardDescription, CardHeader, CardTitle 
 } from "@/components/ui/card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts'
-import { Package, TrendingUp, TrendingDown, AlertTriangle, ArrowRightLeft } from "lucide-react"
+import { Package, TrendingUp, TrendingDown, AlertTriangle, ArrowRightLeft, CheckCircle2 } from "lucide-react"
 import { api } from "@/lib/api"
 import { formatIDR } from "@/lib/utils"
 
@@ -228,7 +228,7 @@ export default function InventoryReports() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <RechartsTooltip formatter={(value: number) => formatIDR(value)} />
+                    <RechartsTooltip formatter={(value: any) => formatIDR(value)} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="w-full flex flex-wrap justify-center gap-3 mt-2">

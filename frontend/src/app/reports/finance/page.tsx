@@ -195,7 +195,7 @@ export default function FinanceReportPage() {
                     tickFormatter={(value) => `Rp${(value/1000000).toFixed(0)}M`}
                   />
                   <RechartsTooltip 
-                    formatter={(value: number) => formatIDR(value)}
+                    formatter={(value: any) => formatIDR(value)}
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
                   <Area type="monotone" dataKey="Pemasukan" stroke="#3b82f6" fillOpacity={1} fill="url(#colorIncome)" strokeWidth={2} />
@@ -229,7 +229,7 @@ export default function FinanceReportPage() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <RechartsTooltip formatter={(value: number) => formatIDR(value)} />
+                    <RechartsTooltip formatter={(value: any) => formatIDR(value)} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="w-full flex flex-col gap-2 mt-2 px-4">

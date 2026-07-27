@@ -200,7 +200,7 @@ export default function AIPredictionPage() {
                       tickFormatter={(value) => `Rp${(value/1000000).toFixed(1)}M`}
                     />
                     <RechartsTooltip 
-                      formatter={(value: number) => formatIDR(value)}
+                      formatter={(value: any) => formatIDR(value)}
                       contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                     />
                     <Legend wrapperStyle={{ paddingTop: '20px' }} />
