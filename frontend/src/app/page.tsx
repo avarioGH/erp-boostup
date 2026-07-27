@@ -126,7 +126,7 @@ export default function OwnerDashboard() {
       </div>
 
       {/* KPI CARDS - ROW 1 */}
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
         <Card className="border-none shadow-md shadow-slate-200/50 dark:shadow-none bg-gradient-to-br from-indigo-500 to-indigo-600 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-20">
             <ShoppingCart className="w-16 h-16" />

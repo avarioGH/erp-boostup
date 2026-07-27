@@ -170,7 +170,7 @@ export default function ProductInventory() {
         )}
 
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-[1000px]">
             <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
               <TableRow className="border-slate-100 dark:border-slate-800">
                 <TableHead className="w-[100px] font-semibold">SKU</TableHead>
