@@ -47,7 +47,7 @@ export class InventoryController {
   @Post('inbound')
   async createInbound(@Request() req, @Body() data: any) {
     data.companyId = req.user.company_id;
-    data.userId = req.user.userId;
+    data.userId = req.user.userId || req.user.id;
     // Generate simple transaction no if not provided
     if (!data.transactionNo) {
       data.transactionNo = `IN-${Date.now()}`;
@@ -59,11 +59,33 @@ export class InventoryController {
   @Post('outbound')
   async createOutbound(@Request() req, @Body() data: any) {
     data.companyId = req.user.company_id;
-    data.userId = req.user.userId;
+    data.userId = req.user.userId || req.user.id;
     if (!data.transactionNo) {
       data.transactionNo = `OUT-${Date.now()}`;
     }
     data.transactionDate = new Date();
     return this.inventoryService.createOutbound(data);
+  }
+
+  @Post('transfer')
+  async createTransfer(@Request() req, @Body() data: any) {
+    data.companyId = req.user.company_id;
+    data.userId = req.user.userId || req.user.id;
+    if (!data.transactionNo) {
+      data.transactionNo = `TRF-${Date.now()}`;
+    }
+    data.transactionDate = new Date();
+    return this.inventoryService.createTransfer(data);
+  }
+
+  @Post('adjustment')
+  async createAdjustment(@Request() req, @Body() data: any) {
+    data.companyId = req.user.company_id;
+    data.userId = req.user.userId || req.user.id;
+    if (!data.transactionNo) {
+      data.transactionNo = `ADJ-${Date.now()}`;
+    }
+    data.transactionDate = new Date();
+    return this.inventoryService.createAdjustment(data);
   }
 }

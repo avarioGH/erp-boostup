@@ -31,6 +31,27 @@ export interface CreateOutboundDto {
   items: TransactionItemDto[];
 }
 
+export interface CreateTransferDto {
+  companyId: string;
+  sourceWarehouseId: string;
+  targetWarehouseId: string;
+  transactionNo: string;
+  transactionDate: Date;
+  notes?: string;
+  userId: string;
+  items: TransactionItemDto[];
+}
+
+export interface CreateAdjustmentDto {
+  companyId: string;
+  warehouseId: string;
+  transactionNo: string;
+  transactionDate: Date;
+  notes?: string;
+  userId: string;
+  items: (TransactionItemDto & { adjustmentType: 'IN' | 'OUT' })[];
+}
+
 @Injectable()
 export class InventoryService {
   constructor(private prisma: PrismaService) {}
@@ -299,6 +320,251 @@ export class InventoryService {
           user_id: data.userId,
           action: 'CREATE',
           entity: 'InventoryTransaction_Outbound',
+          entity_id: transaction.id,
+        }
+      });
+
+  async createTransfer(data: CreateTransferDto) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Validasi Stok di Gudang Asal
+      for (const item of data.items) {
+        const currentStock = await tx.warehouseStock.findUnique({
+          where: {
+            company_id_warehouse_id_product_id: {
+              company_id: data.companyId,
+              warehouse_id: data.sourceWarehouseId,
+              product_id: item.productId,
+            }
+          }
+        });
+
+        if (!currentStock || currentStock.available_stock < item.qty) {
+          throw new BadRequestException(`Stock tidak mencukupi di gudang asal untuk product ${item.productId}`);
+        }
+      }
+
+      // 2. Create Transaction Header
+      const transaction = await tx.inventoryTransaction.create({
+        data: {
+          company_id: data.companyId,
+          warehouse_id: data.sourceWarehouseId,
+          target_warehouse_id: data.targetWarehouseId,
+          transaction_no: data.transactionNo,
+          transaction_type: 'TRANSFER',
+          status: 'Approved',
+          transaction_date: data.transactionDate,
+          notes: data.notes,
+          created_by: data.userId,
+        },
+      });
+
+      for (const item of data.items) {
+        const subtotal = item.qty * item.unitCost;
+
+        await tx.inventoryTransactionItem.create({
+          data: {
+            transaction_id: transaction.id,
+            product_id: item.productId,
+            qty: item.qty,
+            unit_cost: item.unitCost,
+            subtotal: subtotal,
+            notes: item.notes,
+          },
+        });
+
+        // OUT from source
+        await tx.stockMovement.create({
+          data: {
+            company_id: data.companyId,
+            warehouse_id: data.sourceWarehouseId,
+            product_id: item.productId,
+            transaction_type: 'TRANSFER',
+            transaction_id: transaction.id,
+            movement_type: 'OUT',
+            qty_in: 0,
+            qty_out: item.qty,
+            unit_cost: item.unitCost,
+            total_cost: subtotal,
+            created_by: data.userId,
+          },
+        });
+
+        const sourceStock = await tx.warehouseStock.findUnique({
+          where: {
+            company_id_warehouse_id_product_id: {
+              company_id: data.companyId,
+              warehouse_id: data.sourceWarehouseId,
+              product_id: item.productId,
+            }
+          }
+        });
+        await tx.warehouseStock.update({
+          where: { id: sourceStock!.id },
+          data: {
+            current_stock: sourceStock!.current_stock - item.qty,
+            available_stock: sourceStock!.available_stock - item.qty,
+          }
+        });
+
+        // IN to target
+        await tx.stockMovement.create({
+          data: {
+            company_id: data.companyId,
+            warehouse_id: data.targetWarehouseId,
+            product_id: item.productId,
+            transaction_type: 'TRANSFER',
+            transaction_id: transaction.id,
+            movement_type: 'IN',
+            qty_in: item.qty,
+            qty_out: 0,
+            unit_cost: item.unitCost,
+            total_cost: subtotal,
+            created_by: data.userId,
+          },
+        });
+
+        const targetStock = await tx.warehouseStock.findUnique({
+          where: {
+            company_id_warehouse_id_product_id: {
+              company_id: data.companyId,
+              warehouse_id: data.targetWarehouseId,
+              product_id: item.productId,
+            }
+          }
+        });
+
+        if (targetStock) {
+          await tx.warehouseStock.update({
+            where: { id: targetStock.id },
+            data: {
+              current_stock: targetStock.current_stock + item.qty,
+              available_stock: targetStock.available_stock + item.qty,
+            }
+          });
+        } else {
+          await tx.warehouseStock.create({
+            data: {
+              company_id: data.companyId,
+              warehouse_id: data.targetWarehouseId,
+              product_id: item.productId,
+              current_stock: item.qty,
+              available_stock: item.qty,
+              reserved_stock: 0,
+            }
+          });
+        }
+      }
+
+      await tx.auditLog.create({
+        data: {
+          company_id: data.companyId,
+          user_id: data.userId,
+          action: 'CREATE',
+          entity: 'InventoryTransaction_Transfer',
+          entity_id: transaction.id,
+        }
+      });
+
+      return transaction;
+    });
+  }
+
+  async createAdjustment(data: CreateAdjustmentDto) {
+    return this.prisma.$transaction(async (tx) => {
+      // Create Transaction Header
+      const transaction = await tx.inventoryTransaction.create({
+        data: {
+          company_id: data.companyId,
+          warehouse_id: data.warehouseId,
+          transaction_no: data.transactionNo,
+          transaction_type: 'ADJUSTMENT',
+          status: 'Approved',
+          transaction_date: data.transactionDate,
+          notes: data.notes,
+          created_by: data.userId,
+        },
+      });
+
+      for (const item of data.items) {
+        const subtotal = item.qty * item.unitCost;
+
+        await tx.inventoryTransactionItem.create({
+          data: {
+            transaction_id: transaction.id,
+            product_id: item.productId,
+            qty: item.qty,
+            unit_cost: item.unitCost,
+            subtotal: subtotal,
+            notes: item.notes,
+          },
+        });
+
+        const isAdd = item.adjustmentType === 'IN';
+
+        await tx.stockMovement.create({
+          data: {
+            company_id: data.companyId,
+            warehouse_id: data.warehouseId,
+            product_id: item.productId,
+            transaction_type: 'ADJUSTMENT',
+            transaction_id: transaction.id,
+            movement_type: item.adjustmentType,
+            qty_in: isAdd ? item.qty : 0,
+            qty_out: isAdd ? 0 : item.qty,
+            unit_cost: item.unitCost,
+            total_cost: subtotal,
+            created_by: data.userId,
+          },
+        });
+
+        const currentStock = await tx.warehouseStock.findUnique({
+          where: {
+            company_id_warehouse_id_product_id: {
+              company_id: data.companyId,
+              warehouse_id: data.warehouseId,
+              product_id: item.productId,
+            }
+          }
+        });
+
+        if (currentStock) {
+          const newCurrentStock = isAdd ? currentStock.current_stock + item.qty : currentStock.current_stock - item.qty;
+          const newAvailableStock = isAdd ? currentStock.available_stock + item.qty : currentStock.available_stock - item.qty;
+          
+          if (!isAdd && newAvailableStock < 0) {
+            throw new BadRequestException(`Stock tidak mencukupi untuk adjustment OUT product ${item.productId}`);
+          }
+
+          await tx.warehouseStock.update({
+            where: { id: currentStock.id },
+            data: {
+              current_stock: newCurrentStock,
+              available_stock: newAvailableStock,
+            }
+          });
+        } else {
+          if (!isAdd) {
+            throw new BadRequestException(`Stock tidak ditemukan untuk adjustment OUT product ${item.productId}`);
+          }
+          await tx.warehouseStock.create({
+            data: {
+              company_id: data.companyId,
+              warehouse_id: data.warehouseId,
+              product_id: item.productId,
+              current_stock: item.qty,
+              available_stock: item.qty,
+              reserved_stock: 0,
+            }
+          });
+        }
+      }
+
+      await tx.auditLog.create({
+        data: {
+          company_id: data.companyId,
+          user_id: data.userId,
+          action: 'CREATE',
+          entity: 'InventoryTransaction_Adjustment',
           entity_id: transaction.id,
         }
       });
