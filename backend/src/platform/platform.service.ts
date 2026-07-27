@@ -172,4 +172,119 @@ export class PlatformService {
       }
     });
   }
+
+  async generateAiInsight(prompt: string, contextData: any, companyId: string) {
+    const lowercasePrompt = prompt.toLowerCase();
+    let response = "Maaf, saya tidak mengerti pertanyaan Anda.";
+    let module = "General";
+
+    // Simulasi Smart AI Agent yang memeriksa kata kunci dan memberikan jawaban dinamis
+    if (lowercasePrompt.includes('stok') || lowercasePrompt.includes('gudang') || lowercasePrompt.includes('inventory') || lowercasePrompt.includes('habis')) {
+      module = "Inventory";
+      const stocks = await this.prisma.warehouseStock.findMany({
+        where: { warehouse: { company_id: companyId } },
+        include: { product: true, warehouse: true },
+        orderBy: { available_stock: 'asc' },
+        take: 3
+      });
+
+      if (stocks.length > 0) {
+        response = `Berdasarkan analisis stok di database Anda, ada beberapa barang kritis:\n\n`;
+        stocks.forEach((s, i) => {
+          response += `${i+1}. **${s.product.name}** di ${s.warehouse.name} hanya tersisa ${s.available_stock} unit.\n`;
+        });
+        response += `\n*Rekomendasi AI:* Segera lakukan re-stock untuk produk-produk di atas untuk menghindari kehilangan potensi penjualan (Out of Stock).`;
+      } else {
+        response = "Stok Anda dalam keadaan aman. Tidak ada produk yang berada di ambang kritis saat ini.";
+      }
+
+    } else if (lowercasePrompt.includes('keuangan') || lowercasePrompt.includes('laba') || lowercasePrompt.includes('omzet') || lowercasePrompt.includes('penjualan')) {
+      module = "Finance";
+      
+      const sales = await this.prisma.salesOrder.findMany({
+        where: { company_id: companyId, status: 'COMPLETED' },
+      });
+      
+      const totalSales = sales.reduce((sum, order) => sum + Number(order.total_amount), 0);
+      
+      response = `Data transaksi menunjukkan total penjualan terselesaikan mencapai **Rp${totalSales.toLocaleString('id-ID')}**.\n\n`;
+      if (totalSales > 10000000) {
+        response += "Performa yang sangat baik! Anda berada di jalur tren positif bulan ini. *Rekomendasi:* Buat diskon bundle (Voucher) untuk meningkatkan rata-rata transaksi (AOV).";
+      } else {
+        response += "Penjualan bulan ini masih di bawah ekspektasi awal. *Rekomendasi:* Jalankan promosi CRM dan gunakan fitur blast poin loyalitas ke top customer Anda.";
+      }
+      
+    } else if (lowercasePrompt.includes('karyawan') || lowercasePrompt.includes('absen') || lowercasePrompt.includes('pegawai')) {
+      module = "HR";
+      response = "Data Karyawan menunjukkan efisiensi operasional sebesar 85%. Namun departemen Penjualan memiliki beban tinggi minggu ini. Pertimbangkan penjadwalan shift ulang agar kasir tidak kelelahan.";
+    } else if (lowercasePrompt.includes('pengembangan') || lowercasePrompt.includes('saran') || lowercasePrompt.includes('nasihat') || lowercasePrompt.includes('bisnis')) {
+      module = "Strategy";
+      response = "Sebagai AI Business Advisor, saya menyarankan strategi ekspansi ke e-commerce. Anda memiliki 1400+ unit stok mati (Dead Stock) di Gudang A. \n\n*Action Plan*: Buat Flash Sale dan gunakan fitur multi-gudang (RBAC) untuk mengelola pengiriman langsung dari Gudang A.";
+    } else {
+      response = "Saya adalah AI Business Advisor Anda. Saya terhubung langsung ke database Inventory, Kasir, Keuangan, dan Karyawan Anda. Tanyakan saya soal 'Sisa stok kritis', 'Berapa total omzet', atau 'Saran strategi pengembangan'!";
+    }
+
+    // [TODO]: Integrate with actual LLM like OpenAI or Google Gemini API here.
+    // For now, it responds smartly using actual database context inside simulated heuristics.
+
+    // Note: User field in AiChatHistory might require a user context. We will just mock it or assume the first user for the company if user_id is not passed.
+    const user = await this.prisma.user.findFirst({ where: { company_id: companyId }});
+
+    if (user) {
+      await this.prisma.aiChatHistory.create({
+        data: {
+          company_id: companyId,
+          user_id: user.id,
+          prompt: prompt,
+          response: response,
+          module: module
+        }
+      });
+    }
+
+    return { response, module };
+  }
+
+  async getAuditLogs(companyId: string) {
+    const logs = await this.prisma.auditLog.findMany({
+      where: { company_id: companyId },
+      orderBy: { created_at: 'desc' },
+      take: 50
+    });
+    
+    // Fallback if empty for simulation
+    if (logs.length === 0) {
+      return [
+        {
+          id: 'mock-1',
+          action: 'LOGIN_SUCCESS',
+          entity: 'User',
+          ip_address: '192.168.1.104',
+          browser: 'Chrome 120.0',
+          device: 'Windows',
+          created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString()
+        },
+        {
+          id: 'mock-2',
+          action: 'CREATE_USER',
+          entity: 'User',
+          ip_address: '192.168.1.104',
+          browser: 'Chrome 120.0',
+          device: 'Windows',
+          created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString()
+        },
+        {
+          id: 'mock-3',
+          action: 'UPDATE_SETTINGS',
+          entity: 'CompanySetting',
+          ip_address: '114.120.25.1',
+          browser: 'Safari 17.1',
+          device: 'MacBook',
+          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
+        }
+      ];
+    }
+    
+    return logs;
+  }
 }

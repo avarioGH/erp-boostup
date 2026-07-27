@@ -1,163 +1,187 @@
 "use client"
 
-import { useState } from "react"
-import { 
-  Card, CardContent, CardHeader, CardTitle, CardFooter
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { 
-  Bot, Send, User, Sparkles, MessageSquare, Plus, Clock
-} from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Send, Bot, User, Sparkles, MessageSquare, History, Plus } from "lucide-react"
+import { api } from "@/lib/api"
+import Link from "next/link"
 
-// Mock Chat History
-const chatHistory = [
-  {
-    role: "user",
-    content: "Tolong analisis penjualan bulan ini dan beritahu barang apa saja yang hampir habis di Gudang C.",
-    time: "10:30 AM"
-  },
-  {
-    role: "ai",
-    content: "Berdasarkan data penjualan 30 hari terakhir, omzet Anda naik 22.4% mencapai Rp 45.800.000.\n\nNamun, ada masalah kritis di **Gudang C (Retail)**:\n1. **Gula Aren Cair 1L** hanya tersisa 2 pcs (batas minimum 10 pcs).\n2. **Kopi Arabica Premium** mengalami perputaran sangat cepat di sana. Saat ini sisa 80 pcs, diprediksi akan habis dalam 4 hari jika tren penjualan konstan.\n\n*Rekomendasi:* Segera lakukan Transfer Gudang dari Gudang A (Pusat) sebanyak 50 pcs Gula Aren Cair ke Gudang C siang ini.",
-    time: "10:30 AM"
-  },
-  {
-    role: "user",
-    content: "Buatkan draft surat perintah transfer gudang untuk itu.",
-    time: "10:32 AM"
-  },
-  {
-    role: "ai",
-    content: "Tentu, ini draf perintah transfer:\n\n**SURAT PERINTAH TRANSFER STOK (STS-2607-001)**\n**Dari:** Gudang A (Pusat)\n**Ke:** Gudang C (Retail)\n**Item:** Gula Aren Cair 1L\n**Jumlah:** 50 pcs\n**Prioritas:** TINGGI\n\n*Silakan klik tombol 'Buat Transaksi Transfer' di modul Inventaris untuk mengeksekusinya.*",
-    time: "10:32 AM"
+export default function AiChatPage() {
+  const [messages, setMessages] = useState([
+    { role: 'ai', content: "Halo! Saya adalah Avario AI Assistant, penasihat bisnis pribadi Anda. Anda bisa menanyakan analisis performa toko, ketersediaan stok di berbagai gudang, laporan keuangan, maupun performa karyawan. Ada yang bisa saya bantu hari ini?" }
+  ])
+  const [input, setInput] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
-]
 
-export default function AiChat() {
-  const [message, setMessage] = useState("")
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!input.trim()) return
+
+    const userMessage = input.trim()
+    setInput("")
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }])
+    setIsLoading(true)
+
+    try {
+      const res = await api.post('/platform/ai/ask', { prompt: userMessage })
+      setMessages(prev => [...prev, { role: 'ai', content: res.data.response }])
+    } catch (err) {
+      console.error(err)
+      setMessages(prev => [...prev, { role: 'ai', content: "Maaf, terjadi kesalahan saat menghubungi server AI. Silakan coba lagi." }])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Format the text so **bold** shows up
+  const formatText = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g)
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} className="font-bold text-indigo-400">{part.slice(2, -2)}</strong>
+      }
+      return part
+    })
+  }
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-100px)] gap-6 animate-in fade-in duration-500">
+    <div className="flex h-[calc(100vh-6rem)] max-w-7xl mx-auto rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] shadow-xl animate-in fade-in duration-500">
       
-      {/* SIDEBAR HISTORY */}
-      <Card className="w-full lg:w-80 flex flex-col border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm shrink-0">
-        <CardHeader className="pb-4 border-b border-slate-100 dark:border-slate-800">
-          <Button className="w-full justify-start gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 dark:text-indigo-400 border-none shadow-none">
+      {/* Sidebar History */}
+      <div className="hidden md:flex flex-col w-64 bg-slate-50 dark:bg-[#1e293b] border-r border-slate-200 dark:border-slate-800">
+        <div className="p-4">
+          <Button variant="outline" className="w-full justify-start gap-2 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10 hover:text-indigo-300">
             <Plus className="w-4 h-4" /> Obrolan Baru
           </Button>
-        </CardHeader>
-        <CardContent className="flex-1 p-0">
-          <ScrollArea className="h-full">
-            <div className="p-4 space-y-6">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 px-2">Hari Ini</p>
-                <div className="space-y-1">
-                  <Button variant="ghost" className="w-full justify-start font-normal px-2 py-1.5 h-auto bg-slate-50 dark:bg-slate-800">
-                    <MessageSquare className="w-4 h-4 mr-2 text-indigo-500" />
-                    <span className="truncate text-sm">Analisis Stok Gudang C</span>
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start font-normal px-2 py-1.5 h-auto text-slate-600 dark:text-slate-400">
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    <span className="truncate text-sm">Review Performa Admin</span>
-                  </Button>
-                </div>
-              </div>
-              
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3 px-2">Kemarin</p>
-                <div className="space-y-1">
-                  <Button variant="ghost" className="w-full justify-start font-normal px-2 py-1.5 h-auto text-slate-600 dark:text-slate-400">
-                    <Clock className="w-4 h-4 mr-2" />
-                    <span className="truncate text-sm">Laporan Pajak Q2</span>
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start font-normal px-2 py-1.5 h-auto text-slate-600 dark:text-slate-400">
-                    <Clock className="w-4 h-4 mr-2" />
-                    <span className="truncate text-sm">Tren Penjualan Kopi Susu</span>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-
-      {/* CHAT AREA */}
-      <Card className="flex-1 flex flex-col border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden relative">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"></div>
+        </div>
         
-        <CardHeader className="border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between py-4 bg-slate-50/50 dark:bg-[#0F172A]/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
-              <Bot className="w-5 h-5" />
-            </div>
-            <div>
-              <CardTitle className="text-lg">Avario AI Assistant</CardTitle>
-              <p className="text-xs text-emerald-500 font-medium flex items-center gap-1 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online & Siap Membantu
-              </p>
+        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-6">
+          <div>
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-2">Hari Ini</div>
+            <div className="space-y-1">
+              <button className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm bg-indigo-500/10 text-indigo-400 rounded-lg">
+                <MessageSquare className="w-4 h-4 shrink-0" />
+                <span className="truncate">Analisis Stok Gudang C</span>
+              </button>
+              <button className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                <History className="w-4 h-4 shrink-0" />
+                <span className="truncate">Review Performa Admin</span>
+              </button>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="gap-2 border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-400 dark:hover:bg-indigo-900/30">
+          
+          <div>
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-2">Kemarin</div>
+            <div className="space-y-1">
+              <button className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                <History className="w-4 h-4 shrink-0" />
+                <span className="truncate">Laporan Pajak Q2</span>
+              </button>
+              <button className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                <History className="w-4 h-4 shrink-0" />
+                <span className="truncate">Tren Penjualan Kopi Susu</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col h-full bg-[#f8fafc] dark:bg-[#0b1120]">
+        {/* Header */}
+        <div className="h-16 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 bg-white dark:bg-[#0f172a]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/20">
+              <Bot className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-900 dark:text-white">Avario AI Assistant</h2>
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                Online & Siap Membantu
+              </div>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-400 dark:hover:bg-indigo-900/30">
             <Sparkles className="w-4 h-4" /> Generate Report
           </Button>
-        </CardHeader>
+        </div>
 
-        <CardContent className="flex-1 p-0 overflow-hidden">
-          <ScrollArea className="h-full px-4 sm:px-6 py-6">
-            <div className="space-y-6 pb-4">
-              {chatHistory.map((chat, idx) => (
-                <div key={idx} className={`flex gap-4 ${chat.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                  {/* Avatar */}
-                  <div className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center border shadow-sm ${
-                    chat.role === 'ai' 
-                    ? 'bg-gradient-to-br from-indigo-500 to-purple-600 border-transparent text-white' 
-                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'
-                  }`}>
-                    {chat.role === 'ai' ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                  </div>
-                  
-                  {/* Bubble */}
-                  <div className={`flex flex-col gap-1 max-w-[85%] lg:max-w-[75%] ${chat.role === 'user' ? 'items-end' : 'items-start'}`}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{chat.role === 'ai' ? 'Avario AI' : 'Anda'}</span>
-                      <span className="text-[10px] text-slate-400">{chat.time}</span>
-                    </div>
-                    
-                    <div className={`p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${
-                      chat.role === 'user'
-                      ? 'bg-indigo-600 text-white rounded-tr-sm'
-                      : 'bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-sm'
-                    }`}>
-                      {chat.content}
-                    </div>
-                  </div>
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex gap-4 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''}`}>
+              <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white ${
+                msg.role === 'user' ? 'bg-slate-800 dark:bg-slate-700' : 'bg-indigo-600 shadow-md shadow-indigo-600/30'
+              }`}>
+                {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className={`text-xs font-semibold ${msg.role === 'user' ? 'text-right text-slate-500' : 'text-left text-slate-500'}`}>
+                  {msg.role === 'user' ? 'Anda' : 'Avario AI'} <span className="font-normal opacity-70 ml-1">{new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
-              ))}
+                <div className={`p-4 rounded-2xl text-[15px] leading-relaxed shadow-sm ${
+                  msg.role === 'user' 
+                    ? 'bg-indigo-600 text-white rounded-tr-sm' 
+                    : 'bg-white border border-slate-200 dark:bg-[#1e293b] dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-tl-sm'
+                }`}>
+                  {formatText(msg.content).map((el, i) => (
+                    typeof el === 'string' ? <span key={i} dangerouslySetInnerHTML={{ __html: el.replace(/\n/g, '<br/>') }} /> : el
+                  ))}
+                </div>
+              </div>
             </div>
-          </ScrollArea>
-        </CardContent>
+          ))}
+          
+          {isLoading && (
+            <div className="flex gap-4 max-w-[85%] animate-pulse">
+              <div className="shrink-0 w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white">
+                <Bot className="w-4 h-4" />
+              </div>
+              <div className="p-4 rounded-2xl bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700 rounded-tl-sm w-32 flex items-center justify-center gap-1.5">
+                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
-        <CardFooter className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0F172A]/50">
-          <form className="relative w-full flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); setMessage(""); }}>
+        {/* Input Area */}
+        <div className="p-4 bg-white dark:bg-[#0f172a] border-t border-slate-200 dark:border-slate-800">
+          <form onSubmit={handleSend} className="relative flex items-center">
             <Input 
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="Tanya AI untuk menganalisis performa toko, prediksi stok, atau cek kas masuk..." 
-              className="pr-12 py-6 rounded-xl border-slate-200 dark:border-slate-700 shadow-sm focus-visible:ring-indigo-500"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              className="pr-12 h-14 bg-slate-100 dark:bg-[#1e293b] border-transparent focus-visible:ring-indigo-500 focus-visible:border-indigo-500 rounded-xl"
+              disabled={isLoading}
             />
             <Button 
               type="submit" 
               size="icon" 
-              className="absolute right-2 h-9 w-9 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-transform hover:scale-105"
-              disabled={!message.trim()}
+              disabled={isLoading || !input.trim()}
+              className="absolute right-2 w-10 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all shadow-md"
             >
-              <Send className="w-4 h-4 ml-0.5" />
+              <Send className="w-4 h-4 ml-1" />
             </Button>
           </form>
-        </CardFooter>
-      </Card>
+          <div className="text-center mt-2 text-[10px] text-slate-500">
+            Avario AI dapat membuat kesalahan. Harap periksa kembali analisis data kritikal.
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

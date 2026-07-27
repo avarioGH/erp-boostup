@@ -1,325 +1,276 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { 
+  Card, CardContent, CardDescription, CardHeader, CardTitle 
+} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { ArrowLeft, Users, Shield, Plus, Key, Building2, UserPlus, Save, AlertCircle, CheckCircle2 } from "lucide-react"
+import { api } from "@/lib/api"
+import Link from "next/link"
 
-export default function UsersManagementPage() {
+export default function UsersSettingsPage() {
+  const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState<any[]>([])
   const [warehouses, setWarehouses] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [open, setOpen] = useState(false)
-  const [currentUserRole, setCurrentUserRole] = useState("")
   
+  const [showForm, setShowForm] = useState(false)
+  const [processing, setProcessing] = useState(false)
+  const [success, setSuccess] = useState("")
+  const [error, setError] = useState("")
+
   const [formData, setFormData] = useState({
-    name: "",
     username: "",
+    name: "",
     email: "",
     password: "",
-    modules: [] as string[],
     warehouse_ids: [] as string[]
   })
 
-  const AVAILABLE_MODULES = [
-    { id: "dashboard", label: "Dashboard" },
-    { id: "finance", label: "Finance" },
-    { id: "inventory", label: "Inventory" },
-    { id: "hr", label: "HR" },
-    { id: "crm", label: "CRM" },
-    { id: "settings", label: "Settings" }
-  ]
-
-  const getToken = () => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem("token") || localStorage.getItem("erp_token")
-    }
-    return null
-  }
-
   useEffect(() => {
-    const token = getToken()
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]))
-        if (payload && payload.role) {
-          setCurrentUserRole(payload.role)
-        }
-      } catch (e) {
-        console.error("Failed to parse token payload", e)
-      }
-    }
+    fetchData()
   }, [])
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     try {
-      const token = getToken()
-      const res = await fetch("http://194.233.85.181:3001/users", {
-        headers: { "Authorization": `Bearer ${token}` }
-      })
-      if (res.status === 401) {
-        window.location.href = "/login"
-        return
-      }
-      if (res.ok) {
-        const data = await res.json()
-        setUsers(data)
-      }
-    } catch (e) {
-      console.error(e)
+      setLoading(true)
+      const [uRes, wRes] = await Promise.all([
+        api.get('/users'),
+        api.get('/inventory/warehouses')
+      ])
+      
+      setUsers(uRes.data)
+      setWarehouses(wRes.data)
+    } catch (err) {
+      console.error(err)
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchWarehouses = async () => {
-    try {
-      const token = getToken()
-      const res = await fetch("http://194.233.85.181:3001/inventory/warehouses", {
-        headers: { "Authorization": `Bearer ${token}` }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setWarehouses(data)
+  const handleToggleWarehouse = (whId: string) => {
+    setFormData(prev => {
+      const exists = prev.warehouse_ids.includes(whId)
+      if (exists) {
+        return { ...prev, warehouse_ids: prev.warehouse_ids.filter(id => id !== whId) }
+      } else {
+        return { ...prev, warehouse_ids: [...prev.warehouse_ids, whId] }
       }
-    } catch (e) {
-      console.error(e)
-    }
+    })
   }
 
-  useEffect(() => {
-    fetchUsers()
-    fetchWarehouses()
-  }, [])
-
-  const handleCreateAdmin = async () => {
-    if (!formData.name || !formData.username || !formData.password || !formData.email) {
-      alert("Please fill all required fields")
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setProcessing(true)
+    setError("")
+    
+    if (formData.warehouse_ids.length === 0) {
+      setError("Pilih minimal 1 gudang / lokasi yang bisa diakses user ini.")
+      setProcessing(false)
       return
     }
 
     try {
-      const token = getToken()
-      const res = await fetch("http://194.233.85.181:3001/users/admin", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      })
+      await api.post('/users/admin', formData)
+      setSuccess("Pengguna Admin berhasil dibuat dan diberi akses!")
+      setShowForm(false)
+      fetchData()
       
-      if (res.status === 401) {
-        window.location.href = "/login"
-        return
-      }
-      
-      if (res.ok) {
-        setOpen(false)
-        fetchUsers()
-        setFormData({ name: "", username: "", email: "", password: "", modules: [], warehouse_ids: [] })
-      } else {
-        const err = await res.json()
-        alert(err.message)
-      }
-    } catch (e) {
-      console.error(e)
-      alert("Gagal membuat admin")
+      // Reset form
+      setFormData({ username: "", name: "", email: "", password: "", warehouse_ids: [] })
+      setTimeout(() => setSuccess(""), 4000)
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Gagal membuat pengguna. Pastikan Anda login sebagai Owner.")
+    } finally {
+      setProcessing(false)
     }
   }
 
-  const toggleModule = (moduleId: string) => {
-    setFormData(prev => {
-      if (prev.modules.includes(moduleId)) {
-        return { ...prev, modules: prev.modules.filter(m => m !== moduleId) }
-      } else {
-        return { ...prev, modules: [...prev.modules, moduleId] }
-      }
-    })
-  }
-
-  const toggleWarehouse = (warehouseId: string) => {
-    setFormData(prev => {
-      if (prev.warehouse_ids.includes(warehouseId)) {
-        return { ...prev, warehouse_ids: prev.warehouse_ids.filter(id => id !== warehouseId) }
-      } else {
-        return { ...prev, warehouse_ids: [...prev.warehouse_ids, warehouseId] }
-      }
-    })
-  }
-
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Manajemen Pengguna & Akses</h2>
-        
-        {currentUserRole === "Owner" && (
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger render={<Button className="bg-indigo-600 hover:bg-indigo-700 text-white">+ Create Admin</Button>} />
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Buat Akun Admin Baru</DialogTitle>
-                <DialogDescription>
-                  Tambahkan admin baru dan atur akses modul serta gudang yang diizinkan.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-2">
-                <div className="space-y-2">
-                  <Label>Nama Lengkap</Label>
-                  <Input 
-                    value={formData.name} 
-                    onChange={e => setFormData({...formData, name: e.target.value})} 
-                    className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800"
-                    placeholder="Masukkan nama lengkap"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Username</Label>
-                    <Input 
-                      value={formData.username} 
-                      onChange={e => setFormData({...formData, username: e.target.value})} 
-                      className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800"
-                      placeholder="Username unik"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input 
-                      type="email" 
-                      value={formData.email} 
-                      onChange={e => setFormData({...formData, email: e.target.value})} 
-                      className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800"
-                      placeholder="admin@example.com"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Password</Label>
-                  <Input 
-                    type="password" 
-                    value={formData.password} 
-                    onChange={e => setFormData({...formData, password: e.target.value})} 
-                    className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800"
-                    placeholder="Masukkan password aman"
-                  />
-                </div>
-                
-                <div className="space-y-3 pt-4 border-t">
-                  <Label className="font-semibold text-slate-900 dark:text-white">Akses Gudang (RBAC)</Label>
-                  <p className="text-xs text-slate-500">Pilih gudang mana saja yang boleh dilihat dan dikelola oleh admin ini.</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {warehouses.length > 0 ? warehouses.map(wh => (
-                      <div key={wh.id} className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
-                        <Checkbox 
-                          id={`wh-${wh.id}`} 
-                          checked={formData.warehouse_ids.includes(wh.id)}
-                          onCheckedChange={() => toggleWarehouse(wh.id)}
-                        />
-                        <label
-                          htmlFor={`wh-${wh.id}`}
-                          className="text-sm font-medium leading-none cursor-pointer text-slate-700 dark:text-slate-300"
-                        >
-                          {wh.name}
-                        </label>
-                      </div>
-                    )) : (
-                      <p className="text-sm text-slate-500">Belum ada gudang terdaftar.</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-3 pt-4 border-t">
-                  <Label className="font-semibold text-slate-900 dark:text-white">Akses Modul</Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {AVAILABLE_MODULES.map(mod => (
-                      <div key={mod.id} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`mod-${mod.id}`} 
-                          checked={formData.modules.includes(mod.id)}
-                          onCheckedChange={() => toggleModule(mod.id)}
-                        />
-                        <label
-                          htmlFor={`mod-${mod.id}`}
-                          className="text-sm font-medium leading-none cursor-pointer"
-                        >
-                          {mod.label}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" onClick={handleCreateAdmin} className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto">Simpan Admin</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-6xl mx-auto pb-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Pengguna & Role</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">Kelola akun staf dan batasi akses mereka ke gudang (RBAC).</p>
+          </div>
+        </div>
+        {!showForm && (
+          <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+            <UserPlus className="w-4 h-4" /> Tambah Staf Baru
+          </Button>
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daftar Pengguna Aktif</CardTitle>
-          <CardDescription>Kelola anggota tim dan hak akses mereka.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nama</TableHead>
-                <TableHead>Username</TableHead>
-                <TableHead>Peran (Role)</TableHead>
-                <TableHead>Akses Gudang</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-4">Memuat data...</TableCell></TableRow>
-              ) : users.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-4">Tidak ada pengguna ditemukan</TableCell></TableRow>
-              ) : users.map(user => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>
-                    <Badge variant={user.role?.name === "Owner" ? "default" : "secondary"}>
-                      {user.role?.name || "User"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {user.role?.name === "Owner" ? (
-                        <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">Semua Akses</Badge>
-                      ) : user.warehouse_accesses && user.warehouse_accesses.length > 0 ? (
-                        user.warehouse_accesses.map((wa: any) => (
-                          <Badge key={wa.warehouse?.id} variant="outline" className="bg-slate-50">
-                            {wa.warehouse?.name}
-                          </Badge>
-                        ))
+      {success && (
+        <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg flex items-center gap-3 border border-emerald-200 dark:border-emerald-800">
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+          <p className="font-medium text-sm">{success}</p>
+        </div>
+      )}
+
+      {showForm ? (
+        <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden border-t-4 border-t-blue-500">
+          <form onSubmit={handleCreateUser}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-blue-500" /> Buat Akun Admin / Kasir
+              </CardTitle>
+              <CardDescription>Akun yang dibuat akan memiliki batasan akses sesuai pilihan gudang (Role Based Access Control).</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              
+              {error && (
+                <div className="bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 p-4 rounded-lg flex items-center gap-3 border border-rose-200 dark:border-rose-800">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <p className="font-medium text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2 flex items-center gap-2"><Users className="w-4 h-4 text-slate-500"/> Data Pengguna</h3>
+                  
+                  <div className="space-y-2">
+                    <Label>Nama Lengkap</Label>
+                    <Input 
+                      required placeholder="Misal: Budi Santoso" 
+                      value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
+                      className="bg-white dark:bg-slate-950"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Username Login <span className="text-rose-500">*</span></Label>
+                    <Input 
+                      required placeholder="budisantoso" 
+                      value={formData.username} onChange={e => setFormData({...formData, username: e.target.value.toLowerCase().replace(/\s/g, '')})}
+                      className="bg-white dark:bg-slate-950 font-mono text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input 
+                      type="email" placeholder="budi@perusahaan.com" 
+                      value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}
+                      className="bg-white dark:bg-slate-950"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Password Awal <span className="text-rose-500">*</span></Label>
+                    <div className="relative">
+                      <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <Input 
+                        required type="password" placeholder="••••••••" 
+                        value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})}
+                        className="pl-9 bg-white dark:bg-slate-950"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg border-b pb-2 flex items-center gap-2"><Building2 className="w-4 h-4 text-blue-500"/> Akses Lokasi (Gudang / Cabang)</h3>
+                  <p className="text-sm text-slate-500">Pilih cabang mana saja yang dapat diakses oleh akun ini. Mereka tidak akan bisa melihat transaksi di cabang lain.</p>
+                  
+                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3 max-h-[300px] overflow-y-auto">
+                    {warehouses.length === 0 ? (
+                      <div className="text-center text-sm text-slate-500 py-4">Belum ada gudang terdaftar.</div>
+                    ) : (
+                      warehouses.map(wh => (
+                        <div key={wh.id} className="flex flex-row items-start space-x-3 space-y-0 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                          <Checkbox 
+                            id={`wh-${wh.id}`} 
+                            checked={formData.warehouse_ids.includes(wh.id)}
+                            onCheckedChange={() => handleToggleWarehouse(wh.id)}
+                            className="mt-1"
+                          />
+                          <div className="space-y-1 leading-none">
+                            <Label htmlFor={`wh-${wh.id}`} className="font-bold cursor-pointer">{wh.name}</Label>
+                            <p className="text-xs text-slate-500">{wh.code} — {wh.address || 'Tidak ada alamat'}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Batal</Button>
+                <Button type="submit" disabled={processing} className="bg-blue-600 hover:bg-blue-700 text-white min-w-[150px] gap-2">
+                  {processing ? "Memproses..." : <><Save className="w-4 h-4"/> Simpan Akun</>}
+                </Button>
+              </div>
+            </CardContent>
+          </form>
+        </Card>
+      ) : (
+        <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
+          <CardHeader className="pb-4 border-b border-slate-100 dark:border-slate-800">
+            <CardTitle>Daftar Staff & Karyawan Aktif</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="py-20 text-center text-slate-500">Memuat daftar pengguna...</div>
+            ) : users.length === 0 ? (
+              <div className="py-20 text-center text-slate-500">Belum ada pengguna.</div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {users.map((user) => (
+                  <div key={user.id} className="p-4 sm:p-6 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300">
+                        {user.name?.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          {user.name} 
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            user.role?.name === 'Owner' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                          }`}>
+                            {user.role?.name || 'Staff'}
+                          </span>
+                        </div>
+                        <div className="text-sm text-slate-500 mt-0.5">@{user.username} {user.email && `• ${user.email}`}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="sm:text-right">
+                      <div className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">Akses Cabang</div>
+                      {user.role?.name === 'Owner' ? (
+                        <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Seluruh Cabang (Superadmin)</div>
                       ) : (
-                        <span className="text-xs text-slate-400">Tidak ada akses</span>
+                        <div className="flex flex-wrap sm:justify-end gap-1">
+                          {user.warehouse_accesses?.length > 0 ? (
+                            user.warehouse_accesses.map((acc: any, i: number) => (
+                              <span key={i} className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded text-xs font-medium border border-slate-200 dark:border-slate-700">
+                                {acc.warehouse?.name}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-rose-500 font-medium italic">Tidak ada akses</span>
+                          )}
+                        </div>
                       )}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.status ? "outline" : "destructive"} className={user.status ? "border-emerald-200 text-emerald-700 bg-emerald-50" : ""}>
-                      {user.status ? "Aktif" : "Nonaktif"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

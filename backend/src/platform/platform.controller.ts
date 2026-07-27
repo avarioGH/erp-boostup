@@ -32,4 +32,9 @@ export class PlatformController {
     // Ideally use tenant_id from company, but here we can pass company_id as tenantId
     return this.platformService.generateAiInsight(data.prompt, data.contextData || {}, req.user.company_id);
   }
+
+  @Get('audit-logs')
+  async getAuditLogs(@Request() req) {
+    return this.platformService.getAuditLogs(req.user.company_id);
+  }
 }
