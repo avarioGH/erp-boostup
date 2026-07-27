@@ -77,6 +77,7 @@ export function AppHeader() {
           <DropdownMenuSeparator />
           
           <DropdownMenuItem 
+            id="warehouse-pusat"
             onClick={() => handleSelectWarehouse(null)}
             className={`cursor-pointer ${!activeWarehouse ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : ''}`}
           >
@@ -88,6 +89,7 @@ export function AppHeader() {
           
           {warehouses.map((wh) => (
             <DropdownMenuItem 
+              id={`warehouse-${wh.id}`}
               key={wh.id} 
               onClick={() => handleSelectWarehouse(wh)}
               className={`cursor-pointer ${activeWarehouse?.id === wh.id ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : ''}`}
@@ -103,6 +105,7 @@ export function AppHeader() {
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
+                id="warehouse-manage"
                 onClick={() => router.push("/settings/warehouse")}
                 className="cursor-pointer text-indigo-600 dark:text-indigo-400 font-medium"
               >
