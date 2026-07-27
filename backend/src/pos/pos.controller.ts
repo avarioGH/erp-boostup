@@ -18,4 +18,28 @@ export class PosController {
       throw error;
     }
   }
+
+  @Get('history')
+  async getHistory(@Request() req) {
+    return this.posService.getHistory(req.user.company_id);
+  }
+
+  @Get('shift')
+  async getCurrentShift(@Request() req) {
+    return this.posService.getCurrentShift(req.user.company_id, req.user.userId || req.user.id);
+  }
+
+  @Post('shift/open')
+  async openShift(@Request() req, @Body() data: any) {
+    data.companyId = req.user.company_id;
+    data.userId = req.user.userId || req.user.id;
+    return this.posService.openShift(data);
+  }
+
+  @Post('shift/close')
+  async closeShift(@Request() req, @Body() data: any) {
+    data.companyId = req.user.company_id;
+    data.userId = req.user.userId || req.user.id;
+    return this.posService.closeShift(data);
+  }
 }

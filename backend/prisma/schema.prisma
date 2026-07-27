@@ -72,6 +72,7 @@ model Company {
   // Phase 2 CRM
   customers          Customer[]
   sales_orders       SalesOrder[]
+  vouchers           Voucher[]
 
   // Phase 4 HR
   departments        Department[]
@@ -210,6 +211,9 @@ model User {
   tasks                    UserTask[]          @relation("UserTasks")
   // Phase 10 AI
   ai_chats                 AiChatHistory[]     @relation("UserAiChats")
+
+  // POS
+  pos_shifts               PosShift[]          @relation("UserPosShifts")
 
   // RBAC Warehouse Access
   warehouse_accesses       UserWarehouseAccess[]
@@ -1450,6 +1454,29 @@ model Customer {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   deleted_at DateTime?
+
+  @@unique([company_id, code])
+}
+
+model Voucher {
+  id               String   @id @default(uuid())
+  company_id       String
+  company          Company  @relation(fields: [company_id], references: [id])
+  code             String
+  name             String
+  discount_type    String   // PERCENTAGE, NOMINAL
+  discount_value   Decimal  @db.Decimal(15, 2)
+  min_purchase     Decimal? @db.Decimal(15, 2)
+  max_discount     Decimal? @db.Decimal(15, 2)
+  quota            Int      @default(0)
+  used_count       Int      @default(0)
+  valid_from       DateTime
+  valid_until      DateTime
+  status           Boolean  @default(true) // Active or Inactive
+
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  deleted_at       DateTime?
 
   @@unique([company_id, code])
 }

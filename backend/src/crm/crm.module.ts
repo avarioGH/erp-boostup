@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { CustomerController } from './customer.controller';
 import { OrderController } from './order.controller';
+import { VoucherController } from './voucher.controller';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [CustomerController, OrderController],
+  controllers: [CustomerController, OrderController, VoucherController],
 })
 export class CrmModule {}

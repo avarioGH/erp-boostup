@@ -109,4 +109,66 @@ export class PosService {
       return salesOrder;
     });
   }
+
+  async getHistory(companyId: string) {
+    return this.prisma.salesOrder.findMany({
+      where: { company_id: companyId },
+      include: {
+        customer: true,
+        items: {
+          include: { product: true }
+        }
+      },
+      orderBy: { order_date: 'desc' }
+    });
+  }
+
+  async getCurrentShift(companyId: string, userId: string) {
+    return this.prisma.posShift.findFirst({
+      where: {
+        company_id: companyId,
+        user_id: userId,
+        status: 'OPEN'
+      }
+    });
+  }
+
+  async openShift(data: any) {
+    const { companyId, warehouseId, userId, startingCash } = data;
+    
+    // Check if there is already an open shift
+    const existingShift = await this.getCurrentShift(companyId, userId);
+    if (existingShift) {
+      throw new BadRequestException('You already have an open shift');
+    }
+
+    return this.prisma.posShift.create({
+      data: {
+        company_id: companyId,
+        warehouse_id: warehouseId,
+        user_id: userId,
+        starting_cash: startingCash,
+        status: 'OPEN',
+      }
+    });
+  }
+
+  async closeShift(data: any) {
+    const { companyId, userId, endingCash } = data;
+    
+    const existingShift = await this.getCurrentShift(companyId, userId);
+    if (!existingShift) {
+      throw new BadRequestException('No open shift found to close');
+    }
+
+    return this.prisma.posShift.update({
+      where: { id: existingShift.id },
+      data: {
+        end_time: new Date(),
+        ending_cash: endingCash,
+        status: 'CLOSED'
+      }
+    });
+  }
 }
+
