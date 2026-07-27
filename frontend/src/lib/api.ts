@@ -17,12 +17,24 @@ api.interceptors.request.use((config) => {
   
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-  } else {
-    // DEV MODE: Kita kirim dummy headers agar backend (yang tidak strict) bisa baca user
-    // (Jika backend strict menggunakan JWT, kita perlu endpoint /auth/login)
   }
   return config;
 });
+
+// Interceptor untuk menangani error respons
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('erp_user');
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 // API Endpoints
 export const DashboardAPI = {
