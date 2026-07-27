@@ -211,7 +211,7 @@ export default function ProductInventory() {
               </div>
               <div className="space-y-2">
                 <Label>Kategori Produk</Label>
-                <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val})}>
+                <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val || ""})}>
                   <SelectTrigger className="bg-white dark:bg-slate-950">
                     <SelectValue placeholder="Pilih Kategori" />
                   </SelectTrigger>
