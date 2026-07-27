@@ -56,6 +56,13 @@ export interface CreateAdjustmentDto {
 export class InventoryService {
   constructor(private prisma: PrismaService) {}
 
+  async getCategories(companyId: string) {
+    return this.prisma.category.findMany({
+      where: { company_id: companyId },
+      orderBy: { created_at: 'desc' }
+    });
+  }
+
   async getProducts(companyId: string) {
     return this.prisma.product.findMany({
       where: { company_id: companyId },
@@ -121,7 +128,8 @@ export class InventoryService {
         description: data.description,
         purchase_price: data.purchasePrice !== undefined ? String(data.purchasePrice) : '0',
         selling_price: data.sellingPrice !== undefined ? String(data.sellingPrice) : '0',
-        unit_id: unit.id
+        unit_id: unit.id,
+        category_id: data.categoryId || null
       }
     });
   }

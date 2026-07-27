@@ -33,6 +33,10 @@ export const DashboardAPI = {
 };
 
 export const InventoryAPI = {
+  getCategories: async () => {
+    const res = await api.get('/inventory/categories');
+    return res.data;
+  },
   getProducts: async () => {
     const res = await api.get('/inventory/products');
     return res.data;

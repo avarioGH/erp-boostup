@@ -17,9 +17,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { 
-  Search, Plus, Filter, Download, Box, LayoutGrid, AlertTriangle, RefreshCcw
+  Search, Plus, Download, Box, LayoutGrid, AlertTriangle, RefreshCcw
 } from "lucide-react"
 import { InventoryAPI } from "@/lib/api"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Mock Data Fallback
 const fallbackProducts = [
@@ -63,24 +64,29 @@ const fallbackProducts = [
 export default function ProductInventory() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showForm, setShowForm] = useState(false)
-  const [formData, setFormData] = useState({ code: "", name: "", purchasePrice: "", sellingPrice: "", description: "" })
-
+  const [formData, setFormData] = useState({ 
+    code: "", name: "", purchasePrice: "", sellingPrice: "", description: "", categoryId: "" 
+  })
+  
   // Real DB States
   const [loading, setLoading] = useState(true)
   const [isError, setIsError] = useState(false)
   const [products, setProducts] = useState<any[]>([])
   const [warehouses, setWarehouses] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true)
         setIsError(false)
-        const [dbProducts, whs] = await Promise.all([
+        const [dbProducts, whs, cats] = await Promise.all([
           InventoryAPI.getProducts(),
-          InventoryAPI.getWarehouses()
+          InventoryAPI.getWarehouses(),
+          InventoryAPI.getCategories()
         ])
         setWarehouses(whs)
+        setCategories(cats)
         
         // Map Prisma products to UI format
         const mapped = dbProducts.map((p: any) => {
@@ -118,10 +124,11 @@ export default function ProductInventory() {
         name: formData.name,
         purchasePrice: Number(formData.purchasePrice),
         sellingPrice: Number(formData.sellingPrice),
-        description: formData.description
+        description: formData.description,
+        categoryId: formData.categoryId
       })
       setShowForm(false)
-      setFormData({ code: "", name: "", purchasePrice: "", sellingPrice: "", description: "" })
+      setFormData({ code: "", name: "", purchasePrice: "", sellingPrice: "", description: "", categoryId: "" })
       // Refetch products
       const dbProducts = await InventoryAPI.getProducts()
       const mapped = dbProducts.map((p: any) => {
@@ -202,6 +209,23 @@ export default function ProductInventory() {
                   required 
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Kategori Produk</Label>
+                <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val})}>
+                  <SelectTrigger className="bg-white dark:bg-slate-950">
+                    <SelectValue placeholder="Pilih Kategori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.length === 0 ? (
+                      <SelectItem value="empty" disabled>Belum ada kategori</SelectItem>
+                    ) : (
+                      categories.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Harga Beli <span className="text-red-500">*</span></Label>
@@ -253,9 +277,6 @@ export default function ProductInventory() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-              <Filter className="w-4 h-4" /> Filter Kategori
-            </Button>
             <Button variant="outline" size="sm" className="gap-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
               <LayoutGrid className="w-4 h-4" /> Kolom
             </Button>

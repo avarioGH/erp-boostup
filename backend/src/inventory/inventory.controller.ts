@@ -7,6 +7,11 @@ import { InventoryService } from './inventory.service';
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
+  @Get('categories')
+  async getCategories(@Request() req) {
+    return this.inventoryService.getCategories(req.user.company_id);
+  }
+
   @Get('products')
   async getProducts(@Request() req) {
     return this.inventoryService.getProducts(req.user.company_id);
