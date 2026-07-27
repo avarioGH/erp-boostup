@@ -11,6 +11,11 @@ export class FinanceController {
     private readonly prisma: PrismaService
   ) {}
 
+  @Get('categories')
+  async getCategories(@Request() req) {
+    return this.financeService.getCategories(req.user.company_id);
+  }
+
   @Get('summary')
   async getSummary(@Request() req) {
     const companyId = req.user.company_id;

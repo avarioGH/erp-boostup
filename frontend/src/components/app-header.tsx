@@ -10,8 +10,10 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
+import { useRouter } from "next/navigation"
 
 export function AppHeader() {
+  const router = useRouter()
   const [user, setUser] = useState<any>(null)
   const [activeWarehouse, setActiveWarehouse] = useState<any>(null)
   const [warehouses, setWarehouses] = useState<any[]>([])
@@ -25,17 +27,17 @@ export function AppHeader() {
           const parsedUser = JSON.parse(storedUser)
           setUser(parsedUser)
           
-          if (parsedUser.accessible_warehouses && parsedUser.accessible_warehouses.length > 0) {
+          if (parsedUser.accessible_warehouses) {
             setWarehouses(parsedUser.accessible_warehouses)
             
             // Check if active warehouse is already in local storage
             const storedActive = localStorage.getItem("active_warehouse")
-            if (storedActive) {
+            if (storedActive && storedActive !== "null" && storedActive !== "undefined") {
               setActiveWarehouse(JSON.parse(storedActive))
             } else {
-              // Default to first accessible warehouse
-              setActiveWarehouse(parsedUser.accessible_warehouses[0])
-              localStorage.setItem("active_warehouse", JSON.stringify(parsedUser.accessible_warehouses[0]))
+              // Default to Pusat (null warehouse)
+              setActiveWarehouse(null)
+              localStorage.setItem("active_warehouse", JSON.stringify(null))
             }
           }
         } catch (e) {
@@ -57,44 +59,59 @@ export function AppHeader() {
       <Separator orientation="vertical" className="mx-2 h-4 bg-slate-200 dark:bg-slate-700" />
       
       {/* WAREHOUSE SELECTOR */}
-      {warehouses.length > 0 && (
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ml-2 mr-2 outline-none">
-            <div className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 p-1 rounded">
-              <MapPin className="w-3.5 h-3.5" />
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ml-2 mr-2 outline-none">
+          <div className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 p-1 rounded">
+            <MapPin className="w-3.5 h-3.5" />
+          </div>
+          <div className="flex flex-col items-start">
+            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider leading-none mb-0.5">Lokasi Gudang</span>
+            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-none truncate max-w-[120px]">
+              {activeWarehouse?.name || "Pusat (Semua)"}
+            </span>
+          </div>
+          <ChevronDown className="w-4 h-4 text-slate-400 ml-1" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuLabel>Pilih Lokasi Kerja</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          
+          <DropdownMenuItem 
+            onClick={() => handleSelectWarehouse(null)}
+            className={`cursor-pointer ${!activeWarehouse ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : ''}`}
+          >
+            <div className="flex items-center justify-between w-full">
+              <span>Pusat (Semua Akses)</span>
+              {!activeWarehouse && <Check className="w-4 h-4" />}
             </div>
-            <div className="flex flex-col items-start">
-              <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider leading-none mb-0.5">Lokasi Gudang</span>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-none truncate max-w-[120px]">
-                {activeWarehouse?.name || "Pilih Gudang"}
-              </span>
-            </div>
-            <ChevronDown className="w-4 h-4 text-slate-400 ml-1" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuLabel>Pilih Lokasi Kerja</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {warehouses.map((wh) => (
+          </DropdownMenuItem>
+          
+          {warehouses.map((wh) => (
+            <DropdownMenuItem 
+              key={wh.id} 
+              onClick={() => handleSelectWarehouse(wh)}
+              className={`cursor-pointer ${activeWarehouse?.id === wh.id ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : ''}`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span>{wh.name}</span>
+                {activeWarehouse?.id === wh.id && <Check className="w-4 h-4" />}
+              </div>
+            </DropdownMenuItem>
+          ))}
+          
+          {user?.role === "Owner" && (
+            <>
+              <DropdownMenuSeparator />
               <DropdownMenuItem 
-                key={wh.id} 
-                onClick={() => handleSelectWarehouse(wh)}
-                className={`cursor-pointer ${activeWarehouse?.id === wh.id ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : ''}`}
+                onClick={() => router.push("/settings/warehouse")}
+                className="cursor-pointer text-indigo-600 dark:text-indigo-400 font-medium"
               >
-                <div className="flex items-center justify-between w-full">
-                  <span>{wh.name}</span>
-                  {activeWarehouse?.id === wh.id && <Check className="w-4 h-4" />}
-                </div>
+                + Kelola Gudang
               </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-
-      {user?.role === "Owner" && warehouses.length === 0 && (
-        <div className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-lg text-xs font-medium ml-2">
-          Pusat (Semua Akses)
-        </div>
-      )}
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <div className="flex flex-1 items-center gap-4 px-2">
         <div className="flex h-10 w-full max-w-md items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#1e293b] px-3 text-slate-500 focus-within:bg-white dark:focus-within:bg-[#0f172a] focus-within:ring-1 focus-within:ring-primary transition-colors">

@@ -40,6 +40,29 @@ export const InventoryAPI = {
   getWarehouses: async () => {
     const res = await api.get('/inventory/warehouses');
     return res.data;
+  },
+  createProduct: async (data: any) => {
+    const res = await api.post('/inventory/products', data);
+    return res.data;
+  },
+  createWarehouse: async (data: any) => {
+    const res = await api.post('/inventory/warehouses', data);
+    return res.data;
+  },
+  updateWarehouse: async (id: string, data: any) => {
+    const res = await api.put(`/inventory/warehouses/${id}`, data);
+    return res.data;
+  },
+  deleteWarehouse: async (id: string) => {
+    const res = await api.delete(`/inventory/warehouses/${id}`);
+    return res.data;
+  }
+};
+
+export const FinanceAPI = {
+  getCategories: async () => {
+    const res = await api.get('/finance/categories');
+    return res.data;
   }
 };
 

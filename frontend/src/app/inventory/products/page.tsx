@@ -61,6 +61,8 @@ const fallbackProducts = [
 
 export default function ProductInventory() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [showForm, setShowForm] = useState(false)
+  const [formData, setFormData] = useState({ code: "", name: "", purchasePrice: "", sellingPrice: "", description: "" })
 
   // Real DB States
   const [loading, setLoading] = useState(true)
@@ -106,6 +108,37 @@ export default function ProductInventory() {
     fetchData()
   }, [])
 
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await InventoryAPI.createProduct({
+        code: formData.code,
+        name: formData.name,
+        purchasePrice: Number(formData.purchasePrice),
+        sellingPrice: Number(formData.sellingPrice),
+        description: formData.description
+      })
+      setShowForm(false)
+      setFormData({ code: "", name: "", purchasePrice: "", sellingPrice: "", description: "" })
+      // Refetch products
+      const dbProducts = await InventoryAPI.getProducts()
+      const mapped = dbProducts.map((p: any) => ({
+        id: p.id,
+        sku: p.code,
+        name: p.name,
+        category: p.category?.name || "-",
+        price: Number(p.selling_price),
+        stock_a: p.warehouse_stocks?.[0]?.current_stock || 0,
+        stock_b: p.warehouse_stocks?.[1]?.current_stock || 0,
+        stock_c: p.warehouse_stocks?.[2]?.current_stock || 0,
+      }))
+      setProducts(mapped)
+    } catch (error) {
+      console.error(error)
+      alert("Gagal menambahkan produk")
+    }
+  }
+
   const formatIDR = (value: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -132,11 +165,77 @@ export default function ProductInventory() {
           <Button variant="outline" className="gap-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
             <Download className="w-4 h-4" /> Export
           </Button>
-          <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20">
-            <Plus className="w-4 h-4" /> Tambah Produk
+          <Button onClick={() => setShowForm(!showForm)} className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20">
+            <Plus className="w-4 h-4" /> {showForm ? "Batal" : "Tambah Produk"}
           </Button>
         </div>
       </div>
+
+      {showForm && (
+        <Card className="border-t-4 border-t-indigo-600 shadow-lg animate-in slide-in-from-top-4 duration-300">
+          <form onSubmit={handleSave}>
+            <CardHeader>
+              <CardTitle>Tambah Produk Baru</CardTitle>
+              <CardDescription>
+                Masukkan detail produk baru Anda. Klik simpan setelah selesai.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>SKU / Kode Produk (Opsional)</Label>
+                <Input 
+                  placeholder="Misal: PRD-001" 
+                  value={formData.code} 
+                  onChange={(e) => setFormData({...formData, code: e.target.value})} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Nama Produk <span className="text-red-500">*</span></Label>
+                <Input 
+                  placeholder="Masukkan nama produk" 
+                  value={formData.name} 
+                  onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                  required 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Harga Beli <span className="text-red-500">*</span></Label>
+                  <Input 
+                    type="number" 
+                    placeholder="0"
+                    value={formData.purchasePrice} 
+                    onChange={(e) => setFormData({...formData, purchasePrice: e.target.value})} 
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Harga Jual <span className="text-red-500">*</span></Label>
+                  <Input 
+                    type="number" 
+                    placeholder="0"
+                    value={formData.sellingPrice} 
+                    onChange={(e) => setFormData({...formData, sellingPrice: e.target.value})} 
+                    required 
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Deskripsi Tambahan</Label>
+                <Input 
+                  placeholder="Deskripsi singkat produk" 
+                  value={formData.description} 
+                  onChange={(e) => setFormData({...formData, description: e.target.value})} 
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Batal</Button>
+                <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700">Simpan Produk</Button>
+              </div>
+            </CardContent>
+          </form>
+        </Card>
+      )}
 
       <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-4 justify-between bg-slate-50/50 dark:bg-[#0F172A]/50">

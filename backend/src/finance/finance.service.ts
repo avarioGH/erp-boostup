@@ -23,6 +23,13 @@ export class FinanceService {
     private glService: GlService
   ) {}
 
+  async getCategories(companyId: string) {
+    return this.prisma.financeCategory.findMany({
+      where: { company_id: companyId },
+      orderBy: { name: 'asc' }
+    });
+  }
+
   async createCashIn(data: FinanceTransactionDto) {
     return this.prisma.$transaction(async (tx) => {
       // Auto-resolve missing accounts

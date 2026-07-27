@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { 
   Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter 
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Save, Plus, AlertCircle, CheckCircle2 } from "lucide-react"
-import { api } from "@/lib/api"
+import { api, FinanceAPI } from "@/lib/api"
 import Link from "next/link"
 
 export default function FinanceCashIn() {
@@ -18,6 +18,19 @@ export default function FinanceCashIn() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState("")
+  const [categories, setCategories] = useState<any[]>([])
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        const data = await FinanceAPI.getCategories()
+        setCategories(data.filter((c: any) => c.type === "INCOME"))
+      } catch (err) {
+        console.error("Failed to load categories:", err)
+      }
+    }
+    loadCategories()
+  }, [])
 
   const [formData, setFormData] = useState({
     amount: "",
@@ -121,9 +134,10 @@ export default function FinanceCashIn() {
                     <SelectValue placeholder="Pilih Kategori" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="dummy">Pendapatan Penjualan</SelectItem>
-                    <SelectItem value="dummy2">Pendapatan Lainnya</SelectItem>
-                    <SelectItem value="dummy3">Modal Awal</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                    {categories.length === 0 && <SelectItem value="loading" disabled>Loading...</SelectItem>}
                   </SelectContent>
                 </Select>
               </div>

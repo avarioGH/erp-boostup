@@ -71,6 +71,22 @@ export class InventoryService {
     });
   }
 
+  async updateWarehouse(id: string, data: any) {
+    return this.prisma.warehouse.update({
+      where: { id },
+      data: {
+        name: data.name,
+        location: data.location
+      }
+    });
+  }
+
+  async deleteWarehouse(id: string) {
+    return this.prisma.warehouse.delete({
+      where: { id }
+    });
+  }
+
   async getTransactions(companyId: string) {
     return this.prisma.inventoryTransaction.findMany({
       where: { company_id: companyId },
