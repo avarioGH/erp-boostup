@@ -233,7 +233,7 @@ export default function OwnerDashboard() {
                   />
                   <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
                   <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: 'var(--popover)', color: 'var(--popover-foreground)' }}
                     formatter={(value: any) => [formatIDR(value as number), undefined]}
                   />
                   <Area type="monotone" dataKey="sales" name="Penjualan" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
@@ -263,7 +263,7 @@ export default function OwnerDashboard() {
                   />
                   <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
                   <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: 'var(--popover)', color: 'var(--popover-foreground)' }}
                     formatter={(value: any) => [formatIDR(value as number), undefined]}
                     cursor={{fill: '#f1f5f9'}}
                   />
