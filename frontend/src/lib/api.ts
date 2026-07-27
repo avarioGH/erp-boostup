@@ -13,7 +13,7 @@ export const api = axios.create({
 // Interceptor untuk menambahkan token (Mock Auth Sementara)
 api.interceptors.request.use((config) => {
   // Dalam production, ambil dari localStorage atau cookies
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('erp_token') : null;
   
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -28,6 +28,7 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
         localStorage.removeItem('token');
+        localStorage.removeItem('erp_token');
         localStorage.removeItem('erp_user');
         window.location.href = '/login';
       }
