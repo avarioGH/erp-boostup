@@ -47,11 +47,11 @@ export default function FinanceCashOut() {
     try {
       const payload = {
         amount: Number(formData.amount.replace(/[^0-9.-]+/g,"")),
-        type: "Expense",
+        categoryId: formData.categoryId,
         description: formData.description,
-        transaction_date: formData.date
+        transactionDate: formData.date
       }
-      await api.post('/finance/transaction', payload)
+      await api.post('/finance/cash-out', payload)
       setSuccess(true)
       setTimeout(() => {
         router.push('/finance')

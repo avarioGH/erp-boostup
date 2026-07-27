@@ -174,8 +174,8 @@ export default function OwnerDashboard() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Semua Cabang (Global)</SelectItem>
-              {warehouses.map((wh) => (
-                <SelectItem key={wh.id} value={wh.id}>{wh.name}</SelectItem>
+              {warehouses?.map((wh, idx) => (
+                <SelectItem key={wh?.id || idx} value={wh?.id || `wh-${idx}`}>{wh?.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>

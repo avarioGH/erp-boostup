@@ -219,8 +219,8 @@ export default function ProductInventory() {
                     {categories.length === 0 ? (
                       <SelectItem value="empty" disabled>Belum ada kategori</SelectItem>
                     ) : (
-                      categories.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      categories.map((c: any, idx: number) => (
+                        <SelectItem key={c?.id || idx} value={c?.id || `cat-${idx}`}>{c?.name}</SelectItem>
                       ))
                     )}
                   </SelectContent>
