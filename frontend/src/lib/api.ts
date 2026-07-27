@@ -56,12 +56,24 @@ export const InventoryAPI = {
   deleteWarehouse: async (id: string) => {
     const res = await api.delete(`/inventory/warehouses/${id}`);
     return res.data;
+  },
+  getTransactions: async () => {
+    const res = await api.get('/inventory/transactions');
+    return res.data;
   }
 };
 
 export const FinanceAPI = {
   getCategories: async () => {
     const res = await api.get('/finance/categories');
+    return res.data;
+  },
+  getTransactions: async () => {
+    const res = await api.get('/finance/transactions');
+    return res.data;
+  },
+  getSummary: async () => {
+    const res = await api.get('/finance/summary');
     return res.data;
   }
 };

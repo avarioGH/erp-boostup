@@ -15,7 +15,22 @@ import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, 
   ResponsiveContainer, Tooltip, XAxis, YAxis 
 } from "recharts"
-import { DashboardAPI } from "@/lib/api"
+import { DashboardAPI, InventoryAPI } from "@/lib/api"
+
+// Helper function to replace date-fns
+const timeAgo = (dateStr: string) => {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+  
+  if (diffInSeconds < 60) return "Baru saja"
+  const diffInMinutes = Math.floor(diffInSeconds / 60)
+  if (diffInMinutes < 60) return `${diffInMinutes} menit lalu`
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  if (diffInHours < 24) return `${diffInHours} jam lalu`
+  const diffInDays = Math.floor(diffInHours / 24)
+  return `${diffInDays} hari lalu`
+}
 
 const fallbackSalesData = [
   { date: "1 Jul", sales: 12500000, profit: 4500000 },
@@ -37,10 +52,52 @@ const fallbackExpenseData = [
 export default function OwnerDashboard() {
   const [warehouse, setWarehouse] = useState("all")
   
-  // Real DB States
   const [loading, setLoading] = useState(true)
   const [isError, setIsError] = useState(false)
   const [kpi, setKpi] = useState<any>(null)
+  
+  const [warehouses, setWarehouses] = useState<any[]>([])
+  const [lowStocks, setLowStocks] = useState<any[]>([])
+  const [recentActivities, setRecentActivities] = useState<any[]>([])
+
+  useEffect(() => {
+    async function loadAuxData() {
+      try {
+        const [whs, prods, txs] = await Promise.all([
+          InventoryAPI.getWarehouses().catch(() => []),
+          InventoryAPI.getProducts().catch(() => []),
+          InventoryAPI.getTransactions().catch(() => [])
+        ])
+        setWarehouses(whs)
+        
+        // Low stocks
+        const lows = prods.filter((p: any) => {
+          const totalStock = p.warehouse_stocks?.reduce((acc: number, ws: any) => acc + ws.current_stock, 0) || 0
+          return totalStock < 20
+        }).slice(0, 5).map((p: any) => ({
+          name: p.name,
+          stock: p.warehouse_stocks?.reduce((acc: number, ws: any) => acc + ws.current_stock, 0) || 0,
+          min: 20,
+          loc: p.warehouse_stocks?.[0]?.warehouse?.name || "Pusat"
+        }))
+        setLowStocks(lows)
+
+        // Recent Activities
+        const acts = txs.slice(0, 5).map((tx: any) => {
+          return {
+            time: timeAgo(tx.transaction_date),
+            title: tx.transaction_type === 'IN' ? 'Barang Masuk' : tx.transaction_type === 'OUT' ? 'Barang Keluar' : 'Transfer Gudang',
+            desc: tx.notes || `Transaksi ${tx.reference_number}`,
+            color: tx.transaction_type === 'IN' ? 'bg-emerald-500' : tx.transaction_type === 'OUT' ? 'bg-amber-500' : 'bg-blue-500'
+          }
+        })
+        setRecentActivities(acts)
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    loadAuxData()
+  }, [])
 
   useEffect(() => {
     async function fetchData() {
@@ -117,9 +174,9 @@ export default function OwnerDashboard() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Semua Cabang (Global)</SelectItem>
-              <SelectItem value="gudang_a">Gudang A (Pusat)</SelectItem>
-              <SelectItem value="gudang_b">Gudang B (Cabang)</SelectItem>
-              <SelectItem value="gudang_c">Gudang C (Retail)</SelectItem>
+              {warehouses.map((wh) => (
+                <SelectItem key={wh.id} value={wh.id}>{wh.name}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -314,30 +371,29 @@ export default function OwnerDashboard() {
               <AlertCircle className="w-4 h-4 text-rose-500" /> Stok Menipis
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0 flex-1">
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {[
-                { name: "Biji Kopi Robusta", stock: 12, min: 20, loc: "Gudang A" },
-                { name: "Cup Lid Sealer", stock: 5, min: 50, loc: "Gudang B" },
-                { name: "Sedotan Ramah Lingkungan", stock: 80, min: 200, loc: "Gudang A" },
-                { name: "Gula Aren Cair 1L", stock: 2, min: 10, loc: "Gudang C" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  <div>
-                    <p className="font-medium text-sm text-slate-900 dark:text-white">{item.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">{item.loc}</span>
-                      <span className="text-xs text-slate-500">Min: {item.min}</span>
+          <CardContent className="px-0 pt-0">
+            {lowStocks.length === 0 ? (
+              <div className="p-6 text-center text-slate-500">Stok aman, tidak ada barang menipis.</div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {lowStocks.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <div>
+                      <p className="font-medium text-sm text-slate-900 dark:text-white">{item.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">{item.loc}</span>
+                        <span className="text-xs text-slate-500">Min: {item.min}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded-md">
+                        Sisa {item.stock}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded-md">
-                      Sisa {item.stock}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -350,12 +406,10 @@ export default function OwnerDashboard() {
           </CardHeader>
           <CardContent className="p-0 flex-1">
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {[
-                { name: "PT. Maju Mundur", level: "Platinum", spent: 45200000 },
-                { name: "Budi Santoso", level: "Gold", spent: 12400000 },
-                { name: "Cafe Senja", level: "Gold", spent: 8900000 },
-                { name: "CV. Abadi Jaya", level: "Silver", spent: 5500000 },
-              ].map((item, i) => (
+              {(kpi?.topCustomers || []).length === 0 && (
+                <div className="text-center text-slate-500 py-6 text-sm">Belum ada data pelanggan.</div>
+              )}
+              {(kpi?.topCustomers || []).map((item: any, i: number) => (
                 <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-600 dark:text-slate-400">
@@ -388,24 +442,23 @@ export default function OwnerDashboard() {
             <Activity className="w-4 h-4 text-indigo-500" /> Aktivitas Sistem Terbaru
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4">
-          <div className="relative border-l border-slate-200 dark:border-slate-800 ml-3 space-y-6 pb-2">
-            {[
-              { time: "Baru saja", title: "Transaksi POS Baru", desc: "Kasir 'Andi' memproses transaksi INV-202607-004 senilai Rp 150.000", color: "bg-emerald-500" },
-              { time: "10 menit lalu", title: "Penerimaan Barang", desc: "Gudang A menerima 500 pcs 'Gelas Kertas 8oz' dari Supplier PT. Kemas Indo", color: "bg-blue-500" },
-              { time: "1 jam lalu", title: "Transfer Kas", desc: "Admin mentransfer Rp 5.000.000 dari Kasir ke BCA Utama", color: "bg-indigo-500" },
-              { time: "2 jam lalu", title: "Peringatan Stok", desc: "Stok 'Gula Aren Cair' di Gudang C menyentuh batas minimum (2 pcs)", color: "bg-rose-500" },
-            ].map((act, i) => (
-              <div key={i} className="relative pl-6">
-                <span className={`absolute -left-1.5 top-1.5 w-3 h-3 rounded-full ${act.color} ring-4 ring-white dark:ring-slate-950`}></span>
-                <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
-                  <h4 className="font-medium text-sm text-slate-900 dark:text-white">{act.title}</h4>
-                  <span className="text-xs text-slate-500 font-medium">{act.time}</span>
+        <CardContent className="pt-6">
+          {recentActivities.length === 0 ? (
+            <div className="text-center text-slate-500 py-4">Belum ada aktivitas.</div>
+          ) : (
+            <div className="relative border-l border-slate-200 dark:border-slate-800 ml-3 space-y-6">
+              {recentActivities.map((act, i) => (
+                <div key={i} className="relative pl-6">
+                  <span className={`absolute -left-1.5 top-1.5 w-3 h-3 rounded-full ${act.color} ring-4 ring-white dark:ring-slate-950`}></span>
+                  <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
+                    <h4 className="font-medium text-sm text-slate-900 dark:text-white">{act.title}</h4>
+                    <span className="text-xs text-slate-500 font-medium">{act.time}</span>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{act.desc}</p>
                 </div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{act.desc}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

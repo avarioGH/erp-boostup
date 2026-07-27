@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Sparkles, TrendingDown, Activity, RefreshCw, AlertCircle } from "lucide-react"
-import { api } from "@/lib/api"
+import { api, FinanceAPI } from "@/lib/api"
 import { formatIDR } from "@/lib/utils"
 import Link from "next/link"
 
@@ -26,11 +26,12 @@ export default function AIFinanceAnalysisPage() {
     try {
       setLoading(true)
       const [txRes, accRes] = await Promise.all([
-        api.get('/finance/transactions').catch(() => ({ data: [] })),
-        api.get('/finance/accounts').catch(() => ({ data: [{ current_balance: 150000000 }] })) // Mock balance if API fails
+        FinanceAPI.getTransactions().catch(() => []),
+        FinanceAPI.getSummary().catch(() => ({ cashInHand: 0, cashInBank: 0 }))
       ])
       
-      runAIAnalysis(txRes.data, accRes.data[0]?.current_balance || 0)
+      const totalBalance = (accRes.cashInHand || 0) + (accRes.cashInBank || 0);
+      runAIAnalysis(txRes, totalBalance || 150000000) // Fallback to mock balance if 0 to show some analysis
 
     } catch (err) {
       console.error(err)

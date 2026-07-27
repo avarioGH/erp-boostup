@@ -69,22 +69,26 @@ export default function ProductInventory() {
   const [loading, setLoading] = useState(true)
   const [isError, setIsError] = useState(false)
   const [products, setProducts] = useState<any[]>([])
+  const [warehouses, setWarehouses] = useState<any[]>([])
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true)
         setIsError(false)
-        const dbProducts = await InventoryAPI.getProducts()
+        const [dbProducts, whs] = await Promise.all([
+          InventoryAPI.getProducts(),
+          InventoryAPI.getWarehouses()
+        ])
+        setWarehouses(whs)
+        
         // Map Prisma products to UI format
         const mapped = dbProducts.map((p: any) => {
-          // Identify stock by warehouse code based on our seed (WH-A, WH-B, WH-C)
-          // Since we don't have the warehouse code populated inside warehouse_stocks directly without deeply joining,
-          // we assume order or we can just sum. In a full app, we map by warehouse.id
-          // For demo, we just split them loosely if available
-          const stockA = p.warehouse_stocks?.[0]?.current_stock || 0
-          const stockB = p.warehouse_stocks?.[1]?.current_stock || 0
-          const stockC = p.warehouse_stocks?.[2]?.current_stock || 0
+          // Map stocks by warehouse ID
+          const stockMap: Record<string, number> = {}
+          p.warehouse_stocks?.forEach((ws: any) => {
+            stockMap[ws.warehouse_id] = ws.current_stock
+          })
           
           return {
             id: p.id,
@@ -92,16 +96,13 @@ export default function ProductInventory() {
             name: p.name,
             category: p.category?.name || "-",
             price: Number(p.selling_price),
-            stock_a: stockA,
-            stock_b: stockB,
-            stock_c: stockC,
+            stockMap
           }
         })
         setProducts(mapped)
       } catch (error) {
         console.error("Database connection failed:", error)
         setIsError(true)
-        setProducts(fallbackProducts)
       } finally {
         setLoading(false)
       }
@@ -123,16 +124,18 @@ export default function ProductInventory() {
       setFormData({ code: "", name: "", purchasePrice: "", sellingPrice: "", description: "" })
       // Refetch products
       const dbProducts = await InventoryAPI.getProducts()
-      const mapped = dbProducts.map((p: any) => ({
-        id: p.id,
-        sku: p.code,
-        name: p.name,
-        category: p.category?.name || "-",
-        price: Number(p.selling_price),
-        stock_a: p.warehouse_stocks?.[0]?.current_stock || 0,
-        stock_b: p.warehouse_stocks?.[1]?.current_stock || 0,
-        stock_c: p.warehouse_stocks?.[2]?.current_stock || 0,
-      }))
+      const mapped = dbProducts.map((p: any) => {
+        const stockMap: Record<string, number> = {}
+        p.warehouse_stocks?.forEach((ws: any) => { stockMap[ws.warehouse_id] = ws.current_stock })
+        return {
+          id: p.id,
+          sku: p.code,
+          name: p.name,
+          category: p.category?.name || "-",
+          price: Number(p.selling_price),
+          stockMap
+        }
+      })
       setProducts(mapped)
     } catch (error) {
       console.error(error)
@@ -277,37 +280,27 @@ export default function ProductInventory() {
                 <TableHead className="font-semibold">Nama Produk</TableHead>
                 <TableHead className="font-semibold">Kategori</TableHead>
                 <TableHead className="text-right font-semibold">Harga Jual</TableHead>
-                <TableHead className="text-center font-semibold bg-indigo-50/50 dark:bg-indigo-900/10 border-l border-r border-indigo-100 dark:border-indigo-900/30">
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-widest mb-1">Pusat</span>
-                    <span>Gudang A</span>
-                  </div>
-                </TableHead>
-                <TableHead className="text-center font-semibold border-r border-slate-100 dark:border-slate-800">
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs text-slate-500 uppercase tracking-widest mb-1">Cabang</span>
-                    <span>Gudang B</span>
-                  </div>
-                </TableHead>
-                <TableHead className="text-center font-semibold border-r border-slate-100 dark:border-slate-800">
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs text-slate-500 uppercase tracking-widest mb-1">Retail</span>
-                    <span>Gudang C</span>
-                  </div>
-                </TableHead>
+                {warehouses.map((wh) => (
+                  <TableHead key={wh.id} className="text-center font-semibold bg-indigo-50/50 dark:bg-indigo-900/10 border-l border-r border-indigo-100 dark:border-indigo-900/30">
+                    <div className="flex flex-col items-center">
+                      <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold tracking-widest mb-1">{wh.name}</span>
+                      <span className="text-[10px] text-slate-500">{wh.location || "Cabang"}</span>
+                    </div>
+                  </TableHead>
+                ))}
                 <TableHead className="text-center font-bold">Total Stok</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredProducts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center text-slate-500">
+                  <TableCell colSpan={5 + warehouses.length} className="h-32 text-center text-slate-500">
                     Tidak ada produk yang ditemukan.
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredProducts.map((p) => {
-                  const totalStock = p.stock_a + p.stock_b + p.stock_c;
+                  const totalStock = warehouses.reduce((sum, wh) => sum + (p.stockMap[wh.id] || 0), 0);
                   return (
                     <TableRow key={p.id} className="border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
                       <TableCell className="font-mono text-xs text-slate-500">{p.sku}</TableCell>
@@ -319,26 +312,16 @@ export default function ProductInventory() {
                       </TableCell>
                       <TableCell className="text-right font-medium">{formatIDR(p.price)}</TableCell>
                       
-                      {/* Gudang A */}
-                      <TableCell className="text-center border-l border-r border-indigo-50 dark:border-indigo-900/20 bg-indigo-50/30 dark:bg-indigo-900/5 group-hover:bg-indigo-50/80 dark:group-hover:bg-indigo-900/20">
-                        <span className={`font-semibold ${p.stock_a < 20 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                          {p.stock_a}
-                        </span>
-                      </TableCell>
-                      
-                      {/* Gudang B */}
-                      <TableCell className="text-center border-r border-slate-100 dark:border-slate-800">
-                        <span className={`font-semibold ${p.stock_b < 10 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                          {p.stock_b}
-                        </span>
-                      </TableCell>
-                      
-                      {/* Gudang C */}
-                      <TableCell className="text-center border-r border-slate-100 dark:border-slate-800">
-                        <span className={`font-semibold ${p.stock_c < 10 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                          {p.stock_c}
-                        </span>
-                      </TableCell>
+                      {warehouses.map((wh) => {
+                        const stock = p.stockMap[wh.id] || 0;
+                        return (
+                          <TableCell key={wh.id} className="text-center border-l border-r border-indigo-50 dark:border-indigo-900/20 bg-indigo-50/30 dark:bg-indigo-900/5 group-hover:bg-indigo-50/80 dark:group-hover:bg-indigo-900/20">
+                            <span className={`font-semibold ${stock < 10 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                              {stock}
+                            </span>
+                          </TableCell>
+                        );
+                      })}
                       
                       {/* Total */}
                       <TableCell className="text-center">
