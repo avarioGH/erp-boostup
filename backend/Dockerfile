@@ -27,7 +27,7 @@ WORKDIR /usr/src/app
 
 # Install only production dependencies
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev && npm install -g prisma ts-node typescript
 
 # Copy built artifacts from the builder stage
 COPY --from=builder /usr/src/app/prisma ./prisma
