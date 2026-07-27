@@ -78,6 +78,7 @@ export function AppHeader() {
           
           <DropdownMenuItem 
             id="warehouse-pusat"
+            value="pusat"
             onClick={() => handleSelectWarehouse(null)}
             className={`cursor-pointer ${!activeWarehouse ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : ''}`}
           >
@@ -87,16 +88,17 @@ export function AppHeader() {
             </div>
           </DropdownMenuItem>
           
-          {warehouses.map((wh) => (
+          {warehouses?.map((wh, idx) => (
             <DropdownMenuItem 
-              id={`warehouse-${wh.id}`}
-              key={wh.id} 
+              id={`warehouse-${wh?.id || idx}`}
+              key={wh?.id || idx} 
+              value={wh?.id || `wh-${idx}`}
               onClick={() => handleSelectWarehouse(wh)}
-              className={`cursor-pointer ${activeWarehouse?.id === wh.id ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : ''}`}
+              className={`cursor-pointer ${activeWarehouse?.id === wh?.id ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : ''}`}
             >
               <div className="flex items-center justify-between w-full">
-                <span>{wh.name}</span>
-                {activeWarehouse?.id === wh.id && <Check className="w-4 h-4" />}
+                <span>{wh?.name || "Unknown"}</span>
+                {activeWarehouse?.id === wh?.id && <Check className="w-4 h-4" />}
               </div>
             </DropdownMenuItem>
           ))}
@@ -106,6 +108,7 @@ export function AppHeader() {
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 id="warehouse-manage"
+                value="manage"
                 onClick={() => router.push("/settings/warehouse")}
                 className="cursor-pointer text-indigo-600 dark:text-indigo-400 font-medium"
               >
