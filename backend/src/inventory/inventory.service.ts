@@ -120,10 +120,11 @@ export class InventoryService {
       unit = await this.prisma.unit.create({ data: { company_id: data.companyId, name: 'PCS' }});
     }
 
-    return this.prisma.product.create({
+    const product = await this.prisma.product.create({
       data: {
         company_id: data.companyId,
         code: data.code || `PRD-${Date.now()}`,
+        barcode: data.barcode || null,
         name: data.name,
         description: data.description,
         purchase_price: data.purchasePrice !== undefined ? String(data.purchasePrice) : '0',
@@ -132,6 +133,19 @@ export class InventoryService {
         category_id: data.categoryId || null
       }
     });
+
+    if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+      const imageRecords = data.images.map((imgUrl: string, idx: number) => ({
+        product_id: product.id,
+        image_url: imgUrl,
+        is_primary: idx === 0
+      }));
+      await this.prisma.productImage.createMany({
+        data: imageRecords
+      });
+    }
+
+    return product;
   }
 
   async createWarehouse(data: any) {

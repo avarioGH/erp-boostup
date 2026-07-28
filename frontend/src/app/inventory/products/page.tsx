@@ -21,13 +21,18 @@ import {
 } from "lucide-react"
 import { InventoryAPI } from "@/lib/api"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import imageCompression from "browser-image-compression"
+
+import { Upload, X, QrCode } from "lucide-react"
 
 export default function ProductInventory() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showForm, setShowForm] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({ 
-    code: "", name: "", purchasePrice: "", sellingPrice: "", description: "", categoryId: "" 
+    code: "", barcode: "", name: "", purchasePrice: "", sellingPrice: "", description: "", categoryId: "" 
   })
+  const [images, setImages] = useState<File[]>([])
   
   // Real DB States
   const [loading, setLoading] = useState(true)
@@ -77,24 +82,72 @@ export default function ProductInventory() {
     fetchData()
   }, [])
 
+  const generateSKU = () => {
+    const random = Math.floor(1000 + Math.random() * 9000);
+    setFormData({ ...formData, code: `PRD-${random}` });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files);
+    
+    // limit max 8
+    const remainingSlots = 8 - images.length;
+    const filesToProcess = files.slice(0, remainingSlots);
+
+    const options = {
+      maxSizeMB: 2,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+    };
+
+    try {
+      const compressedFiles = await Promise.all(
+        filesToProcess.map(async (file) => {
+          const compressedFile = await imageCompression(file, options);
+          return new File([compressedFile], file.name, { type: file.type });
+        })
+      );
+      setImages(prev => [...prev, ...compressedFiles]);
+    } catch (error) {
+      console.error("Error compressing images:", error);
+      alert("Gagal mengompres gambar.");
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
     try {
-      await InventoryAPI.createProduct({
-        code: formData.code,
-        name: formData.name,
-        purchasePrice: Number(formData.purchasePrice),
-        sellingPrice: Number(formData.sellingPrice),
-        description: formData.description,
-        categoryId: formData.categoryId
-      })
+      const payload = new FormData();
+      payload.append("code", formData.code);
+      payload.append("barcode", formData.barcode);
+      payload.append("name", formData.name);
+      payload.append("purchasePrice", formData.purchasePrice);
+      payload.append("sellingPrice", formData.sellingPrice);
+      payload.append("description", formData.description);
+      payload.append("categoryId", formData.categoryId);
+      
+      images.forEach((img) => {
+        payload.append("images", img);
+      });
+
+      await InventoryAPI.createProduct(payload)
       setShowForm(false)
-      setFormData({ code: "", name: "", purchasePrice: "", sellingPrice: "", description: "", categoryId: "" })
-      // Refetch products
+      setFormData({ code: "", barcode: "", name: "", purchasePrice: "", sellingPrice: "", description: "", categoryId: "" })
+      setImages([])
+      
+      // Refresh Data
       const dbProducts = await InventoryAPI.getProducts()
       const mapped = dbProducts.map((p: any) => {
         const stockMap: Record<string, number> = {}
-        p.warehouse_stocks?.forEach((ws: any) => { stockMap[ws.warehouse_id] = ws.current_stock })
+        p.warehouse_stocks?.forEach((ws: any) => {
+          stockMap[ws.warehouse_id] = ws.current_stock
+        })
         return {
           id: p.id,
           sku: p.code,
@@ -106,8 +159,10 @@ export default function ProductInventory() {
       })
       setProducts(mapped)
     } catch (error) {
-      console.error(error)
-      alert("Gagal menambahkan produk")
+      console.error("Failed to save product:", error)
+      alert("Gagal menyimpan produk.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -153,13 +208,32 @@ export default function ProductInventory() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>SKU / Kode Produk (Opsional)</Label>
-                <Input 
-                  placeholder="Misal: PRD-001" 
-                  value={formData.code} 
-                  onChange={(e) => setFormData({...formData, code: e.target.value})} 
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>SKU / Kode Produk</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="Misal: PRD-001" 
+                      value={formData.code} 
+                      onChange={(e) => setFormData({...formData, code: e.target.value})} 
+                    />
+                    <Button type="button" variant="secondary" onClick={generateSKU}>
+                      Generate
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Barcode (Opsional)</Label>
+                  <div className="flex relative">
+                    <QrCode className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      className="pl-9"
+                      placeholder="Scan atau ketik barcode" 
+                      value={formData.barcode} 
+                      onChange={(e) => setFormData({...formData, barcode: e.target.value})} 
+                    />
+                  </div>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Nama Produk <span className="text-red-500">*</span></Label>
@@ -217,9 +291,58 @@ export default function ProductInventory() {
                   onChange={(e) => setFormData({...formData, description: e.target.value})} 
                 />
               </div>
+
+              {/* Photo Upload Section */}
+              <div className="space-y-2 pt-2">
+                <Label>Foto Produk (Maks 8 Foto)</Label>
+                <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-6 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
+                  <input
+                    type="file"
+                    id="image-upload"
+                    multiple
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    disabled={images.length >= 8}
+                  />
+                  <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center gap-2">
+                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-full">
+                      <Upload className="w-6 h-6" />
+                    </div>
+                    <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Klik untuk unggah gambar (Maks {8 - images.length} lagi)
+                    </div>
+                    <div className="text-xs text-slate-500">Maks. 2MB per gambar (otomatis dikompres)</div>
+                  </label>
+                </div>
+                
+                {images.length > 0 && (
+                  <div className="grid grid-cols-4 gap-4 mt-4">
+                    {images.map((img, idx) => (
+                      <div key={idx} className="relative group rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 aspect-square">
+                        <img 
+                          src={URL.createObjectURL(img)} 
+                          alt={`Preview ${idx}`} 
+                          className="w-full h-full object-cover"
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Batal</Button>
-                <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700">Simpan Produk</Button>
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Batal</Button>
+                <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white" disabled={isSubmitting}>
+                  {isSubmitting ? "Menyimpan..." : "Simpan Produk"}
+                </Button>
               </div>
             </CardContent>
           </form>

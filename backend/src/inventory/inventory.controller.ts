@@ -1,4 +1,7 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards, Request, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { InventoryService } from './inventory.service';
 
@@ -18,9 +21,27 @@ export class InventoryController {
   }
 
   @Post('products')
-  async createProduct(@Request() req, @Body() data: any) {
+  @UseInterceptors(FilesInterceptor('images', 8, {
+    storage: diskStorage({
+      destination: './uploads/products',
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = extname(file.originalname);
+        cb(null, `${uniqueSuffix}${ext}`);
+      }
+    })
+  }))
+  async createProduct(
+    @Request() req, 
+    @Body() data: any,
+    @UploadedFiles() files: Express.Multer.File[]
+  ) {
     try {
+      // Add files array and company_id to data
       data.companyId = req.user.company_id || req.user.companyId;
+      if (files && files.length > 0) {
+        data.images = files.map(file => `/uploads/products/${file.filename}`);
+      }
       return await this.inventoryService.createProduct(data);
     } catch (error) {
       console.error('Error creating product:', error);
