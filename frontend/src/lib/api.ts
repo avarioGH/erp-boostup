@@ -92,6 +92,18 @@ export const FinanceAPI = {
   getSummary: async () => {
     const res = await api.get('/finance/summary');
     return res.data;
+  },
+  getProfitLossReport: async () => {
+    const res = await api.get('/finance/reports/profit-loss');
+    return res.data;
+  },
+  getCashFlowReport: async () => {
+    const res = await api.get('/finance/reports/cash-flow');
+    return res.data;
+  },
+  getBalanceSheetReport: async () => {
+    const res = await api.get('/finance/reports/balance-sheet');
+    return res.data;
   }
 };
 

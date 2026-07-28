@@ -169,4 +169,18 @@ export class FinanceController {
     };
     return this.financeService.createCashOut(dto);
   }
+  @Get('reports/profit-loss')
+  async getProfitLossReport(@Request() req) {
+    return this.financeService.getProfitLossReport(req.user.company_id);
+  }
+
+  @Get('reports/cash-flow')
+  async getCashFlowReport(@Request() req) {
+    return this.financeService.getCashFlowReport(req.user.company_id);
+  }
+
+  @Get('reports/balance-sheet')
+  async getBalanceSheetReport(@Request() req) {
+    return this.financeService.getBalanceSheetReport(req.user.company_id);
+  }
 }

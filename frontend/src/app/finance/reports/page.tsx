@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { 
   Card, CardContent, CardDescription, CardHeader, CardTitle 
 } from "@/components/ui/card"
@@ -48,7 +49,11 @@ export default function FinanceReports() {
               <span className="text-xs font-medium bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-600 dark:text-slate-300 flex items-center gap-1">
                 <Calendar className="w-3 h-3" /> Bulan Ini
               </span>
-              <Button variant="ghost" size="sm" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:bg-indigo-50">Lihat Detail &rarr;</Button>
+              <Link href="/finance/reports/profit-loss">
+                <Button variant="ghost" size="sm" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:bg-indigo-50">
+                  Lihat Detail &rarr;
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
@@ -70,7 +75,11 @@ export default function FinanceReports() {
               <span className="text-xs font-medium bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-600 dark:text-slate-300 flex items-center gap-1">
                 <Calendar className="w-3 h-3" /> Bulan Ini
               </span>
-              <Button variant="ghost" size="sm" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50">Lihat Detail &rarr;</Button>
+              <Link href="/finance/reports/cash-flow">
+                <Button variant="ghost" size="sm" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50">
+                  Lihat Detail &rarr;
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
@@ -92,7 +101,11 @@ export default function FinanceReports() {
               <span className="text-xs font-medium bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-600 dark:text-slate-300 flex items-center gap-1">
                 <Calendar className="w-3 h-3" /> Tahun Ini
               </span>
-              <Button variant="ghost" size="sm" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:bg-blue-50">Lihat Detail &rarr;</Button>
+              <Link href="/finance/reports/balance-sheet">
+                <Button variant="ghost" size="sm" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:bg-blue-50">
+                  Lihat Detail &rarr;
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>

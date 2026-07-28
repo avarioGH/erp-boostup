@@ -270,4 +270,133 @@ export class FinanceService {
       return reversedTx;
     });
   }
+
+  // --- FINANCIAL REPORTS AGGREGATION ---
+
+  async getProfitLossReport(companyId: string) {
+    const transactions = await this.prisma.financeTransaction.findMany({
+      where: {
+        company_id: companyId,
+        status: { in: ['Approved', 'COMPLETED'] }
+      },
+      include: { items: { include: { category: true } } }
+    });
+
+    const incomeMap = new Map<string, number>();
+    const expenseMap = new Map<string, number>();
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    for (const tx of transactions) {
+      if (tx.transaction_type === 'Cash In' || tx.transaction_type === 'Income') {
+        for (const item of tx.items) {
+          const val = Number(item.amount);
+          const catName = item.category ? item.category.name : 'Lainnya';
+          totalIncome += val;
+          incomeMap.set(catName, (incomeMap.get(catName) || 0) + val);
+        }
+      } else if (tx.transaction_type === 'Cash Out' || tx.transaction_type === 'Expense') {
+        for (const item of tx.items) {
+          const val = Number(item.amount);
+          const catName = item.category ? item.category.name : 'Lainnya';
+          totalExpense += val;
+          expenseMap.set(catName, (expenseMap.get(catName) || 0) + val);
+        }
+      }
+    }
+
+    return {
+      revenue: Array.from(incomeMap.entries()).map(([name, amount]) => ({ name, amount })),
+      expenses: Array.from(expenseMap.entries()).map(([name, amount]) => ({ name, amount })),
+      totalRevenue: totalIncome,
+      totalExpenses: totalExpense,
+      netProfit: totalIncome - totalExpense
+    };
+  }
+
+  async getCashFlowReport(companyId: string) {
+    const transactions = await this.prisma.financeTransaction.findMany({
+      where: {
+        company_id: companyId,
+        status: { in: ['Approved', 'COMPLETED'] }
+      },
+      orderBy: { transaction_date: 'asc' }
+    });
+
+    let totalInflow = 0;
+    let totalOutflow = 0;
+    const cashInflows: any[] = [];
+    const cashOutflows: any[] = [];
+
+    for (const tx of transactions) {
+      const val = Number(tx.total_amount);
+      if (tx.transaction_type === 'Cash In' || tx.transaction_type === 'Income') {
+        totalInflow += val;
+        cashInflows.push({
+          date: tx.transaction_date,
+          description: tx.description || 'Penerimaan',
+          amount: val
+        });
+      } else if (tx.transaction_type === 'Cash Out' || tx.transaction_type === 'Expense') {
+        totalOutflow += val;
+        cashOutflows.push({
+          date: tx.transaction_date,
+          description: tx.description || 'Pengeluaran',
+          amount: val
+        });
+      }
+    }
+
+    return {
+      cashInflows,
+      cashOutflows,
+      totalInflow,
+      totalOutflow,
+      netCashFlow: totalInflow - totalOutflow
+    };
+  }
+
+  async getBalanceSheetReport(companyId: string) {
+    // 1. Calculate Cash Balance
+    const cashAccounts = await this.prisma.cashAccount.findMany({
+      where: { company_id: companyId }
+    });
+    const totalCash = cashAccounts.reduce((sum, acc) => sum + Number(acc.current_balance), 0);
+
+    // 2. Calculate Inventory Value
+    const stocks = await this.prisma.warehouseStock.findMany({
+      where: { company_id: companyId },
+      include: { product: true }
+    });
+    const inventoryValue = stocks.reduce((sum, stock) => sum + (stock.current_stock * Number(stock.product.purchase_price)), 0);
+
+    // 3. Asset Master Value (If Asset module is active)
+    const fixedAssets = await this.prisma.assetMaster.findMany({
+      where: { company_id: companyId }
+    });
+    const fixedAssetValue = fixedAssets.reduce((sum, asset) => sum + Number(asset.purchase_price), 0);
+
+    const totalAssets = totalCash + inventoryValue + fixedAssetValue;
+    
+    // For MVP, Liabilities = 0, Equity = Assets - Liabilities
+    const totalLiabilities = 0;
+    const totalEquity = totalAssets;
+
+    return {
+      assets: [
+        { name: 'Kas & Bank', amount: totalCash },
+        { name: 'Persediaan Barang', amount: inventoryValue },
+        { name: 'Aset Tetap', amount: fixedAssetValue }
+      ],
+      liabilities: [
+        { name: 'Hutang Dagang', amount: 0 }
+      ],
+      equity: [
+        { name: 'Modal Pemilik', amount: totalEquity }
+      ],
+      totalAssets,
+      totalLiabilities,
+      totalEquity
+    };
+  }
 }
