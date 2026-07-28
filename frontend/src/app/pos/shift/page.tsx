@@ -50,12 +50,18 @@ export default function PosShiftPage() {
 
       if (!shiftRes.data && whRes.data.length > 0) {
         const storedActive = localStorage.getItem("active_warehouse")
-        if (storedActive) {
-          const parsed = JSON.parse(storedActive)
-          setOpenFormData(prev => ({ ...prev, warehouseId: parsed.id }))
-        } else {
-          setOpenFormData(prev => ({ ...prev, warehouseId: whRes.data[0].id }))
+        if (storedActive && storedActive !== "undefined" && storedActive !== "null") {
+          try {
+            const parsed = JSON.parse(storedActive)
+            if (parsed && parsed.id) {
+              setOpenFormData(prev => ({ ...prev, warehouseId: parsed.id }))
+              return
+            }
+          } catch (e) {
+            console.error(e)
+          }
         }
+        setOpenFormData(prev => ({ ...prev, warehouseId: whRes.data[0].id }))
       }
     } catch (err) {
       console.error(err)
