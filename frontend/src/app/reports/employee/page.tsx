@@ -33,18 +33,7 @@ export default function EmployeeReportPage() {
       
       let data = res.data
       
-      // MOCK DATA FALLBACK (Jika belum ada data Karyawan di DB)
-      if (data.length === 0) {
-        data = [
-          { department: 'Penjualan & Kasir', status: 'Aktif', role: 'Staff' },
-          { department: 'Penjualan & Kasir', status: 'Aktif', role: 'Staff' },
-          { department: 'Penjualan & Kasir', status: 'Cuti', role: 'Manager' },
-          { department: 'Gudang & Logistik', status: 'Aktif', role: 'Staff' },
-          { department: 'Gudang & Logistik', status: 'Aktif', role: 'Staff' },
-          { department: 'Keuangan', status: 'Aktif', role: 'Manager' },
-          { department: 'HR & Admin', status: 'Aktif', role: 'Staff' },
-        ]
-      }
+      // MOCK DATA FALLBACK REMOVED
 
       setTotalEmployees(data.length)
 

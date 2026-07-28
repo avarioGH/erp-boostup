@@ -75,7 +75,7 @@ export default function PosTransaction() {
       } catch (error) {
         console.error("Database connection failed:", error)
         setIsError(true)
-        setProducts(fallbackProducts) // Fallback for UI mapping
+        setProducts([]) // No dummy data
       } finally {
         setLoading(false)
       }

@@ -31,7 +31,7 @@ export default function AIFinanceAnalysisPage() {
       ])
       
       const totalBalance = (accRes.cashInHand || 0) + (accRes.cashInBank || 0);
-      runAIAnalysis(txRes, totalBalance || 150000000) // Fallback to mock balance if 0 to show some analysis
+      runAIAnalysis(txRes, totalBalance || 0)
 
     } catch (err) {
       console.error(err)

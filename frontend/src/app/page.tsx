@@ -344,12 +344,10 @@ export default function OwnerDashboard() {
           </CardHeader>
           <CardContent className="p-0 flex-1">
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {[
-                { name: "Kopi Arabica Premium 1Kg", qty: 245, revenue: 36750000 },
-                { name: "Susu UHT Full Cream 1L", qty: 890, revenue: 17800000 },
-                { name: "Sirup Caramel Monin", qty: 124, revenue: 14880000 },
-                { name: "Gelas Kertas 8oz", qty: 3500, revenue: 5250000 },
-              ].map((item, i) => (
+              {(kpi?.topProducts || []).length === 0 && (
+                <div className="text-center text-slate-500 py-6 text-sm">Belum ada data penjualan.</div>
+              )}
+              {(kpi?.topProducts || []).map((item: any, i: number) => (
                 <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                   <div>
                     <p className="font-medium text-sm text-slate-900 dark:text-white">{item.name}</p>

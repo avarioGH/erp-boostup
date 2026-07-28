@@ -22,45 +22,6 @@ import {
 import { InventoryAPI } from "@/lib/api"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-// Mock Data Fallback
-const fallbackProducts = [
-  { 
-    id: 1, sku: "KOP-001", name: "Kopi Arabica Premium 1Kg", category: "Biji Kopi", 
-    price: 120000, 
-    stock_a: 120, stock_b: 53, stock_c: 80 
-  },
-  { 
-    id: 2, sku: "KOP-002", name: "Biji Kopi Robusta 1Kg", category: "Biji Kopi", 
-    price: 90000, 
-    stock_a: 12, stock_b: 45, stock_c: 30 
-  },
-  { 
-    id: 3, sku: "SYR-001", name: "Sirup Caramel Monin 700ml", category: "Sirup & Perasa", 
-    price: 185000, 
-    stock_a: 24, stock_b: 15, stock_c: 40 
-  },
-  { 
-    id: 4, sku: "PKG-001", name: "Gelas Kertas 8oz", category: "Kemasan", 
-    price: 1500, 
-    stock_a: 3500, stock_b: 1200, stock_c: 5000 
-  },
-  { 
-    id: 5, sku: "PKG-002", name: "Cup Lid Sealer", category: "Kemasan", 
-    price: 50000, 
-    stock_a: 15, stock_b: 5, stock_c: 20 
-  },
-  { 
-    id: 6, sku: "MTL-001", name: "Sedotan Ramah Lingkungan", category: "Peralatan", 
-    price: 25000, 
-    stock_a: 80, stock_b: 100, stock_c: 150 
-  },
-  { 
-    id: 7, sku: "SYR-002", name: "Gula Aren Cair 1L", category: "Sirup & Perasa", 
-    price: 45000, 
-    stock_a: 40, stock_b: 25, stock_c: 2 
-  },
-]
-
 export default function ProductInventory() {
   const [searchQuery, setSearchQuery] = useState("")
   const [showForm, setShowForm] = useState(false)
