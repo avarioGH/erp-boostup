@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "./theme-toggle"
 import { 
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
+  DropdownMenuSeparator, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
 
@@ -73,7 +73,7 @@ export function AppHeader() {
           <ChevronDown className="w-4 h-4 text-slate-400 ml-1" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel>Pilih Lokasi Kerja</DropdownMenuLabel>
+          <div className="px-2 py-1.5 text-sm font-semibold text-slate-900 dark:text-white">Pilih Lokasi Kerja</div>
           <DropdownMenuSeparator />
           
           <DropdownMenuItem 
