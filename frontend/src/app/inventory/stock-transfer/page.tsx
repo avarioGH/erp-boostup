@@ -50,12 +50,18 @@ export default function StockTransferPage() {
       // Auto select first warehouse if available
       if (whRes.data.length > 0) {
         const storedActive = localStorage.getItem("active_warehouse")
-        if (storedActive) {
-          const parsed = JSON.parse(storedActive)
-          setFormData(prev => ({ ...prev, sourceWarehouseId: parsed.id }))
-        } else {
-          setFormData(prev => ({ ...prev, sourceWarehouseId: whRes.data[0].id }))
+        if (storedActive && storedActive !== "undefined" && storedActive !== "null") {
+          try {
+            const parsed = JSON.parse(storedActive)
+            if (parsed && parsed.id) {
+              setFormData(prev => ({ ...prev, sourceWarehouseId: parsed.id }))
+              return
+            }
+          } catch (e) {
+            console.error(e)
+          }
         }
+        setFormData(prev => ({ ...prev, sourceWarehouseId: whRes.data[0].id }))
       }
     } catch (err) {
       console.error("Gagal mengambil data referensi", err)
