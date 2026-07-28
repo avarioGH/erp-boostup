@@ -89,8 +89,18 @@ export class InventoryService {
   }
 
   async deleteWarehouse(id: string) {
-    return this.prisma.warehouse.delete({
-      where: { id }
+    return this.prisma.$transaction(async (tx) => {
+      // Delete access records first due to foreign key constraints
+      await tx.userWarehouseAccess.deleteMany({
+        where: { warehouse_id: id }
+      });
+      // Delete warehouse stocks
+      await tx.warehouseStock.deleteMany({
+        where: { warehouse_id: id }
+      });
+      return tx.warehouse.delete({
+        where: { id }
+      });
     });
   }
 
