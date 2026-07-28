@@ -60,6 +60,7 @@ const items: MenuItem[] = [
       { title: "Stok Masuk", url: "/inventory/stock-in" },
       { title: "Stok Keluar", url: "/inventory/stock-out" },
       { title: "Transfer Gudang", url: "/inventory/stock-transfer" },
+      { title: "Riwayat Pergerakan", url: "/inventory/movements" },
       { title: "Penyesuaian Stok", url: "/inventory/stock-adjustment" },
       { title: "Laporan Stok", url: "/inventory/reports" }
     ]

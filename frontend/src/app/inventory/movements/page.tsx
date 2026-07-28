@@ -1,44 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, ArrowDown, ArrowUp } from "lucide-react"
+import { ArrowDownRight, ArrowUpRight, Search, Activity, RefreshCcw, Package } from "lucide-react"
+import { api } from "@/lib/api"
 
 export default function MovementsPage() {
   const [transactions, setTransactions] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
-  const [warehouses, setWarehouses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [type, setType] = useState<"inbound" | "outbound">("inbound")
-  const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
-  
-  // Form Data
-  const [warehouseId, setWarehouseId] = useState("")
-  const [productId, setProductId] = useState("")
-  const [qty, setQty] = useState("")
-  const [unitCost, setUnitCost] = useState("")
-  const [notes, setNotes] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
 
   const fetchData = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem("erp_token")
-      
-      const [tRes, pRes, wRes] = await Promise.all([
-        fetch("http://194.233.85.181:3001/inventory/transactions", { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch("http://194.233.85.181:3001/inventory/products", { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch("http://194.233.85.181:3001/inventory/warehouses", { headers: { "Authorization": `Bearer ${token}` } })
-      ])
-      
-      if (tRes.ok) setTransactions(await tRes.json())
-      if (pRes.ok) setProducts(await pRes.json())
-      if (wRes.ok) setWarehouses(await wRes.json())
+      const res = await api.get('/inventory/transactions')
+      setTransactions(res.data)
     } catch (e) {
       console.error(e)
     } finally {
@@ -50,175 +28,118 @@ export default function MovementsPage() {
     fetchData()
   }, [])
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      const token = localStorage.getItem("erp_token")
-      const endpoint = type === "inbound" ? "inbound" : "outbound"
-      
-      const res = await fetch(`http://194.233.85.181:3001/inventory/${endpoint}`, {
-        method: "POST",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          warehouseId,
-          notes,
-          items: [{
-            productId,
-            qty: Number(qty),
-            unitCost: Number(unitCost)
-          }]
-        })
-      })
-      
-      if (res.ok) {
-        setShowForm(false)
-        setWarehouseId("")
-        setProductId("")
-        setQty("")
-        setUnitCost("")
-        setNotes("")
-        fetchData()
-      } else {
-        const err = await res.json()
-        alert(err.message || "Failed to save transaction")
-      }
-    } catch (e) {
-      console.error(e)
+  const filteredTransactions = transactions.filter(t => 
+    t.transaction_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.notes?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const getTypeStyle = (type: string) => {
+    switch(type) {
+      case 'IN': return { icon: ArrowDownRight, color: "text-emerald-500", bg: "bg-emerald-100 dark:bg-emerald-900/30", label: "Masuk" }
+      case 'OUT': return { icon: ArrowUpRight, color: "text-rose-500", bg: "bg-rose-100 dark:bg-rose-900/30", label: "Keluar" }
+      case 'TRANSFER': return { icon: RefreshCcw, color: "text-blue-500", bg: "bg-blue-100 dark:bg-blue-900/30", label: "Transfer" }
+      case 'ADJUSTMENT': return { icon: Activity, color: "text-amber-500", bg: "bg-amber-100 dark:bg-amber-900/30", label: "Penyesuaian" }
+      default: return { icon: Package, color: "text-slate-500", bg: "bg-slate-100 dark:bg-slate-800", label: type }
     }
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Stock Movements</h1>
-          <p className="text-muted-foreground">Manage inbound and outbound inventory.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => { setType("inbound"); setShowForm(true) }} className="bg-emerald-600 hover:bg-emerald-700">
-            <ArrowDown className="mr-2 h-4 w-4" /> Stock In
-          </Button>
-          <Button onClick={() => { setType("outbound"); setShowForm(true) }} variant="destructive">
-            <ArrowUp className="mr-2 h-4 w-4" /> Stock Out
-          </Button>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Riwayat Pergerakan Stok</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Pantau semua barang masuk, keluar, transfer, dan penyesuaian di setiap gudang.</p>
         </div>
       </div>
 
-      {showForm && (
-        <Card className={type === "inbound" ? "border-emerald-500/50" : "border-rose-500/50"}>
-          <form onSubmit={handleSave}>
-            <CardHeader>
-              <CardTitle>{type === "inbound" ? "Stock In (Restock)" : "Stock Out (Usage)"}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Warehouse</Label>
-                  <Select value={warehouseId} onValueChange={(val) => setWarehouseId(val || "")} required>
-                    <SelectTrigger><SelectValue placeholder="Select Warehouse" /></SelectTrigger>
-                    <SelectContent>
-                      {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Product</Label>
-                  <Select value={productId} onValueChange={(val) => setProductId(val || "")} required>
-                    <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
-                    <SelectContent>
-                      {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Quantity</Label>
-                  <Input type="number" min="1" value={qty} onChange={(e) => setQty(e.target.value)} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Unit Cost / Value</Label>
-                  <Input type="number" min="0" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} required />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Notes</Label>
-                <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
-              </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
-                <Button type="submit">Submit</Button>
-              </div>
-            </CardContent>
-          </form>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Transactions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
-          ) : transactions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No transactions found.</p>
-          ) : (
-            <div className="border rounded-md">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="p-3 text-left font-medium">Tx No</th>
-                    <th className="p-3 text-left font-medium">Date</th>
-                    <th className="p-3 text-left font-medium">Type</th>
-                    <th className="p-3 text-left font-medium">Warehouse</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((t) => (
-                    <tr key={t.id} className="border-b last:border-0 hover:bg-muted/50">
-                      <td className="p-3 font-medium">{t.transaction_no}</td>
-                      <td className="p-3 text-muted-foreground">{new Date(t.transaction_date).toLocaleDateString()}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${t.transaction_type === 'IN' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'}`}>
-                          {t.transaction_type}
-                        </span>
-                      </td>
-                      <td className="p-3">{t.warehouse?.name}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
+        <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle>Daftar Transaksi Gudang</CardTitle>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input 
+                placeholder="Cari no referensi atau catatan..." 
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
-          )}
-          
-          {/* Pagination Controls */}
-          {transactions.length > itemsPerPage && (
-            <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-              <div>
-                Showing {Math.min((currentPage - 1) * itemsPerPage + 1, transactions.length)} to {Math.min(currentPage * itemsPerPage, transactions.length)} of {transactions.length} entries
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(transactions.length / itemsPerPage)))}
-                  disabled={currentPage === Math.ceil(transactions.length / itemsPerPage)}
-                >
-                  Next
-                </Button>
-              </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-8 text-center text-slate-500">Memuat riwayat pergerakan stok...</div>
+          ) : filteredTransactions.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">
+              <Package className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+              Belum ada riwayat pergerakan stok.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
+                  <TableRow>
+                    <TableHead>Tipe & No. Ref</TableHead>
+                    <TableHead>Waktu</TableHead>
+                    <TableHead>Gudang</TableHead>
+                    <TableHead>Detail Barang</TableHead>
+                    <TableHead>Catatan</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTransactions.map(t => {
+                    const style = getTypeStyle(t.transaction_type)
+                    const Icon = style.icon
+                    return (
+                      <TableRow key={t.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-lg ${style.bg}`}>
+                              <Icon className={`w-5 h-5 ${style.color}`} />
+                            </div>
+                            <div>
+                              <div className="font-bold text-slate-900 dark:text-slate-100">{style.label}</div>
+                              <div className="text-xs text-slate-500">{t.transaction_no}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {new Intl.DateTimeFormat('id-ID', {
+                            dateStyle: 'medium',
+                            timeStyle: 'short'
+                          }).format(new Date(t.transaction_date))}
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{t.warehouse?.name || '-'}</div>
+                          {t.target_warehouse && (
+                            <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                              <span>→</span> {t.target_warehouse.name}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {t.items?.map((item: any, idx: number) => (
+                              <div key={idx} className="text-sm flex justify-between gap-4 border-b border-slate-100 dark:border-slate-800 last:border-0 pb-1 last:pb-0">
+                                <span className="truncate max-w-[200px]" title={item.product?.name}>
+                                  {item.product?.name || 'Produk Dihapus'}
+                                </span>
+                                <span className="font-semibold whitespace-nowrap">
+                                  {t.transaction_type === 'OUT' ? '-' : '+'}{item.qty} {item.product?.unit?.name || 'PCS'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-slate-500 max-w-[200px] truncate" title={t.notes}>
+                          {t.notes || '-'}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
