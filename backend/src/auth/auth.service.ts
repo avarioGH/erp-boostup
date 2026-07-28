@@ -46,6 +46,7 @@ export class AuthService {
         username: user.username,
         name: user.name,
         role: user.role?.name || 'User',
+        accessible_modules: user.accessible_modules || [],
         accessible_warehouses: user.warehouse_accesses?.map((wa: any) => ({
           id: wa.warehouse.id,
           name: wa.warehouse.name,

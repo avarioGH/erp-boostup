@@ -8,9 +8,22 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Users, Shield, Plus, Key, Building2, UserPlus, Save, AlertCircle, CheckCircle2 } from "lucide-react"
+import { 
+  Building2, Users, Save, Plus, Shield, UserPlus, 
+  Trash2, AlertCircle, Key, CheckCircle2, LayoutDashboard
+} from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import { api } from "@/lib/api"
 import Link from "next/link"
+
+const AVAILABLE_MODULES = [
+  { id: 'inventory', name: 'Inventaris & Gudang' },
+  { id: 'pos', name: 'Kasir (POS)' },
+  { id: 'finance', name: 'Keuangan' },
+  { id: 'hr', name: 'HR & Absensi' },
+  { id: 'crm', name: 'CRM & Pelanggan' },
+  { id: 'reports', name: 'Laporan (Reports)' }
+];
 
 export default function UsersSettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -27,7 +40,8 @@ export default function UsersSettingsPage() {
     name: "",
     email: "",
     password: "",
-    warehouse_ids: [] as string[]
+    warehouse_ids: [] as string[],
+    modules: [] as string[]
   })
 
   useEffect(() => {
@@ -53,11 +67,20 @@ export default function UsersSettingsPage() {
 
   const handleToggleWarehouse = (whId: string) => {
     setFormData(prev => {
-      const exists = prev.warehouse_ids.includes(whId)
-      if (exists) {
+      if (prev.warehouse_ids.includes(whId)) {
         return { ...prev, warehouse_ids: prev.warehouse_ids.filter(id => id !== whId) }
       } else {
         return { ...prev, warehouse_ids: [...prev.warehouse_ids, whId] }
+      }
+    })
+  }
+
+  const handleToggleModule = (moduleId: string) => {
+    setFormData(prev => {
+      if (prev.modules.includes(moduleId)) {
+        return { ...prev, modules: prev.modules.filter(id => id !== moduleId) }
+      } else {
+        return { ...prev, modules: [...prev.modules, moduleId] }
       }
     })
   }
@@ -80,7 +103,7 @@ export default function UsersSettingsPage() {
       fetchData()
       
       // Reset form
-      setFormData({ username: "", name: "", email: "", password: "", warehouse_ids: [] })
+      setFormData({ username: "", name: "", email: "", password: "", warehouse_ids: [], modules: [] })
       setTimeout(() => setSuccess(""), 4000)
     } catch (err: any) {
       setError(err.response?.data?.message || "Gagal membuat pengguna. Pastikan Anda login sebagai Owner.")
@@ -203,6 +226,24 @@ export default function UsersSettingsPage() {
                       ))
                     )}
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h3 className="font-semibold text-lg border-b pb-2 flex items-center gap-2"><LayoutDashboard className="w-4 h-4 text-emerald-500"/> Hak Akses Modul Aplikasi</h3>
+                <p className="text-sm text-slate-500">Pilih modul (menu) yang boleh diakses oleh staf ini. Jika tidak dicentang, menu tersebut akan disembunyikan.</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {AVAILABLE_MODULES.map(mod => (
+                    <div key={mod.id} className="flex flex-row items-center space-x-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                      <Checkbox 
+                        id={`mod-${mod.id}`} 
+                        checked={formData.modules.includes(mod.id)}
+                        onCheckedChange={() => handleToggleModule(mod.id)}
+                      />
+                      <Label htmlFor={`mod-${mod.id}`} className="font-medium cursor-pointer flex-1">{mod.name}</Label>
+                    </div>
+                  ))}
                 </div>
               </div>
 

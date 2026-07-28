@@ -1,6 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import { useState, useEffect } from "react"
 import {
   Sidebar,
   SidebarContent,
@@ -30,6 +31,7 @@ type MenuItem = {
   icon: any;
   subItems?: { title: string; url: string; badge?: string }[];
   badge?: string;
+  id?: string;
 }
 
 const items: MenuItem[] = [
@@ -38,6 +40,7 @@ const items: MenuItem[] = [
     title: "Keuangan", 
     url: "/finance", 
     icon: Calculator,
+    id: "finance",
     subItems: [
       { title: "Dashboard Keuangan", url: "/finance" },
       { title: "Kas & Bank", url: "/finance/cash" },
@@ -51,6 +54,7 @@ const items: MenuItem[] = [
     title: "Inventaris", 
     url: "/inventory", 
     icon: Box,
+    id: "inventory",
     subItems: [
       { title: "Produk", url: "/inventory/products" },
       { title: "Stok Masuk", url: "/inventory/stock-in" },
@@ -64,6 +68,7 @@ const items: MenuItem[] = [
     title: "POS (Kasir)", 
     url: "/pos", 
     icon: ShoppingCart,
+    id: "pos",
     subItems: [
       { title: "Kasir POS", url: "/pos/new-transaction" },
       { title: "Riwayat Penjualan", url: "/pos/order-history" },
@@ -74,10 +79,22 @@ const items: MenuItem[] = [
     title: "Pelanggan", 
     url: "/customers", 
     icon: Users,
+    id: "crm",
     subItems: [
       { title: "Pelanggan", url: "/customers/list" },
       { title: "Loyalty & Poin", url: "/customers/loyalty" },
       { title: "Voucher", url: "/customers/voucher" }
+    ]
+  },
+  {
+    title: "HR & Absensi",
+    url: "/hr",
+    icon: UserCheck,
+    id: "hr",
+    subItems: [
+      { title: "Absensi", url: "/hr/attendance" },
+      { title: "Pegawai", url: "/hr/employees" },
+      { title: "Shift", url: "/hr/shift" }
     ]
   },
   { 
@@ -96,6 +113,7 @@ const items: MenuItem[] = [
     title: "Laporan", 
     url: "/reports", 
     icon: BarChart3,
+    id: "reports",
     subItems: [
       { title: "Penjualan", url: "/reports/sales" },
       { title: "Keuangan", url: "/reports/finance" },
@@ -106,14 +124,26 @@ const items: MenuItem[] = [
 ]
 
 const settings: MenuItem[] = [
-  { title: "Pengguna & Role", url: "/settings/users", icon: UserCheck },
-  { title: "Pengaturan Sistem", url: "/settings/company", icon: Settings },
-  { title: "Audit Log", url: "/monitoring/audit-log", icon: ShieldAlert },
+  { title: "Pengguna & Role", url: "/settings/users", icon: UserCheck, id: "settings" },
+  { title: "Pengaturan Sistem", url: "/settings/company", icon: Settings, id: "settings" },
+  { title: "Audit Log", url: "/monitoring/audit-log", icon: ShieldAlert, id: "settings" },
 ]
 
 export function AppSidebar() {
   const pathname = usePathname()
   const { t } = useLanguage()
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem("erp_user")
+      if (stored) {
+        try {
+          setUser(JSON.parse(stored))
+        } catch(e) {}
+      }
+    }
+  }, [])
 
   const isActive = (url: string) => {
     if (url === "/" && pathname !== "/") return false
@@ -134,7 +164,10 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mt-4 mb-2 px-2">Core Modules</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-1.5">
-              {items.map((item) => {
+              {items.filter(item => {
+                if (!item.id || user?.role === 'Owner') return true;
+                return user?.accessible_modules?.includes(item.id);
+              }).map((item) => {
                 const active = isActive(item.url)
                 return (
                   <SidebarMenuItem key={item.title}>
@@ -192,7 +225,10 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-2 px-2">Pengaturan</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="gap-1.5">
-              {settings.map((item) => {
+              {settings.filter(item => {
+                if (!item.id || user?.role === 'Owner') return true;
+                return user?.accessible_modules?.includes(item.id);
+              }).map((item) => {
                 const active = isActive(item.url)
                 return (
                   <SidebarMenuItem key={item.title}>

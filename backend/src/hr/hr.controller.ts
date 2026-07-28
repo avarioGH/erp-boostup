@@ -39,6 +39,11 @@ export class HrController {
     return this.hrService.createAttendance(data);
   }
 
+  @Post('attendance/clock')
+  async clockAttendance(@Request() req, @Body() data: { employee_code: string, timestamp?: string }) {
+    return this.hrService.clockAttendance(req.user.company_id, data);
+  }
+
   @Get('payroll')
   async getPayrolls(@Request() req) {
     return this.hrService.getPayrolls(req.user.company_id);

@@ -73,6 +73,59 @@ export class HrService {
     });
   }
 
+  async clockAttendance(companyId: string, data: { employee_code: string, timestamp?: string }) {
+    // Cari pegawai berdasarkan employee_code dan company_id
+    const employee = await this.prisma.employee.findUnique({
+      where: {
+        company_id_employee_code: {
+          company_id: companyId,
+          employee_code: data.employee_code
+        }
+      }
+    });
+
+    if (!employee) {
+      throw new Error("Employee not found");
+    }
+
+    const clockTime = data.timestamp ? new Date(data.timestamp) : new Date();
+    // Gunakan tanggal tanpa jam sebagai kunci pencarian hari ini
+    const todayStr = clockTime.toISOString().split('T')[0];
+    const startDate = new Date(todayStr + "T00:00:00.000Z");
+    const endDate = new Date(todayStr + "T23:59:59.999Z");
+
+    const existingAttendance = await this.prisma.attendance.findFirst({
+      where: {
+        employee_id: employee.id,
+        date: {
+          gte: startDate,
+          lte: endDate,
+        }
+      }
+    });
+
+    if (existingAttendance) {
+      // Jika sudah check-in, anggap ini check-out
+      return this.prisma.attendance.update({
+        where: { id: existingAttendance.id },
+        data: {
+          check_out: clockTime,
+          status: 'PRESENT', // update status as needed
+        }
+      });
+    } else {
+      // Belum ada data hari ini, berarti check-in
+      return this.prisma.attendance.create({
+        data: {
+          employee_id: employee.id,
+          date: clockTime,
+          status: 'PRESENT', // default
+          check_in: clockTime,
+        }
+      });
+    }
+  }
+
   // Payroll
   async getPayrolls(companyId: string) {
     return this.prisma.payroll.findMany({

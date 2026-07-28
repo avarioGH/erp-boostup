@@ -1,165 +1,163 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { Plus } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Clock, Fingerprint, UserCheck } from "lucide-react"
+import { api } from "@/lib/api"
 
-export default function AttendancePage() {
+export default function HrAttendance() {
   const [attendances, setAttendances] = useState<any[]>([])
-  const [employees, setEmployees] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  
-  // Form Data
-  const [employeeId, setEmployeeId] = useState("")
-  const [status, setStatus] = useState("PRESENT")
+  const [processing, setProcessing] = useState(false)
+  const [employeeCode, setEmployeeCode] = useState("")
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
 
-  const fetchData = async () => {
+  const fetchAttendances = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem("erp_token")
-      
-      const [attRes, empRes] = await Promise.all([
-        fetch("http://194.233.85.181:3001/hr/attendance", { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch("http://194.233.85.181:3001/hr/employees", { headers: { "Authorization": `Bearer ${token}` } })
-      ])
-      
-      if (attRes.ok) setAttendances(await attRes.json())
-      if (empRes.ok) setEmployees(await empRes.json())
-    } catch (e) {
-      console.error(e)
+      const res = await api.get('/hr/attendance')
+      setAttendances(res.data)
+    } catch (err) {
+      console.error(err)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchData()
+    fetchAttendances()
   }, [])
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleManualClock = async (e: React.FormEvent) => {
     e.preventDefault()
+    setProcessing(true)
+    setError("")
+    setSuccess("")
+    
     try {
-      const token = localStorage.getItem("erp_token")
-      const res = await fetch("http://194.233.85.181:3001/hr/attendance", {
-        method: "POST",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          employeeId,
-          date: new Date().toISOString(),
-          status,
-          checkIn: new Date().toISOString()
-        })
-      })
-      if (res.ok) {
-        setShowForm(false)
-        setEmployeeId("")
-        setStatus("PRESENT")
-        fetchData()
-      }
-    } catch (e) {
-      console.error(e)
+      await api.post('/hr/attendance/clock', { employee_code: employeeCode })
+      setSuccess(`Berhasil clock-in/out untuk ${employeeCode}`)
+      setEmployeeCode("")
+      fetchAttendances()
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Gagal melakukan absensi. Pastikan kode pegawai benar.")
+    } finally {
+      setProcessing(false)
     }
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Attendance</h1>
-          <p className="text-muted-foreground">Track employee presence and absences.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Absensi Pegawai</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Pantau kehadiran harian dan integrasi mesin biometrik (Fingerprint).</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Log Attendance
-        </Button>
       </div>
 
-      {showForm && (
-        <Card>
-          <form onSubmit={handleSave}>
-            <CardHeader>
-              <CardTitle>Log Today's Attendance</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Employee</Label>
-                  <Select value={employeeId} onValueChange={(val) => setEmployeeId(val || "")} required>
-                    <SelectTrigger><SelectValue placeholder="Select Employee" /></SelectTrigger>
-                    <SelectContent>
-                      {employees.map(e => <SelectItem key={e.id} value={e.id}>{e.first_name} {e.last_name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select value={status} onValueChange={(val) => setStatus(val || "")} required>
-                    <SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PRESENT">Present</SelectItem>
-                      <SelectItem value="LATE">Late</SelectItem>
-                      <SelectItem value="SICK">Sick</SelectItem>
-                      <SelectItem value="LEAVE">Leave</SelectItem>
-                      <SelectItem value="ABSENT">Absent</SelectItem>
-                    </SelectContent>
-                  </Select>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="col-span-1 md:col-span-1 border-slate-200 dark:border-slate-800 shadow-sm border-t-4 border-t-indigo-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Fingerprint className="w-5 h-5 text-indigo-500" />
+              Clock In / Clock Out Manual
+            </CardTitle>
+            <CardDescription>
+              Simulasi absen manual jika mesin biometrik bermasalah atau untuk staf remote.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleManualClock} className="space-y-4">
+              {error && <div className="text-sm text-rose-500 p-2 bg-rose-50 dark:bg-rose-900/30 rounded">{error}</div>}
+              {success && <div className="text-sm text-emerald-500 p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded">{success}</div>}
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Kode Pegawai</label>
+                <div className="relative">
+                  <UserCheck className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Input 
+                    required 
+                    placeholder="Contoh: EMP-12345" 
+                    value={employeeCode}
+                    onChange={(e) => setEmployeeCode(e.target.value)}
+                    className="pl-9 bg-white dark:bg-slate-950"
+                  />
                 </div>
               </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
-                <Button type="submit">Save</Button>
-              </div>
-            </CardContent>
-          </form>
+              <Button type="submit" disabled={processing} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
+                {processing ? "Memproses..." : <><Clock className="w-4 h-4 mr-2"/> Absen Sekarang</>}
+              </Button>
+            </form>
+          </CardContent>
         </Card>
-      )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Attendance Log</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
-          ) : attendances.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No attendance records found.</p>
-          ) : (
-            <div className="border rounded-md">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="p-3 text-left font-medium">Date</th>
-                    <th className="p-3 text-left font-medium">Employee</th>
-                    <th className="p-3 text-left font-medium">Status</th>
-                    <th className="p-3 text-left font-medium">Check In</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attendances.map((a) => (
-                    <tr key={a.id} className="border-b last:border-0 hover:bg-muted/50">
-                      <td className="p-3">{new Date(a.date).toLocaleDateString()}</td>
-                      <td className="p-3 font-medium">{a.employee?.first_name} {a.employee?.last_name}</td>
-                      <td className="p-3">
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted">
-                          {a.status}
-                        </span>
-                      </td>
-                      <td className="p-3 text-muted-foreground">{a.check_in ? new Date(a.check_in).toLocaleTimeString() : '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <Card className="col-span-1 md:col-span-2 border-slate-200 dark:border-slate-800 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <CardTitle>Riwayat Absensi</CardTitle>
+              <CardDescription>Log kehadiran harian (dari web dan fingerprint)</CardDescription>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="p-8 text-center text-slate-500">Memuat data...</div>
+            ) : attendances.length === 0 ? (
+              <div className="p-8 text-center text-slate-500">Belum ada data absensi.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
+                    <TableRow>
+                      <TableHead>Pegawai</TableHead>
+                      <TableHead>Tanggal</TableHead>
+                      <TableHead>Jam Masuk</TableHead>
+                      <TableHead>Jam Keluar</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {attendances.map((att) => (
+                      <TableRow key={att.id}>
+                        <TableCell>
+                          <div className="font-medium text-slate-900 dark:text-slate-100">{att.employee?.first_name} {att.employee?.last_name}</div>
+                          <div className="text-xs text-slate-500">{att.employee?.employee_code}</div>
+                        </TableCell>
+                        <TableCell>{new Date(att.date).toLocaleDateString('id-ID')}</TableCell>
+                        <TableCell>
+                          {att.check_in ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                              <Clock className="w-3 h-3" /> {new Date(att.check_in).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}
+                            </span>
+                          ) : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {att.check_out ? (
+                            <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium">
+                              <Clock className="w-3 h-3" /> {new Date(att.check_out).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}
+                            </span>
+                          ) : <span className="text-slate-400 italic">Belum</span>}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                            att.status === 'PRESENT' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                            'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                          }`}>
+                            {att.status}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
