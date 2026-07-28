@@ -134,8 +134,8 @@ export default function FinanceCashOut() {
                     <SelectValue placeholder="Pilih Kategori" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    {categories?.map((c, idx) => (
+                      <SelectItem key={c?.id || idx} value={c?.id || `cat-${idx}`}>{c?.name}</SelectItem>
                     ))}
                     {categories.length === 0 && <SelectItem value="loading" disabled>Loading...</SelectItem>}
                   </SelectContent>
