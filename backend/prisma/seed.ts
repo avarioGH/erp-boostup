@@ -92,45 +92,7 @@ async function main() {
   }
 
   // 5. Create Products & Stocks
-  const productsData = [
-    { code: 'KOP-001', name: 'Kopi Arabica Premium 1Kg', price: 120000, stockA: 120, stockB: 53, stockC: 80 },
-    { code: 'KOP-002', name: 'Biji Kopi Robusta 1Kg', price: 90000, stockA: 12, stockB: 45, stockC: 30 },
-    { code: 'SYR-001', name: 'Sirup Caramel Monin 700ml', price: 185000, stockA: 24, stockB: 15, stockC: 40 },
-    { code: 'PKG-001', name: 'Gelas Kertas 8oz', price: 1500, stockA: 3500, stockB: 1200, stockC: 5000 },
-  ];
-
-  for (const pd of productsData) {
-    const prod = await prisma.product.upsert({
-      where: { company_id_code: { company_id: company.id, code: pd.code } },
-      update: {},
-      create: {
-        company_id: company.id,
-        code: pd.code,
-        name: pd.name,
-        category_id: catCoffee.id,
-        unit_id: unitPcs.id,
-        selling_price: pd.price,
-        purchase_price: pd.price * 0.6,
-      }
-    });
-
-    // Seed Stocks for A, B, C
-    await prisma.warehouseStock.upsert({
-      where: { company_id_warehouse_id_product_id: { company_id: company.id, warehouse_id: whA.id, product_id: prod.id } },
-      update: { current_stock: pd.stockA },
-      create: { company_id: company.id, warehouse_id: whA.id, product_id: prod.id, current_stock: pd.stockA }
-    });
-    await prisma.warehouseStock.upsert({
-      where: { company_id_warehouse_id_product_id: { company_id: company.id, warehouse_id: whB.id, product_id: prod.id } },
-      update: { current_stock: pd.stockB },
-      create: { company_id: company.id, warehouse_id: whB.id, product_id: prod.id, current_stock: pd.stockB }
-    });
-    await prisma.warehouseStock.upsert({
-      where: { company_id_warehouse_id_product_id: { company_id: company.id, warehouse_id: whC.id, product_id: prod.id } },
-      update: { current_stock: pd.stockC },
-      create: { company_id: company.id, warehouse_id: whC.id, product_id: prod.id, current_stock: pd.stockC }
-    });
-  }
+  // (Dummy products removed so database starts clean)
 
   // 6. Create Cash Account
   let cashAccount = await prisma.cashAccount.findFirst({ where: { company_id: company.id, code: '111-001' } });
@@ -141,7 +103,7 @@ async function main() {
         code: '111-001',
         name: 'Kas Utama (BCA)',
         account_type: 'Bank',
-        current_balance: 185000000,
+        current_balance: 0,
       }
     });
   }
