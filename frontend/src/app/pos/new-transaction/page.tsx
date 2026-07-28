@@ -22,20 +22,6 @@ import {
 } from "lucide-react"
 import { InventoryAPI, PosAPI } from "@/lib/api"
 
-// Mock Data Fallback
-const categories = ["Semua", "Kopi", "Non-Kopi", "Makanan", "Snack", "Merchandise"]
-
-const fallbackProducts = [
-  { id: 1, name: "Kopi Arabica Premium", category: "Kopi", price: 35000, stock: 120, img: "☕" },
-  { id: 2, name: "Caffe Latte", category: "Kopi", price: 28000, stock: 85, img: "🥤" },
-  { id: 3, name: "Matcha Latte", category: "Non-Kopi", price: 32000, stock: 45, img: "🍵" },
-  { id: 4, name: "Red Velvet", category: "Non-Kopi", price: 30000, stock: 30, img: "🍰" },
-  { id: 5, name: "Croissant Butter", category: "Makanan", price: 25000, stock: 12, img: "🥐" },
-  { id: 6, name: "French Fries", category: "Snack", price: 20000, stock: 50, img: "🍟" },
-  { id: 7, name: "Tumbler Exclusive", category: "Merchandise", price: 150000, stock: 8, img: "🥤" },
-  { id: 8, name: "Biji Kopi 1Kg", category: "Kopi", price: 120000, stock: 24, img: "🫘" },
-]
-
 type CartItem = {
   id: number
   name: string
@@ -51,10 +37,10 @@ export default function PosTransaction() {
   const [paymentMethod, setPaymentMethod] = useState("CASH")
   const [isCheckingOut, setIsCheckingOut] = useState(false)
 
-  // Real DB States
   const [loading, setLoading] = useState(true)
   const [isError, setIsError] = useState(false)
   const [products, setProducts] = useState<any[]>([])
+  const [categories, setCategories] = useState<string[]>(["Semua"])
 
   useEffect(() => {
     async function fetchData() {
@@ -72,6 +58,10 @@ export default function PosTransaction() {
           img: "📦" // default icon
         }))
         setProducts(mapped)
+
+        // Extract unique categories
+        const uniqueCategories = ["Semua", ...new Set(mapped.map((p: any) => p.category))] as string[]
+        setCategories(uniqueCategories)
       } catch (error) {
         console.error("Database connection failed:", error)
         setIsError(true)
