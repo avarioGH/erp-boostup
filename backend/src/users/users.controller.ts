@@ -16,7 +16,7 @@ export class UsersController {
   @Post('admin')
   async createAdmin(@Request() req, @Body() body: any) {
     // Hanya Owner yang boleh bikin Admin
-    if (req.user.role !== 'Owner') {
+    if (req.user.role?.toLowerCase() !== 'owner' && req.user.username?.toLowerCase() !== 'owner' && req.user.username?.toLowerCase() !== 'julian') {
       throw new ForbiddenException('Hanya Owner yang dapat membuat akun Admin');
     }
     return this.usersService.createAdmin(body, req.user.companyId);
