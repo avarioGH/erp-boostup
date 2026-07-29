@@ -49,7 +49,7 @@ export default function StockInPage() {
         if (storedActive && storedActive !== "undefined" && storedActive !== "null") {
           try {
             const parsed = JSON.parse(storedActive)
-            if (parsed && parsed.id) {
+            if (parsed && parsed.id && whRes.data.some((w: any) => w.id === parsed.id)) {
               setFormData(prev => ({ ...prev, warehouseId: parsed.id }))
               return
             }
