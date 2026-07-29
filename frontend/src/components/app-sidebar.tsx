@@ -48,6 +48,7 @@ const items: MenuItem[] = [
       { title: "Pemasukan", url: "/finance/cash-in" },
       { title: "Pengeluaran", url: "/finance/cash-out" },
       { title: "Transfer", url: "/finance/transfer" },
+      { title: "Riwayat Transaksi", url: "/finance/history" },
       { title: "Laporan Keuangan", url: "/finance/reports" }
     ]
   },

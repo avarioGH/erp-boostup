@@ -129,9 +129,10 @@ export class FinanceController {
     return this.prisma.financeTransaction.findMany({
       where: { company_id: req.user.company_id },
       orderBy: { transaction_date: 'desc' },
-      take: 20,
+      take: 100,
       include: {
-        cash_account: true
+        cash_account: true,
+        user_created: { select: { name: true } }
       }
     });
   }
