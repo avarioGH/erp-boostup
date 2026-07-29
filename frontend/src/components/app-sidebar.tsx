@@ -1,6 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { useState, useEffect } from "react"
 import {
   Sidebar,
@@ -176,7 +177,7 @@ export function AppSidebar() {
                       isActive={active}
                       className={`font-medium transition-all duration-200 rounded-md px-3 py-2 h-auto ${active ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                       render={
-                        <a href={item.url} className="flex items-center justify-between w-full">
+                        <Link href={item.url} className="flex items-center justify-between w-full">
                           <div className="flex items-center gap-3">
                             <item.icon className={`h-4 w-4 ${active ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`} />
                             <span className="text-sm">{item.title}</span>
@@ -186,7 +187,7 @@ export function AppSidebar() {
                               {item.badge}
                             </span>
                           )}
-                        </a>
+                        </Link>
                       }
                     />
                     {item.subItems && (
@@ -195,7 +196,7 @@ export function AppSidebar() {
                           const subActive = pathname === subItem.url
                           return (
                             <SidebarMenuSubItem key={subItem.title}>
-                              <a href={subItem.url}>
+                              <Link href={subItem.url}>
                                 <SidebarMenuSubButton 
                                   isActive={subActive}
                                   className={`text-sm py-1.5 h-auto transition-colors rounded-md ${subActive ? 'text-indigo-600 dark:text-indigo-400 font-medium bg-transparent' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/30'}`}
@@ -209,7 +210,7 @@ export function AppSidebar() {
                                     )}
                                   </span>
                                 </SidebarMenuSubButton>
-                              </a>
+                              </Link>
                             </SidebarMenuSubItem>
                           )
                         })}
@@ -237,10 +238,10 @@ export function AppSidebar() {
                       isActive={active}
                       className={`font-medium transition-all duration-200 rounded-md px-3 py-2 h-auto ${active ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                       render={
-                        <a href={item.url} className="flex items-center gap-3">
+                        <Link href={item.url} className="flex items-center gap-3">
                           <item.icon className={`h-4 w-4 ${active ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`} />
                           <span className="text-sm">{item.title}</span>
-                        </a>
+                        </Link>
                       }
                     />
                   </SidebarMenuItem>
