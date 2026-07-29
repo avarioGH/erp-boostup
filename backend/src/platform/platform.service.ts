@@ -46,7 +46,7 @@ export class PlatformService {
    * AI Service Wrapper (Agnostic Gateway)
    * Menyembunyikan kompleksitas vendor AI dari modul ERP lainnya.
    */
-  async generateAiInsight(prompt: string, contextData: any, tenantId: string) {
+  async generateAiInsight(prompt: string, incomingContextData: any, tenantId: string) {
     this.logger.log(`Generating AI Insight for Tenant: ${tenantId}`);
     
     try {
@@ -54,12 +54,41 @@ export class PlatformService {
       if (!apiKey) {
         throw new Error("GEMINI_API_KEY is not configured in environment variables.");
       }
+
+      // 1. Gather comprehensive business data
+      const productsCount = await this.prisma.product.count({ where: { company_id: tenantId } });
+      const stockItems = await this.prisma.warehouseStock.findMany({
+        where: { warehouse: { company_id: tenantId } },
+        include: { product: true, warehouse: true }
+      });
+      const stockSummary = stockItems.map(s => ({ warehouse: s.warehouse.name, product: s.product.name, qty: Number(s.qty_on_hand) }));
       
-      const systemInstruction = "You are Avario AI, an advanced business intelligence assistant for an ERP system. Provide concise, actionable business insights based on the user prompt.";
+      const cashAccounts = await this.prisma.cashAccount.findMany({ where: { company_id: tenantId } });
+      const cashSummary = cashAccounts.map(c => ({ name: c.name, balance: Number(c.balance) }));
+      
+      const recentSales = await this.prisma.salesOrder.findMany({
+        where: { company_id: tenantId },
+        orderBy: { created_at: 'desc' }, take: 10,
+        include: { items: { include: { product: true } } }
+      });
+      const salesSummary = recentSales.map(s => ({ date: s.created_at, total: Number(s.grand_total), status: s.status, items: s.items.map(i => ({ name: i.product.name, qty: Number(i.qty) })) }));
+      
+      const employeesCount = await this.prisma.employee.count({ where: { company_id: tenantId } });
+
+      const businessContext = {
+        totalProducts: productsCount,
+        totalEmployees: employeesCount,
+        currentStockLevels: stockSummary,
+        cashAndBankBalances: cashSummary,
+        recentSalesTransactions: salesSummary,
+        ...incomingContextData
+      };
+      
+      const systemInstruction = "You are Avario AI, an advanced business intelligence assistant for an ERP system. Answer the user's questions strictly using the provided Context Data. Always format numbers nicely (e.g. Rp 10.000). Use Markdown for formatting (bold, tables). Answer in Indonesian.";
       
       const payload = {
         contents: [{
-          parts: [{ text: `${systemInstruction}\n\nContext Data (if any): ${JSON.stringify(contextData)}\n\nUser Question: ${prompt}` }]
+          parts: [{ text: `${systemInstruction}\n\nContext Data (real-time): ${JSON.stringify(businessContext)}\n\nUser Question: ${prompt}` }]
         }]
       };
 
