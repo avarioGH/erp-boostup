@@ -8,14 +8,14 @@ async function main() {
   // Disable foreign key checks if necessary, but Prisma deleteMany in correct order is safer.
   
   // 1. POS & HR
-  await prisma.posOrderItem.deleteMany({});
-  await prisma.posOrder.deleteMany({});
+  await prisma.salesOrderItem.deleteMany({});
+  await prisma.salesOrder.deleteMany({});
   await prisma.posShift.deleteMany({});
   await prisma.attendance.deleteMany({});
   await prisma.payrollItem.deleteMany({});
   await prisma.payroll.deleteMany({});
   await prisma.employee.deleteMany({});
-  await prisma.hrDepartment.deleteMany({});
+  await prisma.department.deleteMany({});
 
   // 2. Transactions & Finances
   await prisma.financeTransactionItem.deleteMany({});
@@ -25,7 +25,6 @@ async function main() {
   await prisma.inventoryTransactionItem.deleteMany({});
   await prisma.inventoryTransaction.deleteMany({});
   await prisma.stockMovement.deleteMany({});
-  await prisma.pettyCashTransaction.deleteMany({});
   await prisma.pettyCash.deleteMany({});
   
   // 3. Inventory Stocks & Images
