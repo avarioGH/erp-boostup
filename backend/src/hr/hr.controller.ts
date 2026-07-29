@@ -29,6 +29,12 @@ export class HrController {
     return this.hrService.createEmployee(data);
   }
 
+  @Post('employees/:id/biometric')
+  async registerBiometric(@Request() req, @Body() data: any) {
+    // data should contain { employeeId, rightThumb, leftThumb }
+    return this.hrService.registerBiometric(req.user.company_id, data.employeeId, data.rightThumb, data.leftThumb);
+  }
+
   @Get('attendance')
   async getAttendances(@Request() req) {
     return this.hrService.getAttendances(req.user.company_id);

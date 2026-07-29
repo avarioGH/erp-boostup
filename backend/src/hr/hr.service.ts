@@ -51,6 +51,22 @@ export class HrService {
     });
   }
 
+  async registerBiometric(companyId: string, employeeId: string, rightThumb: string, leftThumb: string) {
+    const employee = await this.prisma.employee.findFirst({
+      where: { id: employeeId, company_id: companyId }
+    });
+    
+    if (!employee) throw new Error("Employee not found");
+    
+    return this.prisma.employee.update({
+      where: { id: employeeId },
+      data: {
+        fingerprint_right_thumb: rightThumb,
+        fingerprint_left_thumb: leftThumb
+      }
+    });
+  }
+
   // Attendance
   async getAttendances(companyId: string) {
     return this.prisma.attendance.findMany({

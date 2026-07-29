@@ -1595,6 +1595,9 @@ model Employee {
   bank_name      String?
   account_number String?
   
+  fingerprint_right_thumb String? @db.Text
+  fingerprint_left_thumb  String? @db.Text
+  
   attendances    Attendance[]
   payrolls       Payroll[]
 
