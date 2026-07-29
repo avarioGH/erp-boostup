@@ -40,72 +40,70 @@ export default function AIFinanceAnalysisPage() {
     }
   }
 
-  const runAIAnalysis = (transactions: any[], currentBalance: number) => {
+  const runAIAnalysis = async (transactions: any[], currentBalance: number) => {
     setAnalyzing(true)
     
-    setTimeout(() => {
-      // 1. Calculate Burn Rate (Pengeluaran rata-rata bulanan / harian yang disimulasikan)
+    try {
       let totalExpense = 0
-      let maxExpense = 0
-      let maxExpenseCat = ""
+      let totalIncome = 0
       
-      const categoryMap: Record<string, number> = {}
-
       transactions.forEach(t => {
-        if (t.transaction_type === 'Expense') {
-          const amt = Number(t.total_amount)
-          totalExpense += amt
-          
-          const cat = t.category?.name || 'Lainnya'
-          categoryMap[cat] = (categoryMap[cat] || 0) + amt
-          
-          if (amt > maxExpense) {
-            maxExpense = amt
-            maxExpenseCat = cat
-          }
+        if (t.transaction_type === 'Expense' || t.transaction_type === 'Cash Out') {
+          totalExpense += Number(t.total_amount || 0)
+        } else if (t.transaction_type === 'Income' || t.transaction_type === 'Cash In') {
+          totalIncome += Number(t.total_amount || 0)
         }
       })
 
-      // Asumsi data diambil untuk 30 hari terakhir (Simplifikasi)
-      const simulatedMonthlyBurn = totalExpense > 0 ? totalExpense : 25000000 // default mock jika kosong
-      const estimatedRunway = currentBalance / (simulatedMonthlyBurn || 1) // dalam bulan
+      const contextData = {
+        totalExpense,
+        totalIncome,
+        currentBalance,
+        transactionsCount: transactions.length,
+        // Send a limited summary so we don't exceed prompt limits easily
+        recentTransactions: transactions.slice(0, 50).map(t => ({
+          type: t.transaction_type,
+          amount: Number(t.total_amount),
+          date: t.transaction_date,
+          desc: t.description
+        }))
+      }
 
-      setBurnRate(simulatedMonthlyBurn)
-      setRunway(estimatedRunway)
+      const prompt = `Tolong analisis data keuangan berikut dan berikan: 1. estimasi burn rate bulanan (angka), 2. estimasi runway (angka bulan), 3. insights (minimal 2, dengan type: 'CRITICAL', 'GOOD', atau 'WARNING', title, desc, dan recommendation). Format jawaban HARUS HANYA JSON murni tanpa markdown block. Struktur JSON yang benar: {"burnRate": number, "runway": number, "insights": [{"type": "string", "title": "string", "desc": "string", "recommendation": "string"}]}`
 
-      // 2. Generate Insights
-      const newInsights = []
+      const res = await api.post('/platform/ai/ask', {
+        prompt,
+        contextData
+      })
+
+      let responseText = res.data
+      // Clean markdown code blocks if any
+      if (typeof responseText === 'string') {
+        responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim()
+      } else if (responseText && responseText.text) {
+         responseText = responseText.text.replace(/```json/gi, '').replace(/```/g, '').trim()
+      }
       
-      if (estimatedRunway < 3) {
-        newInsights.push({
-          type: 'CRITICAL',
-          title: 'Peringatan Runway Kas',
-          desc: `Arus kas saat ini hanya mampu menopang operasional selama ${estimatedRunway.toFixed(1)} bulan dengan asumsi burn-rate tetap sebesar ${formatIDR(simulatedMonthlyBurn)}/bulan.`,
-          recommendation: 'Lakukan efisiensi pada pos pengeluaran operasional terbesar Anda atau percepat penagihan piutang (AR).'
-        })
-      } else {
-        newInsights.push({
-          type: 'GOOD',
-          title: 'Runway Kas Aman',
-          desc: `Arus kas diproyeksikan aman untuk ${estimatedRunway.toFixed(1)} bulan ke depan tanpa suntikan dana tambahan.`,
-          recommendation: 'Pertimbangkan untuk mengalokasikan dana *idle* ke instrumen investasi jangka pendek atau R&D.'
-        })
-      }
+      const parsed = typeof responseText === 'string' ? JSON.parse(responseText) : responseText
+      
+      setBurnRate(parsed.burnRate || 0)
+      setRunway(parsed.runway || 0)
+      setInsights(parsed.insights || [])
 
-      const biggestCat = Object.keys(categoryMap).sort((a,b) => categoryMap[b] - categoryMap[a])[0]
-      if (biggestCat) {
-        const perc = ((categoryMap[biggestCat] / totalExpense) * 100).toFixed(1)
-        newInsights.push({
-          type: 'WARNING',
-          title: 'Anomali Pengeluaran',
-          desc: `Kategori "${biggestCat}" mendominasi pengeluaran sebesar ${perc}% dari total biaya operasional.`,
-          recommendation: 'Audit kembali kontrak vendor atau kebijakan efisiensi untuk departemen terkait bulan depan.'
-        })
-      }
-
-      setInsights(newInsights)
+    } catch (e) {
+      console.error("AI Analysis failed", e)
+      // Fallback
+      setBurnRate(0)
+      setRunway(0)
+      setInsights([{
+        type: 'CRITICAL',
+        title: 'Analisis Gagal',
+        desc: 'Gagal menghubungi server AI.',
+        recommendation: 'Cek koneksi internet atau ketersediaan API Gemini.'
+      }])
+    } finally {
       setAnalyzing(false)
-    }, 1500)
+    }
   }
 
   if (loading) {
