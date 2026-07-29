@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { api } from "@/lib/api"
-import { formatCurrency } from "@/lib/utils"
+import { formatIDR } from "@/lib/utils"
 import { History, ArrowUpRight, ArrowDownRight, ArrowRightLeft } from "lucide-react"
 
 export default function FinanceHistoryPage() {
@@ -120,7 +120,7 @@ export default function FinanceHistoryPage() {
                         (tx.transaction_type === 'Expense' || tx.transaction_type === 'Cash Out') ? 'text-rose-600 dark:text-rose-400' : ''
                       }`}>
                         {(tx.transaction_type === 'Income' || tx.transaction_type === 'Cash In') ? '+' : (tx.transaction_type === 'Expense' || tx.transaction_type === 'Cash Out') ? '-' : ''}
-                        {formatCurrency(Number(tx.total_amount))}
+                        {formatIDR(Number(tx.total_amount))}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider ${getStatusColor(tx.status)}`}>
