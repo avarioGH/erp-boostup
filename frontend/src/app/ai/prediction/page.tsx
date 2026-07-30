@@ -35,10 +35,10 @@ export default function AIPredictionPage() {
     }
   }
 
-  const runAIPrediction = (salesOrders: any[]) => {
+  const runAIPrediction = async (salesOrders: any[]) => {
     setAnalyzing(true)
     
-    setTimeout(() => {
+    try {
       // 1. Group past sales by day (last 7 days)
       const pastMap: Record<string, number> = {}
       const today = new Date()
@@ -60,21 +60,29 @@ export default function AIPredictionPage() {
         }
       })
 
-      // 2. Simple Linear Regression for next 7 days forecast
-      let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0
-      const n = 7
-      
       const pastValues = Object.values(pastMap)
-      pastValues.forEach((y, i) => {
-        const x = i + 1
-        sumX += x
-        sumY += y
-        sumXY += x * y
-        sumX2 += x * x
+      
+      // 2. Call AI API
+      const contextData = {
+        last7DaysSales: Object.entries(pastMap).map(([date, amount]) => ({ date, amount }))
+      }
+
+      const prompt = `Tolong analisis data historis penjualan 7 hari terakhir ini. Prediksikan total omzet untuk 7 hari ke depan. Berikan output HANYA format JSON tanpa markdown block: {"projectedGrowth": number (persentase pertumbuhan/penurunan total 7 hari depan vs 7 hari lalu, misal 5.5), "accuracyConfidence": number (tingkat kepercayaan model 1-100), "predictedSales": [number, number, number, number, number, number, number] (array 7 angka untuk prediksi 7 hari ke depan secara berurutan)}`
+
+      const res = await api.post('/platform/ai/ask', {
+        prompt,
+        contextData
       })
 
-      const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
-      const intercept = (sumY - slope * sumX) / n
+      let responseText = res.data
+      if (typeof responseText === 'string') {
+        responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim()
+      } else if (responseText && responseText.text) {
+         responseText = responseText.text.replace(/```json/gi, '').replace(/```/g, '').trim()
+      }
+      
+      const parsed = typeof responseText === 'string' ? JSON.parse(responseText) : responseText
+      const predictedSales = parsed.predictedSales || [0,0,0,0,0,0,0]
 
       // 3. Build Chart Data
       const chartData: any[] = []
@@ -89,33 +97,29 @@ export default function AIPredictionPage() {
       })
 
       // Push Future Data (Forecast)
-      let futureSum = 0
       for (let i = 1; i <= 7; i++) {
         const d = new Date(today)
         d.setDate(d.getDate() + i)
         
-        let predY = (slope * (n + i) + intercept)
-        if (predY < 0) predY = pastValues[pastValues.length - 1] * 0.9 // fallback
-
-        futureSum += predY
-
         chartData.push({
           name: d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
           Aktual: null,
-          Prediksi: predY
+          Prediksi: predictedSales[i - 1] || 0
         })
       }
 
       setForecastData(chartData)
-      
-      const pastSum = pastValues.reduce((a,b)=>a+b, 0)
-      const growth = pastSum > 0 ? ((futureSum - pastSum) / pastSum) * 100 : 0
-      
-      setProjectedGrowth(growth)
-      setAccuracyConfidence(85 + Math.random() * 10) // 85-95%
-      
+      setProjectedGrowth(parsed.projectedGrowth || 0)
+      setAccuracyConfidence(parsed.accuracyConfidence || 0)
+
+    } catch (e) {
+      console.error("AI Prediction failed", e)
+      setProjectedGrowth(0)
+      setAccuracyConfidence(0)
+      setForecastData([])
+    } finally {
       setAnalyzing(false)
-    }, 2000)
+    }
   }
 
   if (loading) {
