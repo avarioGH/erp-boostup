@@ -81,6 +81,7 @@ model Company {
   // Phase 10 AI
   ai_chats           AiChatHistory[]
   pos_shifts         PosShift[]
+  marketplace_integrations MarketplaceIntegration[]
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -1650,4 +1651,23 @@ model PayrollItem {
   amount      Decimal  @db.Decimal(15, 2)
 
   created_at  DateTime @default(now())
+}
+
+model MarketplaceIntegration {
+  id            String   @id @default(uuid())
+  company_id    String
+  company       Company  @relation(fields: [company_id], references: [id])
+  platform      String   // e.g., 'SHOPEE', 'TOKOPEDIA'
+  partner_id    String?
+  partner_key   String?
+  shop_id       String?
+  access_token  String?
+  refresh_token String?
+  token_expiry  DateTime?
+  status        String   @default("INACTIVE") // INACTIVE, ACTIVE, EXPIRED
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([company_id, platform])
 }

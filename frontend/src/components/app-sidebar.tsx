@@ -19,9 +19,9 @@ import {
   SidebarMenuSubButton
 } from "@/components/ui/sidebar"
 import { 
-  LayoutDashboard, Users, Box, Calculator, Settings, 
-  ShoppingCart, ShieldAlert, BarChart3, Bot, Receipt,
-  Store, UserCheck, ArrowRightLeft, TrendingUp, TrendingDown
+  LayoutDashboard,  Clock, Folder, Link as LinkIcon, History, AlertTriangle, PlayCircle, Filter, Tag, Hash, FileCode, CheckCircle, Database, PackageSearch, PenTool, Wrench, ShieldCheck, LifeBuoy, FileSearch, Zap, TrendingUp, Sparkles, Building2, Fingerprint, Receipt, UserCheck, ShieldAlert, Key, HelpCircle, Share2, Users, Box, Calculator, Settings, 
+  ShoppingCart, BarChart3, Bot, 
+  Store, ArrowRightLeft, TrendingDown
 } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { TranslationKey } from "@/i18n/dictionaries"
@@ -129,6 +129,7 @@ const items: MenuItem[] = [
 const settings: MenuItem[] = [
   { title: "Pengguna & Role", url: "/settings/users", icon: UserCheck, id: "settings" },
   { title: "Pengaturan Sistem", url: "/settings/company", icon: Settings, id: "settings" },
+  { title: "Integrasi API", url: "/settings/integrations", icon: Share2, id: "settings" },
   { title: "Audit Log", url: "/monitoring/audit-log", icon: ShieldAlert, id: "settings" },
 ]
 
