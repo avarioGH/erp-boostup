@@ -15,6 +15,22 @@ export class InventoryController {
     return this.inventoryService.getCategories(req.user.company_id);
   }
 
+  @Post('categories')
+  async createCategory(@Request() req, @Body() data: any) {
+    data.companyId = req.user.company_id;
+    return this.inventoryService.createCategory(data);
+  }
+
+  @Put('categories/:id')
+  async updateCategory(@Param('id') id: string, @Body() data: any) {
+    return this.inventoryService.updateCategory(id, data);
+  }
+
+  @Delete('categories/:id')
+  async deleteCategory(@Param('id') id: string) {
+    return this.inventoryService.deleteCategory(id);
+  }
+
   @Get('products')
   async getProducts(@Request() req) {
     return this.inventoryService.getProducts(req.user.company_id);

@@ -23,7 +23,8 @@ import { InventoryAPI } from "@/lib/api"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import imageCompression from "browser-image-compression"
 
-import { Upload, X, QrCode } from "lucide-react"
+import { Upload, X, QrCode, Edit } from "lucide-react"
+import Link from "next/link"
 
 export default function ProductInventory() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -245,7 +246,12 @@ export default function ProductInventory() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Kategori Produk</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Kategori Produk</Label>
+                  <Link href="/inventory/categories" className="text-xs text-indigo-600 hover:underline flex items-center gap-1">
+                    <Edit className="w-3 h-3" /> Kelola Kategori
+                  </Link>
+                </div>
                 <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val || ""})}>
                   <SelectTrigger className="bg-white dark:bg-slate-950">
                     <SelectValue placeholder="Pilih Kategori" />

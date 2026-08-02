@@ -63,6 +63,36 @@ export class InventoryService {
     });
   }
 
+  async createCategory(data: any) {
+    return this.prisma.category.create({
+      data: {
+        company_id: data.companyId,
+        name: data.name,
+        description: data.description,
+      },
+    });
+  }
+
+  async updateCategory(id: string, data: any) {
+    return this.prisma.category.update({
+      where: { id },
+      data: {
+        name: data.name,
+        description: data.description,
+      },
+    });
+  }
+
+  async deleteCategory(id: string) {
+    const products = await this.prisma.product.count({ where: { category_id: id } });
+    if (products > 0) {
+      throw new Error('Kategori tidak dapat dihapus karena sedang digunakan oleh produk.');
+    }
+    return this.prisma.category.delete({
+      where: { id },
+    });
+  }
+
   async getProducts(companyId: string) {
     return this.prisma.product.findMany({
       where: { company_id: companyId },
