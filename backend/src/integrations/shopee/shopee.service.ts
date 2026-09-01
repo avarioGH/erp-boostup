@@ -93,8 +93,8 @@ export class ShopeeService {
         data: {
           company_id: companyId,
           name: 'Saldo Shopee',
-          code: 'SHOPEE-01',
-          type: 'CASH_BANK'
+          code: 'SHOPEE-INC',
+          account_type: 'Digital Wallet',
         }
       });
     }
@@ -119,7 +119,7 @@ export class ShopeeService {
     // Update account balance
     await this.prisma.cashAccount.update({
       where: { id: shopeeAccount.id },
-      data: { balance: { increment: mockOrderAmount } }
+      data: { current_balance: { increment: mockOrderAmount } }
     });
 
     return { success: true, synced_orders: 1, total_amount: mockOrderAmount };

@@ -61,17 +61,17 @@ export class PlatformService {
         where: { warehouse: { company_id: tenantId } },
         include: { product: true, warehouse: true }
       });
-      const stockSummary = stockItems.map(s => ({ warehouse: s.warehouse.name, product: s.product.name, qty: Number(s.qty_on_hand) }));
+      const stockSummary = stockItems.map(s => ({ warehouse: s.warehouse.name, product: s.product.name, qty: Number(s.current_stock) }));
       
       const cashAccounts = await this.prisma.cashAccount.findMany({ where: { company_id: tenantId } });
-      const cashSummary = cashAccounts.map(c => ({ name: c.name, balance: Number(c.balance) }));
+      const cashSummary = cashAccounts.map(c => ({ name: c.name, balance: Number(c.current_balance) }));
       
       const recentSales = await this.prisma.salesOrder.findMany({
         where: { company_id: tenantId },
         orderBy: { created_at: 'desc' }, take: 10,
         include: { items: { include: { product: true } } }
       });
-      const salesSummary = recentSales.map(s => ({ date: s.created_at, total: Number(s.grand_total), status: s.status, items: s.items.map(i => ({ name: i.product.name, qty: Number(i.qty) })) }));
+      const salesSummary = recentSales.map(s => ({ date: s.created_at, total: Number(s.total_amount), status: s.status, items: s.items.map(i => ({ name: i.product.name, qty: Number(i.qty) })) }));
       
       const employeesCount = await this.prisma.employee.count({ where: { company_id: tenantId } });
 
