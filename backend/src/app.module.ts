@@ -21,6 +21,7 @@ import { PosModule } from './pos/pos.module';
 import { ShopeeModule } from './integrations/shopee/shopee.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { join } from 'path';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
     }),
-    InventoryModule, PrismaModule, AssetModule, MaintenanceModule, FinanceModule, GlModule, AccountingModule, AnalyticsModule, ReportingModule, DocumentModule, AutomationModule, PlatformModule, AuthModule, UsersModule, CrmModule, HrModule, PosModule, ShopeeModule
+    InventoryModule, PrismaModule, AssetModule, MaintenanceModule, FinanceModule, GlModule, AccountingModule, AnalyticsModule, ReportingModule, DocumentModule, AutomationModule, PlatformModule, AuthModule, UsersModule, CrmModule, HrModule, PosModule, ShopeeModule, AiModule
   ],
   controllers: [AppController],
   providers: [AppService],

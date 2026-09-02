@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthWrapper } from "@/components/auth-wrapper";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import AiAssistant from "@/components/AiAssistant";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,6 +30,7 @@ export default function RootLayout({
           <LanguageProvider>
             <AuthWrapper>
               {children}
+              <AiAssistant />
             </AuthWrapper>
           </LanguageProvider>
         </ThemeProvider>
