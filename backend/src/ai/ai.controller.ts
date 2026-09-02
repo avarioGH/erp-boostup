@@ -12,6 +12,16 @@ export class AiController {
     return this.aiService.handleChat(req.user, body.prompt, body.chatHistory || []);
   }
 
+  @Post('execute')
+  async executeAction(@Req() req, @Body() body: { actionData: any }) {
+    return this.aiService.executeAction(req.user.company_id, body.actionData);
+  }
+
+  @Post('undo')
+  async undoAction(@Req() req, @Body() body: { actionData: any }) {
+    return this.aiService.undoAction(req.user.company_id, body.actionData);
+  }
+
   @Post('history')
   async getHistory(@Req() req) {
     return this.aiService.getHistory(req.user.company_id, req.user.id);
