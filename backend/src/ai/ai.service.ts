@@ -6,10 +6,20 @@ import OpenAI from 'openai';
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private openai: OpenAI;
+  // Fallback models from Juan Router based on user request
+  private readonly fallbackModels = [
+    'agnes-2.5-flash',
+    'mistral-large',
+    'gemma-4-31b-it',
+    'nemotron-3.5-lightning'
+  ];
 
   constructor(private prisma: PrismaService) {
+    // API key ditaruh di .env dengan nama JUAN_API_KEY
+    // Jika tidak ada di .env, kita pakai default fallback key
+    const apiKey = process.env.JUAN_API_KEY || 'sk-p8GXAXmljYonz0t5fvS0r09aN9K6iPvkCpR9UWyhXuU9ykf8';
     this.openai = new OpenAI({
-      apiKey: 'sk-p8GXAXmljYonz0t5fvS0r09aN9K6iPvkCpR9UWyhXuU9ykf8',
+      apiKey: apiKey,
       baseURL: 'https://router.juan.web.id/v1'
     });
   }
@@ -53,6 +63,29 @@ export class AiService {
     ];
   }
 
+  // Helper untuk memanggil API dengan fallback model
+  private async executeWithFallback(messages: any[], useTools: boolean = false): Promise<any> {
+    for (const modelName of this.fallbackModels) {
+      try {
+        const payload: any = {
+          model: modelName,
+          messages: messages,
+        };
+        if (useTools) {
+          payload.tools = this.getTools() as any;
+          payload.tool_choice = 'auto';
+        }
+
+        const result = await this.openai.chat.completions.create(payload);
+        return result.choices[0].message;
+      } catch (error: any) {
+        this.logger.warn(`Model ${modelName} failed: ${error.message}. Trying next fallback model...`);
+        // Lanjutkan ke loop berikutnya jika error
+      }
+    }
+    throw new Error('Semua model fallback (A, B, C, dst) gagal merespons.');
+  }
+
   async handleChat(user: any, prompt: string, chatHistory: any[]) {
     try {
       const messages: any[] = [
@@ -72,14 +105,8 @@ export class AiService {
 
       messages.push({ role: 'user', content: prompt });
 
-      let result = await this.openai.chat.completions.create({
-        model: 'gemini-1.5-flash',
-        messages: messages,
-        tools: this.getTools() as any,
-        tool_choice: 'auto'
-      });
-
-      let responseMessage = result.choices[0].message;
+      // Panggilan pertama dengan fallback logic
+      let responseMessage = await this.executeWithFallback(messages, true);
       let pendingAction: any = null;
 
       if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
@@ -111,12 +138,8 @@ export class AiService {
           });
         }
 
-        result = await this.openai.chat.completions.create({
-          model: 'gemini-1.5-flash',
-          messages: messages,
-        });
-
-        responseMessage = result.choices[0].message;
+        // Panggilan kedua (setelah function executed) dengan fallback logic
+        responseMessage = await this.executeWithFallback(messages, false);
       }
 
       const finalResponse = responseMessage.content || '';
@@ -135,7 +158,7 @@ export class AiService {
 
     } catch (error: any) {
       this.logger.error(`AI Chat Error: ${error.message}`);
-      return { response: 'Maaf, terjadi kesalahan saat menghubungi AI.' };
+      return { response: 'Maaf, sistem AI sedang sibuk atau semua jalur model (fallback) sedang offline.' };
     }
   }
 
