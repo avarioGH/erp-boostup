@@ -25,6 +25,12 @@ import imageCompression from "browser-image-compression"
 
 import { Upload, X, QrCode, Edit } from "lucide-react"
 import Link from "next/link"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function ProductInventory() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -41,6 +47,14 @@ export default function ProductInventory() {
   const [products, setProducts] = useState<any[]>([])
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
+
+  // Column Visibility
+  const [visibleColumns, setVisibleColumns] = useState({
+    sku: true,
+    category: true,
+    price: true,
+    totalStock: true
+  })
 
   useEffect(() => {
     async function fetchData() {
@@ -367,9 +381,39 @@ export default function ProductInventory() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-              <LayoutGrid className="w-4 h-4" /> Kolom
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                  <LayoutGrid className="w-4 h-4" /> Kolom
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[150px]">
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.sku}
+                  onCheckedChange={(c) => setVisibleColumns({ ...visibleColumns, sku: c })}
+                >
+                  SKU
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.category}
+                  onCheckedChange={(c) => setVisibleColumns({ ...visibleColumns, category: c })}
+                >
+                  Kategori
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.price}
+                  onCheckedChange={(c) => setVisibleColumns({ ...visibleColumns, price: c })}
+                >
+                  Harga Jual
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={visibleColumns.totalStock}
+                  onCheckedChange={(c) => setVisibleColumns({ ...visibleColumns, totalStock: c })}
+                >
+                  Total Stok
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -387,10 +431,10 @@ export default function ProductInventory() {
           <Table className="min-w-[1000px]">
             <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
               <TableRow className="border-slate-100 dark:border-slate-800">
-                <TableHead className="w-[100px] font-semibold">SKU</TableHead>
+                {visibleColumns.sku && <TableHead className="w-[100px] font-semibold">SKU</TableHead>}
                 <TableHead className="font-semibold">Nama Produk</TableHead>
-                <TableHead className="font-semibold">Kategori</TableHead>
-                <TableHead className="text-right font-semibold">Harga Jual</TableHead>
+                {visibleColumns.category && <TableHead className="font-semibold">Kategori</TableHead>}
+                {visibleColumns.price && <TableHead className="text-right font-semibold">Harga Jual</TableHead>}
                 {warehouses.map((wh) => (
                   <TableHead key={wh.id} className="text-center font-semibold bg-indigo-50/50 dark:bg-indigo-900/10 border-l border-r border-indigo-100 dark:border-indigo-900/30">
                     <div className="flex flex-col items-center">
@@ -399,7 +443,7 @@ export default function ProductInventory() {
                     </div>
                   </TableHead>
                 ))}
-                <TableHead className="text-center font-bold">Total Stok</TableHead>
+                {visibleColumns.totalStock && <TableHead className="text-center font-bold">Total Stok</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -414,14 +458,16 @@ export default function ProductInventory() {
                   const totalStock = warehouses.reduce((sum, wh) => sum + (p.stockMap[wh.id] || 0), 0);
                   return (
                     <TableRow key={p.id} className="border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                      <TableCell className="font-mono text-xs text-slate-500">{p.sku}</TableCell>
+                      {visibleColumns.sku && <TableCell className="font-mono text-xs text-slate-500">{p.sku}</TableCell>}
                       <TableCell className="font-medium text-slate-900 dark:text-white">{p.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-medium rounded-md">
-                          {p.category}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-medium">{formatIDR(p.price)}</TableCell>
+                      {visibleColumns.category && (
+                        <TableCell>
+                          <Badge variant="secondary" className="bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-medium rounded-md">
+                            {p.category}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {visibleColumns.price && <TableCell className="text-right font-medium">{formatIDR(p.price)}</TableCell>}
                       
                       {warehouses.map((wh) => {
                         const stock = p.stockMap[wh.id] || 0;
@@ -435,14 +481,16 @@ export default function ProductInventory() {
                       })}
                       
                       {/* Total */}
-                      <TableCell className="text-center">
-                        <Badge className={`${
-                          totalStock < 50 ? 'bg-rose-100 text-rose-700 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 border-none' : 
-                          'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border-none'
-                        } font-bold px-2 py-0.5`}>
-                          {totalStock}
-                        </Badge>
-                      </TableCell>
+                      {visibleColumns.totalStock && (
+                        <TableCell className="text-center">
+                          <Badge className={`${
+                            totalStock < 50 ? 'bg-rose-100 text-rose-700 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 border-none' : 
+                            'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border-none'
+                          } font-bold px-2 py-0.5`}>
+                            {totalStock}
+                          </Badge>
+                        </TableCell>
+                      )}
                     </TableRow>
                   )
                 })
