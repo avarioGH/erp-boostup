@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select"
 import { 
   TrendingUp, TrendingDown, Package, 
-  CreditCard, Users, Activity, ShoppingCart, AlertCircle, ArrowUpRight, ArrowDownRight, Award, AlertTriangle, RefreshCcw, Minus
+  CreditCard, Users, Activity, ShoppingCart, AlertCircle, ArrowUpRight, ArrowDownRight, Award, AlertTriangle, RefreshCcw, Minus, CheckCircle
 } from "lucide-react"
 import { 
   Area, AreaChart, Bar, BarChart, CartesianGrid, 
