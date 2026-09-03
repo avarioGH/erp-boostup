@@ -59,7 +59,9 @@ export const InventoryAPI = {
     return res.data;
   },
   createProduct: async (data: any) => {
-    const res = await api.post('/inventory/products', data);
+    const res = await api.post('/inventory/products', data, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return res.data;
   },
   createWarehouse: async (data: any) => {
