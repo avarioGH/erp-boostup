@@ -170,7 +170,7 @@ export default function PosTransaction() {
               <AlertTriangle className="w-5 h-5 text-destructive mt-0.5" />
               <div>
                 <h4 className="font-semibold text-destructive">Koneksi Database Terputus</h4>
-                <p className="text-sm text-destructive/80">Saat ini tidak dapat mengambil data dari server PostgreSQL.</p>
+                <p className="text-sm text-destructive/80">Saat ini tidak dapat mengambil data dari server MongoDB.</p>
               </div>
             </div>
           )}
