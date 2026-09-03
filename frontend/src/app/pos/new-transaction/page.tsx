@@ -36,6 +36,7 @@ export default function PosTransaction() {
   const [isPaymentOpen, setIsPaymentOpen] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("CASH")
   const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const [isTaxEnabled, setIsTaxEnabled] = useState(true)
 
   const [loading, setLoading] = useState(true)
   const [isError, setIsError] = useState(false)
@@ -111,7 +112,8 @@ export default function PosTransaction() {
   }
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0)
-  const tax = subtotal * 0.11
+  const taxAmount = subtotal * 0.11
+  const tax = isTaxEnabled ? taxAmount : 0
   const total = subtotal + tax
 
   return (
@@ -241,14 +243,26 @@ export default function PosTransaction() {
         </CardContent>
 
         <CardFooter className="flex flex-col border-t border-border p-4 bg-accent/30 gap-4">
-          <div className="w-full space-y-1.5">
+          <div className="w-full space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground">
               <span>Subtotal</span>
               <span className="font-medium text-foreground">{formatIDR(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Pajak (11%)</span>
-              <span className="font-medium text-foreground">{formatIDR(tax)}</span>
+            <div 
+              className="flex justify-between text-sm text-muted-foreground cursor-pointer hover:text-primary transition-colors select-none group"
+              onClick={() => setIsTaxEnabled(!isTaxEnabled)}
+            >
+              <div className="flex items-center gap-1.5">
+                <span>Pajak (11%)</span>
+                {isTaxEnabled ? (
+                  <Badge variant="outline" className="h-4 px-1 text-[9px] bg-primary/10 text-primary border-primary/20 group-hover:bg-primary/20">ON</Badge>
+                ) : (
+                  <Badge variant="outline" className="h-4 px-1 text-[9px] bg-muted text-muted-foreground border-muted-foreground/20 group-hover:text-primary">OFF</Badge>
+                )}
+              </div>
+              <span className={`font-medium ${!isTaxEnabled ? 'line-through opacity-50' : 'text-foreground'}`}>
+                {formatIDR(taxAmount)}
+              </span>
             </div>
             <div className="flex justify-between text-lg font-bold text-primary pt-2 border-t border-border border-dashed mt-2">
               <span>Total</span>
