@@ -48,12 +48,16 @@ export default function FinanceReportPage() {
       last14Days.forEach(date => flowMap[date] = { income: 0, expense: 0, name: date })
 
       data.forEach((t: any) => {
-        if(t.status !== 'COMPLETED') return
+        // Finance module uses 'Approved' for manual transactions, POS uses 'COMPLETED'
+        if(t.status !== 'COMPLETED' && t.status !== 'Approved') return
         const amount = Number(t.total_amount)
         
-        if (t.transaction_type === 'Income') {
+        const isIncome = t.transaction_type === 'Income' || t.transaction_type === 'Cash In';
+        const isExpense = t.transaction_type === 'Expense' || t.transaction_type === 'Cash Out';
+
+        if (isIncome) {
           income += amount
-        } else if (t.transaction_type === 'Expense') {
+        } else if (isExpense) {
           expense += amount
           const cat = t.category?.name || 'Lainnya'
           expenseMap[cat] = (expenseMap[cat] || 0) + amount
@@ -61,8 +65,8 @@ export default function FinanceReportPage() {
 
         const dateStr = new Date(t.transaction_date).toISOString().split('T')[0]
         if (flowMap[dateStr]) {
-          if (t.transaction_type === 'Income') flowMap[dateStr].income += amount
-          if (t.transaction_type === 'Expense') flowMap[dateStr].expense += amount
+          if (isIncome) flowMap[dateStr].income += amount
+          if (isExpense) flowMap[dateStr].expense += amount
         }
       })
 

@@ -119,7 +119,7 @@ export default function FinanceDashboard() {
 
   // Use data strictly from DB
   const displayCashFlow = summary?.chartData || [];
-  const hasCashflowData = displayCashFlow.length > 0 && displayCashFlow.some((d: any) => d.income > 0 || d.expense > 0);
+  const hasCashflowData = displayCashFlow.length > 0 && displayCashFlow.some((d: any) => d.income > 0 || d.expenses > 0);
   const netProfit = (summary?.totalIncomeMtd || 0) - (summary?.totalExpensesMtd || 0);
 
   return (
@@ -225,7 +225,7 @@ export default function FinanceDashboard() {
               <div className="h-[300px] mt-6 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={displayCashFlow} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} barSize={16}>
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'currentColor' }} className="text-muted-foreground" dy={10} />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'currentColor' }} className="text-muted-foreground" dy={10} />
                     <YAxis 
                       axisLine={false} 
                       tickLine={false} 
@@ -244,7 +244,7 @@ export default function FinanceDashboard() {
                     />
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', marginTop: '10px' }} />
                     <Bar dataKey="income" name="Pemasukan" fill="var(--success)" radius={[3, 3, 0, 0]} />
-                    <Bar dataKey="expense" name="Pengeluaran" fill="var(--destructive)" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="expenses" name="Pengeluaran" fill="var(--destructive)" radius={[3, 3, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -265,22 +265,24 @@ export default function FinanceDashboard() {
                    <p className="text-xs font-medium">Belum ada transaksi bulan ini.</p>
                 </div>
               ) : (
-                transactions.slice(0, 7).map((tx, i) => (
+                transactions.slice(0, 7).map((tx, i) => {
+                  const isIncome = tx.transaction_type === 'Income' || tx.transaction_type === 'Cash In';
+                  return (
                   <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className={`p-1.5 rounded-md ${tx.transaction_type === 'Income' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
-                        {tx.transaction_type === 'Income' ? <ArrowDownRight className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
+                      <div className={`p-1.5 rounded-md ${isIncome ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
+                        {isIncome ? <ArrowDownRight className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
                       </div>
                       <div>
                         <p className="font-semibold text-[13px] text-foreground">{tx.description || tx.transaction_no}</p>
                         <p className="text-[11px] font-medium text-muted-foreground mt-0.5">{new Date(tx.transaction_date).toLocaleDateString('id-ID')}</p>
                       </div>
                     </div>
-                    <div className={`font-bold text-[13px] ${tx.transaction_type === 'Income' ? 'text-success' : 'text-foreground'}`}>
-                      {tx.transaction_type === 'Income' ? '+' : '-'}{formatIDR(tx.total_amount)}
+                    <div className={`font-bold text-[13px] ${isIncome ? 'text-success' : 'text-foreground'}`}>
+                      {isIncome ? '+' : '-'}{formatIDR(tx.total_amount)}
                     </div>
                   </div>
-                ))
+                )})
               )}
             </div>
           </CardContent>
