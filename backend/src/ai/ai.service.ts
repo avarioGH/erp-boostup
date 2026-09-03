@@ -1,47 +1,50 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import OpenAI from 'openai';
 
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  private genAI: GoogleGenerativeAI;
+  private openai: OpenAI;
 
   constructor(private prisma: PrismaService) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (apiKey) {
-      this.genAI = new GoogleGenerativeAI(apiKey);
-    }
+    this.openai = new OpenAI({
+      apiKey: 'sk-p8GXAXmljYonz0t5fvS0r09aN9K6iPvkCpR9UWyhXuU9ykf8',
+      baseURL: 'https://router.juan.web.id/v1'
+    });
   }
 
   private getTools() {
     return [
       {
-        get_financial_summary: {
+        type: 'function',
+        function: {
           name: 'get_financial_summary',
           description: 'Get the summary of cash and bank account balances for the company.',
-          parameters: { type: SchemaType.OBJECT, properties: {} }
-        },
+          parameters: { type: 'object', properties: {} }
+        }
       },
       {
-        get_inventory_status: {
+        type: 'function',
+        function: {
           name: 'get_inventory_status',
           description: 'Get a list of products and their current stock levels.',
           parameters: {
-            type: SchemaType.OBJECT,
-            properties: { limit: { type: SchemaType.INTEGER, description: 'Number of items to return' } }
+            type: 'object',
+            properties: { limit: { type: 'integer', description: 'Number of items to return' } }
           }
         }
       },
       {
-        update_product_price: {
+        type: 'function',
+        function: {
           name: 'update_product_price',
           description: 'Propose an update to the selling price of a product by its exact name. THIS REQUIRES USER PERMISSION.',
           parameters: {
-            type: SchemaType.OBJECT,
+            type: 'object',
             properties: {
-              product_name: { type: SchemaType.STRING, description: 'The exact name of the product' },
-              new_price: { type: SchemaType.NUMBER, description: 'The new selling price' }
+              product_name: { type: 'string', description: 'The exact name of the product' },
+              new_price: { type: 'number', description: 'The new selling price' }
             },
             required: ['product_name', 'new_price']
           }
@@ -51,53 +54,72 @@ export class AiService {
   }
 
   async handleChat(user: any, prompt: string, chatHistory: any[]) {
-    if (!this.genAI) return { response: 'GEMINI_API_KEY is not configured.' };
-
     try {
-      const model = this.genAI.getGenerativeModel({
-        model: 'gemini-1.5-flash',
-        tools: [{ functionDeclarations: Object.values(this.getTools()).map(t => Object.values(t)[0] as any) }],
-        systemInstruction: `You are Avario AI, an advanced ERP assistant. 
-        If asked to change data, use the appropriate tool. The system will automatically ask the user for permission. Just tell the user you have prepared the action for their approval.`
-      });
-
-      const chat = model.startChat({
-        history: chatHistory.map(h => ({ role: h.role, parts: [{ text: h.text }] })),
-      });
-
-      let result = await chat.sendMessage(prompt);
-      const call = result.response.functionCalls()?.[0];
-      
-      let pendingAction: any = null;
-
-      if (call) {
-        const args: any = call.args;
-        let apiResponse: any;
-
-        // READ operations
-        if (call.name === 'get_financial_summary') {
-          apiResponse = await this.getFinancialSummary(user.company_id);
-          result = await chat.sendMessage([{ functionResponse: { name: call.name, response: apiResponse } }]);
-        } 
-        else if (call.name === 'get_inventory_status') {
-          apiResponse = await this.getInventoryStatus(user.company_id, args.limit as number);
-          result = await chat.sendMessage([{ functionResponse: { name: call.name, response: apiResponse } }]);
-        } 
-        // WRITE operations (Propose only)
-        else if (call.name === 'update_product_price') {
-          const proposal = await this.proposeUpdateProductPrice(user.company_id, args.product_name, args.new_price);
-          
-          if (proposal.success) {
-            pendingAction = proposal.action;
-            apiResponse = { status: 'PROPOSAL_CREATED_WAITING_FOR_USER_APPROVAL', message: 'Tolong beritahu user bahwa tombol persetujuan sudah muncul di layar.' };
-          } else {
-            apiResponse = { status: 'FAILED', message: proposal.message };
-          }
-          result = await chat.sendMessage([{ functionResponse: { name: call.name, response: apiResponse } }]);
+      const messages: any[] = [
+        {
+          role: 'system',
+          content: `You are Avario AI, an advanced ERP assistant. 
+          If asked to change data, use the appropriate tool. The system will automatically ask the user for permission. Just tell the user you have prepared the action for their approval.`
         }
+      ];
+
+      for (const h of chatHistory) {
+        messages.push({
+          role: h.role === 'model' ? 'assistant' : h.role,
+          content: h.text
+        });
       }
 
-      const finalResponse = result.response.text();
+      messages.push({ role: 'user', content: prompt });
+
+      let result = await this.openai.chat.completions.create({
+        model: 'gemini-1.5-flash',
+        messages: messages,
+        tools: this.getTools() as any,
+        tool_choice: 'auto'
+      });
+
+      let responseMessage = result.choices[0].message;
+      let pendingAction: any = null;
+
+      if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+        messages.push(responseMessage);
+        
+        for (const rawToolCall of responseMessage.tool_calls) {
+          const toolCall = rawToolCall as any;
+          const args = JSON.parse(toolCall.function.arguments);
+          let apiResponse: any;
+
+          if (toolCall.function.name === 'get_financial_summary') {
+            apiResponse = await this.getFinancialSummary(user.company_id);
+          } else if (toolCall.function.name === 'get_inventory_status') {
+            apiResponse = await this.getInventoryStatus(user.company_id, args.limit as number);
+          } else if (toolCall.function.name === 'update_product_price') {
+            const proposal = await this.proposeUpdateProductPrice(user.company_id, args.product_name, args.new_price);
+            if (proposal.success) {
+              pendingAction = proposal.action;
+              apiResponse = { status: 'PROPOSAL_CREATED_WAITING_FOR_USER_APPROVAL', message: 'Tolong beritahu user bahwa tombol persetujuan sudah muncul di layar.' };
+            } else {
+              apiResponse = { status: 'FAILED', message: proposal.message };
+            }
+          }
+
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: JSON.stringify(apiResponse)
+          });
+        }
+
+        result = await this.openai.chat.completions.create({
+          model: 'gemini-1.5-flash',
+          messages: messages,
+        });
+
+        responseMessage = result.choices[0].message;
+      }
+
+      const finalResponse = responseMessage.content || '';
 
       await this.prisma.aiChatHistory.create({
         data: {
@@ -121,8 +143,8 @@ export class AiService {
   private async getFinancialSummary(companyId: string) {
     const accounts = await this.prisma.cashAccount.findMany({ where: { company_id: companyId } });
     return {
-      accounts: accounts.map(a => ({ name: a.name, balance: a.current_balance })),
-      total: accounts.reduce((sum, a) => sum + a.current_balance, 0)
+      accounts: accounts.map(a => ({ name: a.name, balance: Number(a.current_balance) })),
+      total: accounts.reduce((sum, a) => sum + Number(a.current_balance), 0)
     };
   }
 
