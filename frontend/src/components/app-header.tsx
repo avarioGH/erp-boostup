@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
+import { api } from "@/lib/api"
 
 export function AppHeader() {
   const router = useRouter()
@@ -19,6 +20,11 @@ export function AppHeader() {
   const [warehouses, setWarehouses] = useState<any[]>([])
 
   useEffect(() => {
+    // Fetch live warehouses
+    api.get('/inventory/warehouses').then(res => {
+      if (res.data) setWarehouses(res.data)
+    }).catch(err => console.error("Error fetching warehouses", err))
+
     // Check local storage for user data
     if (typeof window !== "undefined") {
       const storedUser = localStorage.getItem("erp_user")
@@ -27,18 +33,14 @@ export function AppHeader() {
           const parsedUser = JSON.parse(storedUser)
           setUser(parsedUser)
           
-          if (parsedUser.accessible_warehouses) {
-            setWarehouses(parsedUser.accessible_warehouses)
-            
-            // Check if active warehouse is already in local storage
-            const storedActive = localStorage.getItem("active_warehouse")
-            if (storedActive && storedActive !== "null" && storedActive !== "undefined") {
-              setActiveWarehouse(JSON.parse(storedActive))
-            } else {
-              // Default to Pusat (null warehouse)
-              setActiveWarehouse(null)
-              localStorage.setItem("active_warehouse", JSON.stringify(null))
-            }
+          // Check if active warehouse is already in local storage
+          const storedActive = localStorage.getItem("active_warehouse")
+          if (storedActive && storedActive !== "null" && storedActive !== "undefined") {
+            setActiveWarehouse(JSON.parse(storedActive))
+          } else {
+            // Default to Pusat (null warehouse)
+            setActiveWarehouse(null)
+            localStorage.setItem("active_warehouse", JSON.stringify(null))
           }
         } catch (e) {
           console.error("Error parsing user data", e)
