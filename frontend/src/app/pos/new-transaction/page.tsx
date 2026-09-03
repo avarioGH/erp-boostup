@@ -23,7 +23,7 @@ import {
 import { InventoryAPI, PosAPI } from "@/lib/api"
 
 type CartItem = {
-  id: number
+  id: string
   name: string
   price: number
   qty: number
@@ -42,13 +42,24 @@ export default function PosTransaction() {
   const [isError, setIsError] = useState(false)
   const [products, setProducts] = useState<any[]>([])
   const [categories, setCategories] = useState<string[]>(["Semua"])
+  const [warehouses, setWarehouses] = useState<any[]>([])
+  const [selectedWarehouse, setSelectedWarehouse] = useState("")
 
   useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true)
         setIsError(false)
-        const dbProducts = await InventoryAPI.getProducts()
+        const [dbProducts, dbWarehouses] = await Promise.all([
+          InventoryAPI.getProducts(),
+          InventoryAPI.getWarehouses().catch(() => [])
+        ])
+        
+        if (dbWarehouses && dbWarehouses.length > 0) {
+          setWarehouses(dbWarehouses)
+          setSelectedWarehouse(dbWarehouses[0].id)
+        }
+
         // Map Prisma products to UI format
         const mapped = dbProducts.map((p: any) => ({
           id: p.id,
@@ -97,7 +108,7 @@ export default function PosTransaction() {
     })
   }
 
-  const updateQty = (id: number, delta: number) => {
+  const updateQty = (id: string, delta: number) => {
     setCart(prev => prev.map(item => {
       if (item.id === id) {
         const newQty = item.qty + delta
@@ -107,7 +118,7 @@ export default function PosTransaction() {
     }))
   }
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string) => {
     setCart(prev => prev.filter(item => item.id !== id))
   }
 
@@ -333,7 +344,7 @@ export default function PosTransaction() {
                 setIsCheckingOut(true);
                 try {
                   const payload = {
-                    warehouseId: "gudang_a", // default untuk demo
+                    warehouseId: selectedWarehouse || undefined,
                     paymentMethod,
                     items: cart.map(item => ({ productId: item.id, qty: item.qty, price: item.price })),
                     subtotal,
@@ -344,9 +355,10 @@ export default function PosTransaction() {
                   alert(`Transaksi Sukses! (Tersimpan ke Database Real)`);
                   setCart([]);
                   setIsPaymentOpen(false);
-                } catch (error) {
+                } catch (error: any) {
                   console.error("Checkout failed", error);
-                  alert(`Gagal terhubung ke Database. Mensimulasikan Transaksi Lokal Sukses!`);
+                  const errMessage = error?.response?.data?.message || error.message || "Unknown error";
+                  alert(`Gagal terhubung ke Database. Error: ${errMessage}`);
                   setCart([]);
                   setIsPaymentOpen(false);
                 } finally {
