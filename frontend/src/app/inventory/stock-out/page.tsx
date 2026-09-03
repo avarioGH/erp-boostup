@@ -194,7 +194,9 @@ export default function StockOutPage() {
                 <Label>Gudang Asal</Label>
                 <Select value={formData.warehouseId} onValueChange={(val) => setFormData({...formData, warehouseId: val as string})}>
                   <SelectTrigger className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800">
-                    <SelectValue placeholder="Pilih Gudang" />
+                    <SelectValue placeholder="Pilih Gudang">
+                      {warehouses.find(w => w.id === formData.warehouseId)?.name || "Pilih Gudang"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {warehouses.length > 0 ? (
@@ -240,7 +242,9 @@ export default function StockOutPage() {
                       <Label className="text-xs">Produk</Label>
                       <Select value={item.productId} onValueChange={(val) => updateItem(index, 'productId', val as string)}>
                         <SelectTrigger className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800">
-                          <SelectValue placeholder="Pilih Produk" />
+                          <SelectValue placeholder="Pilih Produk">
+                            {products.find(p => p.id === item.productId)?.name || "Pilih Produk"}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {products.map(p => {
