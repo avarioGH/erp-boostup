@@ -1486,8 +1486,8 @@ model SalesOrder {
   id String @id @default(auto()) @map("_id") @db.ObjectId
   company_id       String @db.ObjectId
   company          Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customer_id      String @db.ObjectId
-  customer         Customer @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customer_id      String? @db.ObjectId
+  customer         Customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   order_number     String
   order_date       DateTime
   status           String   // DRAFT, PENDING, COMPLETED, CANCELLED
