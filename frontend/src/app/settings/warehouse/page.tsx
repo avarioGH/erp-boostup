@@ -41,7 +41,7 @@ export default function WarehouseSettings() {
   
   // Form states
   const [selectedWh, setSelectedWh] = useState<any>(null)
-  const [formData, setFormData] = useState({ name: "", location: "" })
+  const [formData, setFormData] = useState({ name: "", address: "" })
   const [searchQuery, setSearchQuery] = useState("")
 
   const checkAuth = () => {
@@ -79,7 +79,7 @@ export default function WarehouseSettings() {
     try {
       await InventoryAPI.createWarehouse(formData)
       setIsAddOpen(false)
-      setFormData({ name: "", location: "" })
+      setFormData({ name: "", address: "" })
       fetchWarehouses()
     } catch (e) {
       alert("Gagal menambahkan gudang")
@@ -113,7 +113,7 @@ export default function WarehouseSettings() {
 
   const filteredWarehouses = warehouses.filter(wh => 
     wh.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (wh.location && wh.location.toLowerCase().includes(searchQuery.toLowerCase()))
+    (wh.address && wh.address.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
   if (user?.role !== "Owner") return null;
@@ -156,8 +156,8 @@ export default function WarehouseSettings() {
                   <Label>Lokasi / Alamat</Label>
                   <Input 
                     placeholder="Misal: Jl. Sudirman No. 12" 
-                    value={formData.location} 
-                    onChange={e => setFormData({...formData, location: e.target.value})}
+                    value={formData.address} 
+                    onChange={e => setFormData({...formData, address: e.target.value})}
                   />
                 </div>
               </div>
@@ -212,7 +212,7 @@ export default function WarehouseSettings() {
                         {wh.name}
                       </TableCell>
                       <TableCell className="text-slate-600 dark:text-slate-400">
-                        {wh.location || "-"}
+                        {wh.address || "-"}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -222,7 +222,7 @@ export default function WarehouseSettings() {
                             className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                             onClick={() => {
                               setSelectedWh(wh)
-                              setFormData({ name: wh.name, location: wh.location || "" })
+                              setFormData({ name: wh.name, address: wh.address || "" })
                               setIsEditOpen(true)
                             }}
                           >
@@ -274,8 +274,8 @@ export default function WarehouseSettings() {
                 <Label>Lokasi / Alamat</Label>
                 <Input 
                   placeholder="Misal: Jl. Sudirman No. 12" 
-                  value={formData.location} 
-                  onChange={e => setFormData({...formData, location: e.target.value})}
+                  value={formData.address} 
+                  onChange={e => setFormData({...formData, address: e.target.value})}
                 />
               </div>
             </div>
