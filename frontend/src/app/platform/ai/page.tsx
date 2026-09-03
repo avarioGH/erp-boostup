@@ -49,6 +49,7 @@ export default function AIInsightsPage() {
 
   // A very simple markdown formatter to bold text wrapped in ** and handle newlines
   const formatMarkdown = (text: string) => {
+    if (!text) return null;
     return text.split('\n').map((line, i) => {
       const parts = line.split(/(\*\*.*?\*\*)/g).map((part, j) => {
         if (part.startsWith('**') && part.endsWith('**')) {

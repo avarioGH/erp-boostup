@@ -45,6 +45,7 @@ export default function AiChatPage() {
 
   // Format the text so **bold** shows up
   const formatText = (text: string) => {
+    if (!text) return [];
     const parts = text.split(/(\*\*.*?\*\*)/g)
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
