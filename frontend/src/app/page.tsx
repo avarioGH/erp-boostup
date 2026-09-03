@@ -8,16 +8,16 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { 
-  TrendingUp, TrendingDown, DollarSign, Package, 
-  CreditCard, Users, Activity, ShoppingCart, AlertCircle, ArrowUpRight, ArrowDownRight, Award, AlertTriangle, RefreshCcw
+  TrendingUp, TrendingDown, Package, 
+  CreditCard, Users, Activity, ShoppingCart, AlertCircle, ArrowUpRight, ArrowDownRight, Award, AlertTriangle, RefreshCcw, Minus
 } from "lucide-react"
 import { 
   Area, AreaChart, Bar, BarChart, CartesianGrid, 
-  ResponsiveContainer, Tooltip, XAxis, YAxis 
+  ResponsiveContainer, Tooltip, XAxis, YAxis, Legend
 } from "recharts"
 import { DashboardAPI, InventoryAPI } from "@/lib/api"
 
-// Helper function to replace date-fns
+// Helper function
 const timeAgo = (dateStr: string) => {
   const date = new Date(dateStr)
   const now = new Date()
@@ -31,23 +31,6 @@ const timeAgo = (dateStr: string) => {
   const diffInDays = Math.floor(diffInHours / 24)
   return `${diffInDays} hari lalu`
 }
-
-const fallbackSalesData = [
-  { date: "1 Jul", sales: 12500000, profit: 4500000 },
-  { date: "5 Jul", sales: 15000000, profit: 5500000 },
-  { date: "10 Jul", sales: 18000000, profit: 7000000 },
-  { date: "15 Jul", sales: 14000000, profit: 5000000 },
-  { date: "20 Jul", sales: 22000000, profit: 8500000 },
-  { date: "25 Jul", sales: 19000000, profit: 6500000 },
-  { date: "30 Jul", sales: 25000000, profit: 9500000 },
-]
-
-const fallbackExpenseData = [
-  { name: "Minggu 1", income: 35000000, expense: 12000000 },
-  { name: "Minggu 2", income: 42000000, expense: 15000000 },
-  { name: "Minggu 3", income: 38000000, expense: 14000000 },
-  { name: "Minggu 4", income: 50000000, expense: 18000000 },
-]
 
 export default function OwnerDashboard() {
   const [warehouse, setWarehouse] = useState("all")
@@ -70,25 +53,25 @@ export default function OwnerDashboard() {
         ])
         setWarehouses(whs)
         
-        // Low stocks
+        // Low stocks calculation strictly from actual data
         const lows = prods.filter((p: any) => {
           const totalStock = p.warehouse_stocks?.reduce((acc: number, ws: any) => acc + ws.current_stock, 0) || 0
           return totalStock < 20
         }).slice(0, 5).map((p: any) => ({
           name: p.name,
           stock: p.warehouse_stocks?.reduce((acc: number, ws: any) => acc + ws.current_stock, 0) || 0,
-          min: 20,
+          min: p.minimum_stock || 20,
           loc: p.warehouse_stocks?.[0]?.warehouse?.name || "Pusat"
         }))
         setLowStocks(lows)
 
-        // Recent Activities
+        // Recent Activities strictly from actual transactions
         const acts = txs.slice(0, 5).map((tx: any) => {
           return {
             time: timeAgo(tx.transaction_date),
             title: tx.transaction_type === 'IN' ? 'Barang Masuk' : tx.transaction_type === 'OUT' ? 'Barang Keluar' : 'Transfer Gudang',
             desc: tx.notes || `Transaksi ${tx.reference_number}`,
-            color: tx.transaction_type === 'IN' ? 'bg-emerald-500' : tx.transaction_type === 'OUT' ? 'bg-amber-500' : 'bg-blue-500'
+            color: tx.transaction_type === 'IN' ? 'bg-success' : tx.transaction_type === 'OUT' ? 'bg-warning' : 'bg-primary'
           }
         })
         setRecentActivities(acts)
@@ -116,20 +99,54 @@ export default function OwnerDashboard() {
     fetchData()
   }, [warehouse])
 
-  // Helper to format currency
   const formatIDR = (value: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       maximumFractionDigits: 0
-    }).format(value)
+    }).format(value || 0)
+  }
+
+  // Component to render percentage indicator properly based on real data
+  const PercentageIndicator = ({ value, label, invertColors = false }: { value: number | undefined | null, label: string, invertColors?: boolean }) => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return (
+        <div className="flex items-center gap-2 text-sm mt-1">
+          <span className="flex items-center gap-1 text-muted-foreground font-medium px-1.5 py-0.5 rounded-md bg-accent">
+            <Minus className="w-3 h-3" /> —
+          </span>
+          <span className="text-muted-foreground text-xs">{label} (Data tidak cukup)</span>
+        </div>
+      )
+    }
+
+    const isPositive = value > 0;
+    const isZero = value === 0;
+    const isGood = invertColors ? !isPositive : isPositive;
+    
+    let colorClass = "text-muted-foreground bg-accent";
+    let icon = <Minus className="w-3 h-3" />;
+    
+    if (!isZero) {
+      colorClass = isGood ? "text-success bg-success/10" : "text-destructive bg-destructive/10";
+      icon = isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />;
+    }
+
+    return (
+      <div className="flex items-center gap-2 text-sm mt-1">
+        <span className={`flex items-center gap-1 font-semibold px-2 py-0.5 rounded-md text-[11px] ${colorClass}`}>
+          {icon} {Math.abs(value).toFixed(1)}%
+        </span>
+        <span className="text-muted-foreground text-xs font-medium">{label}</span>
+      </div>
+    )
   }
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 animate-pulse">
-        <RefreshCcw className="w-10 h-10 text-indigo-500 animate-spin" />
-        <p className="text-slate-500 font-medium">Menghubungkan ke Database Real...</p>
+        <RefreshCcw className="w-8 h-8 text-primary animate-spin" />
+        <p className="text-muted-foreground font-medium text-sm">Menghubungkan ke Database Real...</p>
       </div>
     )
   }
@@ -137,16 +154,16 @@ export default function OwnerDashboard() {
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in zoom-in duration-300">
-        <div className="w-24 h-24 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center mb-6">
-          <AlertTriangle className="w-12 h-12 text-rose-600 dark:text-rose-500" />
+        <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
+          <AlertTriangle className="w-10 h-10 text-destructive" />
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Koneksi Database Terputus</h2>
-        <p className="text-slate-500 dark:text-slate-400 max-w-md mb-8">
-          Aplikasi gagal mengambil data real dari server PostgreSQL. Pastikan database Anda sedang berjalan di port 5432 dan backend NestJS aktif.
+        <h2 className="text-xl font-bold text-foreground mb-2">Koneksi Database Terputus</h2>
+        <p className="text-muted-foreground max-w-md mb-8 text-sm">
+          Aplikasi gagal mengambil data real dari server PostgreSQL. Pastikan database Anda sedang berjalan.
         </p>
         <button 
           onClick={() => window.location.reload()}
-          className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 py-2.5 rounded-lg font-medium hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors flex items-center gap-2"
+          className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm shadow-sm"
         >
           <RefreshCcw className="w-4 h-4" /> Coba Lagi
         </button>
@@ -154,22 +171,25 @@ export default function OwnerDashboard() {
     )
   }
 
-  // Use data strictly from API
-  const displaySales = kpi?.chartData || [];
-  const displayExpense = kpi?.chartData || [];
+  // Use data strictly from API (No hardcoded dummy arrays)
+  const displaySales = kpi?.chartData?.sales || [];
+  const displayExpense = kpi?.chartData?.cashflow || [];
+  
+  const hasSalesData = displaySales.length > 0 && displaySales.some((d: any) => d.sales > 0 || d.profit > 0);
+  const hasCashflowData = displayExpense.length > 0 && displayExpense.some((d: any) => d.income > 0 || d.expense > 0);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       {/* HEADER & FILTER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Owner Dashboard</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Pantau seluruh performa bisnis dan pergerakan aset Anda.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard Bisnis</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Pantau seluruh performa bisnis dan pergerakan aset Anda.</p>
         </div>
-        <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span className="text-sm font-medium text-slate-500 pl-2 hidden sm:inline-block">Filter Cabang:</span>
+        <div className="flex items-center gap-3 bg-card p-1.5 rounded-lg border border-border shadow-sm">
+          <span className="text-xs font-semibold text-muted-foreground pl-3 hidden sm:inline-block uppercase tracking-wider">Cabang:</span>
           <Select value={warehouse} onValueChange={(val) => setWarehouse(val as string)}>
-            <SelectTrigger className="w-[180px] border-none bg-slate-50 dark:bg-slate-800 focus:ring-0 focus:ring-offset-0">
+            <SelectTrigger className="w-[180px] border-none bg-accent focus:ring-0 focus:ring-offset-0 h-8 text-sm font-medium">
               <SelectValue placeholder="Pilih Gudang" />
             </SelectTrigger>
             <SelectContent>
@@ -184,151 +204,169 @@ export default function OwnerDashboard() {
 
       {/* KPI CARDS - ROW 1 */}
       <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
-        <Card className="border-none shadow-md shadow-slate-200/50 dark:shadow-none bg-gradient-to-br from-indigo-500 to-indigo-600 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-20">
-            <ShoppingCart className="w-16 h-16" />
+        <Card className="border-border shadow-sm bg-card relative overflow-hidden group hover:border-primary/50 transition-colors">
+          <div className="absolute top-4 right-4 p-2 bg-primary/10 rounded-lg text-primary">
+            <ShoppingCart className="w-5 h-5" />
           </div>
-          <CardHeader className="pb-2 relative z-10 overflow-hidden">
-            <CardDescription className="text-indigo-100 font-medium tracking-wide uppercase text-xs truncate">Penjualan Hari Ini</CardDescription>
-            <CardTitle className="text-3xl font-bold truncate" title={formatIDR(kpi?.currentRevenue || 0)}>{formatIDR(kpi?.currentRevenue || 0)}</CardTitle>
+          <CardHeader className="pb-2">
+            <CardDescription className="font-semibold tracking-wider uppercase text-[10px] text-muted-foreground truncate">Penjualan Hari Ini</CardDescription>
+            <CardTitle className="text-2xl font-bold text-foreground truncate mt-1" title={formatIDR(kpi?.currentRevenue)}>{formatIDR(kpi?.currentRevenue)}</CardTitle>
           </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-full font-medium">
-                <ArrowUpRight className="w-3 h-3" /> +14.5%
-              </span>
-              <span className="text-indigo-100 opacity-80">dari kemarin</span>
-            </div>
+          <CardContent>
+            <PercentageIndicator 
+              value={kpi?.comparison?.revenuePercentage} 
+              label="dari kemarin" 
+            />
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md shadow-slate-200/50 dark:shadow-none bg-gradient-to-br from-emerald-500 to-emerald-600 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-20">
-            <TrendingUp className="w-16 h-16" />
+        <Card className="border-border shadow-sm bg-card relative overflow-hidden group hover:border-success/50 transition-colors">
+          <div className="absolute top-4 right-4 p-2 bg-success/10 rounded-lg text-success">
+            <TrendingUp className="w-5 h-5" />
           </div>
-          <CardHeader className="pb-2 relative z-10 overflow-hidden">
-            <CardDescription className="text-emerald-100 font-medium tracking-wide uppercase text-xs truncate">Profit Bulan Ini</CardDescription>
-            <CardTitle className="text-3xl font-bold truncate" title={formatIDR(kpi?.netProfit || 0)}>{formatIDR(kpi?.netProfit || 0)}</CardTitle>
+          <CardHeader className="pb-2">
+            <CardDescription className="font-semibold tracking-wider uppercase text-[10px] text-muted-foreground truncate">Profit Bulan Ini</CardDescription>
+            <CardTitle className="text-2xl font-bold text-foreground truncate mt-1" title={formatIDR(kpi?.netProfit)}>{formatIDR(kpi?.netProfit)}</CardTitle>
           </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="flex items-center gap-1 bg-white/20 px-2 py-0.5 rounded-full font-medium">
-                <ArrowUpRight className="w-3 h-3" /> +22.4%
-              </span>
-              <span className="text-emerald-100 opacity-80">dari bulan lalu</span>
-            </div>
+          <CardContent>
+            <PercentageIndicator 
+              value={kpi?.comparison?.profitPercentage} 
+              label="dari bulan lalu" 
+            />
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 relative overflow-hidden group hover:border-blue-500 transition-colors">
-          <div className="absolute top-4 right-4 p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+        <Card className="border-border shadow-sm bg-card relative overflow-hidden group hover:border-info/50 transition-colors">
+          <div className="absolute top-4 right-4 p-2 bg-info/10 rounded-lg text-info">
             <CreditCard className="w-5 h-5" />
           </div>
-          <CardHeader className="pb-2 overflow-hidden">
-            <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500 truncate">Total Cash Flow</CardDescription>
-            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white truncate" title={formatIDR(kpi?.cashPosition || 0)}>{formatIDR(kpi?.cashPosition || 0)}</CardTitle>
+          <CardHeader className="pb-2">
+            <CardDescription className="font-semibold tracking-wider uppercase text-[10px] text-muted-foreground truncate">Total Cash Flow</CardDescription>
+            <CardTitle className="text-2xl font-bold text-foreground truncate mt-1" title={formatIDR(kpi?.cashPosition)}>{formatIDR(kpi?.cashPosition)}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                <ArrowUpRight className="w-3 h-3" /> +8.2%
-              </span>
-              <span className="text-slate-500">vs target</span>
-            </div>
+             <PercentageIndicator 
+              value={kpi?.comparison?.cashFlowPercentage} 
+              label="vs bulan lalu" 
+            />
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900 relative overflow-hidden group hover:border-amber-500 transition-colors">
-          <div className="absolute top-4 right-4 p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-amber-600 dark:text-amber-400">
+        <Card className="border-border shadow-sm bg-card relative overflow-hidden group hover:border-warning/50 transition-colors">
+          <div className="absolute top-4 right-4 p-2 bg-warning/10 rounded-lg text-warning">
             <Package className="w-5 h-5" />
           </div>
-          <CardHeader className="pb-2 overflow-hidden">
-            <CardDescription className="font-medium tracking-wide uppercase text-xs text-slate-500 truncate">Total Nilai Stok</CardDescription>
-            <CardTitle className="text-2xl font-bold text-slate-900 dark:text-white truncate" title={formatIDR(kpi?.inventoryValue || 0)}>{formatIDR(kpi?.inventoryValue || 0)}</CardTitle>
+          <CardHeader className="pb-2">
+            <CardDescription className="font-semibold tracking-wider uppercase text-[10px] text-muted-foreground truncate">Total Nilai Stok</CardDescription>
+            <CardTitle className="text-2xl font-bold text-foreground truncate mt-1" title={formatIDR(kpi?.inventoryValue)}>{formatIDR(kpi?.inventoryValue)}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-medium">
-                <ArrowDownRight className="w-3 h-3" /> -2.1%
-              </span>
-              <span className="text-slate-500">karena restock</span>
-            </div>
+            <PercentageIndicator 
+              value={kpi?.comparison?.inventoryPercentage} 
+              label="vs bulan lalu" 
+              invertColors={false}
+            />
           </CardContent>
         </Card>
       </div>
 
       {/* CHARTS - ROW 2 */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-7">
-        <Card className="lg:col-span-4 border-slate-200 dark:border-slate-800 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <Card className="lg:col-span-4 border-border shadow-sm flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50">
             <div>
-              <CardTitle>Tren Penjualan & Profit</CardTitle>
-              <CardDescription>Grafik 30 hari terakhir</CardDescription>
+              <CardTitle className="text-base font-bold">Tren Penjualan & Profit</CardTitle>
+              <CardDescription className="text-xs">Berdasarkan data transaksi aktual (30 hari)</CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="h-[350px] mt-4 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={displaySales} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888888' }} dy={10} />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 12, fill: '#888888' }}
-                    tickFormatter={(value) => `Rp${value / 1000000}M`}
-                    dx={-10}
-                  />
-                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: 'var(--popover)', color: 'var(--popover-foreground)' }}
-                    formatter={(value: any) => [formatIDR(value as number), undefined]}
-                  />
-                  <Area type="monotone" dataKey="sales" name="Penjualan" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
-                  <Area type="monotone" dataKey="profit" name="Profit" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+          <CardContent className="flex-1 flex flex-col justify-center">
+            {!hasSalesData ? (
+               <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                 <Activity className="w-8 h-8 mb-3 opacity-20" />
+                 <p className="text-sm font-medium">Belum ada transaksi pada periode ini</p>
+                 <p className="text-xs mt-1">Grafik akan muncul setelah transaksi tercatat.</p>
+               </div>
+            ) : (
+              <div className="h-[300px] mt-6 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={displaySales} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--success)" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="var(--success)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'currentColor' }} className="text-muted-foreground" dy={10} />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 11, fill: 'currentColor' }}
+                      className="text-muted-foreground"
+                      tickFormatter={(value) => `Rp${value / 1000000}M`}
+                      dx={-10}
+                    />
+                    <CartesianGrid vertical={false} stroke="currentColor" className="stroke-border/50" strokeDasharray="4 4" />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)', backgroundColor: 'var(--card)', color: 'var(--foreground)' }}
+                      formatter={(value: any) => [formatIDR(value as number), undefined]}
+                      itemStyle={{ fontSize: '13px', fontWeight: 500 }}
+                      labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '4px', fontSize: '12px' }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', marginTop: '10px' }} />
+                    <Area type="monotone" dataKey="sales" name="Penjualan" stroke="var(--primary)" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSales)" />
+                    <Area type="monotone" dataKey="profit" name="Profit" stroke="var(--success)" strokeWidth={2.5} fillOpacity={1} fill="url(#colorProfit)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-3 border-slate-200 dark:border-slate-800 shadow-sm">
-          <CardHeader>
-            <CardTitle>Cash Flow Mingguan</CardTitle>
-            <CardDescription>Pemasukan vs Pengeluaran</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[350px] mt-4 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={displayExpense} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} barSize={20}>
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888888' }} dy={10} />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 12, fill: '#888888' }}
-                    tickFormatter={(value) => `Rp${value / 1000000}M`}
-                    dx={-10}
-                  />
-                  <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: 'var(--popover)', color: 'var(--popover-foreground)' }}
-                    formatter={(value: any) => [formatIDR(value as number), undefined]}
-                    cursor={{fill: '#f1f5f9'}}
-                  />
-                  <Bar dataKey="income" name="Pemasukan" fill="#10b981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="expense" name="Pengeluaran" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+        <Card className="lg:col-span-3 border-border shadow-sm flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50">
+            <div>
+              <CardTitle className="text-base font-bold">Cash Flow Mingguan</CardTitle>
+              <CardDescription className="text-xs">Pemasukan vs Pengeluaran aktual</CardDescription>
             </div>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col justify-center">
+            {!hasCashflowData ? (
+               <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                 <CreditCard className="w-8 h-8 mb-3 opacity-20" />
+                 <p className="text-sm font-medium">Belum ada arus kas tercatat</p>
+               </div>
+            ) : (
+              <div className="h-[300px] mt-6 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={displayExpense} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} barSize={16}>
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'currentColor' }} className="text-muted-foreground" dy={10} />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 11, fill: 'currentColor' }}
+                      className="text-muted-foreground"
+                      tickFormatter={(value) => `Rp${value / 1000000}M`}
+                      dx={-10}
+                    />
+                    <CartesianGrid vertical={false} stroke="currentColor" className="stroke-border/50" strokeDasharray="4 4" />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '8px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)', backgroundColor: 'var(--card)', color: 'var(--foreground)' }}
+                      formatter={(value: any) => [formatIDR(value as number), undefined]}
+                      cursor={{fill: 'var(--accent)'}}
+                      itemStyle={{ fontSize: '13px', fontWeight: 500 }}
+                      labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '4px', fontSize: '12px' }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', marginTop: '10px' }} />
+                    <Bar dataKey="income" name="Pemasukan" fill="var(--success)" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="expense" name="Pengeluaran" fill="var(--destructive)" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -336,55 +374,62 @@ export default function OwnerDashboard() {
       {/* LISTS - ROW 3 */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         {/* Barang Terlaris */}
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
-          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Award className="w-4 h-4 text-amber-500" /> Barang Terlaris
+        <Card className="border-border shadow-sm flex flex-col">
+          <CardHeader className="pb-3 border-b border-border/50">
+            <CardTitle className="text-[15px] font-bold flex items-center gap-2">
+              <Award className="w-[18px] h-[18px] text-warning" /> Barang Terlaris
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 flex-1">
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {(kpi?.topProducts || []).length === 0 && (
-                <div className="text-center text-slate-500 py-6 text-sm">Belum ada data penjualan.</div>
-              )}
-              {(kpi?.topProducts || []).map((item: any, i: number) => (
-                <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  <div>
-                    <p className="font-medium text-sm text-slate-900 dark:text-white">{item.name}</p>
-                    <p className="text-xs text-slate-500">{item.qty} terjual</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-sm text-indigo-600 dark:text-indigo-400">{formatIDR(item.revenue)}</p>
-                  </div>
+            <div className="divide-y divide-border/50">
+              {(!kpi?.topProducts || kpi?.topProducts.length === 0) ? (
+                <div className="text-center text-muted-foreground py-10 flex flex-col items-center">
+                   <Package className="w-6 h-6 opacity-20 mb-2" />
+                   <p className="text-xs font-medium">Belum ada data penjualan.</p>
                 </div>
-              ))}
+              ) : (
+                kpi.topProducts.map((item: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors">
+                    <div>
+                      <p className="font-semibold text-[13px] text-foreground">{item.name}</p>
+                      <p className="text-[11px] font-medium text-muted-foreground mt-0.5">{item.qty} terjual</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-[13px] text-foreground">{formatIDR(item.revenue)}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
 
         {/* Barang Hampir Habis */}
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
-          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-            <CardTitle className="text-base flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-500" /> Stok Menipis
+        <Card className="border-border shadow-sm flex flex-col">
+          <CardHeader className="pb-3 border-b border-border/50">
+            <CardTitle className="text-[15px] font-bold flex items-center gap-2">
+              <AlertCircle className="w-[18px] h-[18px] text-destructive" /> Stok Menipis
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-0 pt-0">
+          <CardContent className="px-0 pt-0 flex-1">
             {lowStocks.length === 0 ? (
-              <div className="p-6 text-center text-slate-500">Stok aman, tidak ada barang menipis.</div>
+              <div className="text-center text-muted-foreground py-10 flex flex-col items-center">
+                 <CheckCircle className="w-6 h-6 opacity-20 mb-2 text-success" />
+                 <p className="text-xs font-medium">Stok aman, tidak ada barang menipis.</p>
+              </div>
             ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              <div className="divide-y divide-border/50">
                 {lowStocks.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                  <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors">
                     <div>
-                      <p className="font-medium text-sm text-slate-900 dark:text-white">{item.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">{item.loc}</span>
-                        <span className="text-xs text-slate-500">Min: {item.min}</span>
+                      <p className="font-semibold text-[13px] text-foreground">{item.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border border-border text-muted-foreground">{item.loc}</span>
+                        <span className="text-[11px] font-medium text-muted-foreground">Min: {item.min}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded-md">
+                      <p className="font-bold text-[12px] text-destructive bg-destructive/10 px-2.5 py-1 rounded-md">
                         Sisa {item.stock}
                       </p>
                     </div>
@@ -395,64 +440,68 @@ export default function OwnerDashboard() {
           </CardContent>
         </Card>
 
-        {/* Top Customer / Aktivitas */}
-        <Card className="border-slate-200 dark:border-slate-800 shadow-sm flex flex-col xl:col-span-1 md:col-span-2">
-          <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="w-4 h-4 text-blue-500" /> Top Customers
+        {/* Top Customer */}
+        <Card className="border-border shadow-sm flex flex-col xl:col-span-1 md:col-span-2">
+          <CardHeader className="pb-3 border-b border-border/50">
+            <CardTitle className="text-[15px] font-bold flex items-center gap-2">
+              <Users className="w-[18px] h-[18px] text-primary" /> Top Customers
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 flex-1">
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {(kpi?.topCustomers || []).length === 0 && (
-                <div className="text-center text-slate-500 py-6 text-sm">Belum ada data pelanggan.</div>
-              )}
-              {(kpi?.topCustomers || []).map((item: any, i: number) => (
-                <div key={i} className="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-sm font-bold text-slate-600 dark:text-slate-400">
-                      {item.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm text-slate-900 dark:text-white">{item.name}</p>
-                      <p className={`text-[10px] font-bold px-1.5 py-0.5 mt-0.5 rounded-md inline-block ${
-                        item.level === 'Platinum' ? 'bg-slate-800 text-slate-100 dark:bg-slate-100 dark:text-slate-900' :
-                        item.level === 'Gold' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-700'
-                      }`}>
-                        {item.level}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-sm text-slate-900 dark:text-white">{formatIDR(item.spent)}</p>
-                  </div>
+            <div className="divide-y divide-border/50">
+              {(!kpi?.topCustomers || kpi?.topCustomers.length === 0) ? (
+                <div className="text-center text-muted-foreground py-10 flex flex-col items-center">
+                   <Users className="w-6 h-6 opacity-20 mb-2" />
+                   <p className="text-xs font-medium">Belum ada data pelanggan.</p>
                 </div>
-              ))}
+              ) : (
+                kpi.topCustomers.map((item: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-accent border border-border flex items-center justify-center text-[13px] font-bold text-muted-foreground">
+                        {item.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-[13px] text-foreground">{item.name}</p>
+                        <p className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 mt-1 rounded border inline-block ${
+                          item.level === 'Platinum' ? 'bg-foreground text-background border-foreground' :
+                          item.level === 'Gold' ? 'bg-warning/10 text-warning border-warning/20' : 'bg-accent text-muted-foreground border-border'
+                        }`}>
+                          {item.level || 'Regular'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-[13px] text-foreground">{formatIDR(item.spent)}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
       
       {/* ACTIVITY TIMELINE - ROW 4 */}
-      <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
-        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Activity className="w-4 h-4 text-indigo-500" /> Aktivitas Sistem Terbaru
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-4 border-b border-border/50">
+          <CardTitle className="text-[15px] font-bold flex items-center gap-2">
+            <Activity className="w-[18px] h-[18px] text-primary" /> Aktivitas Sistem Terbaru
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           {recentActivities.length === 0 ? (
-            <div className="text-center text-slate-500 py-4">Belum ada aktivitas.</div>
+            <div className="text-center text-muted-foreground py-8 text-sm">Belum ada aktivitas tercatat di sistem.</div>
           ) : (
-            <div className="relative border-l border-slate-200 dark:border-slate-800 ml-3 space-y-6">
+            <div className="relative border-l-2 border-border ml-3 space-y-7">
               {recentActivities.map((act, i) => (
                 <div key={i} className="relative pl-6">
-                  <span className={`absolute -left-1.5 top-1.5 w-3 h-3 rounded-full ${act.color} ring-4 ring-white dark:ring-slate-950`}></span>
+                  <span className={`absolute -left-[7px] top-1.5 w-3 h-3 rounded-full ${act.color} ring-[3px] ring-card`}></span>
                   <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
-                    <h4 className="font-medium text-sm text-slate-900 dark:text-white">{act.title}</h4>
-                    <span className="text-xs text-slate-500 font-medium">{act.time}</span>
+                    <h4 className="font-semibold text-[13px] text-foreground">{act.title}</h4>
+                    <span className="text-[11px] text-muted-foreground font-medium">{act.time}</span>
                   </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{act.desc}</p>
+                  <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">{act.desc}</p>
                 </div>
               ))}
             </div>

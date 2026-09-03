@@ -5,14 +5,15 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ffffff;
+  /* Premium Dark Theme as Primary (Since requested as primary, we'll set light theme to clean gray) */
+  --background: #f8fafc;
   --foreground: #0f172a;
   
-  --primary: #6366f1;
+  --primary: #2563eb; /* Professional Blue (ERP Boostup Brand) */
   --primary-foreground: #ffffff;
   
   --secondary: #f1f5f9;
-  --secondary-foreground: #1e293b;
+  --secondary-foreground: #334155;
   
   --popover: #ffffff;
   --popover-foreground: #0f172a;
@@ -24,12 +25,12 @@
   --muted-foreground: #64748b;
   
   --accent: #f8fafc;
-  --accent-foreground: #1e293b;
+  --accent-foreground: #0f172a;
   
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   
-  --success: #22c55e;
+  --success: #10b981;
   --success-foreground: #ffffff;
   
   --warning: #f59e0b;
@@ -40,34 +41,35 @@
   
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #6366f1;
+  --ring: #2563eb;
   
-  --radius: 12px;
+  --radius: 8px; /* Slightly less rounded for professional enterprise look */
   
   --sidebar-background: #ffffff;
   --sidebar-foreground: #0f172a;
-  --sidebar-primary: #6366f1;
+  --sidebar-primary: #2563eb;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f8fafc;
-  --sidebar-accent-foreground: #1e293b;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
   --sidebar-border: #e2e8f0;
-  --sidebar-ring: #6366f1;
+  --sidebar-ring: #2563eb;
 }
 
 .dark {
-  --background: #0f172a;
+  /* Premium Dark Theme (Slate/Zinc blend) */
+  --background: #0b0f19; /* Deep, calm app background */
   --foreground: #f8fafc;
   
-  --primary: #6366f1;
+  --primary: #3b82f6; /* Brand */
   --primary-foreground: #ffffff;
   
   --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
+  --secondary-foreground: #cbd5e1;
   
-  --popover: #0f172a;
+  --popover: #111827;
   --popover-foreground: #f8fafc;
   
-  --card: #0f172a;
+  --card: #111827; /* Elevated Surface */
   --card-foreground: #f8fafc;
   
   --muted: #1e293b;
@@ -79,7 +81,7 @@
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   
-  --success: #22c55e;
+  --success: #10b981;
   --success-foreground: #ffffff;
   
   --warning: #f59e0b;
@@ -88,18 +90,18 @@
   --info: #3b82f6;
   --info-foreground: #ffffff;
   
-  --border: #334155;
-  --input: #334155;
-  --ring: #6366f1;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #3b82f6;
 
-  --sidebar-background: #111827; /* Darker than background for contrast */
-  --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #6366f1;
+  --sidebar-background: #0f172a; /* Slightly lighter than app bg for hierarchy */
+  --sidebar-foreground: #e2e8f0;
+  --sidebar-primary: #3b82f6;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1f2937;
+  --sidebar-accent: #1e293b;
   --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #374151;
-  --sidebar-ring: #6366f1;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #3b82f6;
 }
 
 @theme inline {

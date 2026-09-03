@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import { Bell, Search, ChevronDown, MapPin, Check } from "lucide-react"
+import { Bell, Search, ChevronDown, MapPin, Check, Command } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "./theme-toggle"
 import { 
@@ -54,35 +54,35 @@ export function AppHeader() {
   }
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-2 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] px-4 shadow-sm z-10">
-      <SidebarTrigger className="-ml-1 text-slate-500" />
-      <Separator orientation="vertical" className="mx-2 h-4 bg-slate-200 dark:bg-slate-700" />
+    <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background px-4 z-10 transition-colors">
+      <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
+      <Separator orientation="vertical" className="mx-1 h-5 bg-border" />
       
       {/* WAREHOUSE SELECTOR */}
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ml-2 mr-2 outline-none">
-          <div className="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 p-1 rounded">
+        <DropdownMenuTrigger className="flex items-center gap-2.5 px-3 py-1.5 border border-border rounded-md hover:bg-accent hover:text-accent-foreground transition-all ml-1 outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <div className="bg-primary/10 text-primary p-1 rounded-md">
             <MapPin className="w-3.5 h-3.5" />
           </div>
           <div className="flex flex-col items-start">
-            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider leading-none mb-0.5">Lokasi Gudang</span>
-            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-none truncate max-w-[120px]">
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Lokasi Gudang</span>
+            <span className="text-[13px] font-semibold text-foreground leading-none truncate max-w-[140px]">
               {activeWarehouse?.name || "Pusat (Semua)"}
             </span>
           </div>
-          <ChevronDown className="w-4 h-4 text-slate-400 ml-1" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground ml-1" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-56">
-          <div className="px-2 py-1.5 text-sm font-semibold text-slate-900 dark:text-white">Pilih Lokasi Kerja</div>
-          <DropdownMenuSeparator />
+        <DropdownMenuContent align="start" className="w-64 p-1">
+          <div className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pilih Lokasi Kerja</div>
+          <DropdownMenuSeparator className="mx-1" />
           
           <DropdownMenuItem 
             id="warehouse-pusat"
             onClick={() => handleSelectWarehouse(null)}
-            className={`cursor-pointer ${!activeWarehouse ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : ''}`}
+            className={`cursor-pointer my-0.5 rounded-md px-3 py-2 ${!activeWarehouse ? 'bg-primary/10 text-primary' : ''}`}
           >
             <div className="flex items-center justify-between w-full">
-              <span>Pusat (Semua Akses)</span>
+              <span className="font-medium text-sm">Pusat (Semua Akses)</span>
               {!activeWarehouse && <Check className="w-4 h-4" />}
             </div>
           </DropdownMenuItem>
@@ -92,10 +92,10 @@ export function AppHeader() {
               id={`warehouse-${wh?.id || idx}`}
               key={wh?.id || idx} 
               onClick={() => handleSelectWarehouse(wh)}
-              className={`cursor-pointer ${activeWarehouse?.id === wh?.id ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : ''}`}
+              className={`cursor-pointer my-0.5 rounded-md px-3 py-2 ${activeWarehouse?.id === wh?.id ? 'bg-primary/10 text-primary' : ''}`}
             >
               <div className="flex items-center justify-between w-full">
-                <span>{wh?.name || "Unknown"}</span>
+                <span className="font-medium text-sm">{wh?.name || "Unknown"}</span>
                 {activeWarehouse?.id === wh?.id && <Check className="w-4 h-4" />}
               </div>
             </DropdownMenuItem>
@@ -103,11 +103,11 @@ export function AppHeader() {
           
           {user?.role === "Owner" && (
             <>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="mx-1 mt-1" />
               <DropdownMenuItem 
                 id="warehouse-manage"
                 onClick={() => router.push("/settings/warehouse")}
-                className="cursor-pointer text-indigo-600 dark:text-indigo-400 font-medium"
+                className="cursor-pointer text-primary font-medium focus:text-primary focus:bg-primary/10 my-0.5 rounded-md px-3 py-2"
               >
                 + Kelola Gudang
               </DropdownMenuItem>
@@ -116,30 +116,35 @@ export function AppHeader() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="flex flex-1 items-center gap-4 px-2">
-        <div className="flex h-10 w-full max-w-md items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#1e293b] px-3 text-slate-500 focus-within:bg-white dark:focus-within:bg-[#0f172a] focus-within:ring-1 focus-within:ring-primary transition-colors">
-          <Search className="h-4 w-4" />
+      <div className="flex flex-1 items-center gap-4 px-2 lg:px-6">
+        <div className="flex h-9 w-full max-w-lg items-center gap-2.5 rounded-md border border-input bg-background px-3 text-muted-foreground focus-within:border-ring focus-within:ring-1 focus-within:ring-ring transition-all shadow-sm">
+          <Search className="h-[15px] w-[15px] opacity-70" />
           <input 
             type="text" 
-            placeholder="Cari modul, produk, pelanggan..." 
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            placeholder="Cari menu, pelanggan, atau transaksi... (Ctrl+K)" 
+            className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground/70"
           />
+          <div className="hidden sm:flex items-center gap-1 opacity-60">
+            <Command className="h-3 w-3" />
+            <span className="text-[10px] font-medium tracking-widest">K</span>
+          </div>
         </div>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 md:gap-4 shrink-0">
         <ThemeToggle />
-        <button className="relative text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-rose-500 border-2 border-white dark:border-[#0f172a]"></span>
+        <button className="relative text-muted-foreground hover:text-foreground transition-colors h-9 w-9 flex items-center justify-center rounded-md hover:bg-accent">
+          <Bell className="h-4 w-4" />
+          <span className="absolute top-2 right-2.5 h-1.5 w-1.5 rounded-full bg-destructive border-[1.5px] border-background"></span>
         </button>
-        <div className="flex items-center gap-3 ml-2 cursor-pointer group">
-          <Avatar className="h-9 w-9 border border-slate-200 dark:border-slate-700">
+        <Separator orientation="vertical" className="hidden md:block h-5 bg-border mx-1" />
+        <div className="flex items-center gap-3 cursor-pointer group hover:bg-accent py-1 px-2 rounded-md transition-colors">
+          <Avatar className="h-8 w-8 border border-border shadow-sm">
             <AvatarImage src="https://github.com/shadcn.png" />
-            <AvatarFallback className="bg-primary/10 text-primary font-medium">AD</AvatarFallback>
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">US</AvatarFallback>
           </Avatar>
-          <div className="hidden md:flex flex-col items-start gap-0.5">
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors leading-none">{user?.name || "User"}</span>
-            <span className="text-[10px] text-slate-500 leading-none">{user?.role || "Admin"}</span>
+          <div className="hidden md:flex flex-col items-start justify-center">
+            <span className="text-[13px] font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">{user?.name || "Administrator"}</span>
+            <span className="text-[11px] text-muted-foreground font-medium leading-tight">{user?.role || "Owner"}</span>
           </div>
         </div>
       </div>

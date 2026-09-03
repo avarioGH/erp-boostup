@@ -9,7 +9,7 @@ import AiAssistant from "@/components/AiAssistant";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Avario ERP",
+  title: "ERP Boostup",
   description: "Enterprise SaaS ERP",
 };
 

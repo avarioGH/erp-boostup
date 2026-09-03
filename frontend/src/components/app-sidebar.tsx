@@ -20,8 +20,7 @@ import {
 } from "@/components/ui/sidebar"
 import { 
   LayoutDashboard,  Clock, Folder, Link as LinkIcon, History, AlertTriangle, PlayCircle, Filter, Tag, Hash, FileCode, CheckCircle, Database, PackageSearch, PenTool, Wrench, ShieldCheck, LifeBuoy, FileSearch, Zap, TrendingUp, Sparkles, Building2, Fingerprint, Receipt, UserCheck, ShieldAlert, Key, HelpCircle, Share2, Users, Box, Calculator, Settings, 
-  ShoppingCart, BarChart3, Bot, 
-  Store, ArrowRightLeft, TrendingDown
+  ShoppingCart, BarChart3, Bot, LogOut, Hexagon
 } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { TranslationKey } from "@/i18n/dictionaries"
@@ -84,7 +83,7 @@ const items: MenuItem[] = [
     icon: Users,
     id: "crm",
     subItems: [
-      { title: "Pelanggan", url: "/customers/list" },
+      { title: "Daftar Pelanggan", url: "/customers/list" },
       { title: "Loyalty & Poin", url: "/customers/loyalty" },
       { title: "Voucher", url: "/customers/voucher" }
     ]
@@ -155,19 +154,19 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className="border-r border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-[#0F172A]">
-      <SidebarHeader className="p-4 flex flex-row items-center gap-3">
-        <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-indigo-600/20">
-          A
+    <Sidebar className="border-r border-border bg-sidebar h-full">
+      <SidebarHeader className="p-5 flex flex-row items-center gap-3">
+        <div className="h-9 w-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground shadow-sm">
+          <Hexagon className="h-5 w-5" />
         </div>
-        <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white">Avario ERP</span>
+        <span className="font-bold text-xl tracking-tight text-foreground">ERP Boostup</span>
       </SidebarHeader>
       
-      <SidebarContent className="px-3">
+      <SidebarContent className="px-4 py-2 custom-scrollbar">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mt-4 mb-2 px-2">Core Modules</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-xs font-semibold tracking-wider text-muted-foreground uppercase mb-3 px-2">Core Modules</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1.5">
+            <SidebarMenu className="gap-1">
               {items.filter(item => {
                 if (!item.id || user?.role === 'Owner') return true;
                 return user?.accessible_modules?.includes(item.id);
@@ -177,15 +176,15 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       isActive={active}
-                      className={`font-medium transition-all duration-200 rounded-md px-3 py-2 h-auto ${active ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
+                      className={`font-medium transition-colors duration-200 rounded-lg px-3 py-2.5 h-auto ${active ? 'bg-primary/10 text-primary dark:bg-primary/15' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                       render={
                         <Link href={item.url} className="flex items-center justify-between w-full">
                           <div className="flex items-center gap-3">
-                            <item.icon className={`h-4 w-4 ${active ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`} />
-                            <span className="text-sm">{item.title}</span>
+                            <item.icon className={`h-[18px] w-[18px] ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <span className="text-[14px] leading-none">{item.title}</span>
                           </div>
                           {item.badge && (
-                            <span className="px-1.5 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">
+                            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
                               {item.badge}
                             </span>
                           )}
@@ -193,20 +192,20 @@ export function AppSidebar() {
                       }
                     />
                     {item.subItems && (
-                      <SidebarMenuSub className="border-l-slate-200 dark:border-l-slate-800 ml-5 mt-1 mb-2">
+                      <SidebarMenuSub className="border-l border-border ml-[1.1rem] mt-1.5 mb-3 pl-3">
                         {item.subItems.map((subItem) => {
                           const subActive = pathname === subItem.url
                           return (
                             <SidebarMenuSubItem key={subItem.title}>
-                              <Link href={subItem.url}>
+                              <Link href={subItem.url} className="w-full">
                                 <SidebarMenuSubButton 
                                   isActive={subActive}
-                                  className={`text-sm py-1.5 h-auto transition-colors rounded-md ${subActive ? 'text-indigo-600 dark:text-indigo-400 font-medium bg-transparent' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/30'}`}
+                                  className={`text-[13px] py-1.5 h-auto transition-colors rounded-md ${subActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'}`}
                                 >
                                   <span className="w-full flex justify-between items-center">
                                     {subItem.title}
                                     {subItem.badge && (
-                                      <span className="px-1.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[10px] font-bold">
+                                      <span className="px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive text-[10px] font-bold">
                                         {subItem.badge}
                                       </span>
                                     )}
@@ -225,10 +224,10 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         
-        <SidebarGroup className="mt-4">
-          <SidebarGroupLabel className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-2 px-2">Pengaturan</SidebarGroupLabel>
+        <SidebarGroup className="mt-6 mb-4">
+          <SidebarGroupLabel className="text-xs font-semibold tracking-wider text-muted-foreground uppercase mb-3 px-2">Settings</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-1.5">
+            <SidebarMenu className="gap-1">
               {settings.filter(item => {
                 if (!item.id || user?.role === 'Owner') return true;
                 return user?.accessible_modules?.includes(item.id);
@@ -238,11 +237,11 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       isActive={active}
-                      className={`font-medium transition-all duration-200 rounded-md px-3 py-2 h-auto ${active ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
+                      className={`font-medium transition-colors duration-200 rounded-lg px-3 py-2.5 h-auto ${active ? 'bg-primary/10 text-primary dark:bg-primary/15' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
                       render={
-                        <Link href={item.url} className="flex items-center gap-3">
-                          <item.icon className={`h-4 w-4 ${active ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`} />
-                          <span className="text-sm">{item.title}</span>
+                        <Link href={item.url} className="flex items-center gap-3 w-full">
+                          <item.icon className={`h-[18px] w-[18px] ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+                          <span className="text-[14px] leading-none">{item.title}</span>
                         </Link>
                       }
                     />
@@ -254,12 +253,10 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       
-      <SidebarFooter className="border-t border-slate-200 dark:border-slate-800 p-4 bg-slate-50/50 dark:bg-[#0F172A]">
-        <a href="/login" className="flex items-center gap-3 text-slate-500 hover:text-rose-600 font-medium transition-colors" onClick={() => localStorage.removeItem("erp_token")}>
-          <div className="h-8 w-8 bg-slate-100 dark:bg-slate-800/80 rounded-md flex items-center justify-center group-hover:bg-rose-100 dark:group-hover:bg-rose-900/30">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg>
-          </div>
-          <span className="text-sm">Keluar</span>
+      <SidebarFooter className="border-t border-border p-4 bg-sidebar">
+        <a href="/login" className="flex items-center gap-3 text-muted-foreground hover:text-destructive font-medium transition-colors w-full rounded-lg hover:bg-destructive/10 px-3 py-2" onClick={() => localStorage.removeItem("erp_token")}>
+          <LogOut className="h-[18px] w-[18px]" />
+          <span className="text-[14px]">Sign Out</span>
         </a>
       </SidebarFooter>
     </Sidebar>
