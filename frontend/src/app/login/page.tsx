@@ -19,7 +19,7 @@ export default function LoginPage() {
     setError("")
 
     try {
-      const res = await fetch("http://194.233.85.181:3001/auth/login", {
+      const res = await fetch("https://api.erp.boostup.id/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),

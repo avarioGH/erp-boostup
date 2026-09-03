@@ -16,7 +16,7 @@ export default function GeneralLedgerPage() {
     try {
       setLoading(true)
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("http://194.233.85.181:3001/gl/journals", {
+      const res = await fetch("https://api.erp.boostup.id/gl/journals", {
         headers: { "Authorization": `Bearer ${token}` }
       })
       

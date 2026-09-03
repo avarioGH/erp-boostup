@@ -38,8 +38,8 @@ export default function EmployeesPage() {
       const token = localStorage.getItem("erp_token")
       
       const [empRes, depRes] = await Promise.all([
-        fetch("http://194.233.85.181:3001/hr/employees", { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch("http://194.233.85.181:3001/hr/departments", { headers: { "Authorization": `Bearer ${token}` } })
+        fetch("https://api.erp.boostup.id/hr/employees", { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch("https://api.erp.boostup.id/hr/departments", { headers: { "Authorization": `Bearer ${token}` } })
       ])
       
       if (empRes.ok) setEmployees(await empRes.json())
@@ -59,7 +59,7 @@ export default function EmployeesPage() {
     e.preventDefault()
     try {
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("http://194.233.85.181:3001/hr/employees", {
+      const res = await fetch("https://api.erp.boostup.id/hr/employees", {
         method: "POST",
         headers: { 
           "Authorization": `Bearer ${token}`,
@@ -99,7 +99,7 @@ export default function EmployeesPage() {
     // Save to backend
     try {
       const token = localStorage.getItem("erp_token")
-      await fetch(`http://194.233.85.181:3001/hr/employees/${selectedEmp.id}/biometric`, {
+      await fetch(`https://api.erp.boostup.id/hr/employees/${selectedEmp.id}/biometric`, {
         method: "POST",
         headers: { 
           "Authorization": `Bearer ${token}`,

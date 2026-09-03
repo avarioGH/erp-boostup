@@ -17,7 +17,7 @@ export default function WarehousesPage() {
     try {
       setLoading(true)
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("http://194.233.85.181:3001/inventory/warehouses", {
+      const res = await fetch("https://api.erp.boostup.id/inventory/warehouses", {
         headers: { "Authorization": `Bearer ${token}` }
       })
       if (res.ok) setWarehouses(await res.json())
@@ -36,7 +36,7 @@ export default function WarehousesPage() {
     e.preventDefault()
     try {
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("http://194.233.85.181:3001/inventory/warehouses", {
+      const res = await fetch("https://api.erp.boostup.id/inventory/warehouses", {
         method: "POST",
         headers: { 
           "Authorization": `Bearer ${token}`,

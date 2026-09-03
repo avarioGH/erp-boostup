@@ -18,13 +18,13 @@ export default function CRMDashboard() {
         const token = localStorage.getItem("erp_token")
         
         // Fetch Customers
-        const custRes = await fetch("http://194.233.85.181:3001/customers", {
+        const custRes = await fetch("https://api.erp.boostup.id/customers", {
           headers: { "Authorization": `Bearer ${token}` }
         })
         const customers = await custRes.json()
 
         // Fetch Orders
-        const ordRes = await fetch("http://194.233.85.181:3001/orders", {
+        const ordRes = await fetch("https://api.erp.boostup.id/orders", {
           headers: { "Authorization": `Bearer ${token}` }
         })
         const orders = await ordRes.json()

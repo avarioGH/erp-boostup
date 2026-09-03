@@ -22,7 +22,7 @@ export default function AIInsightsPage() {
 
     try {
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("http://194.233.85.181:3001/platform/ai/ask", {
+      const res = await fetch("https://api.erp.boostup.id/platform/ai/ask", {
         method: "POST",
         headers: { 
           "Authorization": `Bearer ${token}`,

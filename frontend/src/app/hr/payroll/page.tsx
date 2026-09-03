@@ -27,8 +27,8 @@ export default function PayrollPage() {
       const token = localStorage.getItem("erp_token")
       
       const [payRes, empRes] = await Promise.all([
-        fetch("http://194.233.85.181:3001/hr/payroll", { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch("http://194.233.85.181:3001/hr/employees", { headers: { "Authorization": `Bearer ${token}` } })
+        fetch("https://api.erp.boostup.id/hr/payroll", { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch("https://api.erp.boostup.id/hr/employees", { headers: { "Authorization": `Bearer ${token}` } })
       ])
       
       if (payRes.ok) setPayrolls(await payRes.json())
@@ -62,7 +62,7 @@ export default function PayrollPage() {
       if (Number(allowance) > 0) items.push({ type: "ALLOWANCE", name: "General Allowance", amount: Number(allowance) })
       if (Number(deduction) > 0) items.push({ type: "DEDUCTION", name: "General Deduction", amount: Number(deduction) })
       
-      const res = await fetch("http://194.233.85.181:3001/hr/payroll", {
+      const res = await fetch("https://api.erp.boostup.id/hr/payroll", {
         method: "POST",
         headers: { 
           "Authorization": `Bearer ${token}`,

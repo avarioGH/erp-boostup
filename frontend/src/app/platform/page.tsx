@@ -25,8 +25,8 @@ export default function PlatformDashboard() {
       const token = localStorage.getItem("erp_token")
       
       const [setRes, keyRes] = await Promise.all([
-        fetch("http://194.233.85.181:3001/platform/settings", { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch("http://194.233.85.181:3001/platform/api-keys", { headers: { "Authorization": `Bearer ${token}` } })
+        fetch("https://api.erp.boostup.id/platform/settings", { headers: { "Authorization": `Bearer ${token}` } }),
+        fetch("https://api.erp.boostup.id/platform/api-keys", { headers: { "Authorization": `Bearer ${token}` } })
       ])
       
       if (setRes.ok) setSettings(await setRes.json())
@@ -46,7 +46,7 @@ export default function PlatformDashboard() {
     e.preventDefault()
     try {
       const token = localStorage.getItem("erp_token")
-      await fetch("http://194.233.85.181:3001/platform/settings", {
+      await fetch("https://api.erp.boostup.id/platform/settings", {
         method: "POST",
         headers: { 
           "Authorization": `Bearer ${token}`,
@@ -65,7 +65,7 @@ export default function PlatformDashboard() {
     if (!newKeyName) return
     try {
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("http://194.233.85.181:3001/platform/api-keys", {
+      const res = await fetch("https://api.erp.boostup.id/platform/api-keys", {
         method: "POST",
         headers: { 
           "Authorization": `Bearer ${token}`,

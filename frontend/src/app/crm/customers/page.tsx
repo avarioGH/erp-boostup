@@ -21,7 +21,7 @@ export default function CustomersPage() {
     try {
       setLoading(true)
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("http://194.233.85.181:3001/customers", {
+      const res = await fetch("https://api.erp.boostup.id/customers", {
         headers: { "Authorization": `Bearer ${token}` }
       })
       if (res.ok) setCustomers(await res.json())
@@ -40,7 +40,7 @@ export default function CustomersPage() {
     e.preventDefault()
     try {
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("http://194.233.85.181:3001/customers", {
+      const res = await fetch("https://api.erp.boostup.id/customers", {
         method: "POST",
         headers: { 
           "Authorization": `Bearer ${token}`,

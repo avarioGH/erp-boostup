@@ -14,9 +14,9 @@ export default function HrDashboard() {
         const token = localStorage.getItem("erp_token")
         
         const [empRes, attRes, payRes] = await Promise.all([
-          fetch("http://194.233.85.181:3001/hr/employees", { headers: { "Authorization": `Bearer ${token}` } }),
-          fetch("http://194.233.85.181:3001/hr/attendance", { headers: { "Authorization": `Bearer ${token}` } }),
-          fetch("http://194.233.85.181:3001/hr/payroll", { headers: { "Authorization": `Bearer ${token}` } })
+          fetch("https://api.erp.boostup.id/hr/employees", { headers: { "Authorization": `Bearer ${token}` } }),
+          fetch("https://api.erp.boostup.id/hr/attendance", { headers: { "Authorization": `Bearer ${token}` } }),
+          fetch("https://api.erp.boostup.id/hr/payroll", { headers: { "Authorization": `Bearer ${token}` } })
         ])
 
         const employees = empRes.ok ? await empRes.json() : []

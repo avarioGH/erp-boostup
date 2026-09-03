@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Gunakan environment variable jika ada, jika tidak gunakan VPS IP
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://194.233.85.181:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.erp.boostup.id';
 
 export const api = axios.create({
   baseURL: API_URL,
