@@ -424,10 +424,8 @@ export default function ProductInventory() {
           </div>
           <div className="flex items-center gap-2">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-                  <LayoutGrid className="w-4 h-4" /> Kolom
-                </Button>
+              <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 h-9 px-3 gap-2 outline-none">
+                <LayoutGrid className="w-4 h-4" /> Kolom
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[150px]">
                 <DropdownMenuCheckboxItem
