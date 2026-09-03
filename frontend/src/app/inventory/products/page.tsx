@@ -216,151 +216,193 @@ export default function ProductInventory() {
       {showForm && (
         <Card className="border-t-4 border-t-indigo-600 shadow-lg animate-in slide-in-from-top-4 duration-300">
           <form onSubmit={handleSave}>
-            <CardHeader>
+            <CardHeader className="border-b border-border/50 pb-4">
               <CardTitle>Tambah Produk Baru</CardTitle>
               <CardDescription>
-                Masukkan detail produk baru Anda. Klik simpan setelah selesai.
+                Masukkan detail produk baru Anda. Lengkapi informasi dasar, harga, dan foto produk.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>SKU / Kode Produk</Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      placeholder="Misal: PRD-001" 
-                      value={formData.code} 
-                      onChange={(e) => setFormData({...formData, code: e.target.value})} 
-                    />
-                    <Button type="button" variant="secondary" onClick={generateSKU}>
-                      Generate
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Barcode (Opsional)</Label>
-                  <div className="flex relative">
-                    <QrCode className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      className="pl-9"
-                      placeholder="Scan atau ketik barcode" 
-                      value={formData.barcode} 
-                      onChange={(e) => setFormData({...formData, barcode: e.target.value})} 
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Nama Produk <span className="text-red-500">*</span></Label>
-                <Input 
-                  placeholder="Masukkan nama produk" 
-                  value={formData.name} 
-                  onChange={(e) => setFormData({...formData, name: e.target.value})} 
-                  required 
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Kategori Produk</Label>
-                  <Link href="/inventory/categories" className="text-xs text-indigo-600 hover:underline flex items-center gap-1">
-                    <Edit className="w-3 h-3" /> Kelola Kategori
-                  </Link>
-                </div>
-                <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val || ""})}>
-                  <SelectTrigger className="bg-white dark:bg-slate-950">
-                    <SelectValue placeholder="Pilih Kategori" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.length === 0 ? (
-                      <SelectItem value="empty" disabled>Belum ada kategori</SelectItem>
-                    ) : (
-                      categories.map((c: any, idx: number) => (
-                        <SelectItem key={c?.id || idx} value={c?.id || `cat-${idx}`}>{c?.name}</SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Harga Beli <span className="text-red-500">*</span></Label>
-                  <Input 
-                    type="number" 
-                    placeholder="0"
-                    value={formData.purchasePrice} 
-                    onChange={(e) => setFormData({...formData, purchasePrice: e.target.value})} 
-                    required 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Harga Jual <span className="text-red-500">*</span></Label>
-                  <Input 
-                    type="number" 
-                    placeholder="0"
-                    value={formData.sellingPrice} 
-                    onChange={(e) => setFormData({...formData, sellingPrice: e.target.value})} 
-                    required 
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Deskripsi Tambahan</Label>
-                <Input 
-                  placeholder="Deskripsi singkat produk" 
-                  value={formData.description} 
-                  onChange={(e) => setFormData({...formData, description: e.target.value})} 
-                />
-              </div>
-
-              {/* Photo Upload Section */}
-              <div className="space-y-2 pt-2">
-                <Label>Foto Produk (Maks 8 Foto)</Label>
-                <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-6 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors">
-                  <input
-                    type="file"
-                    id="image-upload"
-                    multiple
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                    disabled={images.length >= 8}
-                  />
-                  <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center gap-2">
-                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-full">
-                      <Upload className="w-6 h-6" />
-                    </div>
-                    <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                      Klik untuk unggah gambar (Maks {8 - images.length} lagi)
-                    </div>
-                    <div className="text-xs text-slate-500">Maks. 2MB per gambar (otomatis dikompres)</div>
-                  </label>
+            <CardContent className="space-y-8 pt-6">
+              
+              {/* Section 1: Informasi Dasar */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                  <Box className="w-4 h-4 text-indigo-500" />
+                  <h3 className="font-semibold text-sm text-foreground">Informasi Dasar</h3>
                 </div>
                 
-                {images.length > 0 && (
-                  <div className="grid grid-cols-4 gap-4 mt-4">
-                    {images.map((img, idx) => (
-                      <div key={idx} className="relative group rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 aspect-square">
-                        <img 
-                          src={URL.createObjectURL(img)} 
-                          alt={`Preview ${idx}`} 
-                          className="w-full h-full object-cover"
-                        />
-                        <button 
-                          type="button"
-                          onClick={() => removeImage(idx)}
-                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">SKU / Kode Produk <span className="text-red-500">*</span></Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="Misal: PRD-001" 
+                        value={formData.code} 
+                        onChange={(e) => setFormData({...formData, code: e.target.value})} 
+                        className="bg-accent/50 focus:bg-background"
+                        required
+                      />
+                      <Button type="button" variant="outline" onClick={generateSKU} className="shrink-0 border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/30">
+                        Generate
+                      </Button>
+                    </div>
                   </div>
-                )}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Barcode (Opsional)</Label>
+                    <div className="flex relative">
+                      <QrCode className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        className="pl-9 bg-accent/50 focus:bg-background"
+                        placeholder="Scan atau ketik barcode" 
+                        value={formData.barcode} 
+                        onChange={(e) => setFormData({...formData, barcode: e.target.value})} 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nama Produk <span className="text-red-500">*</span></Label>
+                    <Input 
+                      placeholder="Masukkan nama produk" 
+                      value={formData.name} 
+                      onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                      className="bg-accent/50 focus:bg-background"
+                      required 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kategori Produk</Label>
+                      <Link href="/inventory/categories" className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-medium">
+                        <Edit className="w-3 h-3" /> Kelola Kategori
+                      </Link>
+                    </div>
+                    <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val || ""})}>
+                      <SelectTrigger className="w-full bg-accent/50 focus:bg-background">
+                        <SelectValue placeholder="Pilih Kategori" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.length === 0 ? (
+                          <SelectItem value="empty" disabled>Belum ada kategori</SelectItem>
+                        ) : (
+                          categories.map((c: any, idx: number) => (
+                            <SelectItem key={c?.id || idx} value={c?.id || `cat-${idx}`}>{c?.name}</SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Deskripsi Tambahan</Label>
+                  <Input 
+                    placeholder="Deskripsi singkat produk (opsional)" 
+                    value={formData.description} 
+                    onChange={(e) => setFormData({...formData, description: e.target.value})} 
+                    className="bg-accent/50 focus:bg-background"
+                  />
+                </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Batal</Button>
-                <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white" disabled={isSubmitting}>
+              {/* Section 2: Harga */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                  <div className="w-4 h-4 text-emerald-500 font-bold flex items-center justify-center">Rp</div>
+                  <h3 className="font-semibold text-sm text-foreground">Informasi Harga</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 dark:bg-slate-900/20 p-4 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Harga Beli Dasar <span className="text-red-500">*</span></Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">Rp</span>
+                      <Input 
+                        type="number" 
+                        placeholder="0"
+                        value={formData.purchasePrice} 
+                        onChange={(e) => setFormData({...formData, purchasePrice: e.target.value})} 
+                        className="pl-9 font-mono"
+                        required 
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Harga Jual (Retail) <span className="text-red-500">*</span></Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">Rp</span>
+                      <Input 
+                        type="number" 
+                        placeholder="0"
+                        value={formData.sellingPrice} 
+                        onChange={(e) => setFormData({...formData, sellingPrice: e.target.value})} 
+                        className="pl-9 font-mono border-emerald-200 focus-visible:ring-emerald-500 dark:border-emerald-900/50"
+                        required 
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Foto Produk */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                  <Upload className="w-4 h-4 text-blue-500" />
+                  <h3 className="font-semibold text-sm text-foreground">Media & Foto</h3>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-8 text-center hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors bg-accent/20">
+                    <input
+                      type="file"
+                      id="image-upload"
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={images.length >= 8}
+                    />
+                    <label htmlFor="image-upload" className={`flex flex-col items-center justify-center gap-3 ${images.length >= 8 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+                      <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-full shadow-sm">
+                        <Upload className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                          Klik untuk mengunggah foto produk
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">Maks 8 foto. PNG, JPG (Otomatis dikompres)</div>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  {images.length > 0 && (
+                    <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-4 mt-4">
+                      {images.map((img, idx) => (
+                        <div key={idx} className="relative group rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 aspect-square shadow-sm">
+                          <img 
+                            src={URL.createObjectURL(img)} 
+                            alt={`Preview ${idx}`} 
+                            className="w-full h-full object-cover"
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => removeImage(idx)}
+                            className="absolute top-1 right-1 p-1 bg-red-500/90 hover:bg-red-600 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-border/50">
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="w-24">Batal</Button>
+                <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[140px] shadow-md shadow-indigo-500/20" disabled={isSubmitting}>
                   {isSubmitting ? "Menyimpan..." : "Simpan Produk"}
                 </Button>
               </div>
