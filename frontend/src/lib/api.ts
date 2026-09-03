@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Gunakan environment variable jika ada, jika tidak gunakan VPS IP
+// Gunakan environment variable jika ada, jika tidak gunakan API Production
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.erp.boostup.id';
 
 export const api = axios.create({
