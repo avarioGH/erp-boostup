@@ -205,7 +205,9 @@ export default function StockTransferPage() {
                 <Label>Gudang Asal</Label>
                 <Select value={formData.sourceWarehouseId} onValueChange={(val) => setFormData({...formData, sourceWarehouseId: val as string})}>
                   <SelectTrigger className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800">
-                    <SelectValue placeholder="Pilih Gudang Asal" />
+                    <span className="truncate">
+                      {warehouses.find(w => w.id === formData.sourceWarehouseId)?.name || "Pilih Gudang Asal"}
+                    </span>
                   </SelectTrigger>
                   <SelectContent>
                     {warehouses.map(wh => (
@@ -223,7 +225,9 @@ export default function StockTransferPage() {
                 <Label>Gudang Tujuan</Label>
                 <Select value={formData.targetWarehouseId} onValueChange={(val) => setFormData({...formData, targetWarehouseId: val as string})}>
                   <SelectTrigger className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800">
-                    <SelectValue placeholder="Pilih Gudang Tujuan" />
+                    <span className="truncate">
+                      {warehouses.find(w => w.id === formData.targetWarehouseId)?.name || "Pilih Gudang Tujuan"}
+                    </span>
                   </SelectTrigger>
                   <SelectContent>
                     {warehouses.filter(w => w.id !== formData.sourceWarehouseId).map(wh => (
@@ -265,7 +269,9 @@ export default function StockTransferPage() {
                       <Label className="text-xs">Produk</Label>
                       <Select value={item.productId} onValueChange={(val) => updateItem(index, 'productId', val as string)}>
                         <SelectTrigger className="bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800">
-                          <SelectValue placeholder="Pilih Produk" />
+                          <span className="truncate">
+                            {products.find(p => p.id === item.productId)?.name || "Pilih Produk"}
+                          </span>
                         </SelectTrigger>
                         <SelectContent>
                           {products.map(p => {
