@@ -1,9 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { SalesCompletedEvent } from '../events/sales-completed.event';
 
 @Injectable()
 export class PosService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2) {}
 
   async processCheckout(data: any) {
     const { companyId, userId, warehouseId, customerId, paymentMethod, items, subtotal, tax, total } = data;
@@ -105,6 +107,22 @@ export class PosService {
           after_data: { details: `Kasir memproses transaksi ${soNo} senilai ${total}` }
         }
       });
+
+      // 5. Emit Domain Event for Accounting Integration
+      // Using async Emit (waiting for handlers to complete within this transaction boundary)
+      await this.eventEmitter.emitAsync(
+        'sales.completed',
+        new SalesCompletedEvent({
+          companyId,
+          sourceEntityId: salesOrder.id,
+          payload: {
+            totalAmount: total,
+            paymentMethod: paymentMethod || 'CASH',
+            userId
+          },
+          tx: tx as any
+        })
+      );
 
       return salesOrder;
     });
