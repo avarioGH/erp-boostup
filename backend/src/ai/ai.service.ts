@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FinanceService } from '../finance/finance.service';
 import OpenAI from 'openai';
 
 @Injectable()
@@ -14,7 +15,7 @@ export class AiService {
     'nemotron-3.5-lightning'
   ];
 
-  constructor(private prisma: PrismaService) {
+  constructor(private prisma: PrismaService, private financeService: FinanceService) {
     // API key ditaruh di .env dengan nama JUAN_API_KEY
     // Jika tidak ada di .env, kita pakai default fallback key
     const apiKey = process.env.JUAN_API_KEY || 'sk-p8GXAXmljYonz0t5fvS0r09aN9K6iPvkCpR9UWyhXuU9ykf8';
@@ -74,6 +75,21 @@ export class AiService {
               size: { type: 'string', description: 'Size or description (optional)' }
             },
             required: ['product_name', 'selling_price']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'add_income',
+          description: 'Add a new income/cash-in transaction. THIS REQUIRES USER PERMISSION.',
+          parameters: {
+            type: 'object',
+            properties: {
+              amount: { type: 'number', description: 'The amount of income to add' },
+              description: { type: 'string', description: 'Description or notes for the income (e.g., transfer dari PT ABC)' }
+            },
+            required: ['amount', 'description']
           }
         }
       }
@@ -151,6 +167,14 @@ export class AiService {
             if (proposal.success) {
               pendingAction = proposal.action;
               apiResponse = { status: 'PROPOSAL_CREATED_WAITING_FOR_USER_APPROVAL', message: 'Tolong beritahu user bahwa tombol persetujuan penambahan produk sudah muncul di layar.' };
+            } else {
+              apiResponse = { status: 'FAILED', message: proposal.message };
+            }
+          } else if (toolCall.function.name === 'add_income') {
+            const proposal = await this.proposeAddIncome(user.company_id, args.amount, args.description);
+            if (proposal.success) {
+              pendingAction = proposal.action;
+              apiResponse = { status: 'PROPOSAL_CREATED_WAITING_FOR_USER_APPROVAL', message: 'Tolong beritahu user bahwa tombol konfirmasi penambahan pemasukan sudah muncul di layar.' };
             } else {
               apiResponse = { status: 'FAILED', message: proposal.message };
             }
@@ -244,7 +268,20 @@ export class AiService {
     };
   }
 
-  async executeAction(companyId: string, actionData: any) {
+  private async proposeAddIncome(companyId: string, amount: number, description: string) {
+    return {
+      success: true,
+      message: '',
+      action: {
+        type: 'ADD_INCOME',
+        title: `Tambah Pemasukan`,
+        description: `Nominal: Rp ${amount.toLocaleString('id-ID')} | Keterangan: ${description}`,
+        payload: { companyId, amount, description }
+      }
+    };
+  }
+
+  async executeAction(companyId: string, actionData: any, userId?: string) {
     if (actionData.type === 'UPDATE_PRODUCT_PRICE') {
       await this.prisma.product.update({
         where: { id: actionData.payload.productId, company_id: companyId },
@@ -285,6 +322,21 @@ export class AiService {
         }
       });
       return { success: true, message: 'Produk berhasil ditambahkan.' };
+    } else if (actionData.type === 'ADD_INCOME') {
+      const { amount, description } = actionData.payload;
+      await this.financeService.createCashIn({
+        companyId,
+        cashAccountId: '', // Will auto-resolve
+        transactionNo: `AI-INC-${Date.now()}`,
+        transactionDate: new Date(),
+        description: description,
+        amount: amount,
+        categoryId: '', // Will auto-resolve
+        userId: userId || 'SYSTEM', // In a real app this should always be provided
+        debitAccountId: '',
+        creditAccountId: ''
+      });
+      return { success: true, message: 'Pemasukan berhasil ditambahkan.' };
     }
     return { success: false, message: 'Tindakan tidak dikenal.' };
   }
