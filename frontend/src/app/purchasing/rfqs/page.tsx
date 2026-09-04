@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Check, FileText } from "lucide-react"
-import { DashboardAPI, api } from "@/lib/api"
+import { PurchasingAPI, api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -19,7 +19,7 @@ export default function RFQPage() {
   const fetchRFQs = async () => {
     try {
       setLoading(true)
-      const res = await DashboardAPI.purchasing.getRFQs()
+      const res = await PurchasingAPI.getRFQs()
       setRFQs(res.data)
     } catch (err) {
       console.error(err)
@@ -30,7 +30,7 @@ export default function RFQPage() {
 
   const confirmRFQ = async (id: string) => {
     try {
-      await DashboardAPI.purchasing.confirmRFQ(id)
+      await PurchasingAPI.confirmRFQ(id)
       alert("RFQ berhasil dikonfirmasi menjadi PO")
       fetchRFQs()
     } catch (err: any) {
@@ -97,4 +97,5 @@ export default function RFQPage() {
     </div>
   )
 }
+
 

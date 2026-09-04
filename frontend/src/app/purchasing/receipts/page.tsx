@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { DashboardAPI, api } from "@/lib/api"
+import { PurchasingAPI, api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -24,7 +24,7 @@ function ReceiptContent() {
   const fetchReceipts = async () => {
     try {
       setLoading(true)
-      const res = await DashboardAPI.purchasing.getReceipts()
+      const res = await PurchasingAPI.getReceipts()
       setReceipts(res.data)
     } catch (err) {
       console.error(err)
@@ -91,4 +91,5 @@ export default function GoodsReceiptPage() {
     </Suspense>
   )
 }
+
 

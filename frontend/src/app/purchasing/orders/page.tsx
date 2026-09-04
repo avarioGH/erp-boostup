@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, Package, FileText } from "lucide-react"
-import { DashboardAPI, api } from "@/lib/api"
+import { PurchasingAPI, VendorAPI, api } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
@@ -20,7 +20,7 @@ export default function PurchaseOrderPage() {
   const fetchOrders = async () => {
     try {
       setLoading(true)
-      const res = await DashboardAPI.purchasing.getRFQs()
+      const res = await PurchasingAPI.getRFQs()
       setOrders(res.data)
     } catch (err) {
       console.error(err)
@@ -31,7 +31,7 @@ export default function PurchaseOrderPage() {
 
   const createVendorBill = async (poId: string) => {
     try {
-      await DashboardAPI.finance.createVendorBill(poId)
+      await VendorAPI.createVendorBill(poId)
       alert("Vendor Bill (AP) berhasil dibuat")
       fetchOrders()
     } catch (err: any) {
@@ -104,6 +104,7 @@ export default function PurchaseOrderPage() {
     </div>
   )
 }
+
 
 
 
