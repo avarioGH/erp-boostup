@@ -80,11 +80,13 @@ export class InvoiceService {
         data: { status: 'POSTED' }
       });
 
-      // Update SO invoice_status
-      await tx.salesOrder.update({
-        where: { id: invoice.sales_order_id },
-        data: { invoice_status: 'INVOICED' } // Simplification
-      });
+      // Update SO invoice_status if it exists
+      if (invoice.sales_order_id) {
+        await tx.salesOrder.update({
+          where: { id: invoice.sales_order_id },
+          data: { invoice_status: 'INVOICED' } // Simplification
+        });
+      }
 
       // Emit domain event for accounting (AR Debit, Revenue Credit)
       // await this.eventEmitter.emitAsync('invoice.posted', new InvoicePostedEvent({...}))
@@ -94,3 +96,6 @@ export class InvoiceService {
     });
   }
 }
+
+
+

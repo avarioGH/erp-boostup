@@ -39,10 +39,20 @@ api.interceptors.response.use(
 
 // API Endpoints
 export const DashboardAPI = {
+  purchasing: {
+    getRFQs: async () => (await api.get('/purchasing/orders')).data,
+    createRFQ: async (data: any) => (await api.post('/purchasing/rfq', data)).data,
+    confirmRFQ: async (id: string) => (await api.post(`/purchasing/rfq/${id}/confirm`)).data,
+    getReceipts: async () => (await api.get('/purchasing/receipts')).data,
+    receiveGoods: async (poId: string, data: any) => (await api.post(`/purchasing/orders/${poId}/receive`, data)).data
+  },
+  finance: {
+    createVendorBill: async (poId: string) => (await api.post('/finance/vendor-bills/from-po', { purchaseOrderId: poId })).data,
+  },
   getKPIs: async (timeRange: string = 'thisMonth', warehouseId: string = 'all') => {
     const res = await api.get('/analytics/dashboard', { params: { timeRange, warehouseId } });
     return res.data;
-  },
+  }
 };
 
 export const InventoryAPI = {
@@ -87,22 +97,27 @@ export const InventoryAPI = {
 
 export const B2BApi = {
   getQuotations: async (params?: any) => (await api.get('/sales/quotations', { params })).data,
-  getQuotation: async (id: string) => (await api.get(/sales/quotations/$id)).data,
+  getQuotation: async (id: string) => (await api.get(`/sales/quotations/${id}`)).data,
   createQuotation: async (data: any) => (await api.post('/sales/quotations', data)).data,
-  confirmQuotation: async (id: string) => (await api.post(/sales/quotations/$id/confirm)).data,
+  confirmQuotation: async (id: string) => (await api.post(`/sales/quotations/${id}/confirm`)).data,
   
   getOrders: async (params?: any) => (await api.get('/sales/orders', { params })).data,
-  getOrder: async (id: string) => (await api.get(/sales/orders/$id)).data,
+  getOrder: async (id: string) => (await api.get(`/sales/orders/${id}`)).data,
   
   getDeliveries: async (params?: any) => (await api.get('/sales/deliveries', { params })).data,
-  getDelivery: async (id: string) => (await api.get(/sales/deliveries/$id)).data,
-  validateDelivery: async (id: string) => (await api.post(/sales/deliveries/$id/validate)).data,
+  getDelivery: async (id: string) => (await api.get(`/sales/deliveries/${id}`)).data,
+  validateDelivery: async (id: string) => (await api.post(`/sales/deliveries/${id}/validate`)).data,
 
   getInvoices: async (params?: any) => (await api.get('/finance/invoices', { params })).data,
-  getInvoice: async (id: string) => (await api.get(/finance/invoices/$id)).data,
+  getInvoice: async (id: string) => (await api.get(`/finance/invoices/${id}`)).data,
   createInvoiceFromSO: async (data: any) => (await api.post('/finance/invoices/from-so', data)).data,
-  postInvoice: async (id: string) => (await api.post(/finance/invoices/$id/post)).data,
+  postInvoice: async (id: string) => (await api.post(`/finance/invoices/${id}/post`)).data,
   
   getPayments: async (params?: any) => (await api.get('/finance/payments', { params })).data,
   createPayment: async (data: any) => (await api.post('/finance/payments', data)).data,
 };
+
+
+
+
+

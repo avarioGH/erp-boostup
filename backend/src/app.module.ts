@@ -16,6 +16,7 @@ import { PlatformModule } from './platform/platform.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CrmModule } from './crm/crm.module';
+import { PurchasingModule } from './purchasing/purchasing.module';
 import { HrModule } from './hr/hr.module';
 import { PosModule } from './pos/pos.module';
 import { ShopeeModule } from './integrations/shopee/shopee.module';
@@ -32,9 +33,11 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
     }),
-    InventoryModule, PrismaModule, AssetModule, MaintenanceModule, FinanceModule, GlModule, AccountingModule, AnalyticsModule, ReportingModule, DocumentModule, AutomationModule, PlatformModule, AuthModule, UsersModule, CrmModule, HrModule, PosModule, ShopeeModule, AiModule
+    InventoryModule, PrismaModule, AssetModule, MaintenanceModule, FinanceModule, GlModule, AccountingModule, AnalyticsModule, ReportingModule, DocumentModule, AutomationModule, PlatformModule, AuthModule, UsersModule, CrmModule,
+    PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
+

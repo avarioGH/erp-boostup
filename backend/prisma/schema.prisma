@@ -90,6 +90,8 @@ model Company {
   DeliveryOrder DeliveryOrder[]
   Invoice       Invoice[]
   Payment       Payment[]
+  PurchaseOrder PurchaseOrder[]
+  GoodsReceipt  GoodsReceipt[]
 }
 
 model CompanySetting {
@@ -251,9 +253,11 @@ model Warehouse {
 
   user_accesses UserWarehouseAccess[]
 
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  deleted_at DateTime?
+  created_at    DateTime        @default(now())
+  updated_at    DateTime        @updatedAt
+  deleted_at    DateTime?
+  PurchaseOrder PurchaseOrder[]
+  GoodsReceipt  GoodsReceipt[]
 
   @@unique([company_id, code])
 }
@@ -283,7 +287,10 @@ model Supplier {
   notes      String?
   status     Boolean @default(true)
 
-  products Product[]
+  products        Product[]
+  purchase_orders PurchaseOrder[]
+  invoices        Invoice[]
+  goods_receipts  GoodsReceipt[]
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -374,6 +381,8 @@ model Product {
   QuotationItem     QuotationItem[]
   DeliveryOrderItem DeliveryOrderItem[]
   InvoiceItem       InvoiceItem[]
+  PurchaseOrderItem PurchaseOrderItem[]
+  GoodsReceiptItem  GoodsReceiptItem[]
 
   @@unique([company_id, code])
   @@unique([company_id, barcode])
@@ -1776,17 +1785,25 @@ model DeliveryOrderItem {
 }
 
 model Invoice {
-  id             String     @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String     @db.ObjectId
-  company        Company    @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  sales_order_id String     @db.ObjectId
-  sales_order    SalesOrder @relation(fields: [sales_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customer_id    String     @db.ObjectId
-  customer       Customer   @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  company_id String  @db.ObjectId
+  company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  type       String  @default("AR") // "AR" (Accounts Receivable) or "AP" (Accounts Payable)
+
+  sales_order_id String?     @db.ObjectId
+  sales_order    SalesOrder? @relation(fields: [sales_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customer_id    String?     @db.ObjectId
+  customer       Customer?   @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  purchase_order_id String?        @db.ObjectId
+  purchase_order    PurchaseOrder? @relation(fields: [purchase_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  supplier_id       String?        @db.ObjectId
+  supplier          Supplier?      @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
   invoice_number String
   invoice_date   DateTime
   due_date       DateTime?
-  status         String // DRAFT, POSTED, PAID
+  status         String // DRAFT, POSTED, PARTIALLY PAID, PAID, CANCELLED
 
   subtotal         Float
   tax              Float
@@ -1805,19 +1822,17 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  invoice_id String  @db.ObjectId
-  invoice    Invoice @relation(fields: [invoice_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_id String  @db.ObjectId
-  product    Product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  qty        Int
-  unit_price Float
-  discount   Float   @default(0)
-  tax        Float   @default(0)
-  subtotal   Float
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  invoice_id  String  @db.ObjectId
+  invoice     Invoice @relation(fields: [invoice_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product_id  String  @db.ObjectId
+  product     Product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  description String?
+  qty         Float
+  unit_price  Float
+  discount    Float   @default(0)
+  tax         Float   @default(0)
+  subtotal    Float
 }
 
 model Payment {
@@ -1837,4 +1852,82 @@ model Payment {
   deleted_at DateTime?
 
   @@unique([company_id, payment_number])
+}
+
+model PurchaseOrder {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  company_id       String    @db.ObjectId
+  company          Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  supplier_id      String    @db.ObjectId
+  supplier         Supplier  @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  order_number     String
+  order_date       DateTime
+  expected_receipt DateTime?
+  status           String // DRAFT, CONFIRMED, CANCELLED
+  receipt_status   String    @default("PENDING") // PENDING, PARTIAL, RECEIVED
+  bill_status      String    @default("PENDING") // PENDING, BILLED
+  payment_status   String    @default("UNPAID") // UNPAID, PARTIAL, PAID
+
+  warehouse_id String?    @db.ObjectId
+  warehouse    Warehouse? @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  total_amount  Float
+  notes         String?
+  payment_terms String?
+
+  items    PurchaseOrderItem[]
+  receipts GoodsReceipt[]
+  invoices Invoice[]
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  @@unique([company_id, order_number])
+}
+
+model PurchaseOrderItem {
+  id                String        @id @default(auto()) @map("_id") @db.ObjectId
+  purchase_order_id String        @db.ObjectId
+  purchase_order    PurchaseOrder @relation(fields: [purchase_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product_id        String        @db.ObjectId
+  product           Product       @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  qty               Float
+  received_qty      Float         @default(0)
+  unit_price        Float
+  discount          Float         @default(0)
+  tax               Float         @default(0)
+  subtotal          Float
+}
+
+model GoodsReceipt {
+  id                String        @id @default(auto()) @map("_id") @db.ObjectId
+  company_id        String        @db.ObjectId
+  company           Company       @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  purchase_order_id String        @db.ObjectId
+  purchase_order    PurchaseOrder @relation(fields: [purchase_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  supplier_id       String        @db.ObjectId
+  supplier          Supplier      @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  warehouse_id      String        @db.ObjectId
+  warehouse         Warehouse     @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  receipt_number    String
+  receipt_date      DateTime
+  status            String // DRAFT, VALIDATED
+
+  items GoodsReceiptItem[]
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  @@unique([company_id, receipt_number])
+}
+
+model GoodsReceiptItem {
+  id               String       @id @default(auto()) @map("_id") @db.ObjectId
+  goods_receipt_id String       @db.ObjectId
+  goods_receipt    GoodsReceipt @relation(fields: [goods_receipt_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product_id       String       @db.ObjectId
+  product          Product      @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  qty              Float
 }

@@ -44,10 +44,23 @@ export class PaymentService {
         }
       });
 
-      // Emit Domain Event for Accounting Integration
-      // PaymentReceivedEvent -> Debit Cash, Credit AR
-
+              // Update PO payment status if this is an AP Bill
+        if (invoice.type === 'AP' && invoice.purchase_order_id) {
+          const poStatus = newRemaining <= 0 ? 'PAID' : 'PARTIAL';
+          await tx.purchaseOrder.update({
+            where: { id: invoice.purchase_order_id },
+            data: { payment_status: poStatus }
+          });
+        } else if (invoice.sales_order_id) {
+          const soStatus = newRemaining <= 0 ? 'PAID' : 'PARTIALLY_PAID';
+          await tx.salesOrder.update({
+            where: { id: invoice.sales_order_id },
+            data: { payment_status: soStatus }
+          });
+        }
+        
       return payment;
     });
   }
 }
+

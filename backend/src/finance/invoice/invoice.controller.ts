@@ -17,3 +17,4 @@ export class InvoiceController {
   @Post(':id/post')
   post(@Request() req, @Param('id') id: string) { return this.service.post(req.user.company_id, id); }
 }
+
