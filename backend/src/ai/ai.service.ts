@@ -59,6 +59,23 @@ export class AiService {
             required: ['product_name', 'new_price']
           }
         }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'create_product',
+          description: 'Propose creating a new product. THIS REQUIRES USER PERMISSION.',
+          parameters: {
+            type: 'object',
+            properties: {
+              product_name: { type: 'string', description: 'Name of the product' },
+              category: { type: 'string', description: 'Category of the product (optional)' },
+              selling_price: { type: 'number', description: 'Selling price' },
+              size: { type: 'string', description: 'Size or description (optional)' }
+            },
+            required: ['product_name', 'selling_price']
+          }
+        }
       }
     ];
   }
@@ -126,6 +143,14 @@ export class AiService {
             if (proposal.success) {
               pendingAction = proposal.action;
               apiResponse = { status: 'PROPOSAL_CREATED_WAITING_FOR_USER_APPROVAL', message: 'Tolong beritahu user bahwa tombol persetujuan sudah muncul di layar.' };
+            } else {
+              apiResponse = { status: 'FAILED', message: proposal.message };
+            }
+          } else if (toolCall.function.name === 'create_product') {
+            const proposal = await this.proposeCreateProduct(user.company_id, args.product_name, args.selling_price, args.category, args.size);
+            if (proposal.success) {
+              pendingAction = proposal.action;
+              apiResponse = { status: 'PROPOSAL_CREATED_WAITING_FOR_USER_APPROVAL', message: 'Tolong beritahu user bahwa tombol persetujuan penambahan produk sudah muncul di layar.' };
             } else {
               apiResponse = { status: 'FAILED', message: proposal.message };
             }
@@ -206,6 +231,18 @@ export class AiService {
     };
   }
 
+  private async proposeCreateProduct(companyId: string, productName: string, sellingPrice: number, categoryName?: string, size?: string) {
+    return {
+      success: true,
+      action: {
+        type: 'CREATE_PRODUCT',
+        title: `Tambah Produk Baru: ${productName}`,
+        description: `Harga: Rp ${sellingPrice}${categoryName ? ` | Kategori: ${categoryName}` : ''}${size ? ` | Info: ${size}` : ''}`,
+        payload: { companyId, productName, sellingPrice, categoryName, size }
+      }
+    };
+  }
+
   async executeAction(companyId: string, actionData: any) {
     if (actionData.type === 'UPDATE_PRODUCT_PRICE') {
       await this.prisma.product.update({
@@ -213,6 +250,40 @@ export class AiService {
         data: { selling_price: actionData.payload.newPrice }
       });
       return { success: true, message: 'Harga berhasil diperbarui.' };
+    } else if (actionData.type === 'CREATE_PRODUCT') {
+      const { productName, sellingPrice, categoryName, size } = actionData.payload;
+      
+      // Get or create unit
+      let unit = await this.prisma.unit.findFirst({ where: { company_id: companyId } });
+      if (!unit) {
+        unit = await this.prisma.unit.create({ data: { company_id: companyId, name: 'Pcs' } });
+      }
+
+      // Get or create category
+      let categoryId = null;
+      if (categoryName) {
+        let category = await this.prisma.category.findFirst({ 
+          where: { company_id: companyId, name: { equals: categoryName, mode: 'insensitive' } } 
+        });
+        if (!category) {
+          category = await this.prisma.category.create({ data: { company_id: companyId, name: categoryName, type: 'Product' } });
+        }
+        categoryId = category.id;
+      }
+
+      await this.prisma.product.create({
+        data: {
+          company_id: companyId,
+          name: productName,
+          description: size || '',
+          selling_price: sellingPrice,
+          purchase_price: sellingPrice * 0.8, // Estimate 
+          code: `PRD-${Date.now().toString().slice(-6)}`,
+          unit_id: unit.id,
+          category_id: categoryId,
+        }
+      });
+      return { success: true, message: 'Produk berhasil ditambahkan.' };
     }
     return { success: false, message: 'Tindakan tidak dikenal.' };
   }
