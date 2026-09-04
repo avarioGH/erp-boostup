@@ -14,7 +14,7 @@ export class QuotationService {
       throw new BadRequestException('Invalid customer');
     }
 
-    const quotationNumber = `QTN-${Date.now()}`;
+    const quotationNumber = "QTN-${Date.now()}";
     
     let total = 0;
     const itemsData = items.map((item: any) => {
@@ -54,6 +54,30 @@ export class QuotationService {
     });
   }
 
+  async findAll(companyId: string, page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.quotation.findMany({
+        where: { company_id: companyId },
+        include: { customer: true },
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' }
+      }),
+      this.prisma.quotation.count({ where: { company_id: companyId } })
+    ]);
+    return { data, total, page, limit };
+  }
+
+  async findOne(companyId: string, id: string) {
+    const q = await this.prisma.quotation.findFirst({
+      where: { id, company_id: companyId },
+      include: { items: { include: { product: true } }, customer: true, sales_orders: true }
+    });
+    if (!q) throw new NotFoundException('Quotation not found');
+    return q;
+  }
+
   async confirm(companyId: string, id: string) {
     return this.prisma.$transaction(async (tx) => {
       const q = await tx.quotation.findFirst({
@@ -73,7 +97,7 @@ export class QuotationService {
         data: { status: 'CONFIRMED' }
       });
 
-      const soNo = `SO-${Date.now()}`;
+      const soNo = "SO-${Date.now()}";
       const so = await tx.salesOrder.create({
         data: {
           company_id: companyId,
