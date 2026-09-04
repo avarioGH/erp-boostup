@@ -233,7 +233,8 @@ export class AiService {
 
   private async proposeCreateProduct(companyId: string, productName: string, sellingPrice: number, categoryName?: string, size?: string) {
     return {
-      success: true,
+      success: true as boolean,
+      message: '',
       action: {
         type: 'CREATE_PRODUCT',
         title: `Tambah Produk Baru: ${productName}`,
@@ -260,13 +261,13 @@ export class AiService {
       }
 
       // Get or create category
-      let categoryId = null;
+      let categoryId: string | null = null;
       if (categoryName) {
         let category = await this.prisma.category.findFirst({ 
           where: { company_id: companyId, name: { equals: categoryName, mode: 'insensitive' } } 
         });
         if (!category) {
-          category = await this.prisma.category.create({ data: { company_id: companyId, name: categoryName, type: 'Product' } });
+          category = await this.prisma.category.create({ data: { company_id: companyId, name: categoryName } });
         }
         categoryId = category.id;
       }
