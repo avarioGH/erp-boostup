@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.erp.boostup.id';
 
@@ -107,6 +107,11 @@ export const CRMAPI: any = {
 export const PosAPI: any = {
   getProducts: async () => (await api.get('/pos/products')).data,
   createTransaction: async (data: any) => (await api.post('/pos/transactions', data)).data,
+  checkout: async (data: any) => (await api.post('/pos/transactions', data)).data,
+  getShifts: async () => (await api.get('/pos/shifts')).data,
+  openShift: async (data: any) => (await api.post('/pos/shifts/open', data)).data,
+  closeShift: async (data: any) => (await api.post('/pos/shifts/close', data)).data,
+  getOrderHistory: async (params?: any) => (await api.get('/pos/transactions', { params })).data,
 };
 
 export const FinanceAPI: any = {
@@ -116,6 +121,10 @@ export const FinanceAPI: any = {
   postInvoice: async (id: string) => (await api.post("/finance/invoices/" + id + "/post")).data,
   getPayments: async (params?: any) => (await api.get('/finance/payments', { params })).data,
   createPayment: async (data: any) => (await api.post('/finance/payments', data)).data,
-  getTransactions: async () => [],
-  getSummary: async () => ({ cashInHand: 0, cashInBank: 0 }),
+  getTransactions: async () => (await api.get('/finance/transactions').catch(() => ({ data: [] }))).data,
+  getSummary: async () => (await api.get('/finance/summary').catch(() => ({ data: { cashInHand: 0, cashInBank: 0 } }))).data,
+  getCategories: async () => (await api.get('/finance/categories').catch(() => ({ data: [] }))).data,
+  getBalanceSheetReport: async (params?: any) => (await api.get('/reports/finance/balance-sheet', { params }).catch(() => ({ data: {} }))).data,
+  getCashFlowReport: async (params?: any) => (await api.get('/reports/finance/cash-flow', { params }).catch(() => ({ data: {} }))).data,
+  getProfitLossReport: async (params?: any) => (await api.get('/reports/finance/profit-loss', { params }).catch(() => ({ data: {} }))).data,
 };
