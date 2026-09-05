@@ -13,7 +13,7 @@ export default function TransfersPage() {
   }, [])
 
   const validate = async (id: string) => {
-    await api.post(/inventory/transfer/ + id + /validate)
+    await api.post(`/inventory/transfer/${id}/validate`)
     alert('Validated!')
     window.location.reload()
   }

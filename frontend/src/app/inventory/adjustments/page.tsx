@@ -13,7 +13,7 @@ export default function AdjustmentsPage() {
   }, [])
 
   const validate = async (id: string) => {
-    await api.post(/inventory/adjustment/ + id + /validate)
+    await api.post(`/inventory/adjustment/${id}/validate`)
     alert('Validated!')
     window.location.reload()
   }
