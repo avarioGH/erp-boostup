@@ -82,7 +82,7 @@ export class AiService {
         type: 'function',
         function: {
           name: 'add_income',
-          description: 'Add a new income/cash-in transaction. THIS REQUIRES USER PERMISSION.',
+          description: 'Add a new income/cash-in transaction (tambah data keuangan, pemasukan, cash in, uang masuk). THIS REQUIRES USER PERMISSION.',
           parameters: {
             type: 'object',
             properties: {
@@ -124,8 +124,10 @@ export class AiService {
       const messages: any[] = [
         {
           role: 'system',
-          content: `You are Avario AI, an advanced ERP assistant. 
-          If asked to change data, use the appropriate tool. The system will automatically ask the user for permission. Just tell the user you have prepared the action for their approval.`
+          content: `You are Avario AI, an advanced ERP assistant for ERP Boostup. 
+          If asked to change data, use the appropriate tool. The system will automatically ask the user for permission. Just tell the user you have prepared the action for their approval.
+          User will mostly speak Indonesian. Translate their intent to the available tools.
+          For example: "masukkan data keuangan", "ada uang masuk", "tambah pemasukan" -> use 'add_income' tool.`
         }
       ];
 
