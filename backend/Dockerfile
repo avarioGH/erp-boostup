@@ -1,42 +1,33 @@
-# Build Stage
-FROM node:22-slim AS builder
+﻿# 1. Build Stage
+FROM node:20-alpine AS builder
 
-# Install OpenSSL for Prisma
-RUN apt-get update -y && apt-get install -y openssl
+WORKDIR /app
 
-WORKDIR /usr/src/app
-
-# Install all dependencies (including dev tools needed for build)
 COPY package*.json ./
-RUN npm install
+COPY prisma ./prisma/
 
-# Copy all source code
-COPY . .
-
-# Generate Prisma Client & Build NestJS app
+RUN npm ci
 RUN npx prisma generate
-RUN npx tsc prisma/seed.ts
+
+COPY . .
 RUN npm run build
 
-# Production Stage
-FROM node:22-slim
+# 2. Production Stage
+FROM node:20-alpine AS production
 
-# Install OpenSSL for Prisma in production
-RUN apt-get update -y && apt-get install -y openssl
+WORKDIR /app
 
-WORKDIR /usr/src/app
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/prisma ./prisma
 
-# Install only production dependencies
-COPY package*.json ./
-RUN npm install --omit=dev && npm install -g prisma
+# Non-root user for security
+RUN addgroup -S erp && adduser -S erp -G erp
+USER erp
 
-# Copy built artifacts from the builder stage
-COPY --from=builder /usr/src/app/prisma ./prisma
-COPY --from=builder /usr/src/app/dist ./dist
-
-# Copy generated Prisma Client from builder
-COPY --from=builder /usr/src/app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /usr/src/app/node_modules/@prisma ./node_modules/@prisma
+ENV NODE_ENV=production
+ENV PORT=3000
 
 EXPOSE 3000
 

@@ -1,3 +1,5 @@
+import { HealthModule } from './health/health.module';
+import { CoreModule } from './core/core.module';
 import { ReportsModule } from './reports/reports.module';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
@@ -29,6 +31,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
+    HealthModule,
+    CoreModule,
     ReportsModule,
     EventEmitterModule.forRoot(),
     ServeStaticModule.forRoot({
