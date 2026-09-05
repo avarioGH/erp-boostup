@@ -1,3 +1,5 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { InventoryValuationEvent } from '../events/accounting.events';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
@@ -54,7 +56,7 @@ export interface CreateAdjustmentDto {
 
 @Injectable()
 export class InventoryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2) {}
 
   async getCategories(companyId: string) {
     return this.prisma.category.findMany({
@@ -520,10 +522,27 @@ export class InventoryService {
         });
       }
 
-      return tx.inventoryTransaction.update({
+      const updated = await tx.inventoryTransaction.update({
         where: { id },
         data: { status: 'Completed', approved_by: userId, approved_at: new Date() }
       });
+      // Simple valuation logic for adjustments (assuming unit_cost exists, skipping if not)
+      let adjustmentValue = 0;
+      let type: 'ADJUSTMENT_LOSS' | 'ADJUSTMENT_GAIN' = 'ADJUSTMENT_LOSS';
+      for(const item of transaction.items) {
+         const diff = item.difference || 0;
+         if (diff !== 0) {
+            // Fallback to 0 if no unit_cost mapping.
+            const val = Math.abs(diff) * (item.unit_cost || 0);
+            adjustmentValue += val;
+            if (diff > 0) type = 'ADJUSTMENT_GAIN';
+            else type = 'ADJUSTMENT_LOSS';
+         }
+      }
+      if (adjustmentValue > 0) {
+         await this.eventEmitter.emitAsync('inventory.valuation', new InventoryValuationEvent(companyId, id, 'EVT-' + Date.now(), new Date(), { type, totalValue: adjustmentValue }, tx as any));
+      }
+      return updated;
     });
   }
 

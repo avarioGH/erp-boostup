@@ -1,9 +1,11 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { InventoryValuationEvent } from '../../events/accounting.events';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class DeliveryService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2) {}
 
   async create(companyId: string, salesOrderId: string, data: any) {
     return this.prisma.$transaction(async (tx) => {
