@@ -2139,3 +2139,13 @@ model CrmActivity {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
+
+model DocumentSequence {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  company_id String @db.ObjectId
+  type       String // 'INVOICE', 'QUOTATION', 'SALES_ORDER', 'PURCHASE_ORDER', 'VENDOR_BILL', 'PAYMENT'
+  prefix     String // 'INV/2026/'
+  last_value Int    @default(0)
+
+  @@unique([company_id, type, prefix])
+}

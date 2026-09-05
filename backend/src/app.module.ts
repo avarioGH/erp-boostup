@@ -1,3 +1,4 @@
+import { ReportsModule } from './reports/reports.module';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -28,6 +29,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
+    ReportsModule,
     EventEmitterModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),

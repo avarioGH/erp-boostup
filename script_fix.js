@@ -1,13 +1,18 @@
 const fs = require('fs');
 
-// Fix controller
-const controllerFile = 'backend/src/finance/payment/payment.controller.ts';
-let codeC = fs.readFileSync(controllerFile, 'utf8');
-codeC = codeC.replace("data.invoiceId, data);", "data);");
-fs.writeFileSync(controllerFile, codeC);
+// Fix pdf.service.ts
+let pdfService = fs.readFileSync('backend/src/reports/pdf.service.ts', 'utf8');
+pdfService = pdfService.replace("import * as PDFDocument from 'pdfkit';", "import PDFDocument = require('pdfkit');");
+fs.writeFileSync('backend/src/reports/pdf.service.ts', pdfService);
 
-// Fix service
-const serviceFile = 'backend/src/finance/payment/payment.service.ts';
-let codeS = fs.readFileSync(serviceFile, 'utf8');
-codeS = codeS.replace("description: `Payment for invoice ${invoice.invoice_number}`", "description: `Payment for invoice ${invoice.invoice_number}`, created_by: 'SYSTEM'");
-fs.writeFileSync(serviceFile, codeS);
+// Fix report.controller.ts
+let reportController = fs.readFileSync('backend/src/reports/report.controller.ts', 'utf8');
+reportController = reportController.replace("import { Response } from 'express';", "import type { Response } from 'express';");
+fs.writeFileSync('backend/src/reports/report.controller.ts', reportController);
+
+// Fix report.service.ts
+let reportService = fs.readFileSync('backend/src/reports/report.service.ts', 'utf8');
+reportService = reportService.replace("include: { customer: true, branch: true }", "include: { customer: true }");
+reportService = reportService.replace(/journalEntry/g, "journal_entry");
+fs.writeFileSync('backend/src/reports/report.service.ts', reportService);
+
