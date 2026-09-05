@@ -1,0 +1,1 @@
+export default function Customer360Page() { return <div>Customer 360 (Overview, Sales, Activities)</div>; }

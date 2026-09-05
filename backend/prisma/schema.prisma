@@ -94,6 +94,9 @@ model Company {
   GoodsReceipt  GoodsReceipt[]
   LeaveRequest  LeaveRequest[]
   Payroll       Payroll[]
+  Lead          Lead[]
+  Opportunity   Opportunity[]
+  CrmActivity   CrmActivity[]
 }
 
 model CompanySetting {
@@ -1520,9 +1523,11 @@ model Customer {
   quotations Quotation[]
   invoices   Invoice[]
 
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  deleted_at DateTime?
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  deleted_at  DateTime?
+  Opportunity Opportunity[]
+  CrmActivity CrmActivity[]
 
   @@unique([company_id, code])
 }
@@ -2062,4 +2067,75 @@ model LeaveRequest {
   quotationItemId            String?                   @db.ObjectId
   DeliveryOrderItem          DeliveryOrderItem?        @relation(fields: [deliveryOrderItemId], references: [id])
   deliveryOrderItemId        String?                   @db.ObjectId
+}
+
+model Lead {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  company_id String  @db.ObjectId
+  company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  lead_code      String
+  name           String
+  company_name   String?
+  email          String?
+  phone          String?
+  source         String // WEBSITE, WHATSAPP, REFERRAL, SOCIAL_MEDIA, EVENT, MANUAL, OTHER
+  assigned_user  String? // Could be User ID, keeping it string for simplicity
+  status         String // NEW, CONTACTED, QUALIFIED, UNQUALIFIED, CONVERTED, LOST
+  expected_value Float   @default(0)
+  notes          String?
+
+  opportunities Opportunity[]
+  activities    CrmActivity[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model Opportunity {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  company_id String  @db.ObjectId
+  company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  title       String
+  customer_id String?   @db.ObjectId
+  customer    Customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lead_id     String?   @db.ObjectId
+  lead        Lead?     @relation(fields: [lead_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  expected_value      Float     @default(0)
+  probability         Float     @default(0) // 0-100
+  expected_close_date DateTime?
+  assigned_user       String?
+  stage               String // NEW, QUALIFICATION, PROPOSITION, NEGOTIATION, WON, LOST
+  notes               String?
+
+  activities CrmActivity[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model CrmActivity {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  company_id String  @db.ObjectId
+  company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  assigned_user  String?
+  lead_id        String?      @db.ObjectId
+  lead           Lead?        @relation(fields: [lead_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  opportunity_id String?      @db.ObjectId
+  opportunity    Opportunity? @relation(fields: [opportunity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customer_id    String?      @db.ObjectId
+  customer       Customer?    @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  type         String // CALL, EMAIL, MEETING, FOLLOW_UP, NOTE, TASK
+  title        String
+  description  String?
+  due_date     DateTime?
+  status       String // TODO, IN_PROGRESS, DONE, CANCELLED
+  completed_at DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
