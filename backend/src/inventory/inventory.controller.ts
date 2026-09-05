@@ -39,7 +39,7 @@ export class InventoryController {
   @Post('products')
   @UseInterceptors(FilesInterceptor('images', 8, {
     storage: diskStorage({
-      destination: './uploads/products',
+      destination: (req, file, cb) => { const fs = require('fs'); const dir = './uploads/products'; if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); cb(null, dir); },
       filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const ext = extname(file.originalname);
@@ -170,3 +170,4 @@ export class InventoryController {
     });
   }
 }
+

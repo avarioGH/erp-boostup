@@ -167,10 +167,10 @@ export class InventoryService {
         barcode: data.barcode || null,
         name: data.name,
         description: data.description,
-        purchase_price: data.purchasePrice !== undefined ? Number(data.purchasePrice) : 0,
-        selling_price: data.sellingPrice !== undefined ? Number(data.sellingPrice) : 0,
+        purchase_price: !isNaN(Number(data.purchasePrice)) ? Number(data.purchasePrice) : 0,
+        selling_price: !isNaN(Number(data.sellingPrice)) ? Number(data.sellingPrice) : 0,
         unit_id: unit.id,
-        category_id: data.categoryId || null
+        category_id: data.categoryId && data.categoryId !== 'undefined' && data.categoryId !== 'null' && data.categoryId !== '' ? data.categoryId : null
       }
     });
 
@@ -737,5 +737,7 @@ export class InventoryService {
     });
   }
 }
+
+
 
 
