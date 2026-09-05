@@ -104,6 +104,21 @@ export class DeliveryService {
               available_stock: stock.available_stock - item.delivered_qty
             }
           });
+
+          await tx.stockMovement.create({
+            data: {
+              company_id: companyId,
+              warehouse_id: warehouse.id,
+              product_id: item.product_id,
+              transaction_type: 'DELIVERY',
+              transaction_id: delivery.id,
+              movement_type: 'OUT',
+              qty_in: 0,
+              qty_out: item.delivered_qty,
+              balance_after: stock.current_stock - item.delivered_qty,
+              created_by: 'SYSTEM',
+            }
+          });
         }
       }
 

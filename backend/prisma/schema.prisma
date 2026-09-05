@@ -708,6 +708,9 @@ model InventoryTransactionItem {
   product_id     String               @db.ObjectId
   product        Product              @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   qty            Int
+    system_qty     Int?
+    counted_qty    Int?
+    difference     Int?
   unit_cost      Float                @default(0)
   subtotal       Float                @default(0)
   batch_number   String?
@@ -1546,6 +1549,9 @@ model SalesOrderItem {
   product_id     String     @db.ObjectId
   product        Product    @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   qty            Int
+    system_qty     Int?
+    counted_qty    Int?
+    difference     Int?
   unit_price     Float
   subtotal       Float
 
@@ -1931,3 +1937,4 @@ model GoodsReceiptItem {
   product          Product      @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   qty              Float
 }
+

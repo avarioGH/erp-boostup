@@ -59,6 +59,21 @@ export class PosService {
                 available_stock: currentStock.available_stock - item.qty,
               }
             });
+
+            await tx.stockMovement.create({
+              data: {
+                company_id: companyId,
+                warehouse_id: warehouseId,
+                product_id: item.productId,
+                transaction_type: 'POS_SALE',
+                transaction_id: salesOrder.id,
+                movement_type: 'OUT',
+                qty_in: 0,
+                qty_out: item.qty,
+                balance_after: currentStock.current_stock - item.qty,
+                created_by: userId || 'SYSTEM',
+              }
+            });
           }
         }
       }
