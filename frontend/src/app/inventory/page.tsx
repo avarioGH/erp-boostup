@@ -1,140 +1,117 @@
-"use client"
-
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Box, Home, ArrowRightLeft, RefreshCcw, PackageSearch, AlertTriangle } from "lucide-react"
-import { useEffect, useState } from "react"
-import { InventoryAPI } from "@/lib/api"
+'use client';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Box, PackageSearch, AlertTriangle, ArrowRightLeft } from "lucide-react";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import { formatCurrency } from "@/lib/utils";
 
 export default function InventoryDashboard() {
-  const [loading, setLoading] = useState(true)
-  const [isError, setIsError] = useState(false)
-  const [stats, setStats] = useState({ products: 0, warehouses: 0, movements: 0, lowStock: 0 })
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true)
-        setIsError(false)
-        const [products, warehouses, movements] = await Promise.all([
-          InventoryAPI.getProducts().catch(() => []),
-          InventoryAPI.getWarehouses().catch(() => []),
-          InventoryAPI.getTransactions().catch(() => [])
-        ])
-
-        const lowStockCount = products.filter((p: any) => {
-          const totalStock = p.warehouse_stocks?.reduce((acc: number, ws: any) => acc + ws.current_stock, 0) || 0
-          return totalStock < (p.minimum_stock || 20)
-        }).length
-
-        setStats({
-          products: products.length || 0,
-          warehouses: warehouses.length || 0,
-          movements: movements.length || 0,
-          lowStock: lowStockCount
-        })
-      } catch (e) {
-        console.error(e)
-        setIsError(true)
+        const res = await api.get('/inventory/dashboard');
+        setData(res.data);
+      } catch (err) {
+        console.error(err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    fetchData()
-  }, [])
+    };
+    fetchData();
+  }, []);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 animate-pulse">
-        <RefreshCcw className="w-8 h-8 text-primary animate-spin" />
-        <p className="text-muted-foreground font-medium text-sm">Memuat Data Inventaris...</p>
-      </div>
-    )
-  }
-
-  if (isError) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in zoom-in duration-300">
-        <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
-          <AlertTriangle className="w-10 h-10 text-destructive" />
-        </div>
-        <h2 className="text-xl font-bold text-foreground mb-2">Gagal Memuat Inventaris</h2>
-        <p className="text-muted-foreground max-w-md mb-8 text-sm">
-          Terjadi kesalahan saat mengambil data dari server. Silakan coba lagi.
-        </p>
-      </div>
-    )
-  }
+  if (loading) return <div className="p-8 text-center">Loading Inventory...</div>;
+  if (!data) return <div className="p-8 text-center text-red-500">Failed to load dashboard</div>;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard Inventaris</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Ringkasan produk, cabang gudang, dan pergerakan stok Anda.</p>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold tracking-tight">Inventory Dashboard</h1>
       </div>
 
-      <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-border shadow-sm bg-card relative overflow-hidden group hover:border-primary/50 transition-colors">
-          <div className="absolute top-4 right-4 p-2 bg-primary/10 rounded-lg text-primary">
-            <Box className="w-5 h-5" />
-          </div>
-          <CardHeader className="pb-2">
-            <CardDescription className="font-semibold tracking-wider uppercase text-[10px] text-muted-foreground truncate">Total Produk</CardDescription>
-            <CardTitle className="text-2xl font-bold text-foreground truncate mt-1">{stats.products}</CardTitle>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total On Hand (Qty)</CardTitle>
+            <Box className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2 text-sm mt-1">
-               <span className="text-muted-foreground text-xs font-medium">Item dalam katalog</span>
-            </div>
+            <div className="text-2xl font-bold">{data.total_on_hand}</div>
+            <p className="text-xs text-muted-foreground">Physical stock in warehouses</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Available Stock</CardTitle>
+            <PackageSearch className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{data.available_stock}</div>
+            <p className="text-xs text-muted-foreground">Ready for allocation</p>
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-sm bg-card relative overflow-hidden group hover:border-warning/50 transition-colors">
-          <div className="absolute top-4 right-4 p-2 bg-warning/10 rounded-lg text-warning">
-            <Home className="w-5 h-5" />
-          </div>
-          <CardHeader className="pb-2">
-            <CardDescription className="font-semibold tracking-wider uppercase text-[10px] text-muted-foreground truncate">Cabang Gudang</CardDescription>
-            <CardTitle className="text-2xl font-bold text-foreground truncate mt-1">{stats.warehouses}</CardTitle>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Reserved Stock</CardTitle>
+            <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2 text-sm mt-1">
-               <span className="text-muted-foreground text-xs font-medium">Lokasi penyimpanan aktif</span>
-            </div>
+            <div className="text-2xl font-bold text-orange-600">{data.reserved_stock}</div>
+            <p className="text-xs text-muted-foreground">Committed (SO/MO)</p>
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-sm bg-card relative overflow-hidden group hover:border-success/50 transition-colors">
-          <div className="absolute top-4 right-4 p-2 bg-success/10 rounded-lg text-success">
-            <ArrowRightLeft className="w-5 h-5" />
-          </div>
-          <CardHeader className="pb-2">
-            <CardDescription className="font-semibold tracking-wider uppercase text-[10px] text-muted-foreground truncate">Pergerakan Stok</CardDescription>
-            <CardTitle className="text-2xl font-bold text-foreground truncate mt-1">{stats.movements}</CardTitle>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Low Stock Alerts</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2 text-sm mt-1">
-               <span className="text-muted-foreground text-xs font-medium">Transaksi stok tercatat</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border shadow-sm bg-card relative overflow-hidden group hover:border-destructive/50 transition-colors">
-          <div className="absolute top-4 right-4 p-2 bg-destructive/10 rounded-lg text-destructive">
-            <PackageSearch className="w-5 h-5" />
-          </div>
-          <CardHeader className="pb-2">
-            <CardDescription className="font-semibold tracking-wider uppercase text-[10px] text-muted-foreground truncate">Stok Menipis</CardDescription>
-            <CardTitle className="text-2xl font-bold text-foreground truncate mt-1">{stats.lowStock}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 text-sm mt-1">
-               <span className={`text-xs font-medium ${stats.lowStock > 0 ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
-                 {stats.lowStock > 0 ? 'Butuh restock segera' : 'Kapasitas aman'}
-               </span>
-            </div>
+            <div className="text-2xl font-bold text-red-600">{data.low_stock_items}</div>
+            <p className="text-xs text-muted-foreground">Items below reorder point</p>
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Stock Movements</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <table className="w-full text-sm text-left">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="p-3">Date</th>
+                <th className="p-3">Type</th>
+                <th className="p-3">Product</th>
+                <th className="p-3">In</th>
+                <th className="p-3">Out</th>
+                <th className="p-3">Balance After</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.recent_movements?.map((m: any) => (
+                <tr key={m.id} className="border-b">
+                  <td className="p-3">{new Date(m.created_at).toLocaleString()}</td>
+                  <td className="p-3"><span className="px-2 py-1 bg-gray-100 rounded text-xs">{m.movement_type}</span></td>
+                  <td className="p-3 font-medium">{m.product_id}</td>
+                  <td className="p-3 text-green-600">{m.qty_in > 0 ? m.qty_in : '-'}</td>
+                  <td className="p-3 text-red-600">{m.qty_out > 0 ? m.qty_out : '-'}</td>
+                  <td className="p-3 font-mono">{m.balance_after}</td>
+                </tr>
+              ))}
+              {(!data.recent_movements || data.recent_movements.length === 0) && (
+                <tr><td colSpan={6} className="p-8 text-center text-gray-500">No recent movements.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
     </div>
-  )
+  );
 }

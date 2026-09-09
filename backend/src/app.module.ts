@@ -1,3 +1,4 @@
+import { MrpModule } from './mrp/mrp.module';
 import { HealthModule } from './health/health.module';
 import { CoreModule } from './core/core.module';
 import { ReportsModule } from './reports/reports.module';
@@ -18,6 +19,8 @@ import { AutomationModule } from './automation/automation.module';
 import { PlatformModule } from './platform/platform.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { IntegrationsModule } from './integrations/integrations.module';
+import { TripayModule } from './integrations/providers/payment/tripay/tripay.module';
 import { CrmModule } from './crm/crm.module';
 import { PurchasingModule } from './purchasing/purchasing.module';
 import { HrModule } from './hr/hr.module';
@@ -28,6 +31,7 @@ import { join } from 'path';
 import { AiModule } from './ai/ai.module';
 
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ManufacturingModule } from './manufacturing/manufacturing.module';
 
 @Module({
   imports: [
@@ -39,11 +43,14 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
     }),
-    InventoryModule, PrismaModule, AssetModule, MaintenanceModule, FinanceModule, GlModule, AccountingModule, AnalyticsModule, ReportingModule, DocumentModule, AutomationModule, PlatformModule, AuthModule, UsersModule, CrmModule,
-    PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule
+    InventoryModule, PrismaModule, AssetModule, MaintenanceModule, FinanceModule, GlModule, AccountingModule, AnalyticsModule, ReportingModule, DocumentModule, AutomationModule, PlatformModule, AuthModule, UsersModule,
+    IntegrationsModule,
+    TripayModule,
+    CrmModule,
+    PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule, ManufacturingModule, MrpModule
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
 
+export class AppModule {}

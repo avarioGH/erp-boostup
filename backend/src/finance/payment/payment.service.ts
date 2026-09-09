@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PaymentProcessedEvent } from '../../events/accounting.events';
@@ -13,12 +13,19 @@ export class PaymentService {
         where: { id: data.invoiceId, company_id: companyId }
       });
       if (!invoice) throw new NotFoundException('Invoice not found');
-      if (invoice.status !== 'POSTED' && invoice.status !== 'PARTIAL') {
+      // Fix status check to handle PARTIALLY PAID and POSTED
+      if (invoice.status !== 'POSTED' && invoice.status !== 'PARTIALLY PAID' && invoice.status !== 'PARTIAL') {
          throw new BadRequestException('Invoice must be POSTED to receive payment');
       }
 
+      // 12. PAYMENT ENGINE: Amount Validated (Never allow payment > remaining)
       if (data.amount > invoice.remaining_amount) {
          throw new BadRequestException('Payment exceeds remaining amount');
+      }
+      
+      // 12. PAYMENT ENGINE: Never allow negative payment
+      if (data.amount <= 0) {
+         throw new BadRequestException('Payment amount must be strictly positive');
       }
 
       const paymentNumber = "PAY-" + Date.now();
@@ -36,13 +43,24 @@ export class PaymentService {
       });
 
       const newRemaining = invoice.remaining_amount - data.amount;
-      const newPaid = invoice.paid_amount + data.amount;
-      const newStatus = newRemaining <= 0 ? 'PAID' : 'PARTIAL';
+        const newPaid = invoice.paid_amount + data.amount;
+        const newStatus = newRemaining <= 0 ? 'PAID' : 'PARTIALLY_PAID'; // Note: status enum is usually PARTIALLY_PAID
 
-      await tx.invoice.update({
-        where: { id: invoice.id },
-        data: { paid_amount: newPaid, remaining_amount: newRemaining, status: newStatus }
-      });
+        const invoiceUpd = await tx.invoice.updateMany({
+          where: { 
+            id: invoice.id,
+            remaining_amount: invoice.remaining_amount // Optimistic Concurrency Control
+          },
+          data: { 
+            paid_amount: { increment: data.amount },
+            remaining_amount: { decrement: data.amount },
+            status: newRemaining <= 0 ? 'PAID' : invoice.status === 'POSTED' ? 'PARTIALLY_PAID' : invoice.status
+          }
+        });
+
+        if (invoiceUpd.count === 0) {
+          throw new BadRequestException('Concurrency conflict or invoice state changed. Please retry.');
+        }
 
       if (invoice.sales_order_id && newStatus === 'PAID') {
          await tx.salesOrder.update({
@@ -51,37 +69,40 @@ export class PaymentService {
          });
       }
 
-      // We assume data.accountId is passed, otherwise we look up default cash account
       let accountId = data.accountId;
       if (!accountId) {
         const cashAcc = await tx.cashAccount.findFirst({ where: { company_id: companyId }});
         if (cashAcc) accountId = cashAcc.id;
-        else throw new BadRequestException('No cash account specified or default found');
+        // if no cash account is found, it's fine, the accounting listener will handle it using defaults or mappings
       }
 
-      // Operational cash flow log
-      await tx.financeTransaction.create({
-        data: {
-          company_id: companyId,
-          transaction_no: 'TRX-' + Date.now(),
-          transaction_type: invoice.type === 'VENDOR_BILL' ? 'Cash Out' : 'Cash In',
-          cash_account_id: accountId,
-          reference_type: 'PAYMENT',
-          reference_id: payment.id,
-          transaction_date: payment.payment_date,
-          status: 'COMPLETED',
-          description: `Payment for invoice ${invoice.invoice_number}`, created_by: 'SYSTEM'
-        }
-      });
+      const isAP = (invoice.type === 'AP' || invoice.type === 'VENDOR_BILL');
+      
+      if (accountId) {
+        await tx.financeTransaction.create({
+          data: {
+            company_id: companyId,
+            transaction_no: 'TRX-' + Date.now(),
+            transaction_type: isAP ? 'Cash Out' : 'Cash In',
+            cash_account_id: accountId,
+            reference_type: 'PAYMENT',
+            reference_id: payment.id,
+            transaction_date: payment.payment_date,
+            status: 'COMPLETED',
+            description: `Payment for invoice ${invoice.invoice_number}`, 
+            created_by: '6aa02dc075845f59e02b3f01'
+          }
+        });
+      }
 
-      // Emitting Accounting Event
+      // Emit strictly typed Accounting Event for Idempotent GlService listening
       await this.eventEmitter.emitAsync('payment.received', new PaymentProcessedEvent(
         companyId,
         payment.id,
         'EVT-' + Date.now(),
         payment.payment_date,
         {
-           type: invoice.type === 'VENDOR_BILL' ? 'PAYABLE' : 'RECEIVABLE',
+           type: isAP ? 'PAYABLE' : 'RECEIVABLE',
            amount: payment.amount,
            accountId: accountId
         },

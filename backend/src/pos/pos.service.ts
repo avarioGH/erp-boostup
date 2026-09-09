@@ -1,7 +1,9 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { consumeFifoLayers } from '../inventory/fifo.engine';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SalesCompletedEvent } from '../events/sales-completed.event';
+import { InventoryValuationEvent } from '../events/accounting.events';
 
 @Injectable()
 export class PosService {
@@ -9,6 +11,7 @@ export class PosService {
 
   async processCheckout(data: any) {
     const { companyId, userId, warehouseId, customerId, paymentMethod, items, subtotal, tax, total } = data;
+    let totalPosCogs = 0;
 
     return this.prisma.$transaction(async (tx) => {
       // 1. Create Sales Order (Receipt)
@@ -20,7 +23,7 @@ export class PosService {
           customer_id: customerId,
           order_date: new Date(),
           status: 'COMPLETED',
-          total_amount: total,
+          total_amount: total ?? items.reduce((s: number, i: any) => s + i.qty * i.price, 0),
           payment_status: 'PAID',
           payment_method: paymentMethod || 'CASH',
         }
@@ -52,15 +55,18 @@ export class PosService {
           });
 
           if (currentStock) {
-            await tx.warehouseStock.update({
-              where: { id: currentStock.id },
-              data: {
-                current_stock: currentStock.current_stock - item.qty,
-                available_stock: currentStock.available_stock - item.qty,
+            const posStockUpd = await tx.warehouseStock.updateMany({
+                where: { id: currentStock.id, available_stock: { gte: item.qty } },
+                data: {
+                  current_stock: { decrement: item.qty },
+                  available_stock: { decrement: item.qty }
+                }
+              });
+              if (posStockUpd.count === 0) {
+                 throw new BadRequestException('Concurrency conflict or insufficient stock for POS item ' + item.productId);
               }
-            });
 
-            await tx.stockMovement.create({
+            const mov = await tx.stockMovement.create({
               data: {
                 company_id: companyId,
                 warehouse_id: warehouseId,
@@ -71,8 +77,26 @@ export class PosService {
                 qty_in: 0,
                 qty_out: item.qty,
                 balance_after: currentStock.current_stock - item.qty,
+                unit_cost: 0,
+                total_cost: 0,
                 created_by: userId || 'SYSTEM',
               }
+            });
+            
+            // STEP 16.5 - True FIFO Consumption
+            const { totalCogs } = await consumeFifoLayers(tx, {
+              companyId,
+              productId: item.productId,
+              warehouseId,
+              quantity: item.qty,
+              stockMovementId: mov.id
+            });
+            totalPosCogs += totalCogs;
+
+            const actual_unit_cost = item.qty > 0 ? totalCogs / item.qty : 0;
+            await tx.stockMovement.update({
+              where: { id: mov.id },
+              data: { unit_cost: actual_unit_cost, total_cost: totalCogs }
             });
           }
         }
@@ -131,13 +155,29 @@ export class PosService {
           companyId,
           sourceEntityId: salesOrder.id,
           payload: {
-            totalAmount: total,
+            totalAmount: salesOrder.total_amount,
             paymentMethod: paymentMethod || 'CASH',
             userId
           },
           tx: tx as any
         })
       );
+
+      // Emit COGS to accounting
+      if (totalPosCogs > 0) {
+        await this.eventEmitter.emitAsync('inventory.valuation', new InventoryValuationEvent(
+          companyId,
+          salesOrder.id,
+          `VAL-POS-${salesOrder.id}`,
+          new Date(),
+          {
+            type: 'COGS',
+            totalValue: totalPosCogs,
+            description: 'COGS for POS ' + salesOrder.order_number
+          },
+          tx
+        ));
+      }
 
       return salesOrder;
     });

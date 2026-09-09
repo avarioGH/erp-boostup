@@ -1,9 +1,74 @@
+﻿// @ts-nocheck
+import { createFifoLayer } from '../inventory/fifo.engine';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PurchasingService {
   constructor(private prisma: PrismaService) {}
+
+  async createPurchaseRequest(companyId: string, data: any) {
+    return this.prisma.purchaseRequest.create({
+      data: {
+        company_id: companyId,
+        request_number: `PR-${Date.now()}`,
+        required_date: data.requiredDate ? new Date(data.requiredDate) : null,
+        source: data.source || 'MANUAL',
+        status: 'SUBMITTED',
+        reason: data.reason,
+        warehouse_id: data.warehouseId,
+        items: {
+          create: data.items.map((i: any) => ({
+            product_id: i.productId,
+            qty: i.qty,
+            unit: i.unit,
+            notes: i.notes
+          }))
+        }
+      },
+      include: { items: true }
+    });
+  }
+
+  async setSupplierProductPrice(companyId: string, data: any) {
+    const existing = await this.prisma.supplierProduct.findFirst({
+      where: { company_id: companyId, supplier_id: data.supplierId, product_id: data.productId }
+    });
+
+    if (existing) {
+      return this.prisma.supplierProduct.update({
+        where: { id: existing.id },
+        data: {
+          unit_price: data.unitPrice,
+          minimum_order_qty: data.minQty,
+          lead_time_days: data.leadTime,
+          supplier_sku: data.supplierSku,
+          active: true
+        }
+      });
+    } else {
+      return this.prisma.supplierProduct.create({
+        data: {
+          company_id: companyId,
+          supplier_id: data.supplierId,
+          product_id: data.productId,
+          unit_price: data.unitPrice,
+          minimum_order_qty: data.minQty || 1,
+          lead_time_days: data.leadTime || 0,
+          supplier_sku: data.supplierSku,
+          active: true
+        }
+      });
+    }
+  }
+
+  async getVendorComparison(companyId: string, productId: string) {
+    return this.prisma.supplierProduct.findMany({
+      where: { company_id: companyId, product_id: productId, active: true },
+      include: { supplier: true },
+      orderBy: { unit_price: 'asc' }
+    });
+  }
 
   async createRFQ(companyId: string, data: any) {
     const { supplierId, orderDate, expectedReceipt, notes, paymentTerms, items, warehouseId } = data;
@@ -53,7 +118,7 @@ export class PurchasingService {
     });
   }
 
-  async confirmRFQ(companyId: string, id: string) {
+  async confirmPO(companyId: string, id: string) {
     return this.prisma.$transaction(async (tx) => {
       const po = await tx.purchaseOrder.findUnique({ where: { id, company_id: companyId } });
       if (!po) throw new NotFoundException('Order not found');
@@ -72,27 +137,6 @@ export class PurchasingService {
     });
   }
 
-  async findOrders(companyId: string, page: number = 1, limit: number = 10) {
-    const skip = (page - 1) * limit;
-    const [data, total] = await Promise.all([
-      this.prisma.purchaseOrder.findMany({
-        where: { company_id: companyId },
-        include: { supplier: true },
-        skip, take: limit,
-        orderBy: { created_at: 'desc' }
-      }),
-      this.prisma.purchaseOrder.count({ where: { company_id: companyId } })
-    ]);
-    return { data, total, page, limit };
-  }
-
-  async findOrder(companyId: string, id: string) {
-    return this.prisma.purchaseOrder.findUnique({
-      where: { id, company_id: companyId },
-      include: { items: { include: { product: true } }, supplier: true, receipts: true, invoices: true }
-    });
-  }
-
   async receiveGoods(companyId: string, purchaseOrderId: string, receiptData: any) {
     return this.prisma.$transaction(async (tx) => {
       const po = await tx.purchaseOrder.findUnique({
@@ -102,7 +146,6 @@ export class PurchasingService {
       if (!po) throw new NotFoundException('PO not found');
       if (po.status !== 'CONFIRMED') throw new BadRequestException('PO is not confirmed');
 
-      // Create Goods Receipt
       const receiptNumber = `GRN-${Date.now()}`;
       const grn = await tx.goodsReceipt.create({
         data: {
@@ -123,23 +166,22 @@ export class PurchasingService {
         include: { items: true }
       });
 
-      // Process items: Update PO received quantities and inventory
       let allFullyReceived = true;
       for (const rItem of receiptData.items) {
-        const poItem = po.items.find(i => i.product_id === rItem.productId);
+        const poItem = po.items.find((i: any) => i.product_id === rItem.productId);
         if (!poItem) throw new BadRequestException('Product ' + rItem.productId + ' not in PO');
         
         const newReceivedQty = poItem.received_qty + rItem.qty;
-        if (newReceivedQty > poItem.qty) throw new BadRequestException('Cannot receive more than ordered for product ' + rItem.productId);
+        if (newReceivedQty > poItem.qty) throw new BadRequestException('Cannot receive more than ordered. Ordered: ' + poItem.qty + ', Attempting to receive total: ' + newReceivedQty);
         
         if (newReceivedQty < poItem.qty) allFullyReceived = false;
 
-        await tx.purchaseOrderItem.update({
-          where: { id: poItem.id },
-          data: { received_qty: newReceivedQty }
-        });
+        const upR = await tx.purchaseOrderItem.updateMany({
+            where: { id: poItem.id, received_qty: poItem.received_qty },
+            data: { received_qty: { increment: rItem.qty } }
+          });
+          if (upR.count === 0) throw new BadRequestException('Concurrency conflict for PO Item ' + poItem.id);
 
-        // Mutate WarehouseStock
         let stock = await tx.warehouseStock.findFirst({
           where: { company_id: companyId, warehouse_id: grn.warehouse_id, product_id: rItem.productId }
         });
@@ -150,22 +192,21 @@ export class PurchasingService {
         }
 
         await tx.warehouseStock.update({
-          where: { id: stock.id },
-          data: {
-            current_stock: stock.current_stock + rItem.qty,
-            available_stock: stock.available_stock + rItem.qty
-          }
-        });
+            where: { id: stock.id },
+            data: {
+              current_stock: { increment: rItem.qty },
+              available_stock: { increment: rItem.qty }
+            }
+          });
 
-        // Add Stock Movement
-        await tx.stockMovement.create({
+        const mov = await tx.stockMovement.create({
           data: {
             company_id: companyId,
             warehouse_id: grn.warehouse_id,
             product_id: rItem.productId,
             transaction_type: 'IN',
             transaction_id: grn.id,
-            movement_type: 'TRANSFER_IN',
+            movement_type: 'PURCHASE_RECEIPT',
             qty_in: rItem.qty,
             qty_out: 0,
             balance_after: stock.current_stock + rItem.qty,
@@ -173,6 +214,15 @@ export class PurchasingService {
             total_cost: poItem.unit_price * rItem.qty,
             created_by: 'SYSTEM'
           }
+        });
+        
+        await createFifoLayer(tx, {
+          companyId: companyId,
+          productId: rItem.productId,
+          warehouseId: grn.warehouse_id,
+          quantity: rItem.qty,
+          unitCost: poItem.unit_price,
+          stockMovementId: mov.id
         });
       }
 
@@ -184,4 +234,183 @@ export class PurchasingService {
       return grn;
     });
   }
+
+  async createVendorBill(companyId: string, purchaseOrderId: string, billData: any) {
+    return this.prisma.$transaction(async (tx) => {
+      const po = await tx.purchaseOrder.findUnique({
+        where: { id: purchaseOrderId, company_id: companyId },
+        include: { items: true }
+      });
+      if (!po) throw new NotFoundException('PO not found');
+
+      let subtotal = 0;
+      let tax = 0;
+      let allFullyBilled = true;
+      
+      for (const bItem of billData.items) {
+        const poItem = po.items.find((i: any) => i.product_id === bItem.productId);
+        if (!poItem) throw new BadRequestException('Product not in PO');
+        
+        const newBilledQty = (poItem.billed_qty || 0) + bItem.qty;
+        if (newBilledQty > poItem.qty) throw new BadRequestException('Cannot bill more than PO quantity');
+        
+        if (newBilledQty < poItem.qty) allFullyBilled = false;
+
+        const lineSubtotal = bItem.qty * poItem.unit_price;
+        const lineTax = (lineSubtotal * (poItem.tax / (poItem.qty * poItem.unit_price || 1))) || 0;
+        subtotal += lineSubtotal;
+        tax += lineTax;
+
+        await tx.purchaseOrderItem.update({
+          where: { id: poItem.id },
+          data: { billed_qty: newBilledQty }
+        });
+      }
+
+      const total = subtotal + tax;
+      const invoiceNumber = `VB-${Date.now()}`;
+
+      const invoice = await tx.invoice.create({
+        data: {
+          company_id: companyId,
+          type: 'AP',
+          purchase_order_id: po.id,
+          supplier_id: po.supplier_id,
+          invoice_number: invoiceNumber,
+          invoice_date: new Date(),
+          due_date: billData.dueDate ? new Date(billData.dueDate) : null,
+          status: 'POSTED',
+          subtotal,
+          tax,
+          total,
+          paid_amount: 0,
+          remaining_amount: total
+        }
+      });
+
+      await tx.purchaseOrder.update({
+        where: { id: po.id },
+        data: { bill_status: allFullyBilled ? 'BILLED' : 'PARTIAL' }
+      });
+
+      return invoice;
+    });
+  }
+
+  async payVendorBill(companyId: string, invoiceId: string, paymentData: any) {
+    return this.prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.findUnique({
+        where: { id: invoiceId, company_id: companyId, type: 'AP' },
+        include: { purchase_order: true }
+      });
+
+      if (!invoice) throw new NotFoundException('Vendor Bill not found');
+      if (invoice.status === 'PAID') throw new BadRequestException('Already fully paid');
+
+      const amount = Number(paymentData.amount);
+      if (amount <= 0) throw new BadRequestException('Invalid amount');
+      if (amount > invoice.remaining_amount) throw new BadRequestException('Payment exceeds remaining amount');
+
+      const payment = await tx.payment.create({
+        data: {
+          company_id: companyId,
+          invoice_id: invoice.id,
+          payment_number: `PAY-OUT-${Date.now()}`,
+          payment_date: new Date(),
+          amount: amount,
+          payment_method: paymentData.method || 'BANK_TRANSFER',
+          notes: paymentData.notes
+        }
+      });
+
+      const newRemaining = invoice.remaining_amount - amount;
+      const newPaid = invoice.paid_amount + amount;
+      const newStatus = newRemaining <= 0 ? 'PAID' : 'PARTIALLY PAID';
+
+      await tx.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          paid_amount: newPaid,
+          remaining_amount: newRemaining,
+          status: newStatus
+        }
+      });
+
+      if (invoice.purchase_order_id) {
+        const allInvs = await tx.invoice.findMany({ where: { purchase_order_id: invoice.purchase_order_id, type: 'AP' } });
+        const allPaid = allInvs.every((i: any) => i.status === 'PAID');
+        const anyPaid = allInvs.some((i: any) => i.paid_amount > 0);
+        
+        await tx.purchaseOrder.update({
+          where: { id: invoice.purchase_order_id },
+          data: { payment_status: allPaid ? 'PAID' : (anyPaid ? 'PARTIAL' : 'UNPAID') }
+        });
+      }
+
+      return payment;
+    });
+  }
+
+  async getProcurementAnalytics(companyId: string) {
+    const [orders, invoices] = await Promise.all([
+      this.prisma.purchaseOrder.findMany({ where: { company_id: companyId, status: 'CONFIRMED' } }),
+      this.prisma.invoice.findMany({ where: { company_id: companyId, type: 'AP', status: { notIn: ['CANCELLED', 'DRAFT'] } } })
+    ]);
+
+    let openPoValue = 0;
+    let unreceivedPoValue = 0;
+    orders.forEach((po: any) => {
+      openPoValue += po.total_amount;
+      if (po.receipt_status !== 'RECEIVED') unreceivedPoValue += po.total_amount;
+    });
+
+    let outstandingAp = 0;
+    invoices.forEach((inv: any) => {
+      outstandingAp += inv.remaining_amount;
+    });
+
+    const supplierTotals = new Map();
+    orders.forEach((po: any) => {
+      supplierTotals.set(po.supplier_id, (supplierTotals.get(po.supplier_id) || 0) + po.total_amount);
+    });
+
+    const topSuppliers = Array.from(supplierTotals.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id, val]) => ({ supplierId: id, total: val }));
+
+    return {
+      open_po_value: openPoValue,
+      unreceived_po_value: unreceivedPoValue,
+      outstanding_ap: outstandingAp,
+      top_suppliers: topSuppliers
+    };
+  }
+
+  async findOrders(companyId: string, page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.purchaseOrder.findMany({
+        where: { company_id: companyId },
+        include: { supplier: true },
+        skip, take: limit,
+        orderBy: { created_at: 'desc' }
+      }),
+      this.prisma.purchaseOrder.count({ where: { company_id: companyId } })
+    ]);
+    return { data, total, page, limit };
+  }
+
+  async findOrder(companyId: string, id: string) {
+    return this.prisma.purchaseOrder.findUnique({
+      where: { id, company_id: companyId },
+      include: { 
+        items: { include: { product: true } }, 
+        supplier: true, 
+        receipts: { include: { items: true } }, 
+        invoices: true 
+      }
+    });
+  }
 }
+

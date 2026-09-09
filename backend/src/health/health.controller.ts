@@ -1,3 +1,5 @@
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { Permissions } from '../auth/permissions.decorator';
 ﻿import { Controller, Get } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -5,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class HealthController {
   constructor(private prisma: PrismaService) {}
 
+  @Permissions('health.view')
   @Get()
   async check() {
     let dbStatus = 'disconnected';

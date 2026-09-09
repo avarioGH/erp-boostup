@@ -2,6 +2,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InventoryValuationEvent } from '../events/accounting.events';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { createFifoLayer, consumeFifoLayers, transferFifoLayers } from './fifo.engine';
 import { Prisma } from '@prisma/client';
 
 export interface TransactionItemDto {
@@ -74,7 +75,9 @@ export class InventoryService {
     });
   }
 
-  async updateCategory(id: string, data: any) {
+  async updateCategory(companyId: string, id: string, data: any) {
+    const existing = await this.prisma.category.findFirst({ where: { id, company_id: companyId } });
+    if (!existing) throw new NotFoundException('Category not found');
     return this.prisma.category.update({
       where: { id },
       data: {
@@ -83,7 +86,9 @@ export class InventoryService {
     });
   }
 
-  async deleteCategory(id: string) {
+  async deleteCategory(companyId: string, id: string) {
+    const existing = await this.prisma.category.findFirst({ where: { id, company_id: companyId } });
+    if (!existing) throw new NotFoundException('Category not found');
     const products = await this.prisma.product.count({ where: { category_id: id } });
     if (products > 0) {
       throw new Error('Kategori tidak dapat dihapus karena sedang digunakan oleh produk.');
@@ -108,7 +113,9 @@ export class InventoryService {
     });
   }
 
-  async updateWarehouse(id: string, data: any) {
+  async updateWarehouse(companyId: string, id: string, data: any) {
+    const existing = await this.prisma.warehouse.findFirst({ where: { id, company_id: companyId } });
+    if (!existing) throw new NotFoundException('Warehouse not found');
     return this.prisma.warehouse.update({
       where: { id },
       data: {
@@ -118,7 +125,9 @@ export class InventoryService {
     });
   }
 
-  async deleteWarehouse(id: string) {
+  async deleteWarehouse(companyId: string, id: string) {
+    const existing = await this.prisma.warehouse.findFirst({ where: { id, company_id: companyId } });
+    if (!existing) throw new NotFoundException('Warehouse not found');
     return this.prisma.$transaction(async (tx) => {
       // Delete access records first due to foreign key constraints
       await tx.userWarehouseAccess.deleteMany({
@@ -266,12 +275,12 @@ export class InventoryService {
 
         if (currentStock) {
           await tx.warehouseStock.update({
-            where: { id: currentStock.id },
-            data: {
-              current_stock: currentStock.current_stock + item.qty,
-              available_stock: currentStock.available_stock + item.qty,
-            }
-          });
+              where: { id: currentStock.id },
+              data: {
+                current_stock: { increment: item.qty },
+                available_stock: { increment: item.qty }
+              }
+            });
         } else {
           await tx.warehouseStock.create({
             data: {
@@ -382,13 +391,16 @@ export class InventoryService {
           }
         });
 
-        await tx.warehouseStock.update({
-          where: { id: currentStock!.id },
-          data: {
-            current_stock: currentStock!.current_stock - item.qty,
-            available_stock: currentStock!.available_stock - item.qty,
-          }
-        });
+        const updateResult = await tx.warehouseStock.updateMany({
+              where: { id: currentStock!.id, available_stock: { gte: item.qty } },
+              data: {
+                current_stock: { decrement: item.qty },
+                available_stock: { decrement: item.qty }
+              }
+            });
+            if (updateResult.count === 0) {
+              throw new BadRequestException('Concurrency conflict or insufficient stock for product ' + item.productId);
+            }
       }
 
       // 4. Audit Log
@@ -412,7 +424,7 @@ export class InventoryService {
         data: {
           company_id: data.companyId,
           warehouse_id: data.sourceWarehouseId,
-          target_warehouse_id: data.targetWarehouseId,
+          target_warehouse_id: data.targetWarehouseId || data.destinationWarehouseId,
           transaction_no: data.transactionNo || ('TRF-' + Date.now()),
           transaction_type: 'TRANSFER',
           status: 'Draft',
@@ -457,13 +469,16 @@ export class InventoryService {
           throw new BadRequestException('Stock tidak mencukupi di gudang asal untuk product ' + item.product_id);
         }
 
-        await tx.warehouseStock.update({
-          where: { id: sourceStock.id },
-          data: {
-            current_stock: sourceStock.current_stock - item.qty,
-            available_stock: sourceStock.available_stock - item.qty,
+        const updateRes = await tx.warehouseStock.updateMany({
+            where: { id: sourceStock.id, available_stock: { gte: item.qty } },
+            data: {
+              current_stock: { decrement: item.qty },
+              available_stock: { decrement: item.qty }
+            }
+          });
+          if (updateRes.count === 0) {
+            throw new BadRequestException('Concurrency conflict or insufficient stock at source for product ' + item.product_id);
           }
-        });
 
         let targetStock = await tx.warehouseStock.findUnique({
           where: {
@@ -484,15 +499,15 @@ export class InventoryService {
           });
         } else {
           await tx.warehouseStock.update({
-            where: { id: targetStock.id },
-            data: {
-              current_stock: targetStock.current_stock + item.qty,
-              available_stock: targetStock.available_stock + item.qty,
-            }
-          });
+              where: { id: targetStock.id },
+              data: {
+                current_stock: { increment: item.qty },
+                available_stock: { increment: item.qty }
+              }
+            });
         }
 
-        await tx.stockMovement.create({
+        const movOut = await tx.stockMovement.create({
           data: {
             company_id: companyId,
             warehouse_id: transaction.warehouse_id,
@@ -503,10 +518,12 @@ export class InventoryService {
             qty_in: 0,
             qty_out: item.qty,
             balance_after: sourceStock.current_stock - item.qty,
+            unit_cost: 0,
+            total_cost: 0,
             created_by: userId,
           }
         });
-        await tx.stockMovement.create({
+        const movIn = await tx.stockMovement.create({
           data: {
             company_id: companyId,
             warehouse_id: transaction.target_warehouse_id!,
@@ -517,8 +534,31 @@ export class InventoryService {
             qty_in: item.qty,
             qty_out: 0,
             balance_after: (targetStock ? targetStock.current_stock : 0) + item.qty,
+            unit_cost: 0,
+            total_cost: 0,
             created_by: userId,
           }
+        });
+
+        // STEP 16.5D - TRUE FIFO TRANSFER
+        const { totalCogs } = await transferFifoLayers(tx, {
+          companyId,
+          productId: item.product_id,
+          sourceWarehouseId: transaction.warehouse_id,
+          destWarehouseId: transaction.target_warehouse_id!,
+          quantity: item.qty,
+          sourceMovementId: movOut.id,
+          destMovementId: movIn.id
+        });
+        
+        const actual_unit_cost = item.qty > 0 ? totalCogs / item.qty : 0;
+        await tx.stockMovement.update({
+          where: { id: movOut.id },
+          data: { unit_cost: actual_unit_cost, total_cost: totalCogs }
+        });
+        await tx.stockMovement.update({
+          where: { id: movIn.id },
+          data: { unit_cost: actual_unit_cost, total_cost: totalCogs }
         });
       }
 
@@ -611,13 +651,16 @@ export class InventoryService {
           if (stock.available_stock + diff < 0) {
              throw new BadRequestException('Cannot adjust stock below 0 for product ' + item.product_id);
           }
-          await tx.warehouseStock.update({
-            where: { id: stock.id },
-            data: {
-              current_stock: stock.current_stock + diff,
-              available_stock: stock.available_stock + diff,
+          const adjustRes = await tx.warehouseStock.updateMany({
+              where: { id: stock.id, available_stock: { gte: diff < 0 ? Math.abs(diff) : 0 } },
+              data: {
+                current_stock: { increment: diff },
+                available_stock: { increment: diff }
+              }
+            });
+            if (adjustRes.count === 0) {
+              throw new BadRequestException('Concurrency conflict or insufficient stock for adjustment on ' + item.product_id);
             }
-          });
         }
 
         await tx.stockMovement.create({
@@ -705,13 +748,16 @@ export class InventoryService {
                where: { company_id_warehouse_id_product_id: { company_id: companyId, warehouse_id: transaction.warehouse_id, product_id: item.product_id } }
             });
             if (stock) {
-               await tx.warehouseStock.update({
-                  where: { id: stock.id },
-                  data: {
-                     current_stock: stock.current_stock + diff,
-                     available_stock: stock.available_stock + diff
-                  }
-               });
+               const adjustRes = await tx.warehouseStock.updateMany({
+              where: { id: stock.id, available_stock: { gte: diff < 0 ? Math.abs(diff) : 0 } },
+              data: {
+                current_stock: { increment: diff },
+                available_stock: { increment: diff }
+              }
+            });
+            if (adjustRes.count === 0) {
+              throw new BadRequestException('Concurrency conflict or insufficient stock for adjustment on ' + item.product_id);
+            }
                await tx.stockMovement.create({
                   data: {
                      company_id: companyId,
@@ -737,6 +783,7 @@ export class InventoryService {
     });
   }
 }
+
 
 
 

@@ -1,34 +1,55 @@
-﻿import { Controller, Get, Query, Param, UseGuards, Request, Res, BadRequestException } from '@nestjs/common';
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { Permissions } from '../auth/permissions.decorator';
+import { Controller, Get, Query, Param, UseGuards, Request, Res, BadRequestException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ReportService } from './report.service';
 import { ExportService } from './export.service';
 import { PdfService } from './pdf.service';
 import { DocumentService } from './document.service';
+import { FinancialReportService } from './services/financial-report.service';
+import { SalesReportService } from './services/sales-report.service';
+import { InventoryReportService } from './services/inventory-report.service';
 import type { Response } from 'express';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller()
 export class ReportController {
   constructor(
-    private reportService: ReportService,
     private exportService: ExportService,
     private pdfService: PdfService,
-    private documentService: DocumentService
+    private documentService: DocumentService,
+    private financialReport: FinancialReportService,
+    private salesReport: SalesReportService,
+    private inventoryReport: InventoryReportService
   ) {}
 
+  async resolveReport(req: any, module: string, type: string, filters: any) {
+    const f = { company_id: req.user.company_id, ...filters };
+    if (module === 'finance') {
+      if (type === 'trial-balance') return this.financialReport.getTrialBalance(f);
+      if (type === 'profit-and-loss') return this.financialReport.getProfitAndLoss(f);
+      if (type === 'balance-sheet') return this.financialReport.getBalanceSheet(f);
+    } else if (module === 'sales') {
+      if (type === 'sales-report') return this.salesReport.getSalesReport(f);
+      if (type === 'gross-margin') return this.salesReport.getGrossMarginReport(f);
+    } else if (module === 'inventory') {
+      if (type === 'valuation') return this.inventoryReport.getInventoryValuation(f);
+      if (type === 'stock-on-hand') return this.inventoryReport.getStockOnHand(f);
+    }
+    throw new BadRequestException('Report type not supported');
+  }
+
+  @Permissions('reports.view')
   @Get('reports/:module/:type')
   async getReport(
     @Request() req: any,
     @Param('module') module: string,
     @Param('type') type: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query() query: any
   ) {
-    if (module === 'sales') return this.reportService.getSalesData(req.user.company_id, startDate, endDate);
-    if (module === 'finance') return this.reportService.getFinancialData(req.user.company_id, startDate, endDate);
-    throw new BadRequestException('Report module not supported');
+    return this.resolveReport(req, module, type, query);
   }
 
+  @Permissions('reports.view')
   @Get('reports/:module/:type/export')
   async exportReport(
     @Request() req: any,
@@ -36,13 +57,9 @@ export class ReportController {
     @Param('module') module: string,
     @Param('type') type: string,
     @Query('format') format: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query() query: any
   ) {
-    let reportData: any;
-    if (module === 'sales') reportData = await this.reportService.getSalesData(req.user.company_id, startDate, endDate);
-    else if (module === 'finance') reportData = await this.reportService.getFinancialData(req.user.company_id, startDate, endDate);
-    else throw new BadRequestException('Report module not supported');
+    const reportData = await this.resolveReport(req, module, type, query);
 
     if (format === 'xlsx') {
       const buffer = await this.exportService.toXlsx(reportData.title, reportData.columns, reportData.data);
@@ -59,7 +76,8 @@ export class ReportController {
          title: reportData.title,
          documentTitle: reportData.title,
          columns: reportData.columns,
-         data: reportData.data
+         data: reportData.data,
+         totals: reportData.totals
       });
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${reportData.title}.pdf"`);
@@ -69,6 +87,7 @@ export class ReportController {
     }
   }
 
+  @Permissions('reports.view')
   @Get('documents/:type/:id/pdf')
   async downloadDocumentPdf(
     @Request() req: any,

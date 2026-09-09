@@ -4,6 +4,7 @@ import { B2BApi } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { api } from '@/lib/api';
 import { Loader2, Plus, Eye } from 'lucide-react';
 
 export default function InvoicesPage() {
@@ -11,6 +12,17 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { fetchInvoices(); }, []);
+
+  const handlePayTripay = async (invoiceId: string) => {
+    try {
+      const res = await api.post('/integrations/tripay/pay', { invoiceId });
+      if (res.data?.redirect_url) {
+        window.location.href = res.data.redirect_url;
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Gagal membuat pembayaran Tripay');
+    }
+  };
 
   const fetchInvoices = async () => {
     try {
@@ -36,6 +48,7 @@ export default function InvoicesPage() {
                 <th className="p-4 text-right">Terbayar</th>
                 <th className="p-4 text-right">Sisa</th>
                 <th className="p-4 text-center">Status</th>
+                  <th className="p-4 text-center">Aksi</th>
                 <th className="p-4 text-center">Aksi</th>
               </tr>
             </thead>
@@ -56,6 +69,13 @@ export default function InvoicesPage() {
                      <Badge variant="secondary">Draft</Badge>}
                   </td>
                   <td className="p-4 text-center"><Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button></td>
+                    <td className="p-4 text-center">
+                      {item.status !== 'PAID' && item.remaining_amount > 0 && (
+                        <Button size="sm" onClick={() => handlePayTripay(item.id)} variant="outline">
+                          Bayar Online
+                        </Button>
+                      )}
+                    </td>
                 </tr>
               ))}
             </tbody>

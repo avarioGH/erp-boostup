@@ -2,6 +2,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InventoryValuationEvent } from '../../events/accounting.events';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { consumeFifoLayers } from '../../inventory/fifo.engine';
 
 @Injectable()
 export class DeliveryService {
@@ -81,6 +82,7 @@ export class DeliveryService {
       });
 
       const so = delivery.sales_order;
+      let totalDeliveryCogs = 0;
 
       // Deduct stock for each item
       // For simplicity, using first warehouse. Real ERP would select source warehouse.
@@ -99,15 +101,18 @@ export class DeliveryService {
         });
 
         if (stock) {
-          await tx.warehouseStock.update({
-            where: { id: stock.id },
+          const updateRes = await tx.warehouseStock.updateMany({
+            where: { id: stock.id, available_stock: { gte: item.delivered_qty } },
             data: {
-              current_stock: stock.current_stock - item.delivered_qty,
-              available_stock: stock.available_stock - item.delivered_qty
+              current_stock: { decrement: item.delivered_qty },
+              available_stock: { decrement: item.delivered_qty }
             }
           });
+          if (updateRes.count === 0) {
+            throw new BadRequestException('Concurrency conflict or insufficient stock for product ' + item.product_id);
+          }
 
-          await tx.stockMovement.create({
+          const mov = await tx.stockMovement.create({
             data: {
               company_id: companyId,
               warehouse_id: warehouse.id,
@@ -118,9 +123,27 @@ export class DeliveryService {
               qty_in: 0,
               qty_out: item.delivered_qty,
               balance_after: stock.current_stock - item.delivered_qty,
-              created_by: 'SYSTEM',
+              unit_cost: 0,
+              total_cost: 0,
+              created_by: '000000000000000000000999',
             }
           });
+
+          // STEP 16.5D - TRUE FIFO CONSUMPTION
+          const { totalCogs } = await consumeFifoLayers(tx, {
+            companyId: companyId,
+            productId: item.product_id,
+            warehouseId: warehouse.id,
+            quantity: item.delivered_qty,
+            stockMovementId: mov.id
+          });
+          
+          await tx.stockMovement.update({
+            where: { id: mov.id },
+            data: { unit_cost: totalCogs / item.delivered_qty, total_cost: totalCogs }
+          });
+          
+          totalDeliveryCogs += totalCogs;
         }
       }
 
@@ -150,6 +173,23 @@ export class DeliveryService {
         where: { id: so.id },
         data: { delivery_status: newStatus }
       });
+
+      await this.eventEmitter.emitAsync('delivery.validated', { deliveryId });
+      
+      if (totalDeliveryCogs > 0) {
+        await this.eventEmitter.emitAsync('inventory.valuation', new InventoryValuationEvent(
+          companyId,
+          deliveryId,
+          `VAL-DEL-${deliveryId}`,
+          new Date(),
+          {
+            type: 'COGS',
+            totalValue: totalDeliveryCogs,
+            description: 'COGS for Delivery ' + delivery.delivery_number
+          },
+          tx
+        ));
+      }
 
       return delivery;
     });

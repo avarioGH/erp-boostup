@@ -1,14 +1,27 @@
-﻿import { Module } from '@nestjs/common';
-import { SequenceService } from './sequence.service';
+import { Module } from '@nestjs/common';
+import { ReportController } from './report.controller';
+import { ReportService } from './report.service';
 import { ExportService } from './export.service';
 import { PdfService } from './pdf.service';
-import { ReportService } from './report.service';
 import { DocumentService } from './document.service';
-import { ReportController } from './report.controller';
+import { SequenceService } from './sequence.service';
+
+import { FinancialReportService } from './services/financial-report.service';
+import { SalesReportService } from './services/sales-report.service';
+import { InventoryReportService } from './services/inventory-report.service';
 
 @Module({
-  providers: [SequenceService, ExportService, PdfService, ReportService, DocumentService],
   controllers: [ReportController],
-  exports: [SequenceService]
+  providers: [
+    ReportService,
+    ExportService,
+    PdfService,
+    DocumentService,
+    SequenceService,
+    FinancialReportService,
+    SalesReportService,
+    InventoryReportService
+  ],
+  exports: [ReportService, ExportService, PdfService, DocumentService, SequenceService]
 })
 export class ReportsModule {}

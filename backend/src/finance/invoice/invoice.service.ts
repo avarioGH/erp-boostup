@@ -56,10 +56,14 @@ export class InvoiceService {
       if (!invoice) throw new NotFoundException('Invoice not found');
       if (invoice.status !== 'DRAFT') throw new BadRequestException('Only DRAFT invoice can be posted');
 
-      const updated = await tx.invoice.update({
-        where: { id: invoiceId },
-        data: { status: 'POSTED' }
-      });
+      const updatedRes = await tx.invoice.updateMany({
+          where: { id: invoiceId, status: 'DRAFT' },
+          data: { status: 'POSTED' }
+        });
+        if (updatedRes.count === 0) {
+          throw new BadRequestException('Concurrency conflict or Invoice is no longer DRAFT');
+        }
+        const updated = await tx.invoice.findUnique({ where: { id: invoiceId } });
 
       if (invoice.sales_order_id) {
         await tx.salesOrder.update({

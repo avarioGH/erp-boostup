@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as crypto from 'crypto';
 
@@ -86,7 +86,9 @@ export class DocumentService {
   /**
    * Share Link Generator (Secure & Expiring)
    */
-  async generateShareLink(documentMasterId: string, userId: string, validDays: number, password?: string) {
+  async generateShareLink(companyId: string, documentMasterId: string, userId: string, validDays: number, password?: string) {
+    const doc = await this.prisma.documentMaster.findUnique({ where: { id: documentMasterId } });
+    if (!doc || doc.company_id !== companyId) throw new NotFoundException('Document not found');
     const token = crypto.randomBytes(32).toString('hex');
     const expiredAt = new Date();
     expiredAt.setDate(expiredAt.getDate() + validDays);
@@ -107,6 +109,7 @@ export class DocumentService {
     // Audit Log
     await this.prisma.auditLog.create({
       data: {
+        company_id: companyId,
         user_id: userId,
         action: 'SHARE_LINK_GENERATED',
         entity: 'DocumentShareLink',

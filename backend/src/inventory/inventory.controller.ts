@@ -1,41 +1,49 @@
-import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards, Request, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { Permissions } from '../auth/permissions.decorator';
+﻿import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards, Request, UseInterceptors, UploadedFiles } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { InventoryService } from './inventory.service';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('inventory')
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
+  @Permissions('inventory.category.view')
   @Get('categories')
   async getCategories(@Request() req) {
     return this.inventoryService.getCategories(req.user.company_id);
   }
 
+  @Permissions('inventory.category.create')
   @Post('categories')
   async createCategory(@Request() req, @Body() data: any) {
     data.companyId = req.user.company_id;
     return this.inventoryService.createCategory(data);
   }
 
+  @Permissions('inventory.category.update')
   @Put('categories/:id')
-  async updateCategory(@Param('id') id: string, @Body() data: any) {
-    return this.inventoryService.updateCategory(id, data);
+  async updateCategory(@Request() req: any, @Param('id') id: string, @Body() data: any) {
+    return this.inventoryService.updateCategory(req.user.company_id, id, data);
   }
 
+  @Permissions('inventory.category.delete')
   @Delete('categories/:id')
-  async deleteCategory(@Param('id') id: string) {
-    return this.inventoryService.deleteCategory(id);
+  async deleteCategory(@Request() req: any, @Param('id') id: string) {
+    return this.inventoryService.deleteCategory(req.user.company_id, id);
   }
 
+  @Permissions('inventory.product.view')
   @Get('products')
   async getProducts(@Request() req) {
     return this.inventoryService.getProducts(req.user.company_id);
   }
 
+  @Permissions('inventory.product.create')
   @Post('products')
   @UseInterceptors(FilesInterceptor('images', 8, {
     storage: diskStorage({
@@ -65,37 +73,44 @@ export class InventoryController {
     }
   }
 
+  @Permissions('inventory.warehouse.view')
   @Get('warehouses')
   async getWarehouses(@Request() req) {
     return this.inventoryService.getWarehouses(req.user.company_id);
   }
 
+  @Permissions('inventory.warehouse.create')
   @Post('warehouses')
   async createWarehouse(@Request() req, @Body() data: any) {
     data.companyId = req.user.company_id;
     return this.inventoryService.createWarehouse(data);
   }
 
+  @Permissions('inventory.warehouse.update')
   @Put('warehouses/:id')
-  async updateWarehouse(@Param('id') id: string, @Body() data: any) {
-    return this.inventoryService.updateWarehouse(id, data);
+  async updateWarehouse(@Request() req: any, @Param('id') id: string, @Body() data: any) {
+    return this.inventoryService.updateWarehouse(req.user.company_id, id, data);
   }
 
+  @Permissions('inventory.warehouse.delete')
   @Delete('warehouses/:id')
-  async deleteWarehouse(@Param('id') id: string) {
-    return this.inventoryService.deleteWarehouse(id);
+  async deleteWarehouse(@Request() req: any, @Param('id') id: string) {
+    return this.inventoryService.deleteWarehouse(req.user.company_id, id);
   }
 
+  @Permissions('inventory.view')
   @Get('transactions')
   async getTransactions(@Request() req) {
     return this.inventoryService.getTransactions(req.user.company_id);
   }
 
+  @Permissions('inventory.view')
   @Get('stocks')
   async getStocks(@Request() req) {
     return this.inventoryService.getWarehouseStocks(req.user.company_id);
   }
 
+  @Permissions('inventory.create')
   @Post('inbound')
   async createInbound(@Request() req, @Body() data: any) {
     data.companyId = req.user.company_id;
@@ -108,6 +123,7 @@ export class InventoryController {
     return this.inventoryService.createInbound(data);
   }
 
+  @Permissions('inventory.create')
   @Post('outbound')
   async createOutbound(@Request() req, @Body() data: any) {
     data.companyId = req.user.company_id;
@@ -119,6 +135,7 @@ export class InventoryController {
     return this.inventoryService.createOutbound(data);
   }
 
+  @Permissions('inventory.create')
   @Post('transfer')
   async createTransfer(@Request() req, @Body() data: any) {
     data.companyId = req.user.company_id;
@@ -130,6 +147,7 @@ export class InventoryController {
     return this.inventoryService.createTransfer(data);
   }
 
+  @Permissions('inventory.create')
   @Post('adjustment')
   async createAdjustment(@Request() req, @Body() data: any) {
     data.companyId = req.user.company_id;
@@ -141,26 +159,31 @@ export class InventoryController {
     return this.inventoryService.createAdjustment(data);
   }
 
+  @Permissions('inventory.create')
   @Post('transfer/:id/validate')
   async validateTransfer(@Request() req: any, @Param('id') id: string) {
     return this.inventoryService.validateTransfer(req.user.company_id, id, req.user.id);
   }
 
+  @Permissions('inventory.create')
   @Post('adjustment/:id/validate')
   async validateAdjustment(@Request() req: any, @Param('id') id: string) {
     return this.inventoryService.validateAdjustment(req.user.company_id, id, req.user.id);
   }
 
+  @Permissions('inventory.create')
   @Post('stock-opname')
   async createStockOpname(@Request() req: any, @Body() data: { warehouseId: string, productIds?: string[] }) {
     return this.inventoryService.createStockOpname(req.user.company_id, data.warehouseId, req.user.id, data.productIds);
   }
 
+  @Permissions('inventory.create')
   @Post('stock-opname/:id/approve')
   async approveStockOpname(@Request() req: any, @Param('id') id: string, @Body() data: { counts: { productId: string, countedQty: number }[] }) {
     return this.inventoryService.approveStockOpname(req.user.company_id, id, req.user.id, data.counts);
   }
 
+  @Permissions('inventory.view')
   @Get('movements')
   async getMovements(@Request() req: any) {
     return this.inventoryService['prisma'].stockMovement.findMany({
@@ -170,4 +193,5 @@ export class InventoryController {
     });
   }
 }
+
 

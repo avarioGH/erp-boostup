@@ -1,3 +1,5 @@
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { Permissions } from '../auth/permissions.decorator';
 import { Controller, Post, Body, UnauthorizedException, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
@@ -5,6 +7,7 @@ import { AuthService } from './auth.service';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Permissions('auth.create')
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() body: any) {

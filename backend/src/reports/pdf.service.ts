@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import PDFDocument = require('pdfkit');
 
 @Injectable()
@@ -6,7 +6,8 @@ export class PdfService {
   async generateDocument(docDefinition: any): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       try {
-        const doc = new PDFDocument({ margin: 50 });
+        const isWide = docDefinition.columns && docDefinition.columns.length > 5;
+        const doc = new PDFDocument({ margin: 50, layout: isWide ? 'landscape' : 'portrait' });
         const buffers: Buffer[] = [];
         
         doc.on('data', buffers.push.bind(buffers));
@@ -25,7 +26,8 @@ export class PdfService {
         // Standard Table Rendering (Simple)
         if (docDefinition.columns && docDefinition.data) {
           let y = doc.y;
-          const colWidth = 500 / docDefinition.columns.length;
+          const tableWidth = isWide ? 692 : 512;
+          const colWidth = tableWidth / docDefinition.columns.length;
 
           // Draw Headers
           doc.font('Helvetica-Bold');
@@ -33,7 +35,7 @@ export class PdfService {
              doc.text(col.header, 50 + (i * colWidth), y, { width: colWidth, align: 'left' });
           });
           y += 20;
-          doc.moveTo(50, y).lineTo(550, y).stroke();
+          doc.moveTo(50, y).lineTo(50 + tableWidth, y).stroke();
           y += 5;
 
           // Draw Data
@@ -46,7 +48,7 @@ export class PdfService {
              y += 20;
           });
           
-          doc.moveTo(50, y).lineTo(550, y).stroke();
+          doc.moveTo(50, y).lineTo(50 + tableWidth, y).stroke();
           y += 10;
         }
 

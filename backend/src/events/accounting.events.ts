@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+﻿import { Prisma } from '@prisma/client';
 
 export class InvoicePostedEvent {
   constructor(
@@ -63,9 +63,76 @@ export class InventoryValuationEvent {
     public readonly eventId: string,
     public readonly occurredAt: Date,
     public readonly payload: {
-      type: 'ADJUSTMENT_LOSS' | 'ADJUSTMENT_GAIN' | 'COGS' | 'GOODS_RECEIPT';
+      type: 'ADJUSTMENT_LOSS' | 'ADJUSTMENT_GAIN' | 'COGS' | 'GOODS_RECEIPT' | 'MANUFACTURING_CONSUMPTION' | 'MANUFACTURING_PRODUCTION';
       totalValue: number;
       description?: string;
+    },
+    public readonly tx?: Prisma.TransactionClient
+  ) {}
+}
+
+export class ExpensePostedEvent {
+  constructor(
+    public readonly companyId: string,
+    public readonly sourceEntityId: string,
+    public readonly eventId: string,
+    public readonly occurredAt: Date,
+    public readonly payload: {
+      totalAmount: number;
+    },
+    public readonly tx?: Prisma.TransactionClient
+  ) {}
+}
+
+
+export class AssetCapitalizedEvent {
+  constructor(
+    public readonly companyId: string,
+    public readonly sourceEntityId: string,
+    public readonly eventId: string,
+    public readonly occurredAt: Date,
+    public readonly payload: {
+      acquisitionCost: number;
+      assetAccountId: string;
+      clearingAccountId: string;
+    },
+    public readonly tx?: Prisma.TransactionClient
+  ) {}
+}
+
+export class AssetDepreciationPostedEvent {
+  constructor(
+    public readonly companyId: string,
+    public readonly sourceEntityId: string, // AssetDepreciation ID
+    public readonly eventId: string,
+    public readonly occurredAt: Date,
+    public readonly payload: {
+      depreciationAmount: number;
+      depreciationExpenseAccountId: string;
+      accumulatedDepreciationAccountId: string;
+      period: string;
+      assetId: string;
+    },
+    public readonly tx?: Prisma.TransactionClient
+  ) {}
+}
+
+export class AssetDisposedEvent {
+  constructor(
+    public readonly companyId: string,
+    public readonly sourceEntityId: string,
+    public readonly eventId: string,
+    public readonly occurredAt: Date,
+    public readonly payload: {
+      originalCost: number;
+      accumulatedDepreciation: number;
+      disposalProceeds: number;
+      gainLossAmount: number;
+      assetAccountId: string;
+      accumulatedDepreciationAccountId: string;
+      proceedsAccountId: string; // e.g., Cash or Receivable
+      gainLossAccountId: string;
+      isGain: boolean;
     },
     public readonly tx?: Prisma.TransactionClient
   ) {}

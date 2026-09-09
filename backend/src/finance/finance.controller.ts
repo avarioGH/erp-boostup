@@ -1,9 +1,11 @@
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { Permissions } from '../auth/permissions.decorator';
 import { Controller, Post, Get, Body, UseGuards, Request, Param } from '@nestjs/common';
 import { FinanceService, FinanceTransactionDto } from './finance.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('finance')
 export class FinanceController {
   constructor(
@@ -11,11 +13,13 @@ export class FinanceController {
     private readonly prisma: PrismaService
   ) {}
 
+  @Permissions('finance.category.view')
   @Get('categories')
   async getCategories(@Request() req) {
     return this.financeService.getCategories(req.user.company_id);
   }
 
+  @Permissions('finance.view')
   @Get('summary')
   async getSummary(@Request() req) {
     const companyId = req.user.company_id;
@@ -124,6 +128,7 @@ export class FinanceController {
     };
   }
 
+  @Permissions('finance.view')
   @Get('transactions')
   async getTransactions(@Request() req) {
     return this.prisma.financeTransaction.findMany({
@@ -137,6 +142,7 @@ export class FinanceController {
     });
   }
 
+  @Permissions('finance.create')
   @Post('cash-in')
   async createCashIn(@Request() req, @Body() data: any) {
     const dto: FinanceTransactionDto = {
@@ -154,6 +160,7 @@ export class FinanceController {
     return this.financeService.createCashIn(dto);
   }
 
+  @Permissions('finance.create')
   @Post('cash-out')
   async createCashOut(@Request() req, @Body() data: any) {
     const dto: FinanceTransactionDto = {
@@ -170,18 +177,28 @@ export class FinanceController {
     };
     return this.financeService.createCashOut(dto);
   }
+  @Permissions('finance.view')
   @Get('reports/profit-loss')
   async getProfitLossReport(@Request() req) {
     return this.financeService.getProfitLossReport(req.user.company_id);
   }
 
+  @Permissions('finance.view')
   @Get('reports/cash-flow')
   async getCashFlowReport(@Request() req) {
     return this.financeService.getCashFlowReport(req.user.company_id);
   }
 
+  @Permissions('finance.view')
   @Get('reports/balance-sheet')
   async getBalanceSheetReport(@Request() req) {
     return this.financeService.getBalanceSheetReport(req.user.company_id);
   }
+
+  @Permissions('finance.view')
+  @Get('cash-reconciliation')
+  async getCashReconciliation(@Request() req: any) {
+    return this.financeService.getCashReconciliation(req.user.company_id);
+  }
+
 }
