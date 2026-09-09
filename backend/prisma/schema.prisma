@@ -1017,16 +1017,16 @@ model ChartOfAccount {
 }
 
 model JournalEntry {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String   @db.ObjectId
-  company        Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  journal_no     String
-  reference_type String // INVENTORY, ASSET, FINANCE, MANUAL
-  reference_id   String?
-    idempotency_key String? @unique
-  journal_date   DateTime
-  description    String?
-  status         String // Draft, Pending, Approved, Posted, Closed
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id      String   @db.ObjectId
+  company         Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  journal_no      String
+  reference_type  String // INVENTORY, ASSET, FINANCE, MANUAL
+  reference_id    String?
+  idempotency_key String?  @unique
+  journal_date    DateTime
+  description     String?
+  status          String // Draft, Pending, Approved, Posted, Closed
 
   created_by    String    @db.ObjectId
   user_created  User      @relation("CreatedJournals", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -2270,4 +2270,13 @@ model CostLayerConsumption {
   company           Company            @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   layer             InventoryCostLayer @relation(fields: [layer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   stock_movement    StockMovement      @relation(fields: [stock_movement_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model CheckoutIdempotency {
+  id                   String @id @default(auto()) @map("_id") @db.ObjectId
+  company_id           String @db.ObjectId
+  ecommerce_session_id String
+  sales_order_id       String @db.ObjectId
+
+  @@unique([company_id, ecommerce_session_id])
 }

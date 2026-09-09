@@ -14,156 +14,166 @@ export class EcommerceCheckoutService {
   ) {}
 
   async checkout(companyId: string, sessionId: string, payload: any) {
-    const { email, name, phone, billing_address, delivery_address } = payload;
-    
-    // 1. Idempotency Check
-    const existingOrder = await this.prisma.salesOrder.findFirst({
+    const { email, name, phone, billing_address, delivery_address, fail_at } = payload;
+
+    const existingIntent = await this.prisma.checkoutIdempotency.findFirst({
       where: { company_id: companyId, ecommerce_session_id: sessionId }
     });
-    
-    if (existingOrder) {
-      // Idempotency retry - return the payment link for the existing invoice
-      const invoice = await this.prisma.invoice.findFirst({
-        where: { sales_order_id: existingOrder.id }
-      });
-      if (!invoice) throw new BadRequestException('Invoice missing for existing order');
-      
-      // Attempt to re-generate tripay payment
-      const payment = await this.tripayService.createPaymentRequest(companyId, 'sys', invoice.id, 'BRIVA');
-      return { success: true, order_id: existingOrder.id, checkout_url: payment.redirect_url };
+
+    if (existingIntent) {
+      return this.handleTripay(companyId, existingIntent.sales_order_id, payload.payment_method);
     }
 
-    // 2. Fetch authoritative cart and calculate totals
     const cart = await this.cartService.getCart(companyId, sessionId);
     if (cart.items.length === 0) throw new BadRequestException('Cart is empty');
 
-    // 3. Resolve Customer
-    let customer = await this.prisma.customer.findFirst({
-      where: { company_id: companyId, email }
-    });
-    
-    if (!customer) {
-      customer = await this.prisma.customer.create({
-        data: {
-          company_id: companyId,
-          code: `EC-${Date.now()}`,
-          name,
-          email,
-          phone,
-          billing_address,
-          delivery_address
-        }
-      });
-    }
+    let salesOrderId: string;
 
-    // 4. Reserve Inventory (OCC using updateMany)
-    const reservations = [];
-    for (const item of cart.items) {
-      const stocks = await this.prisma.warehouseStock.findMany({
-        where: { company_id: companyId, product_id: item.product_id, available_stock: { gte: item.quantity } },
-        orderBy: { available_stock: 'desc' }
-      });
-
-      if (stocks.length === 0) {
-        throw new BadRequestException(`Insufficient stock for ${item.product_name}`);
-      }
-
-      const targetStock = stocks[0];
-      
-      const updateRes = await this.prisma.warehouseStock.updateMany({
-        where: { 
-          id: targetStock.id, 
-          available_stock: { gte: item.quantity } 
-        },
-        data: {
-          available_stock: { decrement: item.quantity },
-          reserved_stock: { increment: item.quantity }
-        }
-      });
-
-      if (updateRes.count === 0) {
-         throw new BadRequestException(`Insufficient stock for ${item.product_name} due to concurrent checkout`);
-      }
-      
-      reservations.push({
-        stock_id: targetStock.id,
-        qty: item.quantity
-      });
-    }
-
-    // 5. Create Sales Order
-    const orderNumber = `SO-EC-${Date.now()}`;
-    
-    let salesOrder;
     try {
-      salesOrder = await this.prisma.salesOrder.create({
-        data: {
-          company_id: companyId,
-          customer_id: customer.id,
-          order_number: orderNumber,
-          order_date: new Date(),
-          status: 'PENDING',
-          total_amount: cart.grand_total,
-          channel: 'ECOMMERCE',
-          ecommerce_session_id: sessionId,
-          billing_address,
-          delivery_address,
-          items: {
-            create: cart.items.map(item => ({
-              product_id: item.product_id,
-              qty: item.quantity,
-              unit_price: item.unit_price,
-              subtotal: item.subtotal
-            }))
+      const result = await this.prisma.$transaction(async (tx) => {
+        let customer = await tx.customer.findFirst({
+          where: { company_id: companyId, email }
+        });
+        
+        if (!customer) {
+          customer = await tx.customer.create({
+            data: {
+              company_id: companyId,
+              code: 'EC-' + Date.now(),
+              name,
+              email,
+              phone,
+              billing_address,
+              delivery_address
+            }
+          });
+        }
+
+        if (fail_at === 'CUSTOMER') throw new Error('Test Failure: CUSTOMER');
+
+        for (const item of cart.items) {
+          const stocks = await tx.warehouseStock.findMany({
+            where: { company_id: companyId, product_id: item.product_id, available_stock: { gte: item.quantity } },
+            orderBy: { available_stock: 'desc' }
+          });
+
+          if (stocks.length === 0) {
+            throw new BadRequestException('Insufficient stock for ' + item.product_name);
+          }
+
+          const targetStock = stocks[0];
+          
+          const updateRes = await tx.warehouseStock.updateMany({
+            where: { 
+              id: targetStock.id, 
+              available_stock: { gte: item.quantity } 
+            },
+            data: {
+              available_stock: { decrement: item.quantity },
+              reserved_stock: { increment: item.quantity }
+            }
+          });
+
+          if (updateRes.count === 0) {
+            throw new BadRequestException('Insufficient stock for ' + item.product_name + ' due to concurrent checkout');
           }
         }
+
+        if (fail_at === 'RESERVATION') throw new Error('Test Failure: RESERVATION');
+
+        const orderNumber = 'SO-EC-' + Date.now();
+        const salesOrder = await tx.salesOrder.create({
+          data: {
+            company_id: companyId,
+            customer_id: customer.id,
+            order_number: orderNumber,
+            order_date: new Date(),
+            status: 'PENDING',
+            total_amount: cart.grand_total,
+            channel: 'ECOMMERCE',
+            ecommerce_session_id: sessionId,
+            billing_address,
+            delivery_address,
+            items: {
+              create: cart.items.map(item => ({
+                product_id: item.product_id,
+                qty: item.quantity,
+                unit_price: item.unit_price,
+                subtotal: item.subtotal
+              }))
+            }
+          }
+        });
+
+        if (fail_at === 'SALES_ORDER') throw new Error('Test Failure: SALES_ORDER');
+
+        const invoiceNumber = 'INV-EC-' + Date.now();
+        const invoice = await tx.invoice.create({
+          data: {
+            company_id: companyId,
+            type: 'AR',
+            customer_id: customer.id,
+            sales_order_id: salesOrder.id,
+            invoice_number: invoiceNumber,
+            invoice_date: new Date(),
+            due_date: new Date(Date.now() + 86400000),
+            status: 'POSTED',
+            subtotal: cart.subtotal,
+            tax: cart.tax,
+            total: cart.grand_total,
+            remaining_amount: cart.grand_total,
+          }
+        });
+
+        if (fail_at === 'INVOICE') throw new Error('Test Failure: INVOICE');
+
+        await tx.checkoutIdempotency.create({
+          data: {
+            company_id: companyId,
+            ecommerce_session_id: sessionId,
+            sales_order_id: salesOrder.id
+          }
+        });
+        
+        return { salesOrderId: salesOrder.id };
       });
-    } catch(e: any) {
+      
+      salesOrderId = result.salesOrderId;
+      await this.cartService.clearCart(companyId, sessionId);
+      
+    } catch (e: any) {
       if (e.code === 'P2002') {
-         for (const res of reservations) {
-            await this.prisma.warehouseStock.update({
-               where: { id: res.stock_id },
-               data: {
-                 available_stock: { increment: res.qty },
-                 reserved_stock: { decrement: res.qty }
-               }
-            });
-         }
-         await new Promise(r => setTimeout(r, 500));
-         return this.checkout(companyId, sessionId, payload);
+        const check = await this.prisma.checkoutIdempotency.findFirst({
+           where: { company_id: companyId, ecommerce_session_id: sessionId }
+        });
+        if (check) {
+           return this.handleTripay(companyId, check.sales_order_id, payload.payment_method);
+        }
       }
       throw e;
     }
 
-    // 6. Create Invoice
-    const invoiceNumber = `INV-EC-${Date.now()}`;
-    const invoice = await this.prisma.invoice.create({
-      data: {
-        company_id: companyId,
-        type: 'AR',
-        customer_id: customer.id,
-        sales_order_id: salesOrder.id,
-        invoice_number: invoiceNumber,
-        invoice_date: new Date(),
-        due_date: new Date(Date.now() + 86400000), // 1 day
-        status: 'POSTED',
-        subtotal: cart.subtotal,
-        tax: cart.tax,
-        total: cart.grand_total,
-        remaining_amount: cart.grand_total,
-      }
+    return this.handleTripay(companyId, salesOrderId, payload.payment_method);
+  }
+  
+  private async handleTripay(companyId: string, salesOrderId: string, paymentMethod: string) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: { sales_order_id: salesOrderId }
     });
+    
+    if (!invoice) throw new BadRequestException('Invoice missing for order');
 
-    // 7. Clear the cart
-    await this.cartService.clearCart(companyId, sessionId);
-
-    // 8. Call Tripay
     try {
-      const payment = await this.tripayService.createPaymentRequest(companyId, customer.id, invoice.id, payload.payment_method || 'BRIVA');
-      return { success: true, order_id: salesOrder.id, checkout_url: payment.redirect_url };
+      const payment = await this.tripayService.createPaymentRequest(
+        companyId, 
+        invoice.customer_id || 'sys', 
+        invoice.id, 
+        paymentMethod || 'BRIVA'
+      );
+      return { success: true, order_id: salesOrderId, checkout_url: payment.redirect_url };
     } catch (err: any) {
       this.logger.error('Failed to create tripay transaction', err);
-      return { success: true, order_id: salesOrder.id, message: 'Order created but payment failed to initialize' };
+      return { success: true, order_id: salesOrderId, message: 'Order created but payment failed to initialize' };
     }
   }
 }
