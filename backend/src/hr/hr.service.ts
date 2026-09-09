@@ -321,11 +321,7 @@ const updatedRes = await tx.payroll.updateMany({ where: { id, status: 'APPROVED'
         }
       });
       
-      // Decrement cash balance
-      await tx.cashAccount.update({
-        where: { id: account.id },
-        data: { current_balance: { decrement: p.net_salary } }
-      });
+      
 
       const updated = await tx.payroll.update({ where: { id }, data: { status: 'PAID', paid_date: new Date() } });
       await this.eventEmitter.emitAsync('payroll.payment', new PayrollPaymentEvent(companyId, p.id, 'EVT-' + Date.now(), new Date(), { amount: p.net_salary }, tx as any));

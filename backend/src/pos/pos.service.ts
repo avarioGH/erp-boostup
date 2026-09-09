@@ -124,15 +124,7 @@ export class PosService {
           }
         });
 
-        // Update Cash Balance
-        await tx.cashAccount.update({
-          where: { id: cashAccount.id },
-          data: {
-            current_balance: {
-              increment: total
-            }
-          }
-        });
+        
       }
 
       // 4. Audit Log

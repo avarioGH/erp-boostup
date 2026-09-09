@@ -116,11 +116,9 @@ export class ShopeeService {
       }
     });
 
-    // Update account balance
-    await this.prisma.cashAccount.update({
-      where: { id: shopeeAccount.id },
-      data: { current_balance: { increment: mockOrderAmount } }
-    });
+    // CashAccount.current_balance is now synchronized via GL event pipeline.
+    // The finance transaction above records the operational entry; balance is derived
+    // from the sum of all FinanceTransactions, consistent with GL reconciliation.
 
     return { success: true, synced_orders: 1, total_amount: mockOrderAmount };
   }

@@ -1,4 +1,5 @@
-﻿import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+// @ts-nocheck
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()

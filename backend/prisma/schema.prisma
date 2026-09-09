@@ -811,13 +811,15 @@ model WarehouseStock {
 // =======================
 
 model CashAccount {
-  id           String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String  @db.ObjectId
-  company      Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  code         String
-  name         String
-  account_type String // Cash, Bank, Petty Cash, Digital Wallet
-  currency     String  @default("IDR")
+  id                  String          @id @default(auto()) @map("_id") @db.ObjectId
+  company_id          String          @db.ObjectId
+  company             Company         @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  code                String
+  name                String
+  account_type        String // Cash, Bank, Petty Cash, Digital Wallet
+  chart_of_account_id String?         @db.ObjectId
+  chart_of_account    ChartOfAccount? @relation(fields: [chart_of_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  currency            String          @default("IDR")
 
   opening_balance Float   @default(0)
   current_balance Float   @default(0)
@@ -1009,9 +1011,10 @@ model ChartOfAccount {
 
   journal_items JournalEntryItem[]
 
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  deleted_at DateTime?
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  deleted_at  DateTime?
+  CashAccount CashAccount[]
 
   @@unique([company_id, account_code])
 }

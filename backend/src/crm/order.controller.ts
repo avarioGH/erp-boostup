@@ -1,11 +1,13 @@
 import { Controller, Get, Post, Body, UseGuards, Request, Param } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { SalesCompletedEvent } from '../events/sales-completed.event';
 
 @UseGuards(JwtAuthGuard)
 @Controller('orders')
 export class OrderController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly eventEmitter: EventEmitter2) {}
 
   @Get()
   async getOrders(@Request() req) {
@@ -84,10 +86,7 @@ export class OrderController {
         });
         
         // Update Cash Account Balance
-        await tx.cashAccount.update({
-          where: { id: cashAccount.id },
-          data: { current_balance: { increment: totalAmount } }
-        });
+        await this.eventEmitter.emitAsync('sales.completed', new SalesCompletedEvent({ companyId: req.user.company_id, sourceEntityId: order.id, payload: { totalAmount, paymentMethod: 'CASH', userId: req.user.userId }, occurredAt: new Date(), tx }));
       }
 
       // Integrate with Inventory (Reduce Stock)

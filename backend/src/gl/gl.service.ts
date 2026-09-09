@@ -81,8 +81,7 @@ export class GlService {
           }
         });
 
-        if (data.referenceType === 'MANUAL') {
-          const cashAccounts = await tx.cashAccount.findMany({
+        const cashAccounts = await tx.cashAccount.findMany({
             where: { company_id: data.companyId, chart_of_account_id: item.accountId }
           });
           for (const cashAcc of cashAccounts) {
@@ -94,7 +93,6 @@ export class GlService {
                });
              }
           }
-        }
       }
     }
 
@@ -160,6 +158,21 @@ export class GlService {
           created_by: userId,
         }
       });
+
+      for (const item of original.items) {
+        const cashAccounts = await tx.cashAccount.findMany({
+          where: { company_id: companyId, chart_of_account_id: item.account_id }
+        });
+        for (const cashAcc of cashAccounts) {
+           const diff = item.credit - item.debit;
+           if (diff !== 0) {
+             await tx.cashAccount.update({
+               where: { id: cashAcc.id },
+               data: { current_balance: { increment: diff } }
+             });
+           }
+        }
+      }
 
       return reversedJournal;
     });

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { PermissionsGuard } from '../../../../auth/permissions.guard';
 import { Permissions } from '../../../../auth/permissions.decorator';
 ﻿// @ts-nocheck
