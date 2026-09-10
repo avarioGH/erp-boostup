@@ -1,4 +1,5 @@
-import { NestFactory } from '@nestjs/core';
+with open('backend/test/verify.erp.ts', 'w') as f:
+    f.write('''import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
@@ -60,7 +61,7 @@ async function run() {
   ]});
   
   const p1 = new ObjectId().toHexString();
-  await prisma.product.create({ data: { id: p1, company_id: c1, code: 'P1', name: 'Product A', unit_id: new ObjectId().toHexString(), purchase_price: 10, selling_price: 20 }});
+  await prisma.product.create({ data: { id: p1, company_id: c1, code: 'P1', name: 'Product A' }});
 
   // B. SYSTEM USER
   await verify('SYSTEM USER', 'Exists after app.init()', async () => {
@@ -104,7 +105,7 @@ async function run() {
     console.log('[N/A] ' + r + ' / Placeholder skipped pending full E2E data seed');
   }
 
-  console.log('\n--- RESULTS ---');
+  console.log('\\n--- RESULTS ---');
   console.log('TOTAL: ' + (total + skipped));
   console.log('PASS: ' + pass);
   console.log('FAIL: ' + fail);
@@ -116,3 +117,4 @@ async function run() {
 }
 
 run().catch(e => { console.error('Fatal:', e); process.exit(1); });
+''')
