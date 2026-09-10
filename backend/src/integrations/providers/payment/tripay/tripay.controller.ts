@@ -15,8 +15,8 @@ export class TripayController {
   @Get('transactions')
   async getTransactions(@Request() req: any) {
     return this.prisma.externalReference.findMany({
-      where: { company_id: req.user.company_id, external_type: 'TRIPAY_REF' },
-      orderBy: { created_at: 'desc' }
+      where: { company_id: req.user.company_id, entity_type: 'TRIPAY_REF' },
+     
     });
   }
 

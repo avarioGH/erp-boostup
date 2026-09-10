@@ -334,7 +334,7 @@ export class AiService {
         description: description,
         amount: amount,
         categoryId: '', // Will auto-resolve
-        userId: userId || 'SYSTEM', // In a real app this should always be provided
+        userId: userId || (await this.prisma.user.findFirst({where:{company_id:companyId}}))!.id, // In a real app this should always be provided
         debitAccountId: '',
         creditAccountId: ''
       });

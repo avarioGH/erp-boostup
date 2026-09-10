@@ -7,7 +7,7 @@ export class InventoryReportService {
   constructor(private prisma: PrismaService) {}
 
   async getInventoryValuation(filters: ReportFilterDto): Promise<ReportResultDto> {
-    const whereCondition: any = { company_id: filters.company_id, remaining_qty: { gt: 0 } };
+    const whereCondition: any = { company_id: filters.company_id, remaining_quantity: { gt: 0 } };
     if (filters.warehouse_id) whereCondition.warehouse_id = filters.warehouse_id;
     if (filters.product_id) whereCondition.product_id = filters.product_id;
 
@@ -20,20 +20,20 @@ export class InventoryReportService {
     const productMap = new Map<string, any>();
 
     layers.forEach(layer => {
-      const val = layer.remaining_qty * layer.unit_cost;
+      const val = layer.remaining_quantity * layer.unit_cost;
       totalValuation += val;
       
       const p = layer.product;
       if (!productMap.has(p.id)) {
         productMap.set(p.id, {
-           code: p.item_code,
+           code: p.code,
            name: p.name,
            qty: 0,
            value: 0
         });
       }
       const pData = productMap.get(p.id);
-      pData.qty += layer.remaining_qty;
+      pData.qty += layer.remaining_quantity;
       pData.value += val;
     });
 
@@ -69,14 +69,14 @@ export class InventoryReportService {
 
     let totalQty = 0;
     const data = stocks.map(s => {
-      totalQty += s.qty_on_hand;
+      totalQty += s.current_stock;
       return {
         warehouse: s.warehouse.name,
-        product_code: s.product.item_code,
+        product_code: s.product.code,
         product_name: s.product.name,
-        qty_on_hand: s.qty_on_hand,
-        qty_allocated: s.qty_allocated,
-        qty_available: s.qty_available
+        current_stock: s.current_stock,
+        reserved_stock: s.reserved_stock,
+        available_stock: s.available_stock
       };
     });
 
@@ -86,12 +86,12 @@ export class InventoryReportService {
         { header: 'Warehouse', key: 'warehouse' },
         { header: 'Item Code', key: 'product_code' },
         { header: 'Product Name', key: 'product_name' },
-        { header: 'On Hand', key: 'qty_on_hand', type: 'number' },
-        { header: 'Allocated', key: 'qty_allocated', type: 'number' },
-        { header: 'Available', key: 'qty_available', type: 'number' }
+        { header: 'On Hand', key: 'current_stock', type: 'number' },
+        { header: 'Allocated', key: 'reserved_stock', type: 'number' },
+        { header: 'Available', key: 'available_stock', type: 'number' }
       ],
       data,
-      totals: { qty_on_hand: totalQty }
+      totals: { current_stock: totalQty }
     };
   }
 }

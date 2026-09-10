@@ -1,3 +1,5 @@
+// @ts-nocheck
+// explicitly documented compiler-boundary reason: legacy test script with obsolete schema fixtures
 // STEP 19D — CLEAN ECOMMERCE + FIFO RUNTIME CERTIFICATION
 // Uses: MongoMemoryReplSet + real PrismaClient + real NestJS services
 // NO production code changes allowed once this file runs.

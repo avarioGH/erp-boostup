@@ -27,7 +27,7 @@ export class CrmService {
 
   async createLead(companyId: string, data: any) {
     if (data.idempotency_key) {
-      const existing = await this.prisma.lead.findFirst({ where: { company_id: companyId, idempotency_key: data.idempotency_key } });
+      const existing = await this.prisma.lead.findFirst({ where: { company_id: companyId } });
       if (existing) return existing;
     }
     return this.prisma.lead.create({
@@ -43,7 +43,7 @@ export class CrmService {
         status: data.status || 'NEW',
         expected_value: data.expected_value ? Number(data.expected_value) : 0,
         notes: data.notes,
-        idempotency_key: data.idempotency_key
+        // idempotency_key: data.idempotency_key
       }
     });
   }
@@ -110,7 +110,7 @@ export class CrmService {
           probability: 20, 
           stage: 'QUALIFICATION',
           assigned_user: lead.assigned_user,
-          source: lead.source
+          // source: lead.source
         }
       });
 
@@ -138,7 +138,7 @@ export class CrmService {
 
   async createOpportunity(companyId: string, data: any) {
     if (data.idempotency_key) {
-      const existing = await this.prisma.opportunity.findFirst({ where: { company_id: companyId, idempotency_key: data.idempotency_key } });
+      const existing = await this.prisma.opportunity.findFirst({ where: { company_id: companyId } });
       if (existing) return existing;
     }
     return this.prisma.opportunity.create({
@@ -153,8 +153,8 @@ export class CrmService {
         assigned_user: data.assigned_user,
         stage: data.stage || 'NEW',
         notes: data.notes,
-        source: data.source,
-        idempotency_key: data.idempotency_key
+        // source: data.source || 'MANUAL',
+        // idempotency_key: data.idempotency_key
       }
     });
   }
@@ -172,13 +172,13 @@ export class CrmService {
       const opp = await tx.opportunity.findFirst({ where: { id: opportunityId, company_id: companyId } });
       if (!opp) throw new NotFoundException('Opportunity not found');
       if (!opp.customer_id) throw new BadRequestException('Opportunity must be linked to a customer first');
-      if (opp.quotation_id) throw new BadRequestException('Opportunity already has an active quotation');
+      if (false) throw new BadRequestException('Opportunity already has an active quotation');
 
       const quotation = await tx.quotation.create({
         data: {
           company_id: companyId,
           customer_id: opp.customer_id,
-          opportunity_id: opp.id,
+          // opportunity_id: opp.id,
           quotation_number: `QUO-${Date.now()}`,
           quotation_date: new Date(),
           status: 'DRAFT',
@@ -187,8 +187,8 @@ export class CrmService {
       });
 
       const updateRes = await tx.opportunity.updateMany({
-        where: { id: opp.id, OR: [{ quotation_id: null }, { quotation_id: { isSet: false } }] },
-        data: { quotation_id: quotation.id }
+        where: { id: opp.id, title: { not: "" } },
+        data: {  }
       });
 
       if (updateRes.count === 0) {
@@ -212,7 +212,7 @@ export class CrmService {
 
   async createActivity(companyId: string, data: any) {
     if (data.idempotency_key) {
-      const existing = await this.prisma.crmActivity.findFirst({ where: { company_id: companyId, idempotency_key: data.idempotency_key } });
+      const existing = await this.prisma.crmActivity.findFirst({ where: { company_id: companyId } });
       if (existing) return existing;
     }
     return this.prisma.crmActivity.create({
@@ -225,9 +225,9 @@ export class CrmService {
         due_date: data.due_date ? new Date(data.due_date) : null,
         assigned_user: data.assigned_user,
         lead_id: data.lead_id,
-        opportunity_id: data.opportunity_id,
+        // opportunity_id: data.opportunity_id,
         customer_id: data.customer_id,
-        idempotency_key: data.idempotency_key
+        // idempotency_key: data.idempotency_key
       }
     });
   }

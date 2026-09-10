@@ -3,10 +3,11 @@ import { InventoryValuationEvent } from '../../events/accounting.events';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { consumeFifoLayers } from '../../inventory/fifo.engine';
+import { InventoryService } from '../../inventory/inventory.service';
 
 @Injectable()
 export class DeliveryService {
-  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2) {}
+  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2, private inventoryService: InventoryService) {}
 
   async create(companyId: string, salesOrderId: string, data: any) {
     return this.prisma.$transaction(async (tx) => {
@@ -89,63 +90,21 @@ export class DeliveryService {
       const warehouse = await tx.warehouse.findFirst({ where: { company_id: companyId } });
       if (!warehouse) throw new BadRequestException('No warehouse found for company');
 
-      for (const item of delivery.items) {
-        const stock = await tx.warehouseStock.findUnique({
-          where: {
-            company_id_warehouse_id_product_id: {
-              company_id: companyId,
-              warehouse_id: warehouse.id,
-              product_id: item.product_id
-            }
+        for (const item of delivery.items) {
+          if (item.delivered_qty > 0) {
+            const issueRes = await this.inventoryService.issueStock(tx as any, {
+              companyId,
+              warehouseId: warehouse.id,
+              productId: item.product_id,
+              quantity: item.delivered_qty,
+              referenceType: 'DELIVERY',
+              referenceId: delivery.id,
+              description: 'Delivery for SO ' + so.order_number,
+              userId: '000000000000000000000999'
+            });
+            totalDeliveryCogs += issueRes.consumedCost;
           }
-        });
-
-        if (stock) {
-          const updateRes = await tx.warehouseStock.updateMany({
-            where: { id: stock.id, available_stock: { gte: item.delivered_qty } },
-            data: {
-              current_stock: { decrement: item.delivered_qty },
-              available_stock: { decrement: item.delivered_qty }
-            }
-          });
-          if (updateRes.count === 0) {
-            throw new BadRequestException('Concurrency conflict or insufficient stock for product ' + item.product_id);
-          }
-
-          const mov = await tx.stockMovement.create({
-            data: {
-              company_id: companyId,
-              warehouse_id: warehouse.id,
-              product_id: item.product_id,
-              transaction_type: 'DELIVERY',
-              transaction_id: delivery.id,
-              movement_type: 'OUT',
-              qty_in: 0,
-              qty_out: item.delivered_qty,
-              balance_after: stock.current_stock - item.delivered_qty,
-              unit_cost: 0,
-              total_cost: 0,
-              created_by: '000000000000000000000999',
-            }
-          });
-
-          // STEP 16.5D - TRUE FIFO CONSUMPTION
-          const { totalCogs } = await consumeFifoLayers(tx, {
-            companyId: companyId,
-            productId: item.product_id,
-            warehouseId: warehouse.id,
-            quantity: item.delivered_qty,
-            stockMovementId: mov.id
-          });
-          
-          await tx.stockMovement.update({
-            where: { id: mov.id },
-            data: { unit_cost: totalCogs / item.delivered_qty, total_cost: totalCogs }
-          });
-          
-          totalDeliveryCogs += totalCogs;
         }
-      }
 
       // Check SO delivery status
       const allDeliveries = await tx.deliveryOrder.findMany({

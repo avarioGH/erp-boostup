@@ -3,11 +3,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SalesCompletedEvent } from '../events/sales-completed.event';
+import { InventoryService } from '../inventory/inventory.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('orders')
 export class OrderController {
-  constructor(private readonly prisma: PrismaService, private readonly eventEmitter: EventEmitter2) {}
+  constructor(private readonly prisma: PrismaService, private readonly eventEmitter: EventEmitter2, private readonly inventoryService: InventoryService) {}
 
   @Get()
   async getOrders(@Request() req) {
@@ -96,20 +97,17 @@ export class OrderController {
 
       if (warehouse) {
         for (const item of orderItems) {
-          // Find or create warehouse stock
-          const stock = await tx.warehouseStock.findFirst({
-            where: { warehouse_id: warehouse.id, product_id: item.product_id }
+          await this.inventoryService.issueStock(tx as any, {
+            companyId: req.user.company_id,
+            warehouseId: warehouse.id,
+            productId: item.product_id,
+            quantity: item.qty,
+            referenceType: 'SALE',
+            referenceId: order.id,
+            description: `Sales Order ${order.order_number}`,
+            userId: req.user.userId,
+            allowNegative: true // to preserve previous best-effort behavior
           });
-          
-          if (stock) {
-            await tx.warehouseStock.update({
-              where: { id: stock.id },
-              data: {
-                current_stock: { decrement: item.qty },
-                available_stock: { decrement: item.qty }
-              }
-            });
-          }
         }
       }
 

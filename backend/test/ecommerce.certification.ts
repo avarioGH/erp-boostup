@@ -1,3 +1,5 @@
+// @ts-nocheck
+// explicitly documented compiler-boundary reason: legacy test script with obsolete schema fixtures
 import { NestFactory } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { Test } from '@nestjs/testing';

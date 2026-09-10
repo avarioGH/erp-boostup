@@ -69,7 +69,9 @@ export class GlService {
       }
     });
 
-    // 3. Create Journal Items
+    // 3. Create Journal Items and Aggregate Cash Movements
+    const cashDeltas = new Map<string, number>();
+
     for (const item of data.items) {
       if (item.debit > 0 || item.credit > 0) {
         await tx.journalEntryItem.create({
@@ -82,17 +84,34 @@ export class GlService {
         });
 
         const cashAccounts = await tx.cashAccount.findMany({
-            where: { company_id: data.companyId, chart_of_account_id: item.accountId }
+          where: { company_id: data.companyId, chart_of_account_id: item.accountId }
+        });
+        
+        if (cashAccounts.length > 0) {
+          const coa = await tx.chartOfAccount.findUnique({
+             where: { id: item.accountId },
+             include: { account_type: true }
           });
-          for (const cashAcc of cashAccounts) {
-             const diff = item.debit - item.credit;
-             if (diff !== 0) {
-               await tx.cashAccount.update({
-                 where: { id: cashAcc.id },
-                 data: { current_balance: { increment: diff } }
-               });
-             }
+          
+          let diff = item.debit - item.credit;
+          if (coa?.account_type?.normal_balance === 'Credit') {
+             diff = item.credit - item.debit;
           }
+          
+          for (const cashAcc of cashAccounts) {
+             cashDeltas.set(cashAcc.id, (cashDeltas.get(cashAcc.id) || 0) + diff);
+          }
+        }
+      }
+    }
+
+    // Apply NET cash movement exactly once per cash account
+    for (const [cashAccId, netDiff] of cashDeltas.entries()) {
+      if (netDiff !== 0) {
+        await tx.cashAccount.update({
+          where: { id: cashAccId },
+          data: { current_balance: { increment: netDiff } }
+        });
       }
     }
 
@@ -159,18 +178,36 @@ export class GlService {
         }
       });
 
+            const revCashDeltas = new Map<string, number>();
+
       for (const item of original.items) {
         const cashAccounts = await tx.cashAccount.findMany({
           where: { company_id: companyId, chart_of_account_id: item.account_id }
         });
-        for (const cashAcc of cashAccounts) {
-           const diff = item.credit - item.debit;
-           if (diff !== 0) {
-             await tx.cashAccount.update({
-               where: { id: cashAcc.id },
-               data: { current_balance: { increment: diff } }
-             });
-           }
+        
+        if (cashAccounts.length > 0) {
+          const coa = await tx.chartOfAccount.findUnique({
+             where: { id: item.account_id },
+             include: { account_type: true }
+          });
+          
+          let diff = item.credit - item.debit;
+          if (coa?.account_type?.normal_balance === 'Credit') {
+             diff = item.debit - item.credit;
+          }
+          
+          for (const cashAcc of cashAccounts) {
+             revCashDeltas.set(cashAcc.id, (revCashDeltas.get(cashAcc.id) || 0) + diff);
+          }
+        }
+      }
+
+      for (const [cashAccId, netDiff] of revCashDeltas.entries()) {
+        if (netDiff !== 0) {
+          await tx.cashAccount.update({
+            where: { id: cashAccId },
+            data: { current_balance: { increment: netDiff } }
+          });
         }
       }
 

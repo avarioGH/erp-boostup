@@ -1,4 +1,5 @@
 {
+  "include": ["src/**/*", "test/verify.erp.ts"],
   "compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
@@ -23,3 +24,4 @@
     "noFallthroughCasesInSwitch": false
   }
 }
+

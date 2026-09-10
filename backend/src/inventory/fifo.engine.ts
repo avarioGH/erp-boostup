@@ -65,7 +65,7 @@ export async function consumeFifoLayers(
 
   let remainingToConsume = data.quantity;
   let totalCogs = 0;
-  const consumed = [];
+  const consumed: FifoConsumptionResult[] = [];
 
   for (const layer of layers) {
     if (remainingToConsume <= 0) break;

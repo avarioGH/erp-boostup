@@ -6,9 +6,10 @@ import { IntegrationsModule } from '../integrations/integrations.module';
 import { TripayService } from '../integrations/providers/payment/tripay/tripay.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PaymentModule } from '../finance/payment/payment.module';
+import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
-  imports: [PrismaModule, IntegrationsModule, PaymentModule],
+  imports: [PrismaModule, IntegrationsModule, PaymentModule, InventoryModule],
   providers: [
     EcommerceCatalogService,
     EcommerceCartService,
@@ -17,4 +18,5 @@ import { PaymentModule } from '../finance/payment/payment.module';
   exports: [EcommerceCatalogService, EcommerceCartService, EcommerceCheckoutService]
 })
 export class EcommerceModule {}
+
 

@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import { GlService } from '../gl/gl.service';
 
 export interface CreateJournalDto {
   companyId: string;
@@ -20,165 +21,85 @@ export interface CreateJournalDto {
 
 @Injectable()
 export class AccountingService {
-  constructor(private prisma: PrismaService) {}
-
-  /**
-   * Validasi Tutup Buku (Period Closing)
-   * Mengembalikan Error (Hard Block) jika tanggal transaksi berada di periode yang sudah ditutup.
-   */
-  async validatePeriodIsOpen(companyId: string, date: Date, tx?: Prisma.TransactionClient) {
-    const prismaClient = tx || this.prisma;
-    
-    const month = date.getMonth() + 1;
-    const year = date.getFullYear();
-
-    const period = await prismaClient.accountingPeriod.findUnique({
-      where: {
-        company_id_month_year: {
-          company_id: companyId,
-          month: month,
-          year: year,
-        }
-      }
-    });
-
-    if (period && period.status === 'CLOSED') {
-      throw new BadRequestException(`Transactions are locked. The accounting period for ${month}/${year} is CLOSED.`);
-    }
-
-    // Cek juga Fiscal Year
-    const fiscalYear = await prismaClient.fiscalYear.findUnique({
-      where: {
-        company_id_year: {
-          company_id: companyId,
-          year: year,
-        }
-      }
-    });
-
-    if (fiscalYear && fiscalYear.status === 'CLOSED') {
-      throw new BadRequestException(`Transactions are locked. The fiscal year ${year} is CLOSED.`);
-    }
-
-    return true;
-  }
+  constructor(private prisma: PrismaService, private glService: GlService) {}
 
   /**
    * Auto Journal Engine
-   * Fungsi sentral untuk mencatat semua transaksi ERP menjadi entri jurnal.
+   * Routes domain-level journal requests through the authoritative GlService
+   * accounting engine, ensuring cash synchronization and single source of truth.
    */
   async createJournalEntry(data: CreateJournalDto, tx?: Prisma.TransactionClient) {
-    const prismaClient = tx || this.prisma;
-
-    // 1. Validasi Period Closing
-    await this.validatePeriodIsOpen(data.companyId, data.journalDate, prismaClient);
-
-    // 2. Validasi Keseimbangan Jurnal (Double Entry)
-    const totalDebit = data.items.reduce((sum, item) => sum + item.debit, 0);
-    const totalCredit = data.items.reduce((sum, item) => sum + item.credit, 0);
-
-    if (Math.abs(totalDebit - totalCredit) > 0.01) { // Toleransi desimal tipis
-      throw new BadRequestException(`Journal is unbalanced! Debit: ${totalDebit}, Credit: ${totalCredit}`);
-    }
-
-    // 3. Simpan Header Jurnal
-    const journal = await prismaClient.journalEntry.create({
-      data: {
-        company_id: data.companyId,
-        journal_no: data.journalNo,
-        reference_type: data.referenceType,
-        reference_id: data.referenceId,
-        journal_date: data.journalDate,
+    // If no transaction is provided, start a new one to guarantee atomicity of JE + AuditLog
+    const executeWithinTx = async (transaction: Prisma.TransactionClient) => {
+      // 1. Delegate to authoritative GL engine
+      // Note: GlService.createJournalEntryWithinTx automatically performs:
+      // - Period validation (OPEN/CLOSED/LOCKED)
+      // - Balance check (Debit == Credit)
+      // - JournalEntry and JournalEntryLine creation
+      // - CashAccount.current_balance synchronization
+      const journal = await this.glService.createJournalEntryWithinTx(transaction, {
+        companyId: data.companyId,
+        entryDate: data.journalDate,
+        referenceType: data.referenceType,
+        referenceId: data.referenceId || '', // GlService expects string, fallback to empty string if undefined
         description: data.description,
-        status: 'Posted', // Asumsikan auto-journal langsung posted
-        created_by: data.userId,
-        approved_by: data.userId,
-        approved_at: new Date(),
-        
-        items: {
-          create: data.items.map(item => ({
-            account_id: item.accountId,
-            debit: item.debit,
-            credit: item.credit,
-            description: item.description,
-          }))
+        items: data.items.map(item => ({
+          accountId: item.accountId,
+          debit: item.debit,
+          credit: item.credit,
+          description: item.description,
+        })),
+        // Pass userId to GlService via type casting since it expects it informally
+        ...({ userId: data.userId } as any)
+      });
+
+      // 2. Override the auto-generated JNL- journal_no with the caller's requested journalNo
+      // (AccountingService callers expect to provide their own journalNo like 'J-123')
+      const finalJournal = await transaction.journalEntry.update({
+        where: { id: journal.id },
+        data: { journal_no: data.journalNo },
+        include: { items: true }
+      });
+
+      // 3. Persist AuditLog within the same transaction boundary
+      await transaction.auditLog.create({
+        data: {
+          company_id: data.companyId,
+          user_id: data.userId,
+          action: 'AUTO_JOURNAL_CREATED',
+          entity: 'JournalEntry',
+          entity_id: finalJournal.id,
         }
-      },
-      include: { items: true }
-    });
+      });
 
-    // 4. Audit Log
-    await prismaClient.auditLog.create({
-      data: {
-        company_id: data.companyId,
-        user_id: data.userId,
-        action: 'AUTO_JOURNAL_CREATED',
-        entity: 'JournalEntry',
-        entity_id: journal.id,
-      }
-    });
+      return finalJournal;
+    };
 
-    return journal;
+    if (tx) {
+      return await executeWithinTx(tx);
+    } else {
+      return await this.prisma.$transaction(executeWithinTx);
+    }
   }
 
   /**
    * Reverse Journal Engine
-   * Membalik jurnal yang sudah salah tanpa menghapus data historisnya.
+   * Delegates to authoritative GlService to reverse journal and restore cash balances exactly once.
    */
   async reverseJournal(originalJournalId: string, reason: string, userId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const original = await tx.journalEntry.findUnique({
-        where: { id: originalJournalId },
-        include: { items: true }
-      });
-
-      if (!original) throw new BadRequestException('Journal not found');
-      if (original.status === 'Closed') throw new BadRequestException('Cannot reverse a closed journal');
-
-      // 1. Validasi Closing Period pada tanggal jurnal asli
-      await this.validatePeriodIsOpen(original.company_id, original.journal_date, tx);
-
-      // 2. Buat Jurnal Pembalik (Tukar Debit jadi Credit)
-      const reversedJournal = await tx.journalEntry.create({
-        data: {
-          company_id: original.company_id,
-          journal_no: `REV-${original.journal_no}`,
-          reference_type: 'REVERSAL',
-          reference_id: original.id,
-          journal_date: new Date(), // Jurnal pembalik diakui hari ini
-          description: `Reversal of ${original.journal_no}: ${reason}`,
-          status: 'Posted',
-          created_by: userId,
-          approved_by: userId,
-          approved_at: new Date(),
-          items: {
-            create: original.items.map(item => ({
-              account_id: item.account_id,
-              debit: item.credit, // SWAP
-              credit: item.debit, // SWAP
-              description: `Reversal: ${item.description}`,
-            }))
-          }
-        }
-      });
-
-      // 3. Tandai Jurnal Asli sebagai Reversed dan Catat di JournalReversal
-      await tx.journalEntry.update({
-        where: { id: original.id },
-        data: { status: 'Reversed' }
-      });
-
-      await tx.journalReversal.create({
-        data: {
-          company_id: original.company_id,
-          original_journal_id: original.id,
-          reverse_journal_id: reversedJournal.id,
-          reason: reason,
-          created_by: userId,
-        }
-      });
-
-      return reversedJournal;
+    // 1. We must fetch the original journal to know the companyId for GlService
+    const original = await this.prisma.journalEntry.findUnique({
+      where: { id: originalJournalId }
     });
+    
+    if (!original) throw new BadRequestException('Journal not found');
+
+    // 2. Delegate to GlService which handles period validation, cash reversal, and reversing entry creation.
+    try {
+      const reversedJournal = await this.glService.reverseJournal(original.company_id, originalJournalId, reason, userId);
+      return reversedJournal;
+    } catch (e: any) {
+      throw new BadRequestException(e.message);
+    }
   }
 }

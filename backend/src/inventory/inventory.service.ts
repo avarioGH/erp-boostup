@@ -744,35 +744,16 @@ export class InventoryService {
          });
 
          if (diff !== 0) {
-            const stock = await tx.warehouseStock.findUnique({
-               where: { company_id_warehouse_id_product_id: { company_id: companyId, warehouse_id: transaction.warehouse_id, product_id: item.product_id } }
-            });
-            if (stock) {
-               const adjustRes = await tx.warehouseStock.updateMany({
-              where: { id: stock.id, available_stock: { gte: diff < 0 ? Math.abs(diff) : 0 } },
-              data: {
-                current_stock: { increment: diff },
-                available_stock: { increment: diff }
-              }
-            });
-            if (adjustRes.count === 0) {
-              throw new BadRequestException('Concurrency conflict or insufficient stock for adjustment on ' + item.product_id);
-            }
-               await tx.stockMovement.create({
-                  data: {
-                     company_id: companyId,
-                     warehouse_id: transaction.warehouse_id,
-                     product_id: item.product_id,
-                     transaction_type: 'OPNAME',
-                     transaction_id: transaction.id,
-                     movement_type: diff > 0 ? 'STOCK_OPNAME_IN' : 'STOCK_OPNAME_OUT',
-                     qty_in: diff > 0 ? diff : 0,
-                     qty_out: diff < 0 ? Math.abs(diff) : 0,
-                     balance_after: stock.current_stock + diff,
-                     created_by: userId
-                  }
-               });
-            }
+           await this.adjustStock(tx as any, {
+              companyId,
+              warehouseId: transaction.warehouse_id,
+              productId: item.product_id,
+              difference: diff,
+              referenceType: 'OPNAME',
+              referenceId: transaction.id,
+              description: 'Stock Opname',
+              userId
+           });
          }
       }
 
@@ -782,9 +763,275 @@ export class InventoryService {
       });
     });
   }
+  // =========================================================================
+  // STEP 20E: AUTHORITATIVE INVENTORY PRIMITIVES
+  // =========================================================================
+
+  async receiveStock(tx: Prisma.TransactionClient, params: {
+    companyId: string;
+    warehouseId: string;
+    productId: string;
+    quantity: number;
+    unitCost: number;
+    referenceType: string;
+    referenceId: string;
+    description?: string;
+    userId: string;
+  }) {
+    if (params.quantity <= 0) throw new BadRequestException('Quantity must be greater than 0');
+
+    let stock = await tx.warehouseStock.findUnique({
+      where: { company_id_warehouse_id_product_id: { company_id: params.companyId, warehouse_id: params.warehouseId, product_id: params.productId } }
+    });
+
+    if (!stock) {
+      stock = await tx.warehouseStock.create({
+        data: { company_id: params.companyId, warehouse_id: params.warehouseId, product_id: params.productId, current_stock: 0, available_stock: 0, reserved_stock: 0 }
+      });
+    }
+
+    const res = await tx.warehouseStock.updateMany({
+      where: { id: stock.id, company_id: params.companyId },
+      data: {
+        current_stock: { increment: params.quantity },
+        available_stock: { increment: params.quantity }
+      }
+    });
+
+    if (res.count === 0) throw new BadRequestException('Failed to update stock');
+
+    const mov = await tx.stockMovement.create({
+      data: {
+        company_id: params.companyId,
+        warehouse_id: params.warehouseId,
+        product_id: params.productId,
+        transaction_type: params.referenceType,
+        transaction_id: params.referenceId,
+        movement_type: params.referenceType + '_IN',
+        qty_in: params.quantity,
+        qty_out: 0,
+        balance_after: stock.current_stock + params.quantity,
+        created_by: params.userId,
+        remarks: params.description
+      }
+    });
+
+    await createFifoLayer(tx as any, { companyId: params.companyId, warehouseId: params.warehouseId, productId: params.productId, quantity: params.quantity, unitCost: params.unitCost, stockMovementId: mov.id });
+    
+    return { stock: await tx.warehouseStock.findUnique({ where: { id: stock.id } }), movement: mov };
+  }
+
+  async issueStock(tx: Prisma.TransactionClient, params: {
+    companyId: string;
+    warehouseId: string;
+    productId: string;
+    quantity: number;
+    referenceType: string;
+    referenceId: string;
+    description?: string;
+    userId: string;
+    allowNegative?: boolean;
+  }) {
+    if (params.quantity <= 0) throw new BadRequestException('Quantity must be greater than 0');
+
+    const stock = await tx.warehouseStock.findUnique({
+      where: { company_id_warehouse_id_product_id: { company_id: params.companyId, warehouse_id: params.warehouseId, product_id: params.productId } }
+    });
+
+    if (!stock) throw new BadRequestException('Stock not found for product ' + params.productId);
+
+    const updateRes = await tx.warehouseStock.updateMany({
+      where: { 
+        id: stock.id,
+        company_id: params.companyId,
+        ...(params.allowNegative ? {} : { available_stock: { gte: params.quantity } })
+      },
+      data: {
+        current_stock: { decrement: params.quantity },
+        available_stock: { decrement: params.quantity }
+      }
+    });
+
+    if (updateRes.count === 0) throw new BadRequestException('Insufficient available stock for product ' + params.productId);
+
+    const mov = await tx.stockMovement.create({
+      data: {
+        company_id: params.companyId,
+        warehouse_id: params.warehouseId,
+        product_id: params.productId,
+        transaction_type: params.referenceType,
+        transaction_id: params.referenceId,
+        movement_type: params.referenceType + '_OUT',
+        qty_in: 0,
+        qty_out: params.quantity,
+        balance_after: stock.current_stock - params.quantity,
+        created_by: params.userId,
+        remarks: params.description
+      }
+    });
+
+    let consumedCost = 0;
+    try {
+      const fifoRes = await consumeFifoLayers(tx as any, { companyId: params.companyId, warehouseId: params.warehouseId, productId: params.productId, quantity: params.quantity, stockMovementId: mov.id });
+      consumedCost = fifoRes.totalCogs;
+    } catch (e: any) {
+      if (!params.allowNegative) throw e; 
+    }
+
+    
+
+    return { stock: await tx.warehouseStock.findUnique({ where: { id: stock.id } }), movement: mov, consumedCost };
+  }
+
+  async reserveStock(tx: Prisma.TransactionClient, params: {
+    companyId: string;
+    productId: string;
+    quantity: number;
+    warehouseId?: string;
+  }) {
+    if (params.quantity <= 0) throw new BadRequestException('Quantity must be greater than 0');
+
+    let stocks;
+    if (params.warehouseId) {
+      stocks = await tx.warehouseStock.findMany({
+        where: { company_id: params.companyId, warehouse_id: params.warehouseId, product_id: params.productId, available_stock: { gte: params.quantity } }
+      });
+    } else {
+      stocks = await tx.warehouseStock.findMany({
+        where: { company_id: params.companyId, product_id: params.productId, available_stock: { gte: params.quantity } },
+        orderBy: { available_stock: 'desc' }
+      });
+    }
+
+    if (stocks.length === 0) throw new BadRequestException('Insufficient available stock to reserve for product ' + params.productId);
+    
+    const targetStock = stocks[0];
+
+    const updateRes = await tx.warehouseStock.updateMany({
+      where: { id: targetStock.id, company_id: params.companyId, available_stock: { gte: params.quantity } },
+      data: {
+        reserved_stock: { increment: params.quantity },
+        available_stock: { decrement: params.quantity }
+      }
+    });
+
+    if (updateRes.count === 0) throw new BadRequestException('Concurrency conflict reserving stock for product ' + params.productId);
+
+    return targetStock;
+  }
+
+  async releaseReservation(tx: Prisma.TransactionClient, params: {
+    companyId: string;
+    warehouseId: string;
+    productId: string;
+    quantity: number;
+  }) {
+    if (params.quantity <= 0) return;
+
+    const stock = await tx.warehouseStock.findUnique({
+      where: { company_id_warehouse_id_product_id: { company_id: params.companyId, warehouse_id: params.warehouseId, product_id: params.productId } }
+    });
+    if (!stock) throw new BadRequestException('Stock not found');
+
+    const updateRes = await tx.warehouseStock.updateMany({
+      where: { id: stock.id, company_id: params.companyId, reserved_stock: { gte: params.quantity } },
+      data: {
+        reserved_stock: { decrement: params.quantity },
+        available_stock: { increment: params.quantity }
+      }
+    });
+
+    if (updateRes.count === 0) throw new BadRequestException('Concurrency conflict releasing reservation for product ' + params.productId);
+    
+    return await tx.warehouseStock.findUnique({ where: { id: stock.id } });
+  }
+
+  async transferStock(tx: Prisma.TransactionClient, params: {
+    companyId: string;
+    sourceWarehouseId: string;
+    targetWarehouseId: string;
+    productId: string;
+    quantity: number;
+    referenceType: string;
+    referenceId: string;
+    description?: string;
+    userId: string;
+  }) {
+    if (params.quantity <= 0) throw new BadRequestException('Quantity must be greater than 0');
+
+    // 1. Source Decrement
+    const sourceStock = await tx.warehouseStock.findUnique({
+      where: { company_id_warehouse_id_product_id: { company_id: params.companyId, warehouse_id: params.sourceWarehouseId, product_id: params.productId } }
+    });
+    if (!sourceStock) throw new BadRequestException('Stock not found at source');
+
+    const updateRes = await tx.warehouseStock.updateMany({
+      where: { id: sourceStock.id, available_stock: { gte: params.quantity } },
+      data: {
+        current_stock: { decrement: params.quantity },
+        available_stock: { decrement: params.quantity }
+      }
+    });
+    if (updateRes.count === 0) throw new BadRequestException('Concurrency conflict or insufficient stock at source');
+
+    // 2. Target Increment
+    let targetStock = await tx.warehouseStock.findUnique({
+      where: { company_id_warehouse_id_product_id: { company_id: params.companyId, warehouse_id: params.targetWarehouseId, product_id: params.productId } }
+    });
+    if (!targetStock) {
+      targetStock = await tx.warehouseStock.create({
+        data: { company_id: params.companyId, warehouse_id: params.targetWarehouseId, product_id: params.productId, current_stock: 0, available_stock: 0, reserved_stock: 0 }
+      });
+    }
+    await tx.warehouseStock.update({
+      where: { id: targetStock.id },
+      data: {
+        current_stock: { increment: params.quantity },
+        available_stock: { increment: params.quantity }
+      }
+    });
+
+    // 3. Movements
+    const movOut = await tx.stockMovement.create({
+      data: {
+        company_id: params.companyId, warehouse_id: params.sourceWarehouseId, product_id: params.productId,
+        transaction_type: params.referenceType, transaction_id: params.referenceId, movement_type: params.referenceType + '_OUT',
+        qty_in: 0, qty_out: params.quantity, balance_after: sourceStock.current_stock - params.quantity, created_by: params.userId, remarks: params.description
+      }
+    });
+    const movIn = await tx.stockMovement.create({
+      data: {
+        company_id: params.companyId, warehouse_id: params.targetWarehouseId, product_id: params.productId,
+        transaction_type: params.referenceType, transaction_id: params.referenceId, movement_type: params.referenceType + '_IN',
+        qty_in: params.quantity, qty_out: 0, balance_after: targetStock.current_stock + params.quantity, created_by: params.userId, remarks: params.description
+      }
+    });
+
+    await transferFifoLayers(tx as any, { companyId: params.companyId, productId: params.productId, sourceWarehouseId: params.sourceWarehouseId, destWarehouseId: params.targetWarehouseId, quantity: params.quantity, sourceMovementId: movOut.id, destMovementId: movIn.id });
+
+    return { movOut, movIn };
+  }
+
+  async adjustStock(tx: Prisma.TransactionClient, params: {
+    companyId: string;
+    warehouseId: string;
+    productId: string;
+    difference: number;
+    referenceType: string;
+    referenceId: string;
+    description?: string;
+    userId: string;
+  }) {
+    if (params.difference === 0) return;
+
+    if (params.difference > 0) {
+      // Adjust IN => equivalent to receiveStock
+      await this.receiveStock(tx, { ...params, quantity: params.difference, unitCost: 0 }); // Note: unitCost 0 for adjustment? FIFO requires unit cost if available, but for adjustment, typically 0 or average cost
+    } else {
+      // Adjust OUT => equivalent to issueStock
+      await this.issueStock(tx, { ...params, quantity: Math.abs(params.difference) });
+    }
+  }
 }
-
-
-
 
 

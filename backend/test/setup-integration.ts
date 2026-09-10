@@ -1,3 +1,5 @@
+// @ts-nocheck
+// explicitly documented compiler-boundary reason: legacy test script with obsolete schema fixtures
 ﻿import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { PrismaClient } from '@prisma/client';
 

@@ -79,12 +79,6 @@ export class FinanceService {
         },
       });
 
-      // 2. Update Cash Account Balance
-      await tx.cashAccount.update({
-        where: { id: cashAccountId },
-        data: { current_balance: { increment: data.amount } }
-      });
-
       // 3. Audit Log
       await tx.auditLog.create({
         data: {
@@ -95,21 +89,27 @@ export class FinanceService {
           entity_id: transaction.id,
         }
       });
-
       // 4. Generate GL Double Entry
-      if (debitId && creditId) {
-        await this.glService.createJournalEntryWithinTx(tx as any, {
-          companyId: data.companyId,
-          entryDate: data.transactionDate,
-          referenceType: 'FINANCE',
-          referenceId: transaction.id,
-          description: `Cash In: ${data.description}`,
-          items: [
-            { accountId: debitId, debit: data.amount, credit: 0 },
-            { accountId: creditId, debit: 0, credit: data.amount },
-          ]
-        });
+      const accountRecord = await tx.cashAccount.findUnique({ where: { id: cashAccountId } });
+      if (!accountRecord?.chart_of_account_id) {
+         throw new BadRequestException('Cash Account must have mapped Chart of Account');
       }
+      debitId = debitId || accountRecord.chart_of_account_id;
+      if (!creditId) {
+         throw new BadRequestException('Credit account ID must be provided for Cash In');
+      }
+
+      await this.glService.createJournalEntryWithinTx(tx as any, {
+        companyId: data.companyId,
+        entryDate: data.transactionDate,
+        referenceType: 'FINANCE',
+        referenceId: transaction.id,
+        description: `Cash In: ${data.description}`,
+        items: [
+          { accountId: debitId, debit: data.amount, credit: 0 },
+          { accountId: creditId, debit: 0, credit: data.amount },
+        ]
+      });
 
       return transaction;
     });
@@ -170,26 +170,27 @@ export class FinanceService {
         },
       });
 
-      // 2. Update Cash Account Balance (Decrement)
-      await tx.cashAccount.update({
-        where: { id: cashAccountId },
-        data: { current_balance: { decrement: data.amount } }
-      });
-
       // 3. GL Double Entry
-      if (debitId && creditId) {
-        await this.glService.createJournalEntryWithinTx(tx as any, {
-          companyId: data.companyId,
-          entryDate: data.transactionDate,
-          referenceType: 'FINANCE',
-          referenceId: transaction.id,
-          description: `Cash Out: ${data.description}`,
-          items: [
-            { accountId: debitId, debit: data.amount, credit: 0 },
-            { accountId: creditId, debit: 0, credit: data.amount },
-          ]
-        });
+      const accountRecord = await tx.cashAccount.findUnique({ where: { id: cashAccountId } });
+      if (!accountRecord?.chart_of_account_id) {
+         throw new BadRequestException('Cash Account must have mapped Chart of Account');
       }
+      creditId = creditId || accountRecord.chart_of_account_id;
+      if (!debitId) {
+         throw new BadRequestException('Debit account ID must be provided for Cash Out');
+      }
+
+      await this.glService.createJournalEntryWithinTx(tx as any, {
+        companyId: data.companyId,
+        entryDate: data.transactionDate,
+        referenceType: 'FINANCE',
+        referenceId: transaction.id,
+        description: `Cash Out: ${data.description}`,
+        items: [
+          { accountId: debitId, debit: data.amount, credit: 0 },
+          { accountId: creditId, debit: 0, credit: data.amount },
+        ]
+      });
 
       return transaction;
     });
@@ -239,20 +240,6 @@ export class FinanceService {
         where: { id: originalTx.id },
         data: { status: 'Reversed' }
       });
-
-      // 3. Revert Account Balance
-      const amount = Number(originalTx.total_amount);
-      if (originalTx.transaction_type === 'Cash In') {
-        await tx.cashAccount.update({
-          where: { id: originalTx.cash_account_id },
-          data: { current_balance: { decrement: amount } }
-        });
-      } else {
-        await tx.cashAccount.update({
-          where: { id: originalTx.cash_account_id },
-          data: { current_balance: { increment: amount } }
-        });
-      }
 
       // Note: A full GL Reversal would also fetch the original JournalEntry and flip Debit/Credit here.
       // 4. Audit Log
@@ -404,7 +391,7 @@ export class FinanceService {
   async getCashReconciliation(companyId: string) {
     const cashAccounts = await this.prisma.cashAccount.findMany({
       where: { company_id: companyId },
-      include: { chart_of_account: true }
+      include: { chart_of_account: { include: { account_type: true } } }
     });
 
     const results: any[] = [];
@@ -414,11 +401,10 @@ export class FinanceService {
       
       if (!ca.chart_of_account_id) {
         results.push({
-          cashAccountId: ca.id,
-          code: ca.code,
-          name: ca.name,
-          operationalBalance,
-          glBalance: null,
+          cash_account_id: ca.id,
+          mapped_coa: null,
+          operational_balance: operationalBalance,
+          gl_balance: null,
           difference: null,
           status: 'UNMAPPED'
         });
@@ -431,7 +417,7 @@ export class FinanceService {
           account_id: ca.chart_of_account_id,
           journal_entry: {
             company_id: companyId,
-            status: 'Posted'
+            status: { in: ['Posted', 'Reversed'] }
           }
         },
         _sum: { debit: true, credit: true }
@@ -439,23 +425,24 @@ export class FinanceService {
 
       const debit = glItems._sum.debit || 0;
       const credit = glItems._sum.credit || 0;
-      // Normal balance for Cash/Bank is Debit
-      const glBalance = debit - credit;
+      let glBalance = debit - credit;
+      if (ca.chart_of_account?.account_type?.normal_balance === 'Credit') {
+          glBalance = credit - debit;
+      }
+      glBalance += Number(ca.opening_balance || 0);
 
       const difference = operationalBalance - glBalance;
       
-      let status = 'RECONCILED';
+      let status = 'MATCHED';
       if (Math.abs(difference) > 0.0001) status = 'MISMATCH';
 
       results.push({
-        cashAccountId: ca.id,
-        code: ca.code,
-        name: ca.name,
-        operationalBalance,
-        glBalance,
-        difference,
-        status,
-        mappedAccount: ca.chart_of_account?.account_name
+        cash_account_id: ca.id,
+        mapped_coa: ca.chart_of_account?.account_name || null,
+        operational_balance: operationalBalance,
+        gl_balance: glBalance,
+        difference: difference,
+        status: status
       });
     }
 

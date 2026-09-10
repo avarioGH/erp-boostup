@@ -66,7 +66,7 @@ export class SalesReportService {
     });
 
     let totalRevenue = 0;
-    let data = [];
+    let data: any[] = [];
     
     const validInvoices = invoices.filter(inv => !inv.sales_order?.pos_shift_id);
     for (const inv of validInvoices) {
@@ -80,13 +80,12 @@ export class SalesReportService {
       if (inv.sales_order_id) {
         const deliveries = await this.prisma.deliveryOrder.findMany({
           where: { sales_order_id: inv.sales_order_id, status: 'DELIVERED' },
-          include: { items: { include: { stock_movement: true } } }
+          include: { items: true }
         });
-        deliveries.forEach(del => {
-          del.items.forEach(di => {
-             if (di.stock_movement) cogs += di.stock_movement.total_cost;
-          });
-        });
+        for (const del of deliveries) {
+          const movs = await this.prisma.stockMovement.findMany({ where: { transaction_id: del.id, movement_type: 'OUT' } });
+          cogs += movs.reduce((sum, m) => sum + m.total_cost, 0);
+        }
       }
 
       data.push({

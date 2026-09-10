@@ -316,8 +316,9 @@ const updatedRes = await tx.payroll.updateMany({ where: { id, status: 'APPROVED'
           reference_type: 'PAYROLL_PAYMENT',
           reference_id: p.id,
           description: 'Payroll Payment for ' + p.period,
-          created_by: 'SYSTEM',
-          status: 'COMPLETED'
+          
+          status: 'COMPLETED',
+          created_by: (await tx.user.findFirst({where:{company_id:companyId}}))!.id
         }
       });
       

@@ -31,7 +31,7 @@ import { join } from 'path';
 import { AiModule } from './ai/ai.module';
 
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { ManufacturingModule } from './manufacturing/manufacturing.module';
+
 
 @Module({
   imports: [
@@ -47,7 +47,7 @@ import { ManufacturingModule } from './manufacturing/manufacturing.module';
     IntegrationsModule,
     TripayModule,
     CrmModule,
-    PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule, ManufacturingModule, MrpModule
+    PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule,  MrpModule
   ],
   controllers: [AppController],
   providers: [AppService],

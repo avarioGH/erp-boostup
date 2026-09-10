@@ -112,7 +112,7 @@ export class ShopeeService {
         status: 'Approved',
         description: `Penjualan dari Shopee (${mockOrderNo})`,
         total_amount: mockOrderAmount,
-        created_by: 'system', // Need to handle created_by properly in a real cron
+        created_by: '000000000000000000000000', // Need to handle created_by properly in a real cron
       }
     });
 

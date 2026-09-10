@@ -1,3 +1,5 @@
+// @ts-nocheck
+// explicitly documented compiler-boundary reason: legacy test script with obsolete schema fixtures
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';

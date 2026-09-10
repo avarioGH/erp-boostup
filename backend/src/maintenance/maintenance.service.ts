@@ -31,7 +31,7 @@ export class MaintenanceService {
             title: `Preventive Maintenance - ${schedule.asset.asset_name}`,
             maintenance_type: 'PREVENTIVE',
             priority: 'MEDIUM',
-            created_by: 'SYSTEM',
+            created_by: (await this.prisma.user.findFirst({where:{company_id:schedule.company_id}}))!.id,
             status: 'OPEN',
           }
         });

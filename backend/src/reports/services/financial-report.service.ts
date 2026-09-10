@@ -44,7 +44,7 @@ export class FinancialReportService {
       data.credit += item.credit;
     });
 
-    const data = [];
+    const data: any[] = [];
     let totalDebit = 0;
     let totalCredit = 0;
 

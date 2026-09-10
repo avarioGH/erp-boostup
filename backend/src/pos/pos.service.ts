@@ -79,7 +79,7 @@ export class PosService {
                 balance_after: currentStock.current_stock - item.qty,
                 unit_cost: 0,
                 total_cost: 0,
-                created_by: userId || 'SYSTEM',
+                created_by: userId || '000000000000000000000000',
               }
             });
             
