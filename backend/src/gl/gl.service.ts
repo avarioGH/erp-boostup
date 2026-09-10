@@ -34,7 +34,8 @@ export class GlService {
         company_id: data.companyId,
         start_date: { lte: data.entryDate },
         end_date: { gte: data.entryDate }
-      }
+      },
+      orderBy: { created_at: 'desc' } // 'CLOSED' and 'LOCKED' sort before 'OPEN' alphabetically, so specific closed periods override broad open ones. Or ideally by created_at desc.
     });
 
     if (!period) {
@@ -49,6 +50,15 @@ export class GlService {
 
     const totalDebit = data.items.reduce((sum, item) => sum + item.debit, 0);
     const totalCredit = data.items.reduce((sum, item) => sum + item.credit, 0);
+
+    if (totalDebit <= 0 || totalCredit <= 0) {
+      throw new Error(`Journal Entry cannot have zero or negative value. Debit: ${totalDebit}, Credit: ${totalCredit}`);
+    }
+
+    const hasNegative = data.items.some(item => item.debit < 0 || item.credit < 0);
+    if (hasNegative) {
+      throw new Error(`Journal Entry lines cannot be negative.`);
+    }
 
     if (totalDebit !== totalCredit) {
       throw new Error(`Journal Entry is unbalanced. Debit: ${totalDebit}, Credit: ${totalCredit}`);

@@ -127,4 +127,5 @@ export const FinanceAPI: any = {
   getBalanceSheetReport: async (params?: any) => (await api.get('/reports/finance/balance-sheet', { params }).catch(() => ({ data: {} }))).data,
   getCashFlowReport: async (params?: any) => (await api.get('/reports/finance/cash-flow', { params }).catch(() => ({ data: {} }))).data,
   getProfitLossReport: async (params?: any) => (await api.get('/reports/finance/profit-loss', { params }).catch(() => ({ data: {} }))).data,
-};
+};
+export default api;

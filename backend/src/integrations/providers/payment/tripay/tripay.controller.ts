@@ -1,6 +1,6 @@
 import { PermissionsGuard } from '../../../../auth/permissions.guard';
 import { Permissions } from '../../../../auth/permissions.decorator';
-﻿// @ts-nocheck
+﻿
 import { Controller, Post, Get, Body, Param, Request, UseGuards, Headers } from '@nestjs/common';
 import { TripayService } from './tripay.service';
 import { PrismaService } from '../../../../prisma/prisma.service';

@@ -1,3 +1,6 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { InventoryValuationEvent } from '../events/accounting.events';
+import { InventoryService } from '../inventory/inventory.service';
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EcommerceCartService } from './ecommerce-cart.service';
@@ -10,7 +13,9 @@ export class EcommerceCheckoutService {
   constructor(
     private prisma: PrismaService,
     private cartService: EcommerceCartService,
-    private tripayService: TripayService
+    private tripayService: TripayService,
+    private inventoryService: InventoryService,
+    private eventEmitter: EventEmitter2
   ) {}
 
   async checkout(companyId: string, sessionId: string, payload: any) {
@@ -51,36 +56,6 @@ export class EcommerceCheckoutService {
 
         if (fail_at === 'CUSTOMER') throw new Error('Test Failure: CUSTOMER');
 
-        for (const item of cart.items) {
-          const stocks = await tx.warehouseStock.findMany({
-            where: { company_id: companyId, product_id: item.product_id, available_stock: { gte: item.quantity } },
-            orderBy: { available_stock: 'desc' }
-          });
-
-          if (stocks.length === 0) {
-            throw new BadRequestException('Insufficient stock for ' + item.product_name);
-          }
-
-          const targetStock = stocks[0];
-          
-          const updateRes = await tx.warehouseStock.updateMany({
-            where: { 
-              id: targetStock.id, 
-              available_stock: { gte: item.quantity } 
-            },
-            data: {
-              available_stock: { decrement: item.quantity },
-              reserved_stock: { increment: item.quantity }
-            }
-          });
-
-          if (updateRes.count === 0) {
-            throw new BadRequestException('Insufficient stock for ' + item.product_name + ' due to concurrent checkout');
-          }
-        }
-
-        if (fail_at === 'RESERVATION') throw new Error('Test Failure: RESERVATION');
-
         const orderNumber = 'SO-EC-' + Date.now();
         const salesOrder = await tx.salesOrder.create({
           data: {
@@ -106,6 +81,55 @@ export class EcommerceCheckoutService {
         });
 
         if (fail_at === 'SALES_ORDER') throw new Error('Test Failure: SALES_ORDER');
+
+        for (const item of cart.items) {
+          const stocks = await tx.warehouseStock.findMany({
+            where: { company_id: companyId, product_id: item.product_id, available_stock: { gte: item.quantity } },
+            orderBy: { available_stock: 'desc' }
+          });
+          if (stocks.length === 0) throw new BadRequestException('Insufficient stock for ' + item.product_name);
+          const targetStock = stocks[0];
+          
+          await this.inventoryService.issueStock(tx as any, {
+             companyId,
+             warehouseId: targetStock.warehouse_id,
+             productId: item.product_id,
+             quantity: item.quantity,
+             referenceType: 'ECOMMERCE',
+             referenceId: salesOrder.id,
+             userId: '6aa02dc075845f59e02b3f01'
+          });
+        }
+
+        
+          let totalCogs = 0;
+          for (const item of cart.items) {
+             const cons = await tx.costLayerConsumption.findMany({
+                where: {
+                  stock_movement: {
+                    transaction_type: 'ECOMMERCE',
+                    transaction_id: salesOrder.id,
+                    product_id: item.product_id
+                  }
+                }
+             });
+             totalCogs += cons.reduce((sum, c) => sum + (c.quantity * c.unit_cost), 0);
+          }
+          if (totalCogs > 0) {
+            await this.eventEmitter.emitAsync('inventory.valuation', new InventoryValuationEvent(
+              companyId,
+              salesOrder.id,
+              'EVT-' + Date.now(),
+              new Date(),
+              { type: 'COGS', totalValue: totalCogs },
+              tx as any
+            ));
+          }
+
+
+          if (fail_at === 'RESERVATION') throw new Error('Test Failure: RESERVATION');
+
+        
 
         const invoiceNumber = 'INV-EC-' + Date.now();
         const invoice = await tx.invoice.create({

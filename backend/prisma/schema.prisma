@@ -416,6 +416,7 @@ model Product {
 
   @@unique([company_id, code])
   @@unique([company_id, barcode])
+  quality_checks QualityCheck[]
 }
 
 model ProductImage {
@@ -662,6 +663,7 @@ model WorkOrder {
   updated_at DateTime @updatedAt
 
   leave_requests LeaveRequest[]
+  company_id String? @db.ObjectId
 }
 
 model AssetDocument {
@@ -2306,6 +2308,7 @@ model Bom {
   manufacturing_orders ManufacturingOrder[]
   created_at      DateTime    @default(now())
   updated_at      DateTime    @updatedAt
+  routing BomRouting?
 }
 
 model BomItem {
@@ -2363,6 +2366,11 @@ model WorkCenter {
   cost_per_hour   Float?
   status          String
   work_orders     ManufacturingWorkOrder[]
+  capacity_hours_per_day Float?
+  efficiency_percentage Float?
+  shift_start_time String?
+  shift_end_time String?
+  is_active Boolean @default(true)
 }
 
 model ManufacturingWorkOrder {
@@ -2380,6 +2388,7 @@ model ManufacturingWorkOrder {
   manufacturing_order_item_id String? @db.ObjectId
   created_at      DateTime    @default(now())
   updated_at      DateTime    @updatedAt
+  quality_checks QualityCheck[]
 }
 
 model QualityControlPoint {
@@ -2405,6 +2414,12 @@ model QualityCheck {
   notes           String?
   created_at      DateTime    @default(now())
   updated_at      DateTime    @updatedAt
+  dispositions QualityDisposition[]
+
+  product_id      String?      @db.ObjectId
+  product         Product?     @relation(fields: [product_id], references: [id])
+  work_order_id   String?      @db.ObjectId
+  work_order      ManufacturingWorkOrder? @relation(fields: [work_order_id], references: [id])
 }
 
 model MaterialReservation {
@@ -2423,4 +2438,37 @@ model MaterialReservation {
   manufacturing_order_item_id String? @db.ObjectId
   created_at      DateTime    @default(now())
   updated_at      DateTime    @updatedAt
+}
+
+model BomRouting {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  bom_id     String @unique @db.ObjectId
+  bom        Bom    @relation(fields: [bom_id], references: [id])
+  operations BomOperation[]
+}
+
+model BomOperation {
+  id               String @id @default(auto()) @map("_id") @db.ObjectId
+  routing_id       String @db.ObjectId
+  routing          BomRouting @relation(fields: [routing_id], references: [id])
+  work_center_id   String? @db.ObjectId
+  sequence         Int
+  operation_name   String
+  setup_minutes    Float @default(0)
+  standard_minutes Float @default(0)
+}
+
+model QualityDisposition {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id       String   @db.ObjectId
+  quality_check_id String   @db.ObjectId
+  quality_check    QualityCheck @relation(fields: [quality_check_id], references: [id])
+  type             String
+  quantity         Float
+  reason           String?
+  defect_code      String?
+  severity         String?
+  user_id          String?  @db.ObjectId
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
 }

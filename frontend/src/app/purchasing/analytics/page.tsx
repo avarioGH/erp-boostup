@@ -53,7 +53,7 @@ export default function PurchasingAnalyticsPage() {
                <BarChart data={data.top_suppliers}>
                  <XAxis dataKey="supplierId" />
                  <YAxis />
-                 <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                 <Tooltip formatter={(value: any) => formatCurrency(value)} />
                  <Bar dataKey="total" fill="#4f46e5" radius={[4,4,0,0]} />
                </BarChart>
              </ResponsiveContainer>

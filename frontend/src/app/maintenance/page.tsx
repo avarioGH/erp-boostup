@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Settings, Tool, Clock, AlertTriangle } from 'lucide-react';
+import { Settings, Wrench, Clock, AlertTriangle } from 'lucide-react';
 
 export default function MaintenanceDashboard() {
   const [requests, setRequests] = useState<any[]>([]);

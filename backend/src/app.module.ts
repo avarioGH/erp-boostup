@@ -1,3 +1,4 @@
+import { EcommerceModule } from './ecommerce/ecommerce.module';
 import { MrpModule } from './mrp/mrp.module';
 import { HealthModule } from './health/health.module';
 import { CoreModule } from './core/core.module';
@@ -37,6 +38,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
+    EcommerceModule,
     SystemModule,
     ManufacturingModule,
     HealthModule,

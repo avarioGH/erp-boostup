@@ -45,7 +45,7 @@ export class PermissionsGuard implements CanActivate {
     const userPermissions = dbUser.role.permissions.map(p => p.permission.name);
 
     const hasPermission = requiredPermissions.every(permission =>
-      userPermissions.includes(permission)
+      (userPermissions.includes(permission) || userPermissions.includes('*'))
     );
 
     if (!hasPermission) {

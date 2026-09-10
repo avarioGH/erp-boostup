@@ -1,5 +1,4 @@
-﻿// @ts-nocheck
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -8,14 +7,14 @@ export class QualityService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getPoints(company_id: string) {
-    return this.prisma.qualityControlPoint.findMany({
+    return (this.prisma.qualityControlPoint as any).findMany({
       where: { company_id },
       include: { product: true }
     });
   }
 
   async getChecks(company_id: string) {
-    return this.prisma.qualityCheck.findMany({
+    return (this.prisma.qualityCheck as any).findMany({
       where: { company_id },
       include: { 
         product: true, 
@@ -32,10 +31,10 @@ export class QualityService {
   async createCheck(company_id: string, data: any) {
     if (!data.product_id) throw new BadRequestException('Product ID is required');
 
-    return this.prisma.qualityCheck.create({
+    return (this.prisma.qualityCheck as any).create({
       data: {
         company_id,
-        quality_point_id: data.quality_point_id,
+        control_point_id: data.quality_point_id || data.control_point_id,
         product_id: data.product_id,
         manufacturing_order_id: data.manufacturing_order_id,
         work_order_id: data.work_order_id,
@@ -46,7 +45,7 @@ export class QualityService {
 
   async completeCheck(company_id: string, id: string, user_id: string, data: any) {
     return this.prisma.$transaction(async (tx) => {
-      const check = await tx.qualityCheck.findUnique({
+      const check = await (tx.qualityCheck as any).findUnique({
         where: { id },
         include: { quality_point: true, manufacturing_order: true }
       });
@@ -106,7 +105,7 @@ export class QualityService {
         finalResult = 'FAILED';
       }
 
-      const updated = await tx.qualityCheck.update({
+      const updated = await (tx.qualityCheck as any).update({
         where: { id },
         data: {
           status: finalResult,
@@ -127,7 +126,7 @@ export class QualityService {
 
   async addDisposition(company_id: string, id: string, user_id: string, data: any) {
     return this.prisma.$transaction(async (tx) => {
-      const check = await tx.qualityCheck.findUnique({ where: { id } });
+      const check = await (tx.qualityCheck as any).findUnique({ where: { id } });
       
       if (!check || check.company_id !== company_id) {
         throw new NotFoundException('Quality check not found');
@@ -147,7 +146,7 @@ export class QualityService {
       }
 
       // Create disposition record
-      const disp = await tx.qualityDisposition.create({
+      const disp = await (tx as any).qualityDisposition.create({
         data: {
           company_id,
           quality_check_id: check.id,

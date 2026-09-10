@@ -211,7 +211,6 @@ export class InventoryService {
 
   async createInbound(data: CreateInboundDto) {
     return this.prisma.$transaction(async (tx) => {
-      // 1. Create Transaction Header
       const transaction = await tx.inventoryTransaction.create({
         data: {
           company_id: data.companyId,
@@ -225,15 +224,15 @@ export class InventoryService {
         },
       });
 
-      // 2. Loop through items
       for (const item of data.items) {
-        const subtotal = item.qty * item.unitCost;
+          if (item.qty <= 0) throw new BadRequestException('Quantity must be greater than 0');
+        if (item.qty <= 0) throw new BadRequestException('Quantity must be greater than 0');
+        const subtotal = item.qty * (item.unitCost || 0);
 
-        // a. Create Transaction Item
         await tx.inventoryTransactionItem.create({
           data: {
-            transaction_id: transaction.id,
-            product_id: item.productId,
+            transaction: { connect: { id: transaction.id } },
+            product: { connect: { id: item.productId } },
             qty: item.qty,
             unit_cost: item.unitCost,
             subtotal: subtotal,
@@ -243,93 +242,24 @@ export class InventoryService {
           },
         });
 
-        // b. Create Stock Movement
-        await tx.stockMovement.create({
-          data: {
-            company_id: data.companyId,
-            warehouse_id: data.warehouseId,
-            product_id: item.productId,
-            transaction_type: 'IN',
-            transaction_id: transaction.id,
-            movement_type: 'IN',
-            qty_in: item.qty,
-            qty_out: 0,
-            unit_cost: item.unitCost,
-            total_cost: subtotal,
-            batch_number: item.batchNumber,
-            expired_date: item.expiredDate,
-            created_by: data.userId,
-          },
+        await this.receiveStock(tx as any, {
+          companyId: data.companyId,
+          warehouseId: data.warehouseId,
+          productId: item.productId,
+          quantity: item.qty,
+          unitCost: item.unitCost || 0,
+          referenceType: 'IN',
+          referenceId: transaction.id,
+          description: data.notes,
+          userId: data.userId,
         });
-
-        // c. Update Warehouse Stock (Cache)
-        const currentStock = await tx.warehouseStock.findUnique({
-          where: {
-            company_id_warehouse_id_product_id: {
-              company_id: data.companyId,
-              warehouse_id: data.warehouseId,
-              product_id: item.productId,
-            }
-          }
-        });
-
-        if (currentStock) {
-          await tx.warehouseStock.update({
-              where: { id: currentStock.id },
-              data: {
-                current_stock: { increment: item.qty },
-                available_stock: { increment: item.qty }
-              }
-            });
-        } else {
-          await tx.warehouseStock.create({
-            data: {
-              company_id: data.companyId,
-              warehouse_id: data.warehouseId,
-              product_id: item.productId,
-              current_stock: item.qty,
-              available_stock: item.qty,
-              reserved_stock: 0,
-            }
-          });
-        }
       }
-
-      // 3. Audit Log
-      await tx.auditLog.create({
-        data: {
-          company_id: data.companyId,
-          user_id: data.userId,
-          action: 'CREATE',
-          entity: 'InventoryTransaction_Inbound',
-          entity_id: transaction.id,
-        }
-      });
-
       return transaction;
     });
   }
 
   async createOutbound(data: CreateOutboundDto) {
     return this.prisma.$transaction(async (tx) => {
-      // 1. Validasi Stok Terlebih Dahulu
-      for (const item of data.items) {
-        const currentStock = await tx.warehouseStock.findUnique({
-          where: {
-            company_id_warehouse_id_product_id: {
-              company_id: data.companyId,
-              warehouse_id: data.warehouseId,
-              product_id: item.productId,
-            }
-          }
-        });
-
-        if (!currentStock || currentStock.available_stock < item.qty) {
-          throw new BadRequestException(`Stock tidak mencukupi untuk product ${item.productId}`);
-        }
-      }
-
-      // 2. Create Transaction Header
       const transaction = await tx.inventoryTransaction.create({
         data: {
           company_id: data.companyId,
@@ -343,77 +273,34 @@ export class InventoryService {
         },
       });
 
-      // 3. Loop through items
       for (const item of data.items) {
-        const subtotal = item.qty * item.unitCost;
+          if (item.qty <= 0) throw new BadRequestException('Quantity must be greater than 0');
+        if (item.qty <= 0) throw new BadRequestException('Quantity must be greater than 0');
 
-        // a. Create Transaction Item
+        const { consumedCost } = await this.issueStock(tx as any, {
+          companyId: data.companyId,
+          warehouseId: data.warehouseId,
+          productId: item.productId,
+          quantity: item.qty,
+          referenceType: 'OUT',
+          referenceId: transaction.id,
+          description: data.notes,
+          userId: data.userId,
+        });
+
         await tx.inventoryTransactionItem.create({
           data: {
-            transaction_id: transaction.id,
-            product_id: item.productId,
+            transaction: { connect: { id: transaction.id } },
+            product: { connect: { id: item.productId } },
             qty: item.qty,
-            unit_cost: item.unitCost,
-            subtotal: subtotal,
+            unit_cost: consumedCost / item.qty,
+            subtotal: consumedCost,
             batch_number: item.batchNumber,
             expired_date: item.expiredDate,
             notes: item.notes,
           },
         });
-
-        // b. Create Stock Movement
-        await tx.stockMovement.create({
-          data: {
-            company_id: data.companyId,
-            warehouse_id: data.warehouseId,
-            product_id: item.productId,
-            transaction_type: 'OUT',
-            transaction_id: transaction.id,
-            movement_type: 'OUT',
-            qty_in: 0,
-            qty_out: item.qty,
-            unit_cost: item.unitCost,
-            total_cost: subtotal,
-            batch_number: item.batchNumber,
-            expired_date: item.expiredDate,
-            created_by: data.userId,
-          },
-        });
-
-        // c. Update Warehouse Stock (Cache)
-        const currentStock = await tx.warehouseStock.findUnique({
-          where: {
-            company_id_warehouse_id_product_id: {
-              company_id: data.companyId,
-              warehouse_id: data.warehouseId,
-              product_id: item.productId,
-            }
-          }
-        });
-
-        const updateResult = await tx.warehouseStock.updateMany({
-              where: { id: currentStock!.id, available_stock: { gte: item.qty } },
-              data: {
-                current_stock: { decrement: item.qty },
-                available_stock: { decrement: item.qty }
-              }
-            });
-            if (updateResult.count === 0) {
-              throw new BadRequestException('Concurrency conflict or insufficient stock for product ' + item.productId);
-            }
       }
-
-      // 4. Audit Log
-      await tx.auditLog.create({
-        data: {
-          company_id: data.companyId,
-          user_id: data.userId,
-          action: 'CREATE',
-          entity: 'InventoryTransaction_Outbound',
-          entity_id: transaction.id,
-        }
-      });
-
       return transaction;
     });
   }
@@ -435,6 +322,7 @@ export class InventoryService {
       });
 
       for (const item of data.items) {
+          if (item.qty <= 0) throw new BadRequestException('Quantity must be greater than 0');
         await tx.inventoryTransactionItem.create({
           data: {
             transaction_id: transaction.id,
@@ -460,129 +348,27 @@ export class InventoryService {
       if (transaction.status !== 'Draft') throw new BadRequestException('Only Draft transfers can be validated');
 
       for (const item of transaction.items) {
-        const sourceStock = await tx.warehouseStock.findUnique({
-          where: {
-            company_id_warehouse_id_product_id: { company_id: companyId, warehouse_id: transaction.warehouse_id, product_id: item.product_id }
-          }
-        });
-        if (!sourceStock || sourceStock.available_stock < item.qty) {
-          throw new BadRequestException('Stock tidak mencukupi di gudang asal untuk product ' + item.product_id);
-        }
+        if (item.qty <= 0) throw new BadRequestException('Quantity must be greater than 0');
 
-        const updateRes = await tx.warehouseStock.updateMany({
-            where: { id: sourceStock.id, available_stock: { gte: item.qty } },
-            data: {
-              current_stock: { decrement: item.qty },
-              available_stock: { decrement: item.qty }
-            }
-          });
-          if (updateRes.count === 0) {
-            throw new BadRequestException('Concurrency conflict or insufficient stock at source for product ' + item.product_id);
-          }
-
-        let targetStock = await tx.warehouseStock.findUnique({
-          where: {
-            company_id_warehouse_id_product_id: { company_id: companyId, warehouse_id: transaction.target_warehouse_id!, product_id: item.product_id }
-          }
-        });
-        
-        if (!targetStock) {
-          targetStock = await tx.warehouseStock.create({
-            data: {
-              company_id: companyId,
-              warehouse_id: transaction.target_warehouse_id!,
-              product_id: item.product_id,
-              current_stock: item.qty,
-              available_stock: item.qty,
-              reserved_stock: 0
-            }
-          });
-        } else {
-          await tx.warehouseStock.update({
-              where: { id: targetStock.id },
-              data: {
-                current_stock: { increment: item.qty },
-                available_stock: { increment: item.qty }
-              }
-            });
-        }
-
-        const movOut = await tx.stockMovement.create({
-          data: {
-            company_id: companyId,
-            warehouse_id: transaction.warehouse_id,
-            product_id: item.product_id,
-            transaction_type: 'TRANSFER',
-            transaction_id: transaction.id,
-            movement_type: 'TRANSFER_OUT',
-            qty_in: 0,
-            qty_out: item.qty,
-            balance_after: sourceStock.current_stock - item.qty,
-            unit_cost: 0,
-            total_cost: 0,
-            created_by: userId,
-          }
-        });
-        const movIn = await tx.stockMovement.create({
-          data: {
-            company_id: companyId,
-            warehouse_id: transaction.target_warehouse_id!,
-            product_id: item.product_id,
-            transaction_type: 'TRANSFER',
-            transaction_id: transaction.id,
-            movement_type: 'TRANSFER_IN',
-            qty_in: item.qty,
-            qty_out: 0,
-            balance_after: (targetStock ? targetStock.current_stock : 0) + item.qty,
-            unit_cost: 0,
-            total_cost: 0,
-            created_by: userId,
-          }
-        });
-
-        // STEP 16.5D - TRUE FIFO TRANSFER
-        const { totalCogs } = await transferFifoLayers(tx, {
-          companyId,
+        await this.transferStock(tx as any, {
+          companyId: companyId,
           productId: item.product_id,
           sourceWarehouseId: transaction.warehouse_id,
-          destWarehouseId: transaction.target_warehouse_id!,
+          targetWarehouseId: transaction.target_warehouse_id!,
           quantity: item.qty,
-          sourceMovementId: movOut.id,
-          destMovementId: movIn.id
-        });
-        
-        const actual_unit_cost = item.qty > 0 ? totalCogs / item.qty : 0;
-        await tx.stockMovement.update({
-          where: { id: movOut.id },
-          data: { unit_cost: actual_unit_cost, total_cost: totalCogs }
-        });
-        await tx.stockMovement.update({
-          where: { id: movIn.id },
-          data: { unit_cost: actual_unit_cost, total_cost: totalCogs }
+          referenceType: 'TRANSFER',
+          referenceId: transaction.id,
+          description: transaction.notes || undefined,
+          userId: userId,
         });
       }
 
-      const updated = await tx.inventoryTransaction.update({
+      await tx.inventoryTransaction.update({
         where: { id },
-        data: { status: 'Completed', approved_by: userId, approved_at: new Date() }
+        data: { status: 'Approved' }
       });
-      // Simple valuation logic for adjustments (assuming unit_cost exists, skipping if not)
-      let adjustmentValue = 0;
-      let type: 'ADJUSTMENT_LOSS' | 'ADJUSTMENT_GAIN' = 'ADJUSTMENT_LOSS';
-      for(const item of transaction.items) {
-         const diff = item.difference || 0;
-         if (diff !== 0) {
-            // Fallback to 0 if no unit_cost mapping.
-            const val = Math.abs(diff) * (item.unit_cost || 0);
-            adjustmentValue += val;
-            if (diff > 0) type = 'ADJUSTMENT_GAIN';
-            else type = 'ADJUSTMENT_LOSS';
-         }
-      }
-      if (adjustmentValue > 0) {
-         await this.eventEmitter.emitAsync('inventory.valuation', new InventoryValuationEvent(companyId, id, 'EVT-' + Date.now(), new Date(), { type, totalValue: adjustmentValue }, tx as any));
-      }
-      return updated;
+
+      return transaction;
     });
   }
 
@@ -602,6 +388,7 @@ export class InventoryService {
       });
 
       for (const item of data.items) {
+          if (item.qty <= 0) throw new BadRequestException('Quantity must be greater than 0');
         await tx.inventoryTransactionItem.create({
           data: {
             transaction_id: transaction.id,
@@ -807,7 +594,7 @@ export class InventoryService {
         product_id: params.productId,
         transaction_type: params.referenceType,
         transaction_id: params.referenceId,
-        movement_type: params.referenceType + '_IN',
+        movement_type: params.referenceType === 'IN' ? 'IN' : params.referenceType + '_IN',
         qty_in: params.quantity,
         qty_out: 0,
         balance_after: stock.current_stock + params.quantity,
@@ -861,7 +648,7 @@ export class InventoryService {
         product_id: params.productId,
         transaction_type: params.referenceType,
         transaction_id: params.referenceId,
-        movement_type: params.referenceType + '_OUT',
+        movement_type: params.referenceType === 'OUT' ? 'OUT' : params.referenceType + '_OUT',
         qty_in: 0,
         qty_out: params.quantity,
         balance_after: stock.current_stock - params.quantity,
@@ -995,14 +782,14 @@ export class InventoryService {
     const movOut = await tx.stockMovement.create({
       data: {
         company_id: params.companyId, warehouse_id: params.sourceWarehouseId, product_id: params.productId,
-        transaction_type: params.referenceType, transaction_id: params.referenceId, movement_type: params.referenceType + '_OUT',
+        transaction_type: params.referenceType, transaction_id: params.referenceId, movement_type: params.referenceType === 'OUT' ? 'OUT' : params.referenceType + '_OUT',
         qty_in: 0, qty_out: params.quantity, balance_after: sourceStock.current_stock - params.quantity, created_by: params.userId, remarks: params.description
       }
     });
     const movIn = await tx.stockMovement.create({
       data: {
         company_id: params.companyId, warehouse_id: params.targetWarehouseId, product_id: params.productId,
-        transaction_type: params.referenceType, transaction_id: params.referenceId, movement_type: params.referenceType + '_IN',
+        transaction_type: params.referenceType, transaction_id: params.referenceId, movement_type: params.referenceType === 'IN' ? 'IN' : params.referenceType + '_IN',
         qty_in: params.quantity, qty_out: 0, balance_after: targetStock.current_stock + params.quantity, created_by: params.userId, remarks: params.description
       }
     });

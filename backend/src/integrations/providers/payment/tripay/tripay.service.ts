@@ -131,10 +131,17 @@ export class TripayService {
     const integrationData = await this.getIntegration(companyId);
     const config: any = integrationData.integration.config || {};
     const privateKey = config.privateKey;
+
     if (!privateKey) {
       await this.webhook.markFailed(event.id, 'Missing Private Key', 1);
       return { success: false, message: 'Internal config error' };
     }
+
+    const expectedSignature = crypto.createHmac('sha256', privateKey).update(JSON.stringify(body)).digest('hex');
+    if (signatureHeader !== expectedSignature) {
+      return { success: false, message: 'Invalid signature' };
+    }
+
 
     return this.reconcilePayment(companyId, integrationId, extRef, body, event.id, 'WEBHOOK');
   }
