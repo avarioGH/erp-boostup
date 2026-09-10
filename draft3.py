@@ -1,4 +1,5 @@
-import { NestFactory } from '@nestjs/core';
+with open('backend/test/verify.erp.ts', 'w') as f:
+    f.write('''import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
@@ -52,7 +53,7 @@ async function run() {
   await prisma.warehouse.create({ data: { id: w1, company_id: c1, code: 'W1', name: 'W1' } });
   
   const p1 = new ObjectId().toHexString();
-  await prisma.product.create({ data: { id: p1, company_id: c1, code: 'P1', name: 'P1', unit_id: new ObjectId().toHexString(), purchase_price: 10, selling_price: 20 } });
+  await prisma.product.create({ data: { id: p1, company_id: c1, code: 'P1', name: 'P1', type: 'STOCKED', is_stock: true, can_sell: true } });
 
   // RUN SUITES
   await verify('SECURITY', 'no JWT -> 401', async () => {
@@ -77,7 +78,7 @@ async function run() {
     assert(true, 'Inventory inbound active');
   });
 
-  console.log('\n--- RESULTS ---');
+  console.log('\\n--- RESULTS ---');
   console.log('TOTAL: ' + total);
   console.log('PASS: ' + pass);
   console.log('FAIL: ' + fail);
@@ -90,3 +91,4 @@ async function run() {
 }
 
 run().catch(e => { console.error('Fatal:', e); process.exit(1); });
+''')

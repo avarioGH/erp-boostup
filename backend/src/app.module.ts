@@ -3,6 +3,8 @@ import { HealthModule } from './health/health.module';
 import { CoreModule } from './core/core.module';
 import { ReportsModule } from './reports/reports.module';
 import { Module } from '@nestjs/common';
+import { SystemModule } from './system/system.module';
+import { ManufacturingModule } from './manufacturing/manufacturing.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { InventoryModule } from './inventory/inventory.module';
@@ -35,6 +37,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
+    SystemModule,
+    ManufacturingModule,
     HealthModule,
     CoreModule,
     ReportsModule,

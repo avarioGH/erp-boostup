@@ -68,7 +68,7 @@ export default function CashReconciliationPage() {
                   <td className="px-2">{row.mappedAccount || <span className="text-gray-400">Unmapped</span>}</td>
                   <td className="font-mono px-2">{formatCurrency(row.operationalBalance)}</td>
                   <td className="font-mono px-2">{formatCurrency(row.glBalance)}</td>
-                  <td className=\ont-mono px-2 \\>
+                  <td className="font-mono px-2">
                     {formatCurrency(row.difference)}
                   </td>
                   <td className="px-2">

@@ -243,6 +243,8 @@ model User {
 }
 
 model Warehouse {
+  manufacturing_orders ManufacturingOrder[]
+  material_reservations MaterialReservation[]
   id          String  @id @default(auto()) @map("_id") @db.ObjectId
   company_id  String  @db.ObjectId
   company     Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -355,6 +357,12 @@ model Brand {
 }
 
 model Product {
+  boms Bom[]
+  bom_items BomItem[]
+  manufacturing_orders ManufacturingOrder[]
+  manufacturing_order_items ManufacturingOrderItem[]
+  quality_control_points QualityControlPoint[]
+  material_reservations MaterialReservation[]
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
   company_id  String    @db.ObjectId
   company     Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -2282,4 +2290,137 @@ model CheckoutIdempotency {
   sales_order_id       String @db.ObjectId
 
   @@unique([company_id, ecommerce_session_id])
+}
+
+model Bom {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  company_id      String      @db.ObjectId
+  product_id      String      @db.ObjectId
+  product Product @relation(fields: [product_id], references: [id])
+  code            String
+  name            String
+  quantity        Float
+  unit_id         String      @db.ObjectId
+  status          String
+  items           BomItem[]
+  manufacturing_orders ManufacturingOrder[]
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+}
+
+model BomItem {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  bom_id          String      @db.ObjectId
+  bom             Bom         @relation(fields: [bom_id], references: [id])
+  product_id      String      @db.ObjectId
+  product Product @relation(fields: [product_id], references: [id])
+  quantity        Float
+  unit_id         String      @db.ObjectId
+}
+
+model ManufacturingOrder {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  company_id      String      @db.ObjectId
+  order_number    String
+  product_id      String      @db.ObjectId
+  product Product @relation(fields: [product_id], references: [id])
+  bom_id          String      @db.ObjectId
+  bom             Bom         @relation(fields: [bom_id], references: [id])
+  warehouse_id    String      @db.ObjectId
+  warehouse       Warehouse   @relation(fields: [warehouse_id], references: [id])
+  planned_quantity Float
+  produced_quantity Float @default(0)
+  actual_start_date DateTime?
+  actual_end_date DateTime?
+  unit_id         String      @db.ObjectId
+  status          String
+  reservation_status String?
+  items           ManufacturingOrderItem[]
+  material_reservations MaterialReservation[]
+  work_orders     ManufacturingWorkOrder[]
+  quality_checks  QualityCheck[]
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+}
+
+model ManufacturingOrderItem {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  manufacturing_order_id String @db.ObjectId
+  manufacturing_order    ManufacturingOrder @relation(fields: [manufacturing_order_id], references: [id])
+  product_id      String      @db.ObjectId
+  product Product @relation(fields: [product_id], references: [id])
+  required_quantity Float
+  consumed_quantity Float @default(0)
+  unit_id         String      @db.ObjectId
+}
+
+model WorkCenter {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  company_id      String      @db.ObjectId
+  code            String
+  name            String
+  capacity_per_hour Float?
+  cost_per_hour   Float?
+  status          String
+  work_orders     ManufacturingWorkOrder[]
+}
+
+model ManufacturingWorkOrder {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  company_id      String      @db.ObjectId
+  manufacturing_order_id String @db.ObjectId
+  manufacturing_order    ManufacturingOrder @relation(fields: [manufacturing_order_id], references: [id])
+  work_center_id  String      @db.ObjectId
+  work_center     WorkCenter  @relation(fields: [work_center_id], references: [id])
+  operation_name  String
+  planned_start   DateTime?
+  planned_end     DateTime?
+  status          String
+  released_at     DateTime?
+  manufacturing_order_item_id String? @db.ObjectId
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+}
+
+model QualityControlPoint {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  company_id      String      @db.ObjectId
+  product_id      String      @db.ObjectId
+  product Product @relation(fields: [product_id], references: [id])
+  operation_name  String
+  check_type      String
+  criteria        String
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+}
+
+model QualityCheck {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  company_id      String      @db.ObjectId
+  manufacturing_order_id String? @db.ObjectId
+  manufacturing_order    ManufacturingOrder? @relation(fields: [manufacturing_order_id], references: [id])
+  control_point_id String?    @db.ObjectId
+  status          String
+  inspector_id    String?     @db.ObjectId
+  notes           String?
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+}
+
+model MaterialReservation {
+  id              String      @id @default(auto()) @map("_id") @db.ObjectId
+  company_id      String      @db.ObjectId
+  manufacturing_order_id String @db.ObjectId
+  manufacturing_order    ManufacturingOrder @relation(fields: [manufacturing_order_id], references: [id])
+  product_id      String      @db.ObjectId
+  product Product @relation(fields: [product_id], references: [id])
+  warehouse_id    String      @db.ObjectId
+  warehouse       Warehouse   @relation(fields: [warehouse_id], references: [id])
+  reserved_quantity Float
+  consumed_quantity Float @default(0)
+  status          String
+  released_at     DateTime?
+  manufacturing_order_item_id String? @db.ObjectId
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
 }

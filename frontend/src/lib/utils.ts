@@ -10,3 +10,6 @@ export function formatIDR(amount: number | string): string {
   if (isNaN(num)) return 'Rp0';
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
 }
+
+export const formatCurrency = formatIDR;
+
