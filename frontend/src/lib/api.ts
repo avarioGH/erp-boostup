@@ -171,6 +171,8 @@ export const ApprovalAPI: any = {
 export default api;
 
 export const TimberAPI: any = {
+  getDashboardSummary: async () => (await api.get('/inventory/reports/summary')).data,
+  getStockSummary: async (params?: any) => (await api.get('/inventory/reports/stock-summary', { params })).data,
   getRawLogs: async (params?: any) => (await api.get('/inventory/logs', { params })).data,
   getRawLog: async (id: string) => (await api.get('/inventory/logs/' + id)).data,
   getTrimmedLogs: async (params?: any) => (await api.get('/inventory/trimming', { params })).data,
@@ -209,6 +211,7 @@ export const TimberAPI: any = {
   createRawLog: async (data: any) => (await api.post('/inventory/logs', data)).data,
   cancelRawLog: async (id: string) => (await api.post('/inventory/logs/' + id + '/cancel')).data,
 };
+
 
 
 
