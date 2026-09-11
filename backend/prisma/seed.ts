@@ -32,6 +32,17 @@ async function main() {
     }
   });
 
+  let permAll = await prisma.permission.findUnique({ where: { name: '*' } });
+  if (!permAll) {
+    permAll = await prisma.permission.create({ data: { name: '*', description: 'Super Admin Access' } });
+  }
+  
+  await prisma.rolePermission.upsert({
+    where: { role_id_permission_id: { role_id: ownerRole.id, permission_id: permAll.id } },
+    update: {},
+    create: { role_id: ownerRole.id, permission_id: permAll.id }
+  });
+
   const owner = await prisma.user.upsert({
     where: { username: 'owner' },
     update: {},
@@ -145,3 +156,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
