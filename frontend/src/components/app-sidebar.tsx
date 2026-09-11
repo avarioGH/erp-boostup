@@ -29,7 +29,7 @@ type MenuItem = {
   title: string;
   url: string;
   icon: any;
-  subItems?: { title: string; url: string; badge?: string }[];
+  subItems?: { title: string; url: string; badge?: string; type?: string }[];
   badge?: string;
   id?: string;
 }
@@ -49,21 +49,37 @@ const items: MenuItem[] = [
       { title: "Penerimaan Barang", url: "/purchasing/receipts" }
     ]
   },
-          { 
+              { 
       title: "Inventory (Timber & Logs)", 
-      url: "/inventory/logs", 
+      url: "/inventory/dashboard", 
       icon: Box,
       id: "inventory",
       subItems: [
         { title: "Dashboard", url: "/inventory/dashboard" },
+        
+        { title: "Log Kayu", url: "#", type: "label" },
+        { title: "Log Datang / Receiving", url: "/inventory/receiving" },
         { title: "Raw Logs (DUKB)", url: "/inventory/logs" },
         { title: "Log Trimming", url: "/inventory/trimming" },
+        
+        { title: "Produksi Log", url: "#", type: "label" },
         { title: "Input Logs (WIP)", url: "/inventory/input-logs" },
-        { title: "Sawn Timber Stock", url: "/inventory/timber-stock" },
+        { title: "Sawn Timber Output", url: "/inventory/sawn-timber/output" },
+        
+        { title: "Stock Kayu", url: "#", type: "label" },
+        { title: "Finished Timber Stock", url: "/inventory/timber-stock" },
         { title: "Stock Movements", url: "/inventory/movements" },
         { title: "Stock Adjustments", url: "/inventory/adjustments" },
         { title: "Location Management", url: "/inventory/warehouses" },
-        { title: "Data Import (Excel)", url: "/inventory/import" }
+        
+        { title: "Report & Traceability", url: "#", type: "label" },
+        { title: "Inventory Reports", url: "/inventory/reports" },
+        { title: "Stock Card", url: "/inventory/stock-card" },
+        { title: "Log Traceability", url: "/inventory/traceability" },
+        
+        { title: "Data & Audit", url: "#", type: "label" },
+        { title: "Data Import (Excel)", url: "/inventory/import" },
+        { title: "Audit Log", url: "/inventory/audit" }
       ]
     },
 
@@ -226,7 +242,14 @@ export function AppSidebar() {
                     />
                     {item.subItems && (
                       <SidebarMenuSub className="border-l border-border ml-[1.1rem] mt-1.5 mb-3 pl-3">
-                        {item.subItems.map((subItem) => {
+                                                {item.subItems.map((subItem) => {
+                          if (subItem.type === 'label') {
+                            return (
+                              <div key={subItem.title} className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mt-4 mb-1.5 px-2">
+                                {subItem.title}
+                              </div>
+                            )
+                          }
                           const subActive = pathname === subItem.url
                           return (
                             <SidebarMenuSubItem key={subItem.title}>
@@ -295,6 +318,7 @@ export function AppSidebar() {
     </Sidebar>
   )
 }
+
 
 
 
