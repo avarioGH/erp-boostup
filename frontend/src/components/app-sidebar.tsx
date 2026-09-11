@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -58,7 +58,7 @@ const items: MenuItem[] = [
         { title: "Dashboard", url: "/inventory/dashboard" },
         
         { title: "Log Kayu", url: "#", type: "label" },
-        { title: "Log Datang / Receiving", url: "/inventory/receiving" },
+        { title: "Log Datang / Receiving", url: "/inventory/logs" },
         { title: "Raw Logs (DUKB)", url: "/inventory/logs" },
         { title: "Log Trimming", url: "/inventory/trimming" },
         
@@ -74,7 +74,7 @@ const items: MenuItem[] = [
         
         { title: "Report & Traceability", url: "#", type: "label" },
         { title: "Inventory Reports", url: "/inventory/reports" },
-        { title: "Stock Card", url: "/inventory/stock-card" },
+        { title: "Stock Card", url: "/inventory/timber-stock" },
         { title: "Log Traceability", url: "/inventory/traceability" },
         
         { title: "Data & Audit", url: "#", type: "label" },
@@ -318,6 +318,7 @@ export function AppSidebar() {
     </Sidebar>
   )
 }
+
 
 
 

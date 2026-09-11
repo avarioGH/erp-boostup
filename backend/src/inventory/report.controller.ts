@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Param } from '@nestjs/common';
+﻿import { Controller, Get, Query, Param } from '@nestjs/common';
 import { ReportService } from './report.service';
 
 @Controller('inventory/reports')
@@ -45,5 +45,20 @@ export class ReportController {
   @Get('stock-aging')
   async getStockAgingReport() {
     return this.reportService.getStockAgingReport();
+  }
+
+  @Get('traceability')
+  async getTraceabilityReport(@Query('search') search: string) {
+    return this.reportService.getTraceabilityReport(search);
+  }
+
+  @Get('daily-monitoring')
+  async getDailyMonitoring(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string
+  ) {
+    const sDate = startDate ? new Date(startDate) : undefined;
+    const eDate = endDate ? new Date(endDate) : undefined;
+    return this.reportService.getDailySawmillMonitoring({ startDate: sDate, endDate: eDate });
   }
 }

@@ -38,4 +38,26 @@ describe('TimberCalculationService', () => {
     const vol2 = service.calculateTimberStockVolume(30, 112, 4100, 15);
     expect(vol2).toBe(0.20664);
   });
+
+  it('should pass regression test for zero-net volume rounding bug', () => {
+    // Length 11, D1 39, D2 43, D3 25, D4 32, Gerowong 35, Trimming 1.5
+    const avg = service.calculateAverageDiameter(39, 43, 25, 32);
+    expect(avg).toBe(34.75);
+
+    const rnd = service.calculateRoundedDiameter(avg);
+    expect(rnd).toBe(35);
+
+    const gross = service.calculateRawLogGrossVolume(rnd, 11);
+    expect(gross).toBe(1.06);
+
+    const gerowong = service.calculateGerowongVolume(35, 11, 1.5);
+    expect(gerowong).toBe(0.91);
+
+    const trimming = service.calculateTrimmingVolume(rnd, 1.5);
+    expect(trimming).toBe(0.14);
+
+    const net = service.calculateRawLogNetVolume(gross, gerowong, trimming);
+    // 1.06 - 0.91 - 0.14 = 0.01
+    expect(net).toBe(0.01);
+  });
 });

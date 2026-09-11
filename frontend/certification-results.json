@@ -1,0 +1,13 @@
+{
+  "tests": {
+    "total": 12,
+    "passed": 4,
+    "failed": 8,
+    "skipped": 0
+  },
+  "assertions": {
+    "total": 52,
+    "passed": 44,
+    "failed": 8
+  }
+}
