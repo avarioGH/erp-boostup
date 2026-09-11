@@ -89,9 +89,9 @@ export default function OwnerDashboard() {
         setErrorState(null)
         const data = await DashboardAPI.getKPIs('thisMonth', warehouse)
         setKpi(data)
-      } catch (error) {
+      } catch (error: any) {
         console.error("Database connection failed:", error)
-        setErrorState(error.response?.status === 403 ? "FORBIDDEN" : "NETWORK_ERROR")
+        setErrorState((error as any).response?.status === 403 ? "FORBIDDEN" : "NETWORK_ERROR")
       } finally {
         setLoading(false)
       }
@@ -550,5 +550,6 @@ export default function OwnerDashboard() {
     </div>
   )
 }
+
 
 
