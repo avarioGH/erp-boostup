@@ -9,32 +9,32 @@ import AiAssistant from "@/components/AiAssistant";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "ERP Boostup",
-  description: "Enterprise SaaS ERP",
+ title: "ERP Boostup",
+ description: "Enterprise SaaS ERP",
 };
 
 export default function RootLayout({
-  children,
+ children,
 }: Readonly<{
-  children: React.ReactNode;
+ children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <LanguageProvider>
-            <AuthWrapper>
-              {children}
-              <AiAssistant />
-            </AuthWrapper>
-          </LanguageProvider>
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+ return (
+ <html lang="en" suppressHydrationWarning>
+ <body className={inter.className}>
+ <ThemeProvider
+ attribute="class"
+ defaultTheme="system"
+ enableSystem
+ disableTransitionOnChange
+ >
+ <LanguageProvider>
+ <AuthWrapper>
+ {children}
+ <AiAssistant />
+ </AuthWrapper>
+ </LanguageProvider>
+ </ThemeProvider>
+ </body>
+ </html>
+ );
 }
