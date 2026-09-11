@@ -28,7 +28,7 @@ export default function StockCardSelection() {
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <label className="text-sm font-medium">Timber Product (SKU / Variant)</label>
-            <Select onValueChange={(v) => setVariantId(v || "")}>
+            <Select onValueChange={(v: any) => setVariantId((v as string) || "")}>
               <SelectTrigger><SelectValue placeholder="Select Product..." /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="v1">Meranti 4x20x400</SelectItem>
@@ -40,7 +40,7 @@ export default function StockCardSelection() {
           
           <div className="space-y-2">
             <label className="text-sm font-medium">Location / Warehouse</label>
-            <Select onValueChange={(v) => setLocationId(v || "")}>
+            <Select onValueChange={(v: any) => setLocationId((v as string) || "")}>
               <SelectTrigger><SelectValue placeholder="Select Location..." /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="loc1">Gudang Utama (A)</SelectItem>
@@ -57,4 +57,5 @@ export default function StockCardSelection() {
     </div>
   );
 }
+
 
