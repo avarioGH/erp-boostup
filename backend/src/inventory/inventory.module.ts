@@ -18,6 +18,8 @@ import { ImportService } from './import/import.service';
 import { ReportService } from './report.service';
 import { ReportController } from './report.controller';
 import { TimberCalculationService } from './timber-calculation.service';
+import { SawmillProductionController } from './sawmill-production.controller';
+import { SawmillProductionService } from './sawmill-production.service';
 
 @Module({
   controllers: [
@@ -28,7 +30,8 @@ import { TimberCalculationService } from './timber-calculation.service';
     SawnTimberController,
     TimberLedgerController,
     ImportController,
-    ReportController
+    ReportController,
+    SawmillProductionController
   ],
   providers: [
     InventoryService, 
@@ -41,7 +44,8 @@ import { TimberCalculationService } from './timber-calculation.service';
     StockAdjustmentService,
     ImportService,
     ReportService,
-    TimberCalculationService
+    TimberCalculationService,
+    SawmillProductionService
   ],
   exports: [
     InventoryService, 
@@ -54,7 +58,8 @@ import { TimberCalculationService } from './timber-calculation.service';
     StockAdjustmentService,
     ImportService,
     ReportService,
-    TimberCalculationService
+    TimberCalculationService,
+    SawmillProductionService
   ]
 })
 export class InventoryModule {}

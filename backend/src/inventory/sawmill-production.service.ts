@@ -119,6 +119,92 @@ export class SawmillProductionService {
     });
   }
 
+    async listProductionRuns(params: { skip?: number; take?: number; search?: string; status?: string; shift?: string; operatorId?: string; workCenterId?: string; dateFrom?: string; dateTo?: string }) {
+    const { skip = 0, take = 50, search, status, shift, operatorId, workCenterId, dateFrom, dateTo } = params;
+    const where: any = {};
+    if (search) where.productionNo = { contains: search, mode: 'insensitive' };
+    if (status) where.status = status;
+    if (shift) where.shift = shift;
+    if (operatorId) where.operatorId = operatorId;
+    if (workCenterId) where.workCenterId = workCenterId;
+    if (dateFrom || dateTo) {
+      where.productionDate = {};
+      if (dateFrom) where.productionDate.gte = new Date(dateFrom);
+      if (dateTo) where.productionDate.lte = new Date(dateTo);
+    }
+    
+    const [items, total] = await Promise.all([
+      this.prisma.sawmillProductionRun.findMany({
+        where, skip: Number(skip), take: Number(take), orderBy: { createdAt: 'desc' },
+        include: { operator: true, workCenter: true }
+      }),
+      this.prisma.sawmillProductionRun.count({ where })
+    ]);
+    return { items, total, skip: Number(skip), take: Number(take) };
+  }
+
+  async getProductionRunDetail(id: string) {
+    const run = await this.prisma.sawmillProductionRun.findUnique({
+      where: { id },
+      include: {
+        operator: true,
+        workCenter: true,
+        consumptions: { include: { inputLog: true } },
+        outputItems: { include: { bundle: true, timberVariant: true } }
+      }
+    });
+    if (!run) throw new NotFoundException('Production run not found');
+    return run;
+  }
+
+  async updateDraft(id: string, data: any) {
+    // Only basic update provided as placeholder; real implementation would handle diffing items/consumptions
+    const run = await this.prisma.sawmillProductionRun.findUnique({ where: { id } });
+    if (!run) throw new NotFoundException('Production run not found');
+    if (run.status !== 'DRAFT') throw new BadRequestException('Only DRAFT can be updated');
+    
+    // Simplification for Phase 15B: just update header fields. Full item sync would require deleting/re-adding.
+    return this.prisma.sawmillProductionRun.update({
+      where: { id },
+      data: {
+        productionDate: data.productionDate ? new Date(data.productionDate) : undefined,
+        shift: data.shift,
+        operatorId: data.operatorId,
+        workCenterId: data.workCenterId,
+        notes: data.notes
+      }
+    });
+  }
+
+  async listAvailableInputLogs() {
+    const logs = await this.prisma.inputLog.findMany({
+      where: { status: 'AVAILABLE' }, // or similar
+      include: { sawmillConsumptions: true }
+    });
+    
+    return logs.map(log => {
+      const consumed = log.sawmillConsumptions.reduce((s, c) => s + c.consumedM3, 0);
+      return {
+        ...log,
+        consumedVolume: consumed,
+        remainingVolume: Math.max(0, log.totalVolume - consumed)
+      };
+    }).filter(log => log.remainingVolume > 0);
+  }
+
+  async getBundleDetail(id: string) {
+    const bundle = await this.prisma.sawmillBundle.findUnique({
+      where: { id },
+      include: {
+        parentBundle: true,
+        childBundles: true,
+        outputItems: { include: { timberVariant: true } }
+      }
+    });
+    if (!bundle) throw new NotFoundException('Bundle not found');
+    return bundle;
+  }
+
   async postProductionRun(id: string, locationId: string) {
     return this.prisma.$transaction(async (tx) => {
       const run = await tx.sawmillProductionRun.findUnique({
@@ -162,6 +248,7 @@ export class SawmillProductionService {
       });
       if (!run) throw new NotFoundException('Production run not found');
       if (run.status === 'CANCELLED') throw new BadRequestException('Already cancelled');
+      if (run.status === 'DRAFT') throw new BadRequestException('DRAFT cannot be cancelled. Delete it instead.');
 
       if (run.status === 'POSTED') {
         for (const item of run.outputItems) {
@@ -190,3 +277,4 @@ export class SawmillProductionService {
     });
   }
 }
+

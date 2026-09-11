@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -58,8 +58,7 @@ const items: MenuItem[] = [
         { title: "Dashboard", url: "/inventory/dashboard" },
         
         { title: "Log Kayu", url: "#", type: "label" },
-        { title: "Log Datang / Receiving", url: "/inventory/logs" },
-        { title: "Raw Logs (DUKB)", url: "/inventory/logs" },
+        { title: "Log Datang (DUKB)", url: "/inventory/logs" },
         { title: "Log Trimming", url: "/inventory/trimming" },
         
         { title: "Produksi Log", url: "#", type: "label" },

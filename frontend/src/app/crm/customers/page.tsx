@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { api, B2BApi } from "@/lib/api"
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -8,11 +8,14 @@ import { Label } from "@/components/ui/label"
 import { Plus, Search, Filter, Phone, Mail, MapPin, Building2, ChevronLeft, ArrowRight, User } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
+import { useDataTable } from "@/hooks/use-data-table"
+import { PaginationControls } from "@/components/ui/pagination-controls"
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
+  const [totalPages, setTotalPages] = useState(1)
+  const { page, limit, search, status, inputValue, setInputValue, handlePageChange, handleStatusChange } = useDataTable({ defaultLimit: 12 })
   const router = useRouter()
 
   // Form states
@@ -24,8 +27,9 @@ export default function CustomersPage() {
   const fetchCustomers = async () => {
     try {
       setLoading(true)
-      const res = await api.get("/customers")
-      setCustomers(res.data)
+      const res = await api.get(`/customers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&status=${status}`)
+      setCustomers(res.data.data || res.data)
+      setTotalPages(res.data.totalPages || 1)
     } catch (e) {
       console.error(e)
     } finally {
@@ -35,7 +39,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     fetchCustomers()
-  }, [])
+  }, [page, limit, search, status])
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,11 +57,7 @@ export default function CustomersPage() {
     }
   }
 
-  const filteredCustomers = customers.filter(c => 
-    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredCustomers = customers
 
   return (
     <div className="space-y-6">
@@ -113,8 +113,8 @@ export default function CustomersPage() {
                   type="search" 
                   placeholder="Search customers..." 
                   className="pl-8" 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
                 />
               </div>
               <Button variant="outline" size="icon">
@@ -135,7 +135,7 @@ export default function CustomersPage() {
               <Building2 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
               <h3 className="font-medium text-lg">No customers found</h3>
               <p className="text-muted-foreground text-sm max-w-sm mx-auto mt-1">
-                {searchTerm ? "Try adjusting your search filters." : "Create your first customer to get started with CRM and Sales."}
+                {inputValue ? "Try adjusting your search filters." : "Create your first customer to get started with CRM and Sales."}
               </p>
             </div>
           ) : (
@@ -174,6 +174,8 @@ export default function CustomersPage() {
                 </tbody>
               </table>
             </div>
+            <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
+            <div className=""></div>
           )}
         </CardContent>
       </Card>

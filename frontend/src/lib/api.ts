@@ -217,3 +217,14 @@ export const TimberAPI: any = {
 
 
 
+
+export const SawmillProductionAPI: any = {
+  getRuns: async (params?: any) => (await api.get('/production/sawmill/runs', { params })).data,
+  getRun: async (id: string) => (await api.get(`/production/sawmill/runs/${id}`)).data,
+  createRun: async (data: any) => (await api.post('/production/sawmill/runs', data)).data,
+  updateRun: async (id: string, data: any) => (await api.patch(`/production/sawmill/runs/${id}`, data)).data,
+  postRun: async (id: string, data: { locationId: string }) => (await api.post(`/production/sawmill/runs/${id}/post`, data)).data,
+  cancelRun: async (id: string, data: { locationId: string }) => (await api.post(`/production/sawmill/runs/${id}/cancel`, data)).data,
+  getAvailableInputLogs: async () => (await api.get('/production/sawmill/input-logs/available')).data,
+  getBundle: async (id: string) => (await api.get(`/production/sawmill/bundles/${id}`)).data,
+};

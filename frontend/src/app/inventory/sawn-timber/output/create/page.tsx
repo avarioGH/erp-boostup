@@ -112,17 +112,39 @@ export default function CreateOutputPage() {
         </div>
 
         <div className="space-y-6">
-          <Card className="shadow-sm border-indigo-200 bg-indigo-50/30">
-            <CardHeader className="border-b border-indigo-100 pb-4"><CardTitle className="text-lg flex items-center gap-2 text-indigo-800"><Calculator className="w-5 h-5"/> Live Preview</CardTitle></CardHeader>
+          <Card className="shadow-sm border border-primary/20 bg-card">
+            <CardHeader className="border-b pb-4">
+              <CardTitle className="text-lg flex items-center gap-2 text-primary">
+                <Calculator className="w-5 h-5"/> Live Preview
+              </CardTitle>
+            </CardHeader>
             <CardContent className="pt-6 space-y-4">
-              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Dimensions</span><span className="font-bold">{item.thickness || 0} &times; {item.width || 0} &times; {item.length || 0}</span></div>
-              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Quantity</span><span className="font-medium">{item.quantityPcs || 0} PCS</span></div>
-              <hr className="border-indigo-100" />
-              <div className="flex justify-between items-center"><span className="text-sm font-bold text-indigo-900">Calculated M&sup3;</span><span className="font-bold text-2xl text-indigo-700">{preview > 0 ? preview.toFixed(6) : 0}</span></div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Dimensions</span>
+                <span className="font-bold text-foreground">
+                  {item.thickness || 0} &times; {item.width || 0} &times; {item.length || 0}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Quantity</span>
+                <span className="font-medium text-foreground">{item.quantityPcs || 0} PCS</span>
+              </div>
+              <hr className="border-border" />
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-bold text-foreground">Calculated M&sup3;</span>
+                <span className="font-bold text-2xl text-primary">
+                  {preview > 0 ? preview.toFixed(6) : "0"}
+                </span>
+              </div>
             </CardContent>
           </Card>
-          <Button type="submit" disabled={submitting || preview <= 0 || !form.inputLogId} className="w-full bg-indigo-600 hover:bg-indigo-700 h-12 text-lg">
-            {submitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} Create Output (DRAFT)
+          <Button
+            type="submit"
+            disabled={submitting || preview <= 0 || !form.inputLogId}
+            className="w-full h-12 text-lg"
+          >
+            {submitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />}
+            Create Output (DRAFT)
           </Button>
         </div>
       </form>

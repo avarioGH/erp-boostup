@@ -142,72 +142,12 @@ export default function OwnerDashboard() {
     )
   }
 
-  if (loading) {
+  if (loading && !kpi) {
     return (
-              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in zoom-in duration-300">
-          <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
-            <AlertTriangle className="w-10 h-10 text-destructive" />
-          </div>
-          <h2 className="text-xl font-bold text-foreground mb-2">
-            {errorState === "FORBIDDEN" ? "Sesi Berubah / Akses Ditolak" : "Koneksi Database Terputus"}
-          </h2>
-          <p className="text-muted-foreground max-w-md mb-8 text-sm">
-            {errorState === "FORBIDDEN" 
-              ? "Terdapat pembaruan hak akses di sistem. Silakan LOGOUT lalu LOGIN KEMBALI menggunakan akun Anda untuk menyinkronkan akses." 
-              : "Aplikasi gagal mengambil data real dari server MongoDB. Pastikan database Anda sedang berjalan."}
-          </p>
-          <div className="flex gap-4">
-            <button 
-              onClick={() => window.location.reload()}
-              className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm shadow-sm"
-            >
-              <RefreshCcw className="w-4 h-4" /> Coba Lagi
-            </button>
-            {errorState === "FORBIDDEN" && (
-              <button 
-                onClick={() => { localStorage.clear(); window.location.href = '/login'; }}
-                className="bg-slate-800 text-white px-5 py-2 rounded-md font-medium hover:bg-slate-900 transition-colors flex items-center gap-2 text-sm shadow-sm"
-              >
-                Logout Sekarang
-              </button>
-            )}
-          </div>
-        </div>
-      )
-  }
-
-  if (errorState) {
-    return (
-              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in zoom-in duration-300">
-          <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
-            <AlertTriangle className="w-10 h-10 text-destructive" />
-          </div>
-          <h2 className="text-xl font-bold text-foreground mb-2">
-            {errorState === "FORBIDDEN" ? "Sesi Berubah / Akses Ditolak" : "Koneksi Database Terputus"}
-          </h2>
-          <p className="text-muted-foreground max-w-md mb-8 text-sm">
-            {errorState === "FORBIDDEN" 
-              ? "Terdapat pembaruan hak akses di sistem. Silakan LOGOUT lalu LOGIN KEMBALI menggunakan akun Anda untuk menyinkronkan akses." 
-              : "Aplikasi gagal mengambil data real dari server MongoDB. Pastikan database Anda sedang berjalan."}
-          </p>
-          <div className="flex gap-4">
-            <button 
-              onClick={() => window.location.reload()}
-              className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm shadow-sm"
-            >
-              <RefreshCcw className="w-4 h-4" /> Coba Lagi
-            </button>
-            {errorState === "FORBIDDEN" && (
-              <button 
-                onClick={() => { localStorage.clear(); window.location.href = '/login'; }}
-                className="bg-slate-800 text-white px-5 py-2 rounded-md font-medium hover:bg-slate-900 transition-colors flex items-center gap-2 text-sm shadow-sm"
-              >
-                Logout Sekarang
-              </button>
-            )}
-          </div>
-        </div>
-      )
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
   }
 
   // Use data strictly from API (No hardcoded dummy arrays)
@@ -225,9 +165,22 @@ export default function OwnerDashboard() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard Bisnis</h1>
           <p className="text-muted-foreground mt-1 text-sm">Pantau seluruh performa bisnis dan pergerakan aset Anda.</p>
         </div>
-        <div className="flex items-center gap-3 bg-card p-1.5 rounded-lg border border-border shadow-sm">
-          <span className="text-xs font-semibold text-muted-foreground pl-3 hidden sm:inline-block uppercase tracking-wider">Cabang:</span>
-          <Select value={warehouse} onValueChange={(val) => setWarehouse(val as string)}>
+        <div className="flex items-center gap-3">
+          {errorState && (
+            <div className="flex items-center gap-1.5 bg-destructive/10 text-destructive px-3 py-1.5 rounded-lg border border-destructive/20 text-xs font-semibold animate-pulse">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              {errorState === "FORBIDDEN" ? "Akses Ditolak" : "Mode Offline"}
+            </div>
+          )}
+          {!errorState && !loading && kpi && (
+            <div className="flex items-center gap-1.5 bg-success/10 text-success px-3 py-1.5 rounded-lg border border-success/20 text-xs font-semibold">
+              <CheckCircle className="w-3.5 h-3.5" />
+              Connected
+            </div>
+          )}
+          <div className="flex items-center gap-3 bg-card p-1.5 rounded-lg border border-border shadow-sm">
+            <span className="text-xs font-semibold text-muted-foreground pl-3 hidden sm:inline-block uppercase tracking-wider">Cabang:</span>
+            <Select value={warehouse} onValueChange={(val) => setWarehouse(val as string)}>
             <SelectTrigger className="w-[180px] border-none bg-accent focus:ring-0 focus:ring-offset-0 h-8 text-sm font-medium">
               <SelectValue placeholder="Pilih Gudang" />
             </SelectTrigger>

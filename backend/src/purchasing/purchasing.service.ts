@@ -9,19 +9,32 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PurchasingService {
   constructor(private prisma: PrismaService, private inventoryService: InventoryService, private eventEmitter: EventEmitter2) {}
 
-  async getPurchaseRequests(companyId: string, page: number = 1, limit: number = 50) {
+  async getPurchaseRequests(companyId: string, page: number = 1, limit: number = 50, search?: string, status?: string) {
     const skip = (page - 1) * limit;
+    const where: any = { company_id: companyId };
+    
+    if (search) {
+      where.OR = [
+        { request_number: { contains: search, mode: 'insensitive' } },
+        { notes: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+    
+    if (status) {
+      where.status = status;
+    }
+
     const [data, total] = await Promise.all([
       (this.prisma.purchaseRequest as any).findMany({
-        where: { company_id: companyId },
+        where,
         include: { items: { include: { product: true } } },
         skip,
         take: limit,
         orderBy: { created_at: 'desc' },
       }),
-      (this.prisma.purchaseRequest as any).count({ where: { company_id: companyId } }),
+      (this.prisma.purchaseRequest as any).count({ where }),
     ]);
-    return { data, total, page, limit };
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async createPurchaseRequest(companyId: string, data: any) {
@@ -387,18 +400,32 @@ export class PurchasingService {
     };
   }
 
-  async findOrders(companyId: string, page: number = 1, limit: number = 10) {
+  async findOrders(companyId: string, page: number = 1, limit: number = 10, search?: string, status?: string) {
     const skip = (page - 1) * limit;
+    const where: any = { company_id: companyId };
+    
+    if (search) {
+      where.OR = [
+        { order_number: { contains: search, mode: 'insensitive' } },
+        { notes: { contains: search, mode: 'insensitive' } },
+        { supplier: { name: { contains: search, mode: 'insensitive' } } }
+      ];
+    }
+    
+    if (status) {
+      where.status = status;
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.purchaseOrder.findMany({
-        where: { company_id: companyId },
+        where,
         include: { supplier: true },
         skip, take: limit,
         orderBy: { created_at: 'desc' }
       }),
-      this.prisma.purchaseOrder.count({ where: { company_id: companyId } })
+      this.prisma.purchaseOrder.count({ where })
     ]);
-    return { data, total, page, limit };
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findOrder(companyId: string, id: string) {

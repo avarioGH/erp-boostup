@@ -368,6 +368,7 @@ model Brand {
 
 model Product {
   timberVariants            TimberVariant[]
+  purchase_request_items    PurchaseRequestItem[]
   boms                      Bom[]
   bom_items                 BomItem[]
   manufacturing_orders      ManufacturingOrder[]
@@ -2560,6 +2561,7 @@ model PurchaseRequestItem {
   purchase_request_id String          @db.ObjectId
   purchase_request    PurchaseRequest @relation(fields: [purchase_request_id], references: [id], onDelete: Cascade)
   product_id          String          @db.ObjectId
+  product             Product         @relation(fields: [product_id], references: [id])
   qty                 Float
   unit                String?
   notes               String?

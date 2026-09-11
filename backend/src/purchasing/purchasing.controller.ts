@@ -12,8 +12,14 @@ export class PurchasingController {
 
   @Permissions('purchasing.view')
   @Get('requests')
-  getPurchaseRequests(@Request() req: any, @Query('page') page: string, @Query('limit') limit: string) {
-    return this.service.getPurchaseRequests(req.user.companyId, +page || 1, +limit || 50);
+  getPurchaseRequests(
+    @Request() req: any, 
+    @Query('page') page: string, 
+    @Query('limit') limit: string,
+    @Query('search') search?: string,
+    @Query('status') status?: string
+  ) {
+    return this.service.getPurchaseRequests(req.user.companyId, +page || 1, +limit || 50, search, status);
   }
 
   @Permissions('purchasing.create')
@@ -48,8 +54,14 @@ export class PurchasingController {
 
   @Permissions('purchasing.order.view')
   @Get('orders')
-  findOrders(@Request() req: any, @Query('page') page: string, @Query('limit') limit: string) {
-    return this.service.findOrders(req.user.companyId, +page || 1, +limit || 10);
+  findOrders(
+    @Request() req: any, 
+    @Query('page') page: string, 
+    @Query('limit') limit: string,
+    @Query('search') search?: string,
+    @Query('status') status?: string
+  ) {
+    return this.service.findOrders(req.user.companyId, +page || 1, +limit || 10, search, status);
   }
 
   @Permissions('purchasing.order.view')
