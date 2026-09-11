@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
 import { Card, CardContent } from "@/components/ui/card"
@@ -10,7 +10,7 @@ export default function MovementsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    api.get('/inventory/movements?take=100')
+    api.get('/inventory/timber-movements?take=100')
       .then((res: any) => {
         const items = res.data?.items || res.data || [];
         setData(Array.isArray(items) ? items : []);
@@ -83,3 +83,4 @@ export default function MovementsPage() {
     </div>
   )
 }
+

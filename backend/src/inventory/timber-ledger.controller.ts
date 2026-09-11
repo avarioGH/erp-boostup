@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { StockTransferService } from './stock-transfer.service';
 import { StockAdjustmentService } from './stock-adjustment.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -15,7 +15,7 @@ export class TimberLedgerController {
     private readonly prisma: PrismaService
   ) {}
 
-  @Get('movements')
+  @Get('timber-movements')
   @Permissions('read_inventory')
   async listMovements(@Query() query: any) {
     const { skip = 0, take = 50, search, type, referenceType } = query;
@@ -101,3 +101,4 @@ export class TimberLedgerController {
     return this.adjustmentService.cancelAdjustment(id);
   }
 }
+
