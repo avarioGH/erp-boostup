@@ -31,7 +31,7 @@ export default function CreateRawLogPage() {
   })
 
   // Live preview
-  const [preview, setPreview] = useState({ avg: 0, rnd: 0, gross: 0, net: 0, diaClass: "" })
+  const [preview, setPreview] = useState({ avg: 0, rnd: 0, gross: 0, gerowong: 0, trimming: 0, net: 0, diaClass: "", gDia: 0 })
 
   useEffect(() => {
     InventoryAPI.getWarehouses().then((res: any) => setWarehouses(Array.isArray(res) ? res : [])).catch(console.error)
@@ -59,17 +59,27 @@ export default function CreateRawLogPage() {
     else if (rnd < 90) diaClass = "80 - 89 Cm";
     else if (rnd < 100) diaClass = "90 - 99 Cm";
 
-    const gross = (Math.pow(rnd, 2) * len * 0.7854) / 10000;
-    const gVol = (Math.pow(gDia, 2) * (len - tLen) * 0.7854) / 10000;
-    const tVol = (Math.pow(rnd, 2) * tLen * 0.7854) / 10000;
-    const net = gross - gVol - tVol;
+    const grossRaw = (Math.pow(rnd, 2) * len * 0.7854) / 10000;
+    const gross = Math.round(grossRaw * 100) / 100;
+    
+    const gVolRaw = (Math.pow(gDia, 2) * (len - tLen) * 0.7854) / 10000;
+    const gVol = Math.round(gVolRaw * 100) / 100;
+    
+    const tVolRaw = (Math.pow(rnd, 2) * tLen * 0.7854) / 10000;
+    const tVol = Math.round(tVolRaw * 100) / 100;
+    
+    const netRaw = gross - gVol - tVol;
+    const net = Math.round(netRaw * 100) / 100;
 
     setPreview({
       avg: Math.round(avg * 100) / 100,
       rnd,
       diaClass,
-      gross: Math.round(gross * 100) / 100,
-      net: Math.round(net * 1000000) / 1000000
+      gross,
+      gerowong: gVol,
+      trimming: tVol,
+      net,
+      gDia
     })
   }, [form])
 
@@ -145,7 +155,26 @@ export default function CreateRawLogPage() {
               <CardTitle className="text-lg flex items-center gap-2 text-emerald-800"><Calculator className="w-5 h-5" /> Live Preview</CardTitle>
               <CardDescription>Server is source of truth</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
+                          <CardContent className="pt-6 space-y-4">
+                {preview.gDia > 0 && preview.gDia >= preview.rnd && (
+                  <div className="p-3 bg-red-100 text-red-800 text-xs rounded border border-red-200">
+                    <strong>CRITICAL WARNING:</strong> Gerowong Diameter ({preview.gDia} cm) is &gt;= Rounded Diameter ({preview.rnd} cm). This log is completely hollow!
+                  </div>
+                )}
+                {preview.gDia > 0 && preview.gDia >= preview.rnd * 0.9 && preview.gDia < preview.rnd && (
+                  <div className="p-3 bg-amber-100 text-amber-800 text-xs rounded border border-amber-200">
+                    <strong>WARNING:</strong> Gerowong Diameter ({preview.gDia} cm) is &gt;= 90% of Rounded Diameter ({preview.rnd} cm). Please verify measurement.
+                  </div>
+                )}
+
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="p-2 bg-slate-100 text-[10px] rounded space-y-1 font-mono text-slate-600 mb-2">
+                    <div className="font-bold mb-1">DEV BREAKDOWN:</div>
+                    <div className="flex justify-between"><span>Gross:</span><span>{preview.gross}</span></div>
+                    <div className="flex justify-between"><span>- Gerowong:</span><span>{preview.gerowong}</span></div>
+                    <div className="flex justify-between"><span>- Trimming:</span><span>{preview.trimming}</span></div>
+                  </div>
+                )}
               <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Avg Ø</span><span className="font-medium">{preview.avg} cm</span></div>
               <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Rounded Ø</span><span className="font-bold text-lg">{preview.rnd} cm</span></div>
               <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Class</span><span className="font-medium bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-xs">{preview.diaClass}</span></div>
@@ -163,5 +192,10 @@ export default function CreateRawLogPage() {
     </div>
   )
 }
+
+
+
+
+
 
 
