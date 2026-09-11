@@ -7,21 +7,21 @@
 # Test info
 
 - Name: certification.spec.ts >> STEP 20G.10B Certification >> Legacy Routes Redirects
-- Location: tests\browser\certification.spec.ts:32:7
+- Location: tests\browser\certification.spec.ts:25:7
 
 # Error details
 
 ```
-Error: expect(page).toHaveURL(expected) failed
+Error: expect(locator).toBeVisible() failed
 
-Expected pattern: /\/finance\/reports/
-Received string:  "http://localhost:3005/login"
-Timeout: 5000ms
+Locator: locator('text=Dashboard').first()
+Expected: visible
+Timeout: 10000ms
+Error: element(s) not found
 
 Call log:
-  - Expect "toHaveURL" with timeout 5000ms
-    14 × locator resolved to <html lang="en" class="light">…</html>
-       - unexpected value "http://localhost:3005/login"
+  - Expect "toBeVisible" locator('text=Dashboard').first() with timeout 10000ms
+  - waiting for locator('text=Dashboard').first()
 
 ```
 
@@ -30,13 +30,14 @@ Call log:
 - main:
   - heading "Welcome back" [level=1]
   - paragraph: Enter your credentials to sign in to your workspace
-  - text: Sign In Use your owner or admin account. Username
+  - text: Sign In Use your owner or admin account. Network Error Username
   - textbox "Username":
     - /placeholder: e.g. owner
+    - text: admin
   - text: Password
   - link "Forgot password?":
     - /url: "#"
-  - textbox "Password"
+  - textbox "Password": password123
   - button "Sign In"
   - paragraph:
     - text: By clicking continue, you agree to our
@@ -52,87 +53,80 @@ Call log:
 # Test source
 
 ```ts
-  1  | ﻿import { test, expect } from '@playwright/test';
+  1  | import { test, expect } from '@playwright/test';
   2  | 
   3  | test.describe('STEP 20G.10B Certification', () => {
-  4  | 
-  5  |   test('Authentication & Error States', async ({ page }) => {
-  6  |     await page.goto('/login');
-  7  |     await expect(page.locator('text=Login').first()).toBeVisible();
-  8  | 
-  9  |     await page.fill('#username', 'invalid');
-  10 |     await page.fill('#password', 'wrong');
-  11 |     await page.click('button[type="submit"]');
-  12 |     
-  13 |     // Look for error message
-  14 |     const errorText = page.locator('text=Login failed').first();
-  15 |     // Wait for either the error to appear, or for a timeout
-  16 |     await errorText.waitFor({ timeout: 5000 }).catch(() => null); 
-  17 | 
-  18 |     await page.fill('#username', 'admin');
-  19 |     await page.fill('#password', 'password123');
-  20 |     await Promise.all([
-  21 |       page.waitForResponse(resp => resp.url().includes('login') && resp.status() === 201).catch(() => null),
-  22 |       page.click('button[type="submit"]')
-  23 |     ]);
+  4  |   test('Authentication & Error States', async ({ page }) => {
+  5  |     await page.goto('/login');
+  6  |     await expect(page.locator('text=Sign In').first()).toBeVisible();
+  7  | 
+  8  |     await page.fill('#username', 'invalid');
+  9  |     await page.fill('#password', 'wrong');
+  10 |     await page.click('button[type="submit"]');
+  11 |     
+  12 |     // Look for error message
+  13 |     const errorText = page.locator('text=Login failed').first();
+  14 |     await errorText.waitFor({ timeout: 5000 }).catch(() => null); 
+  15 | 
+  16 |     await page.fill('#username', 'admin');
+  17 |     await page.fill('#password', 'password123');
+  18 |     await page.click('button[type="submit"]');
+  19 | 
+  20 |     // Wait for the redirect to finish
+  21 |     await page.waitForURL('**/', { timeout: 10000 }).catch(() => null);
+  22 |     await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 10000 });
+  23 |   });
   24 | 
-  25 |     await page.waitForTimeout(2000); // Give time for redirect
-  26 |     await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 10000 });
-  27 | 
-  28 |     await page.reload();
-  29 |     await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 10000 });
-  30 |   });
+  25 |   test('Legacy Routes Redirects', async ({ page }) => {
+  26 |     await page.goto('/login');
+  27 |     await page.fill('#username', 'admin');
+  28 |     await page.fill('#password', 'password123');
+  29 |     await page.click('button[type="submit"]');
+> 30 |     await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 10000 });
+     |                                                          ^ Error: expect(locator).toBeVisible() failed
   31 | 
-  32 |   test('Legacy Routes Redirects', async ({ page }) => {
-  33 |     await page.goto('/login');
-  34 |     await page.fill('#username', 'admin');
-  35 |     await page.fill('#password', 'password123');
-  36 |     await page.click('button[type="submit"]');
-  37 |     await page.waitForTimeout(2000);
+  32 |     const legacyRoutes = [
+  33 |       { from: '/reports/finance', to: '/finance/reports' },
+  34 |       { from: '/customers/list', to: '/crm/customers' },
+  35 |       { from: '/customers', to: '/crm/customers' },
+  36 |       { from: '/inventory/stock-transfer', to: '/inventory/transfers' }
+  37 |     ];
   38 | 
-  39 |     const legacyRoutes = [
-  40 |       { from: '/reports/finance', to: '/finance/reports' },
-  41 |       { from: '/customers/list', to: '/crm/customers' },
-  42 |       { from: '/customers', to: '/crm/customers' },
-  43 |       { from: '/inventory/stock-transfer', to: '/inventory/transfers' }
-  44 |     ];
-  45 | 
-  46 |     for (const route of legacyRoutes) {
-  47 |       await page.goto(route.from);
-  48 |       await page.waitForTimeout(1000); // wait for redirect
-> 49 |       await expect(page).toHaveURL(new RegExp(route.to));
-     |                          ^ Error: expect(page).toHaveURL(expected) failed
-  50 |     }
-  51 |   });
-  52 | 
-  53 |   test('Canonical Routes Crawler', async ({ page }) => {
-  54 |     await page.goto('/login');
-  55 |     await page.fill('#username', 'admin');
-  56 |     await page.fill('#password', 'password123');
-  57 |     await page.click('button[type="submit"]');
-  58 |     await page.waitForTimeout(2000);
-  59 | 
-  60 |     const errors = [];
-  61 |     const targetRoutes = [
-  62 |       '/', '/crm/customers', '/sales/orders', '/purchasing/orders', 
-  63 |       '/inventory/stock', '/manufacturing/mrp', '/finance/invoices',
-  64 |       '/finance/gl', '/hr/employees', '/hr/payroll', '/finance/assets',
-  65 |       '/approvals', '/reports/sales'
-  66 |     ];
-  67 | 
-  68 |     for (const route of targetRoutes) {
-  69 |       const response = await page.goto(route, { waitUntil: 'domcontentloaded' });
-  70 |       if (!response) {
-  71 |         errors.push(`${route} - No response`);
-  72 |         continue;
-  73 |       }
-  74 |       if (response.status() >= 400) {
-  75 |         errors.push(`${route} - Status ${response.status()}`);
-  76 |       }
-  77 |     }
-  78 |     
-  79 |     expect(errors.length).toBe(0);
-  80 |   });
-  81 | });
-  82 | 
+  39 |     for (const route of legacyRoutes) {
+  40 |       await page.goto(route.from);
+  41 |       await page.waitForTimeout(1000); 
+  42 |       // check if URL contains the target
+  43 |       expect(page.url()).toContain(route.to);
+  44 |     }
+  45 |   });
+  46 | 
+  47 |   test('Canonical Routes Crawler', async ({ page }) => {
+  48 |     await page.goto('/login');
+  49 |     await page.fill('#username', 'admin');
+  50 |     await page.fill('#password', 'password123');
+  51 |     await page.click('button[type="submit"]');
+  52 |     await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 10000 });
+  53 | 
+  54 |     const errors = [];
+  55 |     const targetRoutes = [
+  56 |       '/crm/customers', '/sales/orders', '/purchasing/orders', 
+  57 |       '/inventory/stock', '/manufacturing/mrp', '/finance/invoices',
+  58 |       '/finance/gl', '/hr/employees', '/hr/payroll', '/finance/assets',
+  59 |       '/approvals', '/reports/sales'
+  60 |     ];
+  61 | 
+  62 |     for (const route of targetRoutes) {
+  63 |       const response = await page.goto(route, { waitUntil: 'domcontentloaded' });
+  64 |       // If we got redirected back to login, the route is broken or unprotected
+  65 |       if (page.url().includes('/login')) {
+  66 |          errors.push(`${route} - Redirected to login`);
+  67 |       } else if (response && response.status() >= 400) {
+  68 |          errors.push(`${route} - Status ${response.status()}`);
+  69 |       }
+  70 |     }
+  71 |     
+  72 |     expect(errors).toEqual([]);
+  73 |   });
+  74 | });
+  75 | 
 ```

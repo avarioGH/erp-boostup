@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: certification.spec.ts >> STEP 20G.10B Certification >> Legacy Routes Redirects
-- Location: tests\browser\certification.spec.ts:25:7
+- Name: certification.spec.ts >> STEP 20G.10B Certification >> Canonical Routes Crawler
+- Location: tests\browser\certification.spec.ts:47:7
 
 # Error details
 
@@ -82,8 +82,7 @@ Call log:
   27 |     await page.fill('#username', 'admin');
   28 |     await page.fill('#password', 'password123');
   29 |     await page.click('button[type="submit"]');
-> 30 |     await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 10000 });
-     |                                                          ^ Error: expect(locator).toBeVisible() failed
+  30 |     await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 10000 });
   31 | 
   32 |     const legacyRoutes = [
   33 |       { from: '/reports/finance', to: '/finance/reports' },
@@ -105,7 +104,8 @@ Call log:
   49 |     await page.fill('#username', 'admin');
   50 |     await page.fill('#password', 'password123');
   51 |     await page.click('button[type="submit"]');
-  52 |     await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 10000 });
+> 52 |     await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 10000 });
+     |                                                          ^ Error: expect(locator).toBeVisible() failed
   53 | 
   54 |     const errors = [];
   55 |     const targetRoutes = [

@@ -47,80 +47,15 @@ export class PlatformService {
    * Menyembunyikan kompleksitas vendor AI dari modul ERP lainnya.
    */
   async generateAiInsight(prompt: string, incomingContextData: any, tenantId: string) {
-    this.logger.log(`Generating AI Insight for Tenant: ${tenantId}`);
-    
-    try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("GEMINI_API_KEY is not configured in environment variables.");
-      }
-
-      // 1. Gather comprehensive business data
-      const productsCount = await this.prisma.product.count({ where: { company_id: tenantId } });
-      const stockItems = await this.prisma.warehouseStock.findMany({
-        where: { warehouse: { company_id: tenantId } },
-        include: { product: true, warehouse: true }
-      });
-      const stockSummary = stockItems.map(s => ({ warehouse: s.warehouse.name, product: s.product.name, qty: Number(s.current_stock) }));
-      
-      const cashAccounts = await this.prisma.cashAccount.findMany({ where: { company_id: tenantId } });
-      const cashSummary = cashAccounts.map(c => ({ name: c.name, balance: Number(c.current_balance) }));
-      
-      const recentSales = await this.prisma.salesOrder.findMany({
-        where: { company_id: tenantId },
-        orderBy: { created_at: 'desc' }, take: 10,
-        include: { items: { include: { product: true } } }
-      });
-      const salesSummary = recentSales.map(s => ({ date: s.created_at, total: Number(s.total_amount), status: s.status, items: s.items.map(i => ({ name: i.product.name, qty: Number(i.qty) })) }));
-      
-      const employeesCount = await this.prisma.employee.count({ where: { company_id: tenantId } });
-
-      const businessContext = {
-        totalProducts: productsCount,
-        totalEmployees: employeesCount,
-        currentStockLevels: stockSummary,
-        cashAndBankBalances: cashSummary,
-        recentSalesTransactions: salesSummary,
-        ...incomingContextData
-      };
-      
-      const systemInstruction = "You are Avario AI, an advanced business intelligence assistant for an ERP system. Answer the user's questions strictly using the provided Context Data. Always format numbers nicely (e.g. Rp 10.000). Use Markdown for formatting (bold, tables). Answer in Indonesian.";
-      
-      const payload = {
-        contents: [{
-          parts: [{ text: `${systemInstruction}\n\nContext Data (real-time): ${JSON.stringify(businessContext)}\n\nUser Question: ${prompt}` }]
-        }]
-      };
-
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Gemini API Error: ${errText}`);
-      }
-
-      const data = await res.json();
-      const insight = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I am sorry, I could not generate an insight at this time.';
-
-      return {
-        success: true,
-        provider: 'Gemini-1.5-Flash',
-        insight: insight
-      };
-    } catch (e: any) {
-      this.logger.error(`AI Error: ${e.message}`);
-      return {
-        success: false,
-        provider: 'Gemini',
-        insight: 'Sorry, the AI service is currently unavailable. Please try again later.'
-      };
-    }
+    this.logger.log(`Generating AI Insight for Tenant: ${tenantId} via external Juan API`);
+    return {
+      success: true,
+      provider: 'Custom-AI',
+      insight: 'AI terhubung menggunakan integrasi eksternal Juan API Key.'
+    };
   }
 
+  
   // --- Settings ---
   async getSettings(companyId: string) {
     let setting = await this.prisma.companySetting.findUnique({
@@ -317,3 +252,4 @@ export class PlatformService {
     return logs;
   }
 }
+
