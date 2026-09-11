@@ -37,3 +37,4 @@ export class AnalyticsController {
     return this.analyticsService.getFinancialAnalytics(req.user.company_id);
   }
 }
+
