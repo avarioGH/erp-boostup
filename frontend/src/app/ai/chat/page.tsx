@@ -34,7 +34,7 @@ export default function AiChatPage() {
 
     try {
       const res = await api.post('/platform/ai/ask', { prompt: userMessage })
-      setMessages(prev => [...prev, { role: 'ai', content: res.data.response }])
+      setMessages(prev => [...prev, { role: 'ai', content: (res.data.insight || res.data.response) }])
     } catch (err) {
       console.error(err)
       setMessages(prev => [...prev, { role: 'ai', content: "Maaf, terjadi kesalahan saat menghubungi server AI. Silakan coba lagi." }])
@@ -149,3 +149,4 @@ export default function AiChatPage() {
     </div>
   )
 }
+
