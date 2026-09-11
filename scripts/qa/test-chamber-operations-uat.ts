@@ -10,7 +10,7 @@ async function runUAT() {
   console.log("=== STARTING CHAMBER OPERATIONS UAT ===");
   
   const token = process.env.API_TOKEN || "your_auth_token_here";
-  const baseUrl = "http://localhost:3000/api";
+  const baseUrl = process.env.API_URL || "https://api.erp.boostup.id";
   
   const headers = {
     'Content-Type': 'application/json',
