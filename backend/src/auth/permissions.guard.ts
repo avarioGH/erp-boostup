@@ -42,7 +42,11 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('User has no role assigned');
     }
 
-    const userPermissions = dbUser.role.permissions.map(p => p.permission.name);
+        const userPermissions = dbUser.role.permissions.map(p => p.permission.name);
+
+    if (dbUser.role.name === 'Owner' || dbUser.role.name === 'Admin' || dbUser.role.name === 'Superadmin') {
+      return true;
+    }
 
     const hasPermission = requiredPermissions.every(permission =>
       (userPermissions.includes(permission) || userPermissions.includes('*'))
@@ -55,3 +59,4 @@ export class PermissionsGuard implements CanActivate {
     return true;
   }
 }
+
