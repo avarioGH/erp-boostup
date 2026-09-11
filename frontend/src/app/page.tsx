@@ -191,6 +191,7 @@ export default function OwnerDashboard() {
               ))}
             </SelectContent>
           </Select>
+          </div>
         </div>
       </div>
 
