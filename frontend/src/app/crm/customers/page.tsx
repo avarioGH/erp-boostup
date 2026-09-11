@@ -139,43 +139,45 @@ export default function CustomersPage() {
               </p>
             </div>
           ) : (
-            <div className="border rounded-md overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="p-3 px-4 text-left font-medium text-muted-foreground">Code</th>
-                    <th className="p-3 px-4 text-left font-medium text-muted-foreground">Customer</th>
-                    <th className="p-3 px-4 text-left font-medium text-muted-foreground">Contact</th>
-                    <th className="p-3 px-4 text-left font-medium text-muted-foreground">Status</th>
-                    <th className="p-3 px-4 text-right font-medium text-muted-foreground">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCustomers.map((c) => (
-                    <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => router.push(`/crm/customers/${c.id}`)}>
-                      <td className="p-3 px-4 font-medium text-indigo-600 dark:text-indigo-400">{c.code}</td>
-                      <td className="p-3 px-4 font-medium">{c.name}</td>
-                      <td className="p-3 px-4 text-muted-foreground">
-                        <div className="flex flex-col">
-                          <span>{c.email || '-'}</span>
-                          <span className="text-xs">{c.phone || '-'}</span>
-                        </div>
-                      </td>
-                      <td className="p-3 px-4">
-                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-400">Active</Badge>
-                      </td>
-                      <td className="p-3 px-4 text-right">
-                        <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          View 360 <ArrowRight className="ml-1 h-3 w-3" />
-                        </Button>
-                      </td>
+            <>
+              <div className="border rounded-md overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="p-3 px-4 text-left font-medium text-muted-foreground">Code</th>
+                      <th className="p-3 px-4 text-left font-medium text-muted-foreground">Customer</th>
+                      <th className="p-3 px-4 text-left font-medium text-muted-foreground">Contact</th>
+                      <th className="p-3 px-4 text-left font-medium text-muted-foreground">Status</th>
+                      <th className="p-3 px-4 text-right font-medium text-muted-foreground">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
-            <div className=""></div>
+                  </thead>
+                  <tbody>
+                    {filteredCustomers.map((c) => (
+                      <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => router.push(`/crm/customers/${c.id}`)}>
+                        <td className="p-3 px-4 font-medium text-indigo-600 dark:text-indigo-400">{c.code}</td>
+                        <td className="p-3 px-4 font-medium">{c.name}</td>
+                        <td className="p-3 px-4 text-muted-foreground">
+                          <div className="flex flex-col">
+                            <span>{c.email || '-'}</span>
+                            <span className="text-xs">{c.phone || '-'}</span>
+                          </div>
+                        </td>
+                        <td className="p-3 px-4">
+                          <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-400">Active</Badge>
+                        </td>
+                        <td className="p-3 px-4 text-right">
+                          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            View 360 <ArrowRight className="ml-1 h-3 w-3" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <PaginationControls currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
+              <div className=""></div>
+            </>
           )}
         </CardContent>
       </Card>
