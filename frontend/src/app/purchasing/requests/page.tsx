@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from 'react'
 import { PurchasingAPI } from '@/lib/api'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Loader2, Plus, Search, Filter, ChevronLeft, FileText, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 
 export default function PurchaseRequestsPage() {
   const [data, setData] = useState<any[]>([])
@@ -75,13 +76,18 @@ export default function PurchaseRequestsPage() {
                   </tr></thead>
                   <tbody>
                     {(selectedDoc.items || []).length === 0 ? (
-                      <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No items in this request.</td></tr>
+                      <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No items in this request.</td></tr>
                     ) : selectedDoc.items.map((item: any, i: number) => (
                       <tr key={i} className="border-b last:border-0 hover:bg-muted/10">
                         <td className="p-4 font-medium">{item.product?.name || item.product_id}</td>
                         <td className="p-4 text-center font-bold">{item.qty}</td>
                         <td className="p-4 text-muted-foreground">{item.unit || '-'}</td>
                         <td className="p-4 text-muted-foreground">{item.notes || '-'}</td>
+                        <td className="p-4 text-right">
+                          <Link href={`/purchasing/comparison?product_id=${item.product_id}&pr_id=${selectedDoc.id}&qty=${item.qty}`}>
+                            <Button variant="outline" size="sm" className="text-xs">Compare Suppliers</Button>
+                          </Link>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

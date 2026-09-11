@@ -1,4 +1,4 @@
-import { TrimmedLogService } from './trimmed-log.service';
+﻿import { TrimmedLogService } from './trimmed-log.service';
 import { TimberCalculationService } from './timber-calculation.service';
 import { BadRequestException } from '@nestjs/common';
 
@@ -6,6 +6,7 @@ describe('TrimmedLog Validation', () => {
   let service: TrimmedLogService;
   let prismaMock: any;
   let calcService: TimberCalculationService;
+  let auditMock: any;
 
   beforeEach(() => {
     prismaMock = {
@@ -19,7 +20,8 @@ describe('TrimmedLog Validation', () => {
       }
     };
     calcService = new TimberCalculationService();
-    service = new TrimmedLogService(prismaMock, calcService);
+    auditMock = { createLog: jest.fn() };
+    service = new TrimmedLogService(prismaMock, calcService, auditMock);
   });
 
   it('should reject trimming if child length exceeds remaining parent length', async () => {
@@ -64,4 +66,3 @@ describe('TrimmedLog Validation', () => {
     expect(prismaMock.trimmedLog.create).toHaveBeenCalled();
   });
 });
-

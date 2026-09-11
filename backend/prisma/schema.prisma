@@ -243,31 +243,32 @@ model User {
 }
 
 model Warehouse {
-  rawLogs        RawLog[]
-  trimmedLogs    TrimmedLog[]
-  inputLogs      InputLog[]
+  rawLogs               RawLog[]
+  trimmedLogs           TrimmedLog[]
+  inputLogs             InputLog[]
   manufacturing_orders  ManufacturingOrder[]
   material_reservations MaterialReservation[]
-  id                    String                @id @default(auto()) @map("_id") @db.ObjectId
-  company_id            String                @db.ObjectId
-  company               Company               @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  timberDeliveryItems   TimberDeliveryNoteItem[]
+  id                    String                   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id            String                   @db.ObjectId
+  company               Company                  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   code                  String
   name                  String
   address               String?
   pic                   String?
   phone                 String?
   description           String?
-  status                Boolean               @default(true)
+  status                Boolean                  @default(true)
 
   transactions_as_origin InventoryTransaction[] @relation("TransactionWarehouse")
   transactions_as_target InventoryTransaction[] @relation("TransactionTargetWarehouse")
   stock_movements        StockMovement[]
   warehouse_stocks       WarehouseStock[]
-  sawnOutputs     SawnTimberOutput[]
-  timberStocks    TimberStock[]
-  transfersFrom   StockTransfer[] @relation("TransferFromLocation")
-  transfersTo     StockTransfer[] @relation("TransferToLocation")
-  adjustments     StockAdjustment[]
+  sawnOutputs            SawnTimberOutput[]
+  timberStocks           TimberStock[]
+  transfersFrom          StockTransfer[]        @relation("TransferFromLocation")
+  transfersTo            StockTransfer[]        @relation("TransferToLocation")
+  adjustments            StockAdjustment[]
   finance_transactions   FinanceTransaction[]
   customers              Customer[]
   employees              Employee[]
@@ -366,7 +367,7 @@ model Brand {
 }
 
 model Product {
-  timberVariants TimberVariant[]
+  timberVariants            TimberVariant[]
   boms                      Bom[]
   bom_items                 BomItem[]
   manufacturing_orders      ManufacturingOrder[]
@@ -1569,9 +1570,10 @@ model Customer {
   delivery_address String?
   tax_id           String?
 
-  orders     SalesOrder[]
-  quotations Quotation[]
-  invoices   Invoice[]
+  orders            SalesOrder[]
+  quotations        Quotation[]
+  invoices          Invoice[]
+  timberSalesOrders TimberSalesOrder[]
 
   created_at  DateTime      @default(now())
   updated_at  DateTime      @updatedAt
@@ -1718,6 +1720,7 @@ model Department {
 }
 
 model Employee {
+  sawmillProductionRuns SawmillProductionRun[]
   id            String      @id @default(auto()) @map("_id") @db.ObjectId
   company_id    String      @db.ObjectId
   company       Company     @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -2382,6 +2385,7 @@ model ManufacturingOrderItem {
 }
 
 model WorkCenter {
+  sawmillProductionRuns SawmillProductionRun[]
   id                     String                   @id @default(auto()) @map("_id") @db.ObjectId
   company_id             String                   @db.ObjectId
   code                   String
@@ -2600,54 +2604,54 @@ model AssetDepreciation {
 // TIMBER INVENTORY: RAW LOG
 // --------------------------------------------------
 model RawLog {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  logNumber       String   @unique // No Log
-  sequence        Int?     // Urut
-  code            String?  // Kode
-  species         String   // Jenis Kayu
-  quantity        Int      @default(1)
-  originalLength  Float // Pjng (meters)
-  
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  logNumber      String  @unique // No Log
+  sequence       Int? // Urut
+  code           String? // Kode
+  species        String // Jenis Kayu
+  quantity       Int     @default(1)
+  originalLength Float // Pjng (meters)
+
   diameter1       Float // D1 (cm)
   diameter2       Float // D2 (cm)
   diameter3       Float // D3 (cm)
   diameter4       Float // D4 (cm)
   averageDiameter Float // ????????
   roundedDiameter Float // ????????2
-  
-  grossVolume     Float // Brutto (m3)
-  gerowong        Float? // Gerowong diameter (cm)
-  hollowVolume    Float? // Vol Gerowong (m3)
-  trimmingLength  Float? // Trimming (m)
-  trimmingVolume  Float? // Vol Tr (m3)
-  netVolume       Float // Netto (m3)
-  
-  barcode         String?  @unique
-  diameterClass   String?
-  batch           String?  // Partai
-  supplierRef     String?
-  receivingDate   DateTime @default(now())
-  
-  locationId      String?  @db.ObjectId
-  location        Warehouse? @relation(fields: [locationId], references: [id])
-  status          String   @default("AVAILABLE") // AVAILABLE, RESERVED, IN_TRIMMING, TRIMMED, CONSUMED, CANCELLED
-  
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
 
-  trimmedLogs     TrimmedLog[]
+  grossVolume    Float // Brutto (m3)
+  gerowong       Float? // Gerowong diameter (cm)
+  hollowVolume   Float? // Vol Gerowong (m3)
+  trimmingLength Float? // Trimming (m)
+  trimmingVolume Float? // Vol Tr (m3)
+  netVolume      Float // Netto (m3)
+
+  barcode       String?  @unique
+  diameterClass String?
+  batch         String? // Partai
+  supplierRef   String?
+  receivingDate DateTime @default(now())
+
+  locationId String?    @db.ObjectId
+  location   Warehouse? @relation(fields: [locationId], references: [id])
+  status     String     @default("AVAILABLE") // AVAILABLE, RESERVED, IN_TRIMMING, TRIMMED, CONSUMED, CANCELLED
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  trimmedLogs TrimmedLog[]
 }
 
 // --------------------------------------------------
 // TIMBER INVENTORY: TRIMMED LOG
 // --------------------------------------------------
 model TrimmedLog {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  trimNumber      String   @unique // e.g. 199A
-  rawLogId        String   @db.ObjectId
-  rawLog          RawLog   @relation(fields: [rawLogId], references: [id])
-  
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  trimNumber String @unique // e.g. 199A
+  rawLogId   String @db.ObjectId
+  rawLog     RawLog @relation(fields: [rawLogId], references: [id])
+
   species         String
   length          Float
   diameter1       Float
@@ -2656,174 +2660,178 @@ model TrimmedLog {
   diameter4       Float
   averageDiameter Float
   roundedDiameter Float
-  
-  grossVolume     Float
-  gerowong        Float?
-  hollowVolume    Float?
-  trimmingLength  Float?
-  trimmingVolume  Float?
-  netVolume       Float
-  
-  barcode         String?  @unique
-  locationId      String?  @db.ObjectId
-  location        Warehouse? @relation(fields: [locationId], references: [id])
-  status          String   @default("AVAILABLE") // AVAILABLE, RESERVED, ASSIGNED_TO_INPUT, IN_PROCESS, CONSUMED, CANCELLED
-  
-  inputLogId      String?  @db.ObjectId
-  inputLog        InputLog? @relation(fields: [inputLogId], references: [id])
-  inputLogItem    InputLogItem?
-  
-  notes           String?
-  date            DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+
+  grossVolume    Float
+  gerowong       Float?
+  hollowVolume   Float?
+  trimmingLength Float?
+  trimmingVolume Float?
+  netVolume      Float
+
+  barcode    String?    @unique
+  locationId String?    @db.ObjectId
+  location   Warehouse? @relation(fields: [locationId], references: [id])
+  status     String     @default("AVAILABLE") // AVAILABLE, RESERVED, ASSIGNED_TO_INPUT, IN_PROCESS, CONSUMED, CANCELLED
+
+  inputLogId   String?       @db.ObjectId
+  inputLog     InputLog?     @relation(fields: [inputLogId], references: [id])
+  inputLogItem InputLogItem?
+
+  notes     String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // --------------------------------------------------
 // TIMBER INVENTORY: INPUT LOG / WIP
 // --------------------------------------------------
 model InputLog {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  inputNumber     String   @unique
-  date            DateTime @default(now())
-  shift           String?
-  machine         String?
-  bundleRef       String?
-  batch           String?
-  species         String
-  totalQty        Int
-  totalLength     Float?
-  totalGross      Float?
-  totalGerowong   Float?
-  totalTrimming   Float?
-  totalVolume     Float    
-  
-  locationId      String?  @db.ObjectId
-  location        Warehouse? @relation(fields: [locationId], references: [id])
-  status          String   @default("AVAILABLE") 
-  notes           String?
-  
-  items           InputLogItem[]
-  sawnOutputs     SawnTimberOutput[]
-  trimmedLogs     TrimmedLog[] 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  sawmillConsumptions SawmillProductionConsumption[]
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  inputNumber   String   @unique
+  date          DateTime @default(now())
+  shift         String?
+  operatorName  String?
+  machine       String?
+  bundleRef     String?
+  batch         String?
+  species       String
+  totalQty      Int
+  totalLength   Float?
+  totalGross    Float?
+  totalGerowong Float?
+  totalTrimming Float?
+  totalVolume   Float
+
+  locationId String?    @db.ObjectId
+  location   Warehouse? @relation(fields: [locationId], references: [id])
+  status     String     @default("AVAILABLE")
+  notes      String?
+
+  items       InputLogItem[]
+  sawnOutputs SawnTimberOutput[]
+  trimmedLogs TrimmedLog[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 }
 
 // --------------------------------------------------
 // TIMBER INVENTORY: FINISHED TIMBER VARIANT
 // --------------------------------------------------
 model TimberVariant {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  productId       String   @db.ObjectId
-  product         Product  @relation(fields: [productId], references: [id])
+  sawmillOutputItems SawmillOutputItem[]
+  id              String                   @id @default(auto()) @map("_id") @db.ObjectId
+  productId       String                   @db.ObjectId
+  product         Product                  @relation(fields: [productId], references: [id])
   grade           String
-  thickness       Int      // mm
-  width           Int      // mm
-  length          Int      // mm
+  thickness       Int // mm
+  width           Int // mm
+  length          Int // mm
   species         String
-  sku             String   @unique
-  barcode         String?  @unique
+  sku             String                   @unique
+  barcode         String?                  @unique
   volumePerPiece  Float // Calculated as T*W*L/1B
   sawnOutputItems SawnTimberOutputItem[]
   timberStocks    TimberStock[]
   transferItems   StockTransferItem[]
   adjustmentItems StockAdjustmentItem[]
-  
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  salesOrderItems TimberSalesOrderItem[]
+  deliveryItems   TimberDeliveryNoteItem[]
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
-
-
 
 model InputLogItem {
-  id              String     @id @default(auto()) @map("_id") @db.ObjectId
-  inputLogId      String     @db.ObjectId
-  inputLog        InputLog   @relation(fields: [inputLogId], references: [id])
-  trimmedLogId    String     @db.ObjectId @unique
-  trimmedLog      TrimmedLog @relation(fields: [trimmedLogId], references: [id])
-  quantity        Int        @default(1)
-  volume          Float
-  createdAt       DateTime   @default(now())
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  inputLogId   String     @db.ObjectId
+  inputLog     InputLog   @relation(fields: [inputLogId], references: [id])
+  trimmedLogId String     @unique @db.ObjectId
+  trimmedLog   TrimmedLog @relation(fields: [trimmedLogId], references: [id])
+  quantity     Int        @default(1)
+  volume       Float
+  createdAt    DateTime   @default(now())
 }
-
 
 // ==================================================
 // PHASE 5: SAWN TIMBER OUTPUT & STOCK
 // ==================================================
 
 model SawnTimberOutput {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  bundleNumber    String   @unique
-  outputDate      DateTime @default(now())
-  shift           String?
-  locationId      String   @db.ObjectId
-  location        Warehouse @relation(fields: [locationId], references: [id])
-  inputLogId      String   @db.ObjectId
-  inputLog        InputLog @relation(fields: [inputLogId], references: [id])
-  batch           String?  // Partai
-  notes           String?
-  status          String   @default("DRAFT") // DRAFT, POSTED, CANCELLED
-  
-  items           SawnTimberOutputItem[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  bundleNumber String    
+  outputDate   DateTime  @default(now())
+  shift        String?
+  operatorName String?
+  machine      String?
+  locationId   String    @db.ObjectId
+  location     Warehouse @relation(fields: [locationId], references: [id])
+  inputLogId   String    @db.ObjectId
+  inputLog     InputLog  @relation(fields: [inputLogId], references: [id])
+  batch        String? // Partai
+  notes        String?
+  status       String    @default("DRAFT") // DRAFT, POSTED, CANCELLED
+
+  items SawnTimberOutputItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model SawnTimberOutputItem {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  outputId        String   @db.ObjectId
-  output          SawnTimberOutput @relation(fields: [outputId], references: [id], onDelete: Cascade)
-  
-  timberVariantId String   @db.ObjectId
+  id       String           @id @default(auto()) @map("_id") @db.ObjectId
+  outputId String           @db.ObjectId
+  output   SawnTimberOutput @relation(fields: [outputId], references: [id], onDelete: Cascade)
+
+  timberVariantId String        @db.ObjectId
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
-  
-  grade           String?
-  quantityPcs     Int
-  thicknessMm     Int
-  widthMm         Int
-  lengthMm        Int
-  volumeM3        Float
-  notes           String?
+
+  grade       String?
+  quantityPcs Int
+  thicknessMm Int
+  widthMm     Int
+  lengthMm    Int
+  volumeM3    Float
+  notes       String?
 }
 
 model TimberStock {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  locationId      String   @db.ObjectId
-  location        Warehouse @relation(fields: [locationId], references: [id])
-  timberVariantId String   @db.ObjectId
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  locationId      String        @db.ObjectId
+  location        Warehouse     @relation(fields: [locationId], references: [id])
+  timberVariantId String        @db.ObjectId
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
-  
-  openingPcs      Int      @default(0)
-  stockInPcs      Int      @default(0)
-  stockOutPcs     Int      @default(0)
-  adjustmentPcs   Int      @default(0)
-  currentPcs      Int      @default(0)
-  currentVolumeM3 Float    @default(0)
-  
-  movements       TimberStockMovement[]
-  
-  updatedAt       DateTime @updatedAt
+
+  openingPcs      Int   @default(0)
+  stockInPcs      Int   @default(0)
+  stockOutPcs     Int   @default(0)
+  adjustmentPcs   Int   @default(0)
+  currentPcs      Int   @default(0)
+  currentVolumeM3 Float @default(0)
+
+  movements TimberStockMovement[]
+
+  updatedAt DateTime @updatedAt
 
   @@unique([locationId, timberVariantId])
 }
 
 model TimberStockMovement {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  timberStockId   String   @db.ObjectId
-  timberStock     TimberStock @relation(fields: [timberStockId], references: [id])
-  
-  type            String   // IN, OUT, ADJ
-  referenceType   String   // SAWN_OUTPUT, TRANSFER, ADJUSTMENT
-  referenceId     String   // e.g. SawnTimberOutput.id
-  
-  quantityPcs     Int
-  volumeM3        Float
-  
-  date            DateTime @default(now())
-  createdAt       DateTime @default(now())
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  timberStockId String      @db.ObjectId
+  timberStock   TimberStock @relation(fields: [timberStockId], references: [id])
+
+  type          String // IN, OUT, ADJ
+  referenceType String // SAWN_OUTPUT, TRANSFER, ADJUSTMENT
+  referenceId   String // e.g. SawnTimberOutput.id
+
+  quantityPcs Int
+  volumeM3    Float
+
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 // ==================================================
@@ -2831,66 +2839,66 @@ model TimberStockMovement {
 // ==================================================
 
 model StockTransfer {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  transferNumber  String   @unique
-  transferDate    DateTime @default(now())
-  fromLocationId  String   @db.ObjectId
-  fromLocation    Warehouse @relation("TransferFromLocation", fields: [fromLocationId], references: [id])
-  toLocationId    String   @db.ObjectId
-  toLocation      Warehouse @relation("TransferToLocation", fields: [toLocationId], references: [id])
-  status          String   @default("DRAFT") // DRAFT, POSTED, CANCELLED
-  notes           String?
-  
-  items           StockTransferItem[]
-  
-  createdBy       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  transferNumber String    @unique
+  transferDate   DateTime  @default(now())
+  fromLocationId String    @db.ObjectId
+  fromLocation   Warehouse @relation("TransferFromLocation", fields: [fromLocationId], references: [id])
+  toLocationId   String    @db.ObjectId
+  toLocation     Warehouse @relation("TransferToLocation", fields: [toLocationId], references: [id])
+  status         String    @default("DRAFT") // DRAFT, POSTED, CANCELLED
+  notes          String?
+
+  items StockTransferItem[]
+
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model StockTransferItem {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  transferId      String   @db.ObjectId
-  transfer        StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
-  
-  timberVariantId String   @db.ObjectId
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  transferId String        @db.ObjectId
+  transfer   StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+
+  timberVariantId String        @db.ObjectId
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
-  
-  quantityPcs     Int
-  volumeM3        Float
-  notes           String?
+
+  quantityPcs Int
+  volumeM3    Float
+  notes       String?
 }
 
 model StockAdjustment {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  adjustmentNumber String  @unique
-  adjustmentDate  DateTime @default(now())
-  locationId      String   @db.ObjectId
-  location        Warehouse @relation(fields: [locationId], references: [id])
-  status          String   @default("DRAFT") // DRAFT, POSTED, CANCELLED
-  reason          String?
-  notes           String?
-  
-  items           StockAdjustmentItem[]
-  
-  createdBy       String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  adjustmentNumber String    @unique
+  adjustmentDate   DateTime  @default(now())
+  locationId       String    @db.ObjectId
+  location         Warehouse @relation(fields: [locationId], references: [id])
+  status           String    @default("DRAFT") // DRAFT, POSTED, CANCELLED
+  reason           String?
+  notes            String?
+
+  items StockAdjustmentItem[]
+
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model StockAdjustmentItem {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  adjustmentId    String   @db.ObjectId
-  adjustment      StockAdjustment @relation(fields: [adjustmentId], references: [id], onDelete: Cascade)
-  
-  timberVariantId String   @db.ObjectId
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  adjustmentId String          @db.ObjectId
+  adjustment   StockAdjustment @relation(fields: [adjustmentId], references: [id], onDelete: Cascade)
+
+  timberVariantId String        @db.ObjectId
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
-  
-  systemPcs       Int
-  physicalPcs     Int
-  differencePcs   Int
-  differenceM3    Float
-  notes           String?
+
+  systemPcs     Int
+  physicalPcs   Int
+  differencePcs Int
+  differenceM3  Float
+  notes         String?
 }
 
 // ==================================================
@@ -2898,25 +2906,174 @@ model StockAdjustmentItem {
 // ==================================================
 
 model ImportSession {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  fileName        String
-  fileType        String?
-  importType      String   // RAW_LOG, TRIMMING_LOG, INPUT_LOG, SAWN_TIMBER_OUTPUT, STOCK_OPENING_BALANCE
-  status          String   @default("UPLOADED") // UPLOADED, VALIDATING, READY, IMPORTING, COMPLETED, COMPLETED_WITH_ERRORS, FAILED, CANCELLED
-  selectedSheet   String?
-  
-  totalRows       Int      @default(0)
-  validRows       Int      @default(0)
-  invalidRows     Int      @default(0)
-  duplicateRows   Int      @default(0)
-  importedRows    Int      @default(0)
-  skippedRows     Int      @default(0)
-  
-  errorSummary    String?
-  
-  createdBy       String?
-  createdAt       DateTime @default(now())
-  completedAt     DateTime?
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  fileName      String
+  fileType      String?
+  importType    String // RAW_LOG, TRIMMING_LOG, INPUT_LOG, SAWN_TIMBER_OUTPUT, STOCK_OPENING_BALANCE
+  status        String  @default("UPLOADED") // UPLOADED, VALIDATING, READY, IMPORTING, COMPLETED, COMPLETED_WITH_ERRORS, FAILED, CANCELLED
+  selectedSheet String?
+
+  totalRows     Int @default(0)
+  validRows     Int @default(0)
+  invalidRows   Int @default(0)
+  duplicateRows Int @default(0)
+  importedRows  Int @default(0)
+  skippedRows   Int @default(0)
+
+  errorSummary String?
+
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
 }
 
+// ==========================================
+// PHASE 13: TIMBER SALES & ORDER REALIZATION
+// ==========================================
+// Separate from the existing generic SalesOrder (POS/B2B).
+// Timber Sales operates on TimberVariant-dimensional items.
+
+model TimberSalesOrder {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber     String    @unique
+  customerId      String    @db.ObjectId
+  customer        Customer  @relation(fields: [customerId], references: [id])
+  orderDate       DateTime
+  targetDate      DateTime?
+  partai          String? // Optional partai requirement from customer
+  notes           String?
+  // DRAFT -> CONFIRMED -> PARTIALLY_FULFILLED -> FULFILLED -> CANCELLED
+  status          String    @default("DRAFT")
+  createdByUserId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  items      TimberSalesOrderItem[]
+  deliveries TimberDeliveryNote[]
+}
+
+model TimberSalesOrderItem {
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  salesOrderId String           @db.ObjectId
+  salesOrder   TimberSalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  // Dimensional identity - references TimberVariant
+  timberVariantId String?        @db.ObjectId
+  timberVariant   TimberVariant? @relation(fields: [timberVariantId], references: [id])
+
+  // Explicitly stored for historical accuracy even if variant changes
+  thicknessMm Int
+  widthMm     Int
+  lengthMm    Int
+  grade       String?
+  species     String?
+
+  orderQty Int // PCS
+  orderM3  Float // Pre-calculated
+
+  // Realization cache (updated when delivery items are posted)
+  realizedQty Int   @default(0)
+  realizedM3  Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deliveryItems TimberDeliveryNoteItem[]
+}
+
+model TimberDeliveryNote {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  deliveryNumber String           @unique
+  salesOrderId   String           @db.ObjectId
+  salesOrder     TimberSalesOrder @relation(fields: [salesOrderId], references: [id])
+  deliveryDate   DateTime
+  driverName     String?
+  vehicleNumber  String?
+  notes          String?
+  // DRAFT -> POSTED -> CANCELLED
+  status         String           @default("DRAFT")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  items TimberDeliveryNoteItem[]
+}
+
+model TimberDeliveryNoteItem {
+  id             String             @id @default(auto()) @map("_id") @db.ObjectId
+  deliveryNoteId String             @db.ObjectId
+  deliveryNote   TimberDeliveryNote @relation(fields: [deliveryNoteId], references: [id], onDelete: Cascade)
+
+  salesOrderItemId String               @db.ObjectId
+  salesOrderItem   TimberSalesOrderItem @relation(fields: [salesOrderItemId], references: [id])
+
+  // Source stock identity
+  locationId      String        @db.ObjectId
+  location        Warehouse     @relation(fields: [locationId], references: [id])
+  timberVariantId String        @db.ObjectId
+  timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
+
+  deliveredQty Int
+  deliveredM3  Float
+
+  // Linked stock movement (created by InventoryLedgerService on Post)
+  stockMovementId String? @unique @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model SawmillBundle {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  bundleNumber   String           @unique
+  parentBundleId String?          @db.ObjectId
+  parentBundle   SawmillBundle?   @relation("RepackedFrom", fields: [parentBundleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  childBundles   SawmillBundle[]  @relation("RepackedFrom")
+  status         String           @default("ACTIVE") // ACTIVE, REPACKED, SHIPPED
+  outputItems    SawmillOutputItem[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model SawmillProductionRun {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  productionNo   String           @unique
+  productionDate DateTime
+  shift          String
+  operatorId     String           @db.ObjectId
+  operator       Employee         @relation(fields: [operatorId], references: [id])
+  workCenterId   String           @db.ObjectId
+  workCenter     WorkCenter       @relation(fields: [workCenterId], references: [id])
+  status         String           @default("DRAFT") // DRAFT, POSTED, CANCELLED
+  notes          String?
+  consumptions   SawmillProductionConsumption[]
+  outputItems    SawmillOutputItem[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model SawmillProductionConsumption {
+  id               String               @id @default(auto()) @map("_id") @db.ObjectId
+  inputLogId       String               @db.ObjectId
+  inputLog         InputLog             @relation(fields: [inputLogId], references: [id])
+  productionRunId  String               @db.ObjectId
+  productionRun    SawmillProductionRun @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
+  consumedM3       Float
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+}
+
+model SawmillOutputItem {
+  id                 String               @id @default(auto()) @map("_id") @db.ObjectId
+  productionRunId    String               @db.ObjectId
+  productionRun      SawmillProductionRun @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
+  bundleId           String               @db.ObjectId
+  bundle             SawmillBundle        @relation(fields: [bundleId], references: [id])
+  timberVariantId    String               @db.ObjectId
+  timberVariant      TimberVariant        @relation(fields: [timberVariantId], references: [id])
+  partai             String
+  quantityPcs        Int
+  volumeM3           Float
+  remarks            String?
+  stockMovementId    String?              // Ledger IN
+  reversalMovementId String?              // Ledger OUT (if cancelled)
+}
 

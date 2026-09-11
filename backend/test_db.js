@@ -2,10 +2,10 @@
 const prisma = new PrismaClient();
 async function test() {
   try {
-    await prisma.company.count();
-    console.log('DB_SUCCESS');
+    const count = await prisma.timberVariant.count();
+    console.log("DB SUCCESS! Count:", count);
   } catch (e) {
-    console.log('DB_FAIL', e.message);
+    console.log("DB ERROR:", e.message);
   } finally {
     await prisma.$disconnect();
   }

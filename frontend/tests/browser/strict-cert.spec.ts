@@ -1,7 +1,7 @@
-﻿import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 
 // Helper to login cleanly
-async function doLogin(page, username, password) {
+async function doLogin(page: Page, username: string, password: string) {
   await page.goto('/login');
   await page.fill('#username', username);
   await page.fill('#password', password);

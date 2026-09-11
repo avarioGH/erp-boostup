@@ -29,7 +29,7 @@ export class InputLogService {
       this.prisma.inputLog.findMany({
         skip: Number(skip), take: Number(take), where,
         orderBy: { createdAt: 'desc' },
-        include: { location: true, items: { include: { trimmedLog: true } } }
+        include: { location: true, sawnOutputs: { include: { items: true } }, items: { include: { trimmedLog: true } } }
       }),
       this.prisma.inputLog.count({ where })
     ]);
@@ -41,6 +41,7 @@ export class InputLogService {
       where: { id },
       include: { 
         location: true, 
+        sawnOutputs: { include: { items: true } },
         items: {
           include: {
             trimmedLog: {
@@ -64,7 +65,7 @@ export class InputLogService {
 
   async createInputLog(data: any) {
     return this.prisma.$transaction(async (tx) => {
-      const { trimmedLogIds, date, shift, machine, locationId, batch, notes } = data;
+      const { trimmedLogIds, date, shift, operatorName, machine, locationId, batch, notes } = data;
       
       if (!trimmedLogIds || trimmedLogIds.length === 0) {
         throw new BadRequestException('Must select at least one trimmed log');
@@ -115,6 +116,7 @@ export class InputLogService {
           inputNumber,
           date: dateObj,
           shift,
+          operatorName,
           machine,
           locationId: locationId || trimmedLogs[0].locationId,
           batch,

@@ -60,4 +60,13 @@ describe('TimberCalculationService', () => {
     // 1.06 - 0.91 - 0.14 = 0.01
     expect(net).toBe(0.01);
   });
+
+  it('should calculate squared diameter correctly for non-trivial rounding', () => {
+    const avg = service.calculateAverageDiameter(41, 44, 38, 43);
+    expect(avg).toBe(41.5);
+    const rnd = service.calculateRoundedDiameter(avg);
+    expect(rnd).toBe(42);
+    const gross = service.calculateRawLogGrossVolume(rnd, 10);
+    expect(gross).toBe(1.39);
+  });
 });

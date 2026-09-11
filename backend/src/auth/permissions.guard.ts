@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+﻿import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from './permissions.decorator';
 import { PrismaService } from '../prisma/prisma.service';
@@ -39,12 +39,12 @@ export class PermissionsGuard implements CanActivate {
     });
 
     if (!dbUser || !dbUser.role) {
-      console.warn('User has no role, bypassing'); return true;
+      throw new ForbiddenException('User has no role');
     }
 
-        const userPermissions = dbUser.role.permissions.map(p => p.permission.name);
+    const userPermissions = dbUser.role.permissions.map(p => p.permission.name);
 
-    if (dbUser.role.name === 'Owner' || dbUser.role.name === 'Admin' || dbUser.role.name === 'Superadmin') {
+    if (dbUser.role.name === 'Owner' || dbUser.role.name === 'Admin' || dbUser.role.name === 'Superadmin' || dbUser.role.name === 'FULL_ADMIN') {
       return true;
     }
 
@@ -52,10 +52,10 @@ export class PermissionsGuard implements CanActivate {
       (userPermissions.includes(permission) || userPermissions.includes('*'))
     );
 
-    if (!hasPermission) { console.warn('Bypassing permission check for UAT'); return true; }
+    if (!hasPermission) { 
+      throw new ForbiddenException(`Insufficient permissions. Required: ${requiredPermissions.join(',')}`); 
+    }
 
     return true;
   }
 }
-
-

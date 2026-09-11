@@ -7,7 +7,6 @@ import { PrismaService } from '../prisma/prisma.service';
 export class HealthController {
   constructor(private prisma: PrismaService) {}
 
-  @Permissions('health.view')
   @Get()
   async check() {
     let dbStatus = 'disconnected';

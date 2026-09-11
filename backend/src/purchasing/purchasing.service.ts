@@ -247,10 +247,11 @@ export class PurchasingService {
         subtotal += lineSubtotal;
         tax += lineTax;
 
-        await tx.purchaseOrderItem.update({
-          where: { id: poItem.id },
+        const updateRes = await tx.purchaseOrderItem.updateMany({
+          where: { id: poItem.id, billed_qty: (poItem as any).billed_qty || 0 },
           data: { billed_qty: newBilledQty } as any
         });
+        if (updateRes.count === 0) throw new BadRequestException('Concurrency conflict for PO Item ' + poItem.id);
       }
 
       const total = subtotal + tax;
@@ -319,14 +320,15 @@ export class PurchasingService {
       const newPaid = invoice.paid_amount + amount;
       const newStatus = newRemaining <= 0 ? 'PAID' : 'PARTIALLY PAID';
 
-      await tx.invoice.update({
-        where: { id: invoice.id },
+      const updateRes = await tx.invoice.updateMany({
+        where: { id: invoice.id, remaining_amount: invoice.remaining_amount },
         data: {
           paid_amount: newPaid,
           remaining_amount: newRemaining,
           status: newStatus
         }
       });
+      if (updateRes.count === 0) throw new BadRequestException('Concurrency conflict processing payment');
 
       if (invoice.purchase_order_id) {
         const allInvs = await tx.invoice.findMany({ where: { purchase_order_id: invoice.purchase_order_id, type: 'AP' } });

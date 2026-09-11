@@ -84,7 +84,7 @@ export class SawnTimberService {
 
   async createOutput(data: any) {
     return this.prisma.$transaction(async (tx) => {
-      const { inputLogId, outputDate, shift, locationId, batch, notes, items } = data;
+      const { inputLogId, outputDate, shift, operatorName, machine, locationId, batch, notes, items } = data;
       
       if (!items || items.length === 0) throw new BadRequestException('Output must contain at least one item');
 
@@ -110,6 +110,8 @@ export class SawnTimberService {
           bundleNumber,
           outputDate: dateObj,
           shift,
+          operatorName,
+          machine: machine || inputLog.machine,
           locationId,
           inputLogId,
           batch,

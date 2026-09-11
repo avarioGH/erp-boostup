@@ -1,17 +1,26 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatIDR as formatCurrency } from '@/lib/utils';
-import { CheckCircle, Truck, FileText, CreditCard } from 'lucide-react';
+import { Truck, Receipt, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 export default function PurchaseOrderDetailPage() {
   const params = useParams();
   const id = params.id as string;
+  const router = useRouter();
+  const { toast } = useToast();
+  
   const [po, setPo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [receiveQtys, setReceiveQtys] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchPO();
@@ -22,42 +31,61 @@ export default function PurchaseOrderDetailPage() {
       setLoading(true);
       const res = await api.get(`/purchasing/orders/${id}`);
       setPo(res.data);
+      // init receiveQtys
+      const qtys: Record<string, number> = {};
+      res.data.items.forEach((item: any) => {
+        qtys[item.id] = Math.max(0, item.qty - (item.received_qty || 0));
+      });
+      setReceiveQtys(qtys);
     } catch (err) {
       console.error(err);
+      toast({ title: 'Error', description: 'Failed to fetch PO', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleQtyChange = (itemId: string, val: string) => {
+    setReceiveQtys(prev => ({ ...prev, [itemId]: parseFloat(val) || 0 }));
+  };
+
   const confirmPO = async () => {
     try {
+      setActionLoading(true);
       await api.post(`/purchasing/rfq/${id}/confirm`, {});
+      toast({ title: 'PO Confirmed' });
       fetchPO();
-    } catch (err) {
-      console.error(err);
-      alert('Error confirming PO');
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.response?.data?.message || 'Error confirming', variant: 'destructive' });
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const receiveGoods = async () => {
     try {
-      // Mock full receipt for now. In reality, would be a form.
+      setActionLoading(true);
       const payload = {
         items: po.items.map((i: any) => ({
           productId: i.product_id,
-          qty: i.qty - i.received_qty // Receive remaining
+          qty: receiveQtys[i.id]
         })).filter((i:any) => i.qty > 0)
       };
-      if (payload.items.length === 0) return alert('Nothing left to receive');
+      if (payload.items.length === 0) return toast({ title: 'Notice', description: 'No quantities entered' });
+      
       await api.post(`/purchasing/orders/${id}/receive`, payload);
+      toast({ title: 'Goods Received Successfully' });
       fetchPO();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error receiving');
+      toast({ title: 'Receiving Error', description: err.response?.data?.message || 'Error receiving', variant: 'destructive' });
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const createBill = async () => {
     try {
+      setActionLoading(true);
       const payload = {
         items: po.items.map((i: any) => ({
           productId: i.product_id,
@@ -65,171 +93,203 @@ export default function PurchaseOrderDetailPage() {
         })).filter((i:any) => i.qty > 0),
         dueDate: new Date(Date.now() + 30 * 86400000).toISOString()
       };
-      if (payload.items.length === 0) return alert('Nothing left to bill');
-      await api.post(`/purchasing/orders/${id}/bill`, payload);
+      if (payload.items.length === 0) return toast({ title: 'Notice', description: 'No quantities to bill' });
+      
+      const bill = await api.post(`/purchasing/orders/${id}/bill`, payload);
+      toast({ title: 'Vendor Bill Created' });
       fetchPO();
+      // Wait briefly then redirect to finance bill
+      setTimeout(() => {
+         router.push(`/finance/vendor-bills`);
+      }, 1000);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error billing');
+      toast({ title: 'Billing Error', description: err.response?.data?.message || 'Error billing', variant: 'destructive' });
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const payBill = async (invoiceId: string, amount: number) => {
-    try {
-      await api.post(`/purchasing/invoices/${invoiceId}/pay`, { amount, method: 'BANK_TRANSFER' });
-      fetchPO();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Error paying');
-    }
-  };
-
-  if (loading) return <div className="p-8 text-center text-gray-500">Loading...</div>;
-  if (!po) return <div className="p-8 text-center text-red-500">PO not found</div>;
+  if (loading) return <div className="p-12 text-center text-muted-foreground animate-pulse">Loading PO...</div>;
+  if (!po) return <div className="p-12 text-center text-red-500">PO not found</div>;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-lg border">
+    <div className="space-y-6 animate-in fade-in pb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-card p-6 rounded-lg border shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold">{po.order_number}</h1>
-          <p className="text-gray-500">Supplier: {po.supplier?.name} | Date: {new Date(po.order_date).toLocaleDateString()}</p>
+          <h1 className="text-3xl font-bold tracking-tight">{po.order_number}</h1>
+          <p className="text-muted-foreground mt-1">
+            Supplier: <Link href="/crm/customers" className="text-indigo-600 hover:underline">{po.supplier?.name}</Link> | Date: {new Date(po.order_date).toLocaleDateString()}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
-          <span className="px-3 py-1 bg-gray-100 rounded-full text-sm font-semibold">{po.status}</span>
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">Receipt: {po.receipt_status}</span>
-          <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">Bill: {po.bill_status}</span>
-          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">Payment: {po.payment_status}</span>
+          <Badge variant={po.status === 'CONFIRMED' ? 'default' : 'outline'}>{po.status}</Badge>
+          <Badge variant={po.receipt_status === 'RECEIVED' ? 'default' : 'secondary'}>Receipt: {po.receipt_status}</Badge>
+          <Badge variant={po.bill_status === 'BILLED' ? 'default' : 'secondary'}>Bill: {po.bill_status}</Badge>
+          <Badge variant={po.payment_status === 'PAID' ? 'default' : 'secondary'}>Payment: {po.payment_status}</Badge>
         </div>
       </div>
 
-      {/* ACTION BAR */}
-      <div className="flex gap-4">
-        {po.status === 'DRAFT' && <button onClick={confirmPO} className="px-4 py-2 bg-blue-600 text-white rounded">Confirm PO</button>}
-        {po.status === 'CONFIRMED' && po.receipt_status !== 'RECEIVED' && <button onClick={receiveGoods} className="px-4 py-2 bg-blue-600 text-white rounded">Receive Full Remaining</button>}
-        {po.status === 'CONFIRMED' && po.bill_status !== 'BILLED' && <button onClick={createBill} className="px-4 py-2 bg-purple-600 text-white rounded">Create Vendor Bill</button>}
-      </div>
-
-      <Tabs defaultValue="lines">
-        <TabsList className="mb-4">
-          <TabsTrigger value="lines">Order Lines</TabsTrigger>
-          <TabsTrigger value="receipts">Receipts</TabsTrigger>
-          <TabsTrigger value="bills">Vendor Bills</TabsTrigger>
-        </TabsList>
-        
-        {/* LINES */}
-        <TabsContent value="lines">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
           <Card>
-            <CardContent className="p-0">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 border-b">
+            <CardHeader className="border-b bg-muted/10 pb-4">
+              <CardTitle>Procurement Items & Receiving</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/30">
                   <tr>
-                    <th className="p-4">Product</th>
-                    <th className="p-4">Unit Price</th>
-                    <th className="p-4">Ordered</th>
-                    <th className="p-4">Received</th>
-                    <th className="p-4">Billed</th>
-                    <th className="p-4">Subtotal</th>
+                    <th className="p-4 text-left font-medium text-muted-foreground">Product</th>
+                    <th className="p-4 text-center font-medium text-muted-foreground">Ordered</th>
+                    <th className="p-4 text-center font-medium text-emerald-600 bg-emerald-50/50">Received</th>
+                    <th className="p-4 text-center font-medium text-muted-foreground">Remaining</th>
+                    {po.status === 'CONFIRMED' && po.receipt_status !== 'RECEIVED' && (
+                      <th className="p-4 text-center font-medium text-indigo-600 bg-indigo-50/50">Receive Now</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
-                  {po.items.map((i: any) => (
-                    <tr key={i.id} className="border-b">
-                      <td className="p-4 font-medium">{i.product?.name}</td>
-                      <td className="p-4">{formatCurrency(i.unit_price)}</td>
-                      <td className="p-4 font-bold">{i.qty}</td>
-                      <td className="p-4 text-blue-600">{i.received_qty}</td>
-                      <td className="p-4 text-purple-600">{i.billed_qty || 0}</td>
-                      <td className="p-4">{formatCurrency(i.subtotal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-          
-          <div className="flex justify-end mt-4">
-            <Card className="w-64">
-              <CardContent className="p-4 space-y-2">
-                <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
-                  <span>Total</span>
-                  <span>{formatCurrency(po.total_amount)}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* RECEIPTS */}
-        <TabsContent value="receipts">
-          <Card>
-            <CardContent className="p-0">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="p-4">Receipt #</th>
-                    <th className="p-4">Date</th>
-                    <th className="p-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {po.receipts?.map((r: any) => (
-                    <tr key={r.id} className="border-b">
-                      <td className="p-4 font-mono">{r.receipt_number}</td>
-                      <td className="p-4">{new Date(r.receipt_date).toLocaleDateString()}</td>
-                      <td className="p-4">{r.status}</td>
-                    </tr>
-                  ))}
-                  {(!po.receipts || po.receipts.length === 0) && <tr><td colSpan={3} className="p-8 text-center text-gray-500">No receipts found.</td></tr>}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* BILLS */}
-        <TabsContent value="bills">
-          <Card>
-            <CardContent className="p-0">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="p-4">Bill #</th>
-                    <th className="p-4">Date</th>
-                    <th className="p-4">Total</th>
-                    <th className="p-4">Paid</th>
-                    <th className="p-4">Remaining</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {po.invoices?.map((inv: any) => (
-                    <tr key={inv.id} className="border-b">
-                      <td className="p-4 font-mono">{inv.invoice_number}</td>
-                      <td className="p-4">{new Date(inv.invoice_date).toLocaleDateString()}</td>
-                      <td className="p-4">{formatCurrency(inv.total)}</td>
-                      <td className="p-4 text-green-600">{formatCurrency(inv.paid_amount)}</td>
-                      <td className="p-4 text-red-600">{formatCurrency(inv.remaining_amount)}</td>
-                      <td className="p-4">{inv.status}</td>
-                      <td className="p-4">
-                        {inv.remaining_amount > 0 && (
-                          <button 
-                            onClick={() => payBill(inv.id, inv.remaining_amount)}
-                            className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded"
-                          >
-                            Pay Full
-                          </button>
+                  {po.items.map((item: any) => {
+                    const remaining = item.qty - (item.received_qty || 0);
+                    return (
+                      <tr key={item.id} className="border-b last:border-0 hover:bg-muted/10">
+                        <td className="p-4 font-medium">{item.product?.name || item.product_id}</td>
+                        <td className="p-4 text-center">{item.qty}</td>
+                        <td className="p-4 text-center font-bold text-emerald-600 bg-emerald-50/20">{item.received_qty || 0}</td>
+                        <td className="p-4 text-center text-muted-foreground">{Math.max(0, remaining)}</td>
+                        {po.status === 'CONFIRMED' && po.receipt_status !== 'RECEIVED' && (
+                          <td className="p-4 bg-indigo-50/20">
+                            <Input 
+                              type="number" 
+                              min="0" 
+                              max={remaining}
+                              value={receiveQtys[item.id] ?? ''} 
+                              onChange={(e) => handleQtyChange(item.id, e.target.value)}
+                              className="w-24 text-center mx-auto border-indigo-200 focus-visible:ring-indigo-500"
+                            />
+                          </td>
                         )}
-                      </td>
-                    </tr>
-                  ))}
-                  {(!po.invoices || po.invoices.length === 0) && <tr><td colSpan={7} className="p-8 text-center text-gray-500">No vendor bills found.</td></tr>}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </CardContent>
           </Card>
-        </TabsContent>
 
-      </Tabs>
+          <Card>
+            <CardHeader className="border-b bg-muted/10 pb-4">
+              <CardTitle className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-indigo-600" /> Three-Way Matching Status</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/30">
+                  <tr>
+                    <th className="p-4 text-left font-medium text-muted-foreground">Product</th>
+                    <th className="p-4 text-center font-medium text-muted-foreground">PO Qty</th>
+                    <th className="p-4 text-center font-medium text-muted-foreground">Receipt Qty</th>
+                    <th className="p-4 text-center font-medium text-muted-foreground">Bill Qty</th>
+                    <th className="p-4 text-center font-medium text-muted-foreground">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {po.items.map((item: any) => {
+                    const received = item.received_qty || 0;
+                    const billed = item.billed_qty || 0;
+                    let matchStatus = "MATCHED";
+                    let matchColor = "text-emerald-600 bg-emerald-50";
+                    
+                    if (received < item.qty) {
+                      matchStatus = "PENDING RECEIPT";
+                      matchColor = "text-amber-600 bg-amber-50";
+                    }
+                    if (billed > received) {
+                      matchStatus = "EXCEPTION (Billed > Received)";
+                      matchColor = "text-red-600 bg-red-50 font-bold";
+                    } else if (billed < received) {
+                      matchStatus = "PENDING BILL";
+                      matchColor = "text-blue-600 bg-blue-50";
+                    }
+
+                    return (
+                      <tr key={'match-'+item.id} className="border-b last:border-0 hover:bg-muted/10">
+                        <td className="p-4 font-medium">{item.product?.name || item.product_id}</td>
+                        <td className="p-4 text-center">{item.qty}</td>
+                        <td className="p-4 text-center">{received}</td>
+                        <td className="p-4 text-center">{billed}</td>
+                        <td className="p-4 text-center">
+                          <span className={`px-2 py-1 rounded text-xs ${matchColor}`}>
+                            {matchStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="border-b bg-muted/10 pb-4">
+              <CardTitle>Commercial Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              <div className="flex justify-between items-center pb-2 border-b">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-medium">{formatCurrency(po.total_amount)}</span>
+              </div>
+              <div className="flex justify-between items-center text-lg font-bold">
+                <span>Total</span>
+                <span className="text-indigo-600">{formatCurrency(po.total_amount)}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="border-b bg-muted/10 pb-4">
+              <CardTitle>Workflow Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 pt-6">
+              {po.status === 'DRAFT' && (
+                <Button onClick={confirmPO} disabled={actionLoading} className="w-full bg-blue-600 hover:bg-blue-700">
+                  Confirm Purchase Order
+                </Button>
+              )}
+              
+              {po.status === 'CONFIRMED' && po.receipt_status !== 'RECEIVED' && (
+                <Button onClick={receiveGoods} disabled={actionLoading} className="w-full bg-emerald-600 hover:bg-emerald-700">
+                  <Truck className="w-4 h-4 mr-2" /> Receive Goods
+                </Button>
+              )}
+              
+              {po.status === 'CONFIRMED' && po.bill_status !== 'BILLED' && po.receipt_status !== 'PENDING' && (
+                <Button onClick={createBill} disabled={actionLoading} className="w-full bg-purple-600 hover:bg-purple-700">
+                  <Receipt className="w-4 h-4 mr-2" /> Handoff: Create Vendor Bill
+                </Button>
+              )}
+
+              {po.bill_status === 'BILLED' && (
+                <Link href="/finance/vendor-bills" className="w-full block">
+                  <Button variant="outline" className="w-full">
+                    <ExternalLink className="w-4 h-4 mr-2" /> View Bills in Finance
+                  </Button>
+                </Link>
+              )}
+
+              {po.payment_status === 'UNPAID' && po.bill_status === 'BILLED' && (
+                <Link href="/finance/ap-payments" className="w-full block">
+                  <Button variant="outline" className="w-full">
+                    <ExternalLink className="w-4 h-4 mr-2" /> AP Payments (Finance)
+                  </Button>
+                </Link>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

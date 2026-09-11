@@ -1,9 +1,10 @@
-import { InputLogService } from './input-log.service';
+﻿import { InputLogService } from './input-log.service';
 import { BadRequestException } from '@nestjs/common';
 
 describe('InputLog Validation', () => {
   let service: InputLogService;
   let prismaMock: any;
+  let auditMock: any;
 
   beforeEach(() => {
     prismaMock = {
@@ -22,7 +23,8 @@ describe('InputLog Validation', () => {
       },
       inputLogItem: { create: jest.fn() }, auditLog: { create: jest.fn() }
     };
-    service = new InputLogService(prismaMock);
+    auditMock = { createLog: jest.fn() };
+    service = new InputLogService(prismaMock, auditMock);
   });
 
   it('should reject if trimmed logs are missing or consumed', async () => {
@@ -49,4 +51,3 @@ describe('InputLog Validation', () => {
     expect(prismaMock.trimmedLog.update).toHaveBeenCalled();
   });
 });
-

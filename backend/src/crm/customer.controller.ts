@@ -1,12 +1,15 @@
-import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
+﻿import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { Permissions } from '../auth/permissions.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('customers')
 export class CustomerController {
   constructor(private readonly prisma: PrismaService) {}
 
+  @Permissions('crm.customer.view')
   @Get()
   async getCustomers(@Request() req) {
     return this.prisma.customer.findMany({
@@ -15,6 +18,7 @@ export class CustomerController {
     });
   }
 
+  @Permissions('crm.customer.create')
   @Post()
   async createCustomer(@Request() req, @Body() data: any) {
     return this.prisma.customer.create({
