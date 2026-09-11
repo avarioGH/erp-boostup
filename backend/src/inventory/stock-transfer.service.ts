@@ -11,11 +11,13 @@ export class StockTransferService {
     private audit: AuditService
   ) {}
 
-  async listTransfers(params: { skip?: number; take?: number; search?: string; status?: string }) {
-    const { skip = 0, take = 50, search, status } = params;
+  async listTransfers(params: { skip?: number; take?: number; search?: string; status?: string; fromLocationId?: string; toLocationId?: string }) {
+    const { skip = 0, take = 50, search, status, fromLocationId, toLocationId } = params;
     const where: any = {};
     if (search) where.transferNumber = { contains: search, mode: 'insensitive' };
     if (status) where.status = status;
+    if (fromLocationId) where.fromLocationId = fromLocationId;
+    if (toLocationId) where.toLocationId = toLocationId;
 
     const [items, total] = await Promise.all([
       this.prisma.stockTransfer.findMany({
