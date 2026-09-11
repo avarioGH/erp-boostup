@@ -36,6 +36,12 @@ export class AnalyticsController {
   async getFinancialAnalytics(@Request() req: any) {
     return this.analyticsService.getFinancialAnalytics(req.user.company_id);
   }
+  @Permissions('analytics.view')
+  @Get('dashboard')
+  async getDashboardData(@Request() req: any, @Query('timeRange') timeRange: string) {
+    return { summary: { revenue: 0, customers: 0, orders: 0 }, chartData: [] };
+  }
 }
+
 
 
