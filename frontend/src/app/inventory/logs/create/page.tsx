@@ -39,13 +39,13 @@ export default function CreateRawLogPage() {
 
   useEffect(() => {
     // Live preview calculations (Mirroring TimberCalculationService purely for UI UX)
-    const d1 = parseFloat(form.diameter1) || 0;
-    const d2 = parseFloat(form.diameter2) || 0;
-    const d3 = parseFloat(form.diameter3) || 0;
-    const d4 = parseFloat(form.diameter4) || 0;
-    const len = parseFloat(form.originalLength) || 0;
-    const gDia = parseFloat(form.gerowong) || 0;
-    const tLen = parseFloat(form.trimmingLength) || 0;
+    const d1 = parseFloat(form.diameter1.toString().replace(",", ".")) || 0;
+    const d2 = parseFloat(form.diameter2.toString().replace(",", ".")) || 0;
+    const d3 = parseFloat(form.diameter3.toString().replace(",", ".")) || 0;
+    const d4 = parseFloat(form.diameter4.toString().replace(",", ".")) || 0;
+    const len = parseFloat(form.originalLength.toString().replace(",", ".")) || 0;
+    const gDia = parseFloat(form.gerowong.toString().replace(",", ".")) || 0;
+    const tLen = parseFloat(form.trimmingLength.toString().replace(",", ".")) || 0;
 
     const avg = (d1 + d2 + d3 + d4) / 4;
     const rnd = Math.round(avg);
@@ -79,13 +79,13 @@ export default function CreateRawLogPage() {
     try {
       await TimberAPI.createRawLog({
         ...form,
-        originalLength: parseFloat(form.originalLength),
-        diameter1: parseFloat(form.diameter1),
-        diameter2: parseFloat(form.diameter2),
-        diameter3: parseFloat(form.diameter3),
-        diameter4: parseFloat(form.diameter4),
-        gerowong: form.gerowong ? parseFloat(form.gerowong) : null,
-        trimmingLength: form.trimmingLength ? parseFloat(form.trimmingLength) : null
+        originalLength: parseFloat(form.originalLength.toString().replace(",", ".")),
+        diameter1: parseFloat(form.diameter1.toString().replace(",", ".")),
+        diameter2: parseFloat(form.diameter2.toString().replace(",", ".")),
+        diameter3: parseFloat(form.diameter3.toString().replace(",", ".")),
+        diameter4: parseFloat(form.diameter4.toString().replace(",", ".")),
+        gerowong: form.gerowong ? parseFloat(form.gerowong.toString().replace(",", ".")) : null,
+        trimmingLength: form.trimmingLength ? parseFloat(form.trimmingLength.toString().replace(",", ".")) : null
       })
       toast({ title: "Success", description: "Raw log registered successfully." })
       router.push('/inventory/logs')
@@ -163,4 +163,5 @@ export default function CreateRawLogPage() {
     </div>
   )
 }
+
 
