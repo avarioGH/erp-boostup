@@ -1,14 +1,9 @@
+
 /**
  * CHAMBER OPERATIONS UAT SCRIPT (PHASE 15D.1)
  * 
  * Execution:
  * npx ts-node scripts/qa/test-chamber-operations-uat.ts
- * 
- * Tests:
- * 1. Chamber IN (StockTransfer)
- * 2. Stock Balance checks
- * 3. Chamber OUT (StockTransfer)
- * 4. Transfer Cancellation (Reversal)
  */
 
 async function runUAT() {
@@ -19,29 +14,28 @@ async function runUAT() {
   
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': \Bearer \\
+    'Authorization': `Bearer ${token}`
   };
 
-  async function fetchAPI(endpoint, options = {}) {
+  async function fetchAPI(endpoint: string, options: any = {}): Promise<any> {
     options.headers = headers;
-    const res = await fetch(\\\\, options);
+    const res = await fetch(`${baseUrl}${endpoint}`, options);
     if (!res.ok) {
       const err = await res.text();
-      console.warn(\\n[!] API Error at \: \ - \\);
+      console.warn(`\n[!] API Error at ${endpoint}: ${res.status} - ${err}`);
       return null;
     }
     return res.json();
   }
 
-  // 1. Fetch Warehouses (find Chamber and Yard)
-  const warehouses = await fetchAPI('/inventory/warehouses');
+  const warehouses: any[] = await fetchAPI('/inventory/warehouses');
   if (!warehouses || warehouses.length < 2) {
     console.error("Not enough warehouses. Please seed chambers first.");
     return;
   }
   
-  const chambers = warehouses.filter(w => w.code.startsWith('CH-'));
-  const yards = warehouses.filter(w => !w.code.startsWith('CH-'));
+  const chambers = warehouses.filter((w: any) => w.code.startsWith('CH-'));
+  const yards = warehouses.filter((w: any) => !w.code.startsWith('CH-'));
   
   if (chambers.length === 0 || yards.length === 0) {
     console.error("Missing either Chamber (CH-*) or regular Yard locations.");
@@ -52,17 +46,16 @@ async function runUAT() {
   const chamber = chambers[0];
   const destYard = yards.length > 1 ? yards[1] : yards[0];
   
-  console.log(\\n[1] Locations Identified:\);
-  console.log(\    Source Yard: \ (\)\);
-  console.log(\    Chamber:     \ (\)\);
-  console.log(\    Dest Yard:   \ (\)\);
+  console.log(`\n[1] Locations Identified:`);
+  console.log(`    Source Yard: ${sourceYard.name} (${sourceYard.id})`);
+  console.log(`    Chamber:     ${chamber.name} (${chamber.id})`);
+  console.log(`    Dest Yard:   ${destYard.name} (${destYard.id})`);
 
-  // 2. Find TimberVariant with stock in Source Yard
-  const stockRes = await fetchAPI(\/inventory/timber-stock?locationId=\\);
-  const availableStock = (stockRes?.items || []).filter(s => s.currentPcs >= 10);
+  const stockRes: any = await fetchAPI(`/inventory/timber-stock?locationId=${sourceYard.id}`);
+  const availableStock = (stockRes?.items || []).filter((s: any) => s.currentPcs >= 10);
   
   if (availableStock.length === 0) {
-    console.error(\\n[!] No TimberVariant found in \ with >= 10 PCS. Seed stock first.\);
+    console.error(`\n[!] No TimberVariant found in ${sourceYard.name} with >= 10 PCS. Seed stock first.`);
     return;
   }
   
@@ -70,12 +63,11 @@ async function runUAT() {
   const variantId = targetStock.timberVariantId;
   const initialQty = targetStock.currentPcs;
   
-  console.log(\\n[2] Selected TimberVariant for Transfer:\);
-  console.log(\    Variant ID: \\);
-  console.log(\    Available in Yard: \ PCS\);
+  console.log(`\n[2] Selected TimberVariant for Transfer:`);
+  console.log(`    Variant ID: ${variantId}`);
+  console.log(`    Available in Yard: ${initialQty} PCS`);
   
-  // 3. Chamber IN (Create & Post Transfer)
-  console.log(\\n[3] Executing CHAMBER IN (Yard -> Chamber) for 5 PCS...\);
+  console.log(`\n[3] Executing CHAMBER IN (Yard -> Chamber) for 5 PCS...`);
   const inPayload = {
     fromLocationId: sourceYard.id,
     toLocationId: chamber.id,
@@ -90,26 +82,24 @@ async function runUAT() {
     ]
   };
   
-  const inTransfer = await fetchAPI('/inventory/transfers', {
+  const inTransfer: any = await fetchAPI('/inventory/transfers', {
     method: 'POST',
     body: JSON.stringify(inPayload)
   });
   
   if (!inTransfer) return;
-  console.log(\    Created Transfer: \\);
+  console.log(`    Created Transfer: ${inTransfer.transferNumber}`);
   
-  const postInRes = await fetchAPI(\/inventory/transfers/\/post\, { method: 'POST' });
+  const postInRes = await fetchAPI(`/inventory/transfers/${inTransfer.id}/post`, { method: 'POST' });
   if (!postInRes) return;
-  console.log(\    POSTED Transfer: \\);
+  console.log(`    POSTED Transfer: ${inTransfer.transferNumber}`);
   
-  // 4. Verify Stock after Chamber IN
-  const chamberStockCheck1 = await fetchAPI(\/inventory/timber-stock?locationId=\\);
-  const cStock1 = chamberStockCheck1?.items?.find(s => s.timberVariantId === variantId);
-  console.log(\\n[4] Chamber Stock Verification:\);
-  console.log(\    Chamber Current PCS: \ (Expected: >= 5)\);
+  const chamberStockCheck1: any = await fetchAPI(`/inventory/timber-stock?locationId=${chamber.id}`);
+  const cStock1 = chamberStockCheck1?.items?.find((s: any) => s.timberVariantId === variantId);
+  console.log(`\n[4] Chamber Stock Verification:`);
+  console.log(`    Chamber Current PCS: ${cStock1 ? cStock1.currentPcs : 0} (Expected: >= 5)`);
   
-  // 5. Chamber OUT (Create & Post Transfer)
-  console.log(\\n[5] Executing CHAMBER OUT (Chamber -> Dest Yard) for 5 PCS...\);
+  console.log(`\n[5] Executing CHAMBER OUT (Chamber -> Dest Yard) for 5 PCS...`);
   const outPayload = {
     fromLocationId: chamber.id,
     toLocationId: destYard.id,
@@ -124,25 +114,24 @@ async function runUAT() {
     ]
   };
   
-  const outTransfer = await fetchAPI('/inventory/transfers', {
+  const outTransfer: any = await fetchAPI('/inventory/transfers', {
     method: 'POST',
     body: JSON.stringify(outPayload)
   });
   if (!outTransfer) return;
-  console.log(\    Created Transfer: \\);
+  console.log(`    Created Transfer: ${outTransfer.transferNumber}`);
   
-  const postOutRes = await fetchAPI(\/inventory/transfers/\/post\, { method: 'POST' });
+  const postOutRes = await fetchAPI(`/inventory/transfers/${outTransfer.id}/post`, { method: 'POST' });
   if (!postOutRes) return;
-  console.log(\    POSTED Transfer: \\);
+  console.log(`    POSTED Transfer: ${outTransfer.transferNumber}`);
   
-  // 6. Verify Final Stock & Cancellation
-  console.log(\\n[6] Cancelling Chamber OUT...\);
-  const cancelRes = await fetchAPI(\/inventory/transfers/\/cancel\, { method: 'POST' });
+  console.log(`\n[6] Cancelling Chamber OUT...`);
+  const cancelRes = await fetchAPI(`/inventory/transfers/${outTransfer.id}/cancel`, { method: 'POST' });
   if (cancelRes) {
-    console.log(\    Successfully Cancelled Transfer \\);
+    console.log(`    Successfully Cancelled Transfer ${outTransfer.transferNumber}`);
   }
   
-  console.log(\\n=== UAT COMPLETED SAFELY ===\);
+  console.log(`\n=== UAT COMPLETED SAFELY ===`);
 }
 
 runUAT().catch(console.error);
