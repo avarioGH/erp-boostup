@@ -205,14 +205,17 @@ export class SawnTimberService {
   }
 
   async listStock(params: {
-    skip?: number; take?: number; search?: string; locationId?: string;
+    skip?: number; take?: number; search?: string; locationId?: string; locationCodePrefix?: string;
   }) {
-    const { skip = 0, take = 50, search, locationId } = params;
+    const { skip = 0, take = 50, search, locationId, locationCodePrefix } = params;
     const where: any = {};
     if (search) {
       where.timberVariant = { sku: { contains: search, mode: 'insensitive' } };
     }
     if (locationId) where.locationId = locationId;
+    if (locationCodePrefix) {
+      where.location = { code: { startsWith: locationCodePrefix } };
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.timberStock.findMany({

@@ -136,6 +136,15 @@ export default function ChamberInPage() {
           </CardContent>
         </form>
       </Card>
+      <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-4 rounded-lg flex items-start gap-3 mt-6">
+        <div className="text-blue-500 mt-0.5">ℹ️</div>
+        <div>
+          <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200">Traceability Notice</h4>
+          <p className="text-sm text-blue-800 dark:text-blue-300 mt-1">
+            Chamber movement tracks timber by variant and quantity. Physical bundle-level traceability is not currently maintained in the inventory ledger.
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

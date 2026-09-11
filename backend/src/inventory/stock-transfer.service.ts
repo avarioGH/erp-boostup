@@ -11,13 +11,37 @@ export class StockTransferService {
     private audit: AuditService
   ) {}
 
-  async listTransfers(params: { skip?: number; take?: number; search?: string; status?: string; fromLocationId?: string; toLocationId?: string }) {
-    const { skip = 0, take = 50, search, status, fromLocationId, toLocationId } = params;
+  async listTransfers(params: { 
+    skip?: number; take?: number; search?: string; status?: string; 
+    fromLocationId?: string; toLocationId?: string;
+    startDate?: string; endDate?: string;
+    fromLocationCodePrefix?: string; toLocationCodePrefix?: string;
+  }) {
+    const { skip = 0, take = 50, search, status, fromLocationId, toLocationId, startDate, endDate, fromLocationCodePrefix, toLocationCodePrefix } = params;
     const where: any = {};
     if (search) where.transferNumber = { contains: search, mode: 'insensitive' };
     if (status) where.status = status;
     if (fromLocationId) where.fromLocationId = fromLocationId;
     if (toLocationId) where.toLocationId = toLocationId;
+    
+    if (startDate || endDate) {
+      where.transferDate = {};
+      if (startDate) where.transferDate.gte = new Date(startDate);
+      if (endDate) where.transferDate.lte = new Date(endDate);
+    }
+    
+    if (fromLocationCodePrefix || toLocationCodePrefix) {
+      if (fromLocationCodePrefix && toLocationCodePrefix) {
+        where.OR = [
+          { fromLocation: { code: { startsWith: fromLocationCodePrefix } } },
+          { toLocation: { code: { startsWith: toLocationCodePrefix } } }
+        ];
+      } else if (fromLocationCodePrefix) {
+        where.fromLocation = { code: { startsWith: fromLocationCodePrefix } };
+      } else if (toLocationCodePrefix) {
+        where.toLocation = { code: { startsWith: toLocationCodePrefix } };
+      }
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.stockTransfer.findMany({

@@ -5,27 +5,27 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Premium Dark Theme as Primary (Since requested as primary, we'll set light theme to clean gray) */
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Soft Light Theme - Easier on the eyes, reduced contrast */
+  --background: #f1f5f9; /* Soft slate-100 instead of bright white */
+  --foreground: #334155; /* Slate-700 instead of harsh slate-900 */
   
-  --primary: #2563eb; /* Professional Blue (ERP Boostup Brand) */
+  --primary: #2563eb; /* Professional Blue */
   --primary-foreground: #ffffff;
   
-  --secondary: #f1f5f9;
-  --secondary-foreground: #334155;
+  --secondary: #e2e8f0; /* Slate-200 */
+  --secondary-foreground: #1e293b;
   
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --popover-foreground: #334155;
   
-  --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card: #ffffff; /* White cards pop nicely against slate-100 bg */
+  --card-foreground: #334155;
   
-  --muted: #f1f5f9;
+  --muted: #e2e8f0; /* Clearer separation for columns/headers */
   --muted-foreground: #64748b;
   
-  --accent: #f8fafc;
-  --accent-foreground: #0f172a;
+  --accent: #e0e7ff; /* Soft indigo-100 for hover states */
+  --accent-foreground: #1e3a8a;
   
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
@@ -39,19 +39,19 @@
   --info: #3b82f6;
   --info-foreground: #ffffff;
   
-  --border: #e2e8f0;
-  --input: #e2e8f0;
+  --border: #cbd5e1; /* Slate-300 so borders are visible on slate-100 */
+  --input: #cbd5e1;
   --ring: #2563eb;
   
-  --radius: 8px; /* Slightly less rounded for professional enterprise look */
+  --radius: 8px; /* Professional enterprise look */
   
-  --sidebar-background: #ffffff;
-  --sidebar-foreground: #0f172a;
+  --sidebar-background: #ffffff; /* Sidebar stays crisp */
+  --sidebar-foreground: #334155;
   --sidebar-primary: #2563eb;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
+  --sidebar-accent-foreground: #1e293b;
+  --sidebar-border: #cbd5e1;
   --sidebar-ring: #2563eb;
 }
 
