@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -38,7 +38,7 @@ const items: MenuItem[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   {
     title: "Pembelian (Purchasing)",
-    url: "/purchasing",
+    url: "/purchasing/analytics",
     icon: ShoppingCart,
     id: "purchasing",
     subItems: [
@@ -62,18 +62,18 @@ const items: MenuItem[] = [
         { title: "Sawn Timber Stock", url: "/inventory/timber-stock" },
         { title: "Stock Movements", url: "/inventory/movements" },
         { title: "Stock Adjustments", url: "/inventory/adjustments" },
-        { title: "Location Management", url: "/inventory/locations" },
+        { title: "Location Management", url: "/inventory/warehouses" },
         { title: "Data Import (Excel)", url: "/inventory/import" }
       ]
     },
 
     { 
       title: "Manufacturing", 
-      url: "/manufacturing", 
+      url: "/manufacturing/orders", 
       icon: Factory,
       id: "manufacturing",
       subItems: [
-        { title: "Overview", url: "/manufacturing" },
+        { title: "Overview", url: "/manufacturing/orders" },
         { title: "Bills of Materials", url: "/manufacturing/bom" },
         { title: "MRP", url: "/manufacturing/mrp" },
         { title: "Manufacturing Orders", url: "/manufacturing/orders" },
@@ -83,7 +83,7 @@ const items: MenuItem[] = [
 
   { 
     title: "Penjualan (Sales B2B)", 
-    url: "/sales", 
+    url: "/sales/orders", 
     icon: ShoppingCart,
     id: "sales",
     subItems: [
@@ -95,7 +95,7 @@ const items: MenuItem[] = [
   { 
     title: "POS (Kasir Retail)", 
  
-    url: "/pos", 
+    url: "/pos/new-transaction", 
     icon: ShoppingCart,
     id: "pos",
     subItems: [
@@ -106,7 +106,7 @@ const items: MenuItem[] = [
   },
   { 
     title: "Pelanggan & CRM", 
-    url: "/crm", 
+    url: "/crm/customers", 
     icon: Users,
     id: "crm",
     subItems: [
@@ -146,7 +146,7 @@ const items: MenuItem[] = [
   },
   { 
     title: "AI Assistant", 
-    url: "/ai", 
+    url: "/ai/chat", 
     icon: Bot,
     badge: "Beta",
     subItems: [
@@ -295,6 +295,7 @@ export function AppSidebar() {
     </Sidebar>
   )
 }
+
 
 
 
