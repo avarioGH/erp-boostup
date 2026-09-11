@@ -49,8 +49,46 @@ export class ReportService {
       if (m.referenceType.includes('TRANSFER')) todayTrf++;
     });
 
+        const logMasuk = {
+      totalLogs: rawLogsCount,
+      grossM3: 0, // Needs aggregation, defaulting to 0 for now unless added
+      netM3: rawLogNetM3Agg._sum.netVolume || 0
+    };
+    
+    const trimming = {
+      rawLogs: 0, // Placeholder
+      trimmedPieces: trimmedLogsCount,
+      volume: 0 // Placeholder
+    };
+    
+    const inputProduksi = {
+      totalLogs: 0, // Placeholder
+      volume: inputLogNetM3Agg._sum.totalVolume || 0
+    };
+    
+    const hasilProduksi = {
+      totalBundles: recentOutputs.length,
+      totalPcs: stockAgg._sum.currentPcs || 0,
+      totalM3: stockAgg._sum.currentVolumeM3 || 0
+    };
+
+    const stock = {
+      currentPcs: stockAgg._sum.currentPcs || 0,
+      currentM3: stockAgg._sum.currentVolumeM3 || 0
+    };
+
     return {
+      logMasuk,
+      trimming,
+      inputProduksi,
+      hasilProduksi,
+      stock,
       finishedTimber: {
+        totalPcs: stockAgg._sum.currentPcs || 0,
+        totalM3: stockAgg._sum.currentVolumeM3 || 0,
+        activeSkus: skuCount.length,
+        locationsCount: locCount.length
+      },
         totalPcs: stockAgg._sum.currentPcs || 0,
         totalM3: stockAgg._sum.currentVolumeM3 || 0,
         activeSkus: skuCount.length,
@@ -335,6 +373,7 @@ export class ReportService {
     return null;
   }
 }
+
 
 
 
