@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -21,7 +21,7 @@ import {
 import { 
   LayoutDashboard,  Clock, Folder, Link as LinkIcon, History, AlertTriangle, PlayCircle, Filter, Tag, Hash, FileCode, CheckCircle, Database, PackageSearch, PenTool, Wrench, ShieldCheck, LifeBuoy, FileSearch, Zap, TrendingUp, Sparkles, Building2, Fingerprint, Receipt, UserCheck, ShieldAlert, Key, HelpCircle, Share2, Users, Box, Calculator, Settings, 
   ShoppingCart, BarChart3, Bot, LogOut, Hexagon
-} from "lucide-react"
+, Factory} from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { TranslationKey } from "@/i18n/dictionaries"
 
@@ -36,38 +36,65 @@ type MenuItem = {
 
 const items: MenuItem[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { 
-    title: "Keuangan", 
-    url: "/finance", 
-    icon: Calculator,
-    id: "finance",
+  {
+    title: "Pembelian (Purchasing)",
+    url: "/purchasing",
+    icon: ShoppingCart,
+    id: "purchasing",
     subItems: [
-      { title: "Dashboard Keuangan", url: "/finance" },
-      { title: "Kas & Bank", url: "/finance/cash" },
-      { title: "Pemasukan", url: "/finance/cash-in" },
-      { title: "Pengeluaran", url: "/finance/cash-out" },
-      { title: "Transfer", url: "/finance/transfer" },
-      { title: "Riwayat Transaksi", url: "/finance/history" },
-      { title: "Laporan Keuangan", url: "/finance/reports" }
+      { title: "Overview", url: "/purchasing/analytics" },
+      { title: "Purchase Requests", url: "/purchasing/requests" },
+      { title: "RFQ (Penawaran)", url: "/purchasing/rfqs" },
+      { title: "Purchase Orders (PO)", url: "/purchasing/orders" },
+      { title: "Penerimaan Barang", url: "/purchasing/receipts" }
+    ]
+  },
+          { 
+      title: "Inventory (Timber & Logs)", 
+      url: "/inventory/logs", 
+      icon: Box,
+      id: "inventory",
+      subItems: [
+        { title: "Dashboard", url: "/inventory/dashboard" },
+        { title: "Raw Logs (DUKB)", url: "/inventory/logs" },
+        { title: "Log Trimming", url: "/inventory/trimming" },
+        { title: "Input Logs (WIP)", url: "/inventory/input-logs" },
+        { title: "Sawn Timber Stock", url: "/inventory/timber-stock" },
+        { title: "Stock Movements", url: "/inventory/movements" },
+        { title: "Stock Adjustments", url: "/inventory/adjustments" },
+        { title: "Location Management", url: "/inventory/locations" },
+        { title: "Data Import (Excel)", url: "/inventory/import" }
+      ]
+    },
+
+    { 
+      title: "Manufacturing", 
+      url: "/manufacturing", 
+      icon: Factory,
+      id: "manufacturing",
+      subItems: [
+        { title: "Overview", url: "/manufacturing" },
+        { title: "Bills of Materials", url: "/manufacturing/bom" },
+        { title: "MRP", url: "/manufacturing/mrp" },
+        { title: "Manufacturing Orders", url: "/manufacturing/orders" },
+        { title: "Quality Control", url: "/manufacturing/quality" }
+      ]
+    },
+
+  { 
+    title: "Penjualan (Sales B2B)", 
+    url: "/sales", 
+    icon: ShoppingCart,
+    id: "sales",
+    subItems: [
+      { title: "Penawaran (Quotation)", url: "/sales/quotations" },
+      { title: "Sales Orders (SO)", url: "/sales/orders" },
+      { title: "Pengiriman (Delivery)", url: "/sales/deliveries" }
     ]
   },
   { 
-    title: "Inventaris", 
-    url: "/inventory", 
-    icon: Box,
-    id: "inventory",
-    subItems: [
-      { title: "Produk", url: "/inventory/products" },
-      { title: "Stok Masuk", url: "/inventory/stock-in" },
-      { title: "Stok Keluar", url: "/inventory/stock-out" },
-      { title: "Transfer Gudang", url: "/inventory/stock-transfer" },
-      { title: "Riwayat Pergerakan", url: "/inventory/movements" },
-      { title: "Penyesuaian Stok", url: "/inventory/stock-adjustment" },
-      { title: "Laporan Stok", url: "/inventory/reports" }
-    ]
-  },
-  { 
-    title: "POS (Kasir)", 
+    title: "POS (Kasir Retail)", 
+ 
     url: "/pos", 
     icon: ShoppingCart,
     id: "pos",
@@ -78,14 +105,30 @@ const items: MenuItem[] = [
     ]
   },
   { 
-    title: "Pelanggan", 
-    url: "/customers", 
+    title: "Pelanggan & CRM", 
+    url: "/crm", 
     icon: Users,
     id: "crm",
     subItems: [
-      { title: "Daftar Pelanggan", url: "/customers/list" },
+      { title: "Daftar Pelanggan", url: "/crm/customers" },
+      { title: "Pipeline & Leads", url: "/crm/pipeline" },
       { title: "Loyalty & Poin", url: "/customers/loyalty" },
       { title: "Voucher", url: "/customers/voucher" }
+    ]
+  },
+  {
+    title: "Keuangan & Akuntansi", 
+    url: "/finance", 
+    icon: Calculator,
+    id: "finance",
+    subItems: [
+      { title: "Dashboard Keuangan", url: "/finance" },
+      { title: "Kas & Bank", url: "/finance/cash" },
+      { title: "Pemasukan", url: "/finance/cash-in" },
+      { title: "Pengeluaran", url: "/finance/cash-out" },
+      { title: "Buku Besar (GL)", url: "/finance/gl" },
+      { title: "Periode Akuntansi", url: "/finance/accounting-periods" },
+      { title: "Laporan Keuangan", url: "/finance/reports" }
     ]
   },
   {
@@ -94,8 +137,10 @@ const items: MenuItem[] = [
     icon: UserCheck,
     id: "hr",
     subItems: [
-      { title: "Absensi", url: "/hr/attendance" },
+      { title: "Dashboard HR", url: "/hr" },
       { title: "Pegawai", url: "/hr/employees" },
+      { title: "Absensi", url: "/hr/attendance" },
+      { title: "Penggajian (Payroll)", url: "/hr/payroll" },
       { title: "Shift", url: "/hr/shift" }
     ]
   },
@@ -110,19 +155,7 @@ const items: MenuItem[] = [
       { title: "Analisis Keuangan", url: "/ai/finance-analysis" },
       { title: "Prediksi", url: "/ai/prediction" }
     ]
-  },
-  { 
-    title: "Laporan", 
-    url: "/reports", 
-    icon: BarChart3,
-    id: "reports",
-    subItems: [
-      { title: "Penjualan", url: "/reports/sales" },
-      { title: "Keuangan", url: "/reports/finance" },
-      { title: "Inventaris", url: "/reports/inventory" },
-      { title: "Karyawan", url: "/reports/employee" }
-    ]
-  },
+  }
 ]
 
 const settings: MenuItem[] = [
@@ -262,3 +295,7 @@ export function AppSidebar() {
     </Sidebar>
   )
 }
+
+
+
+

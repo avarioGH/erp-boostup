@@ -6,7 +6,7 @@ export class CrmAnalyticsService {
   constructor(private prisma: PrismaService) {}
 
   async getPipelineMetrics(companyId: string) {
-    const opps = await this.prisma.opportunity.findMany({ where: { // @ts-ignore
+    const opps = await this.prisma.opportunity.findMany({ where: { 
  company_id: companyId } });
     const total = opps.length;
     const open = opps.filter(o => o.stage !== 'WON' && o.stage !== 'LOST');
@@ -41,7 +41,7 @@ export class CrmAnalyticsService {
   }
 
   async getSalespersonMetrics(companyId: string) {
-    const opps = await this.prisma.opportunity.findMany({ where: { // @ts-ignore
+    const opps = await this.prisma.opportunity.findMany({ where: { 
  company_id: companyId } });
     const map = new Map<string, any>();
 
@@ -70,7 +70,7 @@ export class CrmAnalyticsService {
   }
 
   async getSourceMetrics(companyId: string) {
-    const opps = await this.prisma.opportunity.findMany({ where: { // @ts-ignore
+    const opps = await this.prisma.opportunity.findMany({ where: { 
  company_id: companyId } });
     const map = new Map<string, any>();
 
@@ -94,17 +94,17 @@ export class CrmAnalyticsService {
   }
 
   async getFunnelMetrics(companyId: string) {
-    const leads = await this.prisma.lead.count({ where: { // @ts-ignore
+    const leads = await this.prisma.lead.count({ where: { 
  company_id: companyId } });
-    const qualifiedLeads = await this.prisma.lead.count({ where: { // @ts-ignore
+    const qualifiedLeads = await this.prisma.lead.count({ where: { 
  company_id: companyId, status: { in: ['QUALIFIED', 'CONVERTED'] } } });
-    const opportunities = await this.prisma.opportunity.count({ where: { // @ts-ignore
+    const opportunities = await this.prisma.opportunity.count({ where: { 
  company_id: companyId } });
-    const quotations = await this.prisma.quotation.count({ where: { // @ts-ignore
- company_id: companyId, opportunity_id: { not: null } } });
-    const orders = await this.prisma.salesOrder.count({ where: { // @ts-ignore
- company_id: companyId, quotation: { opportunity_id: { not: null } } } });
-    const wonOpps = await this.prisma.opportunity.count({ where: { // @ts-ignore
+    const quotations = await (this.prisma as any).quotation.count({ where: { 
+ company_id: companyId, opportunity_id: { not: null } as any } });
+    const orders = await this.prisma.salesOrder.count({ where: { 
+ company_id: companyId, quotation: { opportunity_id: { not: null } as any } as any } });
+    const wonOpps = await this.prisma.opportunity.count({ where: { 
  company_id: companyId, stage: 'WON' } });
 
     return {

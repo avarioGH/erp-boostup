@@ -1,4 +1,5 @@
 "use client"
+import { api } from "@/lib/api"
 
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,15 +20,11 @@ export default function LoginPage() {
     setError("")
 
     try {
-      const res = await fetch("https://api.erp.boostup.id/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      })
+      const res = await api.post("/auth/login", { username, password })
 
-      const data = await res.json()
+      const data = res.data
       
-      if (!res.ok) {
+      if (res.status !== 200 && res.status !== 201) {
         throw new Error(data.message || "Login failed")
       }
 

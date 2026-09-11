@@ -12,7 +12,7 @@ import {
   Bar, BarChart, CartesianGrid, 
   ResponsiveContainer, Tooltip, XAxis, YAxis, Legend
 } from "recharts"
-import { api } from "@/lib/api"
+import { api, FinanceAPI } from "@/lib/api"
 import Link from "next/link"
 
 export default function FinanceDashboard() {
@@ -28,11 +28,11 @@ export default function FinanceDashboard() {
         setIsError(false)
         
         // Fetch Summary
-        const summaryRes = await api.get('/finance/summary')
+        const summaryRes = await FinanceAPI.getSummary()
         setSummary(summaryRes.data)
         
         // Fetch Transactions
-        const txRes = await api.get('/finance/transactions')
+        const txRes = await FinanceAPI.getTransactions()
         setTransactions(txRes.data)
       } catch (error) {
         console.error("Database connection failed:", error)

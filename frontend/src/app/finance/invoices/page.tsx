@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { B2BApi } from '@/lib/api';
+import { FinanceAPI } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,7 @@ export default function InvoicesPage() {
 
   const fetchInvoices = async () => {
     try {
-      const res = await B2BApi.getInvoices({ page: 1, limit: 50 });
+      const res = await FinanceAPI.getInvoices({ page: 1, limit: 50, type: 'AR' });
       setData(res?.data || []);
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };

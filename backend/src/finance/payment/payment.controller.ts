@@ -12,8 +12,14 @@ export class PaymentController {
   create(@Request() req, @Body() data: any) { return this.service.create(req.user.company_id, data); }
   @Permissions('payment.view')
   @Get()
-  async findAll(@Request() req) { 
-    const data = await this.prisma.payment.findMany({ where: { company_id: req.user.company_id }, include: { invoice: true }, orderBy: { created_at: 'desc'} });
+  async findAll(@Request() req, @Query('type') type?: string) { 
+    const where: any = { company_id: req.user.company_id };
+    if (type) where.invoice = { type };
+    const data = await this.prisma.payment.findMany({ 
+      where, 
+      include: { invoice: { include: { customer: true, supplier: true } } }, 
+      orderBy: { created_at: 'desc'} 
+    });
     return { data }; 
   }
   @Permissions('payment.view')

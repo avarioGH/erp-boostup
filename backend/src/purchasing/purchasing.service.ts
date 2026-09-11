@@ -1,4 +1,5 @@
-﻿// @ts-nocheck
+import { EventEmitter2 } from '@nestjs/event-emitter';
+﻿
 import { createFifoLayer } from '../inventory/fifo.engine';
 import { InventoryService } from '../inventory/inventory.service';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
@@ -6,10 +7,25 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PurchasingService {
-  constructor(private prisma: PrismaService, private inventoryService: InventoryService) {}
+  constructor(private prisma: PrismaService, private inventoryService: InventoryService, private eventEmitter: EventEmitter2) {}
+
+  async getPurchaseRequests(companyId: string, page: number = 1, limit: number = 50) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      (this.prisma.purchaseRequest as any).findMany({
+        where: { company_id: companyId },
+        include: { items: { include: { product: true } } },
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
+      }),
+      (this.prisma.purchaseRequest as any).count({ where: { company_id: companyId } }),
+    ]);
+    return { data, total, page, limit };
+  }
 
   async createPurchaseRequest(companyId: string, data: any) {
-    return this.prisma.purchaseRequest.create({
+    return (this.prisma.purchaseRequest as any).create({
       data: {
         company_id: companyId,
         request_number: `PR-${Date.now()}`,
@@ -172,7 +188,7 @@ export class PurchasingService {
         const poItem = po.items.find((i: any) => i.product_id === rItem.productId);
         if (!poItem) throw new BadRequestException('Product ' + rItem.productId + ' not in PO');
         
-        const newReceivedQty = poItem.received_qty + rItem.qty;
+        const newReceivedQty = (poItem as any).received_qty + rItem.qty;
         if (newReceivedQty > poItem.qty) throw new BadRequestException('Cannot receive more than ordered. Ordered: ' + poItem.qty + ', Attempting to receive total: ' + newReceivedQty);
         
         if (newReceivedQty < poItem.qty) allFullyReceived = false;
@@ -191,7 +207,7 @@ export class PurchasingService {
           unitCost: poItem.unit_price,
           referenceType: 'PURCHASE_RECEIPT',
           referenceId: grn.id,
-          description: "PO Receipt " + po.po_number,
+          description: "PO Receipt " + po.order_number,
           userId: (await tx.user.findFirst({where:{company_id:companyId}}))!.id
         });
       }
@@ -221,7 +237,7 @@ export class PurchasingService {
         const poItem = po.items.find((i: any) => i.product_id === bItem.productId);
         if (!poItem) throw new BadRequestException('Product not in PO');
         
-        const newBilledQty = (poItem.billed_qty || 0) + bItem.qty;
+        const newBilledQty = ((poItem as any).billed_qty || 0) + bItem.qty;
         if (newBilledQty > poItem.qty) throw new BadRequestException('Cannot bill more than PO quantity');
         
         if (newBilledQty < poItem.qty) allFullyBilled = false;
@@ -233,7 +249,7 @@ export class PurchasingService {
 
         await tx.purchaseOrderItem.update({
           where: { id: poItem.id },
-          data: { billed_qty: newBilledQty }
+          data: { billed_qty: newBilledQty } as any
         });
       }
 
@@ -263,8 +279,14 @@ export class PurchasingService {
         data: { bill_status: allFullyBilled ? 'BILLED' : 'PARTIAL' }
       });
 
-      return invoice;
+      
+        await this.eventEmitter.emitAsync('invoice.posted', {
+          companyId, sourceEntityId: invoice.id, eventId: 'EVT-' + Date.now(), occurredAt: new Date(),
+          payload: { type: 'VENDOR_BILL', totalAmount: invoice.total }, tx: tx as any
+        });
+        return invoice;
     });
+
   }
 
   async payVendorBill(companyId: string, invoiceId: string, paymentData: any) {
@@ -317,8 +339,14 @@ export class PurchasingService {
         });
       }
 
-      return payment;
+      
+        await this.eventEmitter.emitAsync('payment.processed', {
+          companyId, sourceEntityId: payment.id, eventId: 'EVT-' + Date.now(), occurredAt: new Date(),
+          payload: { type: 'PAYABLE', amount: payment.amount, accountId: paymentData.accountId }, tx: tx as any
+        });
+        return payment;
     });
+
   }
 
   async getProcurementAnalytics(companyId: string) {

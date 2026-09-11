@@ -1,4 +1,5 @@
 "use client"
+import { api } from "@/lib/api"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,10 +18,8 @@ export default function WarehousesPage() {
     try {
       setLoading(true)
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("https://api.erp.boostup.id/inventory/warehouses", {
-        headers: { "Authorization": `Bearer ${token}` }
-      })
-      if (res.ok) setWarehouses(await res.json())
+      const res = await api.get("/inventory/warehouses")
+      setWarehouses(res.data)
     } catch (e) {
       console.error(e)
     } finally {
@@ -36,15 +35,8 @@ export default function WarehousesPage() {
     e.preventDefault()
     try {
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("https://api.erp.boostup.id/inventory/warehouses", {
-        method: "POST",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(formData)
-      })
-      if (res.ok) {
+      const res = await api.post("/inventory/warehouses", formData)
+      if (res.status === 200 || res.status === 201) {
         setShowForm(false)
         setFormData({ name: "", code: "", address: "" })
         fetchWarehouses()

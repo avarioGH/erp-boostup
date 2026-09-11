@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+﻿
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { IntegrationLogService } from './integration-log.service';
@@ -13,7 +13,7 @@ export class IntegrationsService {
   ) {}
 
   async findAll(companyId: string) {
-    return this.prisma.integration.findMany({
+    return (this.prisma.integration as any).findMany({
       where: { company_id: companyId },
       orderBy: { created_at: 'desc' },
       select: { id: true, name: true, type: true, provider: true, environment: true, status: true, is_active: true, created_at: true }
@@ -21,7 +21,7 @@ export class IntegrationsService {
   }
 
   async findOne(companyId: string, id: string) {
-    const integration = await this.prisma.integration.findFirst({
+    const integration = await (this.prisma.integration as any).findFirst({
       where: { id, company_id: companyId },
       select: { id: true, name: true, type: true, provider: true, environment: true, status: true, is_active: true, configuration: true, created_at: true, webhooks: { take: 5, orderBy: { received_at: 'desc' } } }
     });
@@ -30,7 +30,7 @@ export class IntegrationsService {
   }
 
   async create(companyId: string, userId: string, data: any) {
-    const integration = await this.prisma.integration.create({
+    const integration = await (this.prisma.integration as any).create({
       data: {
         company_id: companyId,
         name: data.name,
@@ -53,7 +53,7 @@ export class IntegrationsService {
 
   async update(companyId: string, userId: string, id: string, data: any) {
     await this.findOne(companyId, id);
-    const integration = await this.prisma.integration.update({
+    const integration = await (this.prisma.integration as any).update({
       where: { id },
       data: {
         name: data.name,
@@ -74,7 +74,7 @@ export class IntegrationsService {
 
   async toggleStatus(companyId: string, userId: string, id: string, isActive: boolean) {
     await this.findOne(companyId, id);
-    const integration = await this.prisma.integration.update({
+    const integration = await (this.prisma.integration as any).update({
       where: { id },
       data: { 
         is_active: isActive, 

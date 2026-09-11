@@ -1,4 +1,5 @@
 "use client"
+import { api } from "@/lib/api"
 
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -22,22 +23,14 @@ export default function AIInsightsPage() {
 
     try {
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("https://api.erp.boostup.id/platform/ai/ask", {
-        method: "POST",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        // We can pass empty context data or fetch basic stats. For demo, we just pass the prompt.
-        body: JSON.stringify({ prompt: userMsg, contextData: { source: "ERP User Request" } })
-      })
+      const res = await api.post("/platform/ai/ask", { prompt: userMsg, contextData: { source: "ERP User Request" } })
       
-      const data = await res.json()
+      const data = res.data
       
-      if (res.ok && data.success) {
-        setHistory(prev => [...prev, { role: 'ai', content: data.insight }])
+      if ((res.status === 200 || res.status === 201) && data.success) {
+        setHistory(prev => [...prev, { role: 'ai', content: data.answer || "Processing complete." }])
       } else {
-        setHistory(prev => [...prev, { role: 'ai', content: `Error: ${data.insight || 'Failed to get insight'}` }])
+        setHistory(prev => [...prev, { role: 'ai', content: "Error communicating with AI service." }])
       }
     } catch (e) {
       console.error(e)

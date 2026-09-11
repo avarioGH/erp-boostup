@@ -96,7 +96,7 @@ export class PaymentService {
       }
 
       // Emit strictly typed Accounting Event for Idempotent GlService listening
-      await this.eventEmitter.emitAsync('payment.received', new PaymentProcessedEvent(
+      await this.eventEmitter.emitAsync('payment.processed', new PaymentProcessedEvent(
         companyId,
         payment.id,
         'EVT-' + Date.now(),

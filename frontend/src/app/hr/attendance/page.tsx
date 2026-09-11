@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import api from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Clock, Fingerprint, UserCheck } from "lucide-react"
-import { api } from "@/lib/api"
+import { HrAPI } from "@/lib/api"
 
 export default function HrAttendance() {
   const [attendances, setAttendances] = useState<any[]>([])
@@ -161,3 +162,4 @@ export default function HrAttendance() {
     </div>
   )
 }
+

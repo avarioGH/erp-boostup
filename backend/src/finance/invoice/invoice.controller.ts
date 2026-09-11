@@ -12,8 +12,14 @@ export class InvoiceController {
   create(@Request() req, @Body() data: { salesOrderId: string }) { return this.service.createFromSO(req.user.company_id, data.salesOrderId); }
   @Permissions('invoice.view')
   @Get()
-  async findAll(@Request() req) { 
-    const data = await this.prisma.invoice.findMany({ where: { company_id: req.user.company_id }, include: { customer: true }, orderBy: { created_at: 'desc'} });
+  async findAll(@Request() req, @Query('type') type?: string) { 
+    const where: any = { company_id: req.user.company_id };
+    if (type) where.type = type;
+    const data = await this.prisma.invoice.findMany({ 
+      where, 
+      include: { customer: true, supplier: true }, 
+      orderBy: { created_at: 'desc'} 
+    });
     return { data }; 
   }
   @Permissions('invoice.view')

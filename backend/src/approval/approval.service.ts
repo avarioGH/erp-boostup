@@ -68,8 +68,13 @@ export class ApprovalService {
       // State Machine Validation
       if (req.status !== 'PENDING') throw new BadRequestException('Can only approve PENDING requests');
 
-      // Self-Approval Block (unless explicit business logic says otherwise)
-      if (false) throw new ForbiddenException('Cannot self-approve your own request');
+            // Self-Approval Block (unless explicit business logic says otherwise)
+      const reqLog = await tx.approvalLog.findFirst({
+        where: { approval_request_id: req.id, action: 'REQUESTED' }
+      });
+      if (reqLog && reqLog.acted_by === actor) {
+        throw new ForbiddenException('Cannot self-approve your own request');
+      }
 
       const updatedRes = await tx.approvalRequest.updateMany({
           where: { id: approvalRequestId, status: 'PENDING' },

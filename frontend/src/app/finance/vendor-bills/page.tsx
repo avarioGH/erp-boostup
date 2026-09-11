@@ -3,9 +3,10 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CreditCard, CheckCircle } from "lucide-react"
-import { api } from "@/lib/api"
+import { api, FinanceAPI } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 
 export default function VendorBillsPage() {
   const [bills, setBills] = useState<any[]>([])
@@ -19,9 +20,8 @@ export default function VendorBillsPage() {
   const fetchBills = async () => {
     try {
       setLoading(true)
-      const res = await api.get('/finance/invoices')
-      // filter only AP bills
-      setBills(res.data.filter((i: any) => i.type === 'AP'))
+      const res = await FinanceAPI.getInvoices({ type: 'AP' })
+      setBills(res.data)
     } catch (err) {
       console.error(err)
     } finally {
@@ -74,7 +74,13 @@ export default function VendorBillsPage() {
                 ) : bills.map((bill) => (
                   <tr key={bill.id} className="border-b hover:bg-slate-50 dark:hover:bg-slate-900">
                     <td className="p-4 font-medium">{bill.invoice_number}</td>
-                    <td className="p-4">{bill.purchase_order?.order_number || '-'}</td>
+                    <td className="p-4">
+                      {bill.purchase_order?.order_number ? (
+                        <Link href={`/purchasing/orders?search=${bill.purchase_order.order_number}`} className="text-blue-600 hover:underline">
+                          {bill.purchase_order.order_number}
+                        </Link>
+                      ) : '-'}
+                    </td>
                     <td className="p-4">Rp {bill.total.toLocaleString()}</td>
                     <td className="p-4">Rp {bill.remaining_amount.toLocaleString()}</td>
                     <td className="p-4">

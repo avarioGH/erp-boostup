@@ -1,5 +1,6 @@
 "use client"
-
+import { HrAPI } from "@/lib/api"
+import { formatCurrency } from "@/lib/format"
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -35,15 +36,13 @@ export default function EmployeesPage() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem("erp_token")
-      
       const [empRes, depRes] = await Promise.all([
-        fetch("https://api.erp.boostup.id/hr/employees", { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch("https://api.erp.boostup.id/hr/departments", { headers: { "Authorization": `Bearer ${token}` } })
+        HrAPI.getEmployees(),
+        HrAPI.getDepartments()
       ])
       
-      if (empRes.ok) setEmployees(await empRes.json())
-      if (depRes.ok) setDepartments(await depRes.json())
+      if (empRes) setEmployees(empRes)
+      if (depRes) setDepartments(depRes)
     } catch (e) {
       console.error(e)
     } finally {
@@ -58,26 +57,16 @@ export default function EmployeesPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const token = localStorage.getItem("erp_token")
-      const res = await fetch("https://api.erp.boostup.id/hr/employees", {
-        method: "POST",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          position: formData.position,
-          basicSalary: Number(formData.basicSalary)
-        })
+      await HrAPI.createEmployee({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        position: formData.position,
+        basicSalary: Number(formData.basicSalary)
       })
-      if (res.ok) {
-        setShowForm(false)
-        setFormData({ firstName: "", lastName: "", email: "", position: "", basicSalary: "" })
-        fetchData()
-      }
+      setShowForm(false)
+      setFormData({ firstName: "", lastName: "", email: "", position: "", basicSalary: "" })
+      fetchData()
     } catch (e) {
       console.error(e)
     }
@@ -98,18 +87,10 @@ export default function EmployeesPage() {
     
     // Save to backend
     try {
-      const token = localStorage.getItem("erp_token")
-      await fetch(`https://api.erp.boostup.id/hr/employees/${selectedEmp.id}/biometric`, {
-        method: "POST",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          employeeId: selectedEmp.id,
-          rightThumb: "base64_simulated_right_thumb_template",
-          leftThumb: "base64_simulated_left_thumb_template"
-        })
+      await HrAPI.registerBiometric(selectedEmp.id, {
+        employeeId: selectedEmp.id,
+        rightThumb: "base64_simulated_right_thumb_template",
+        leftThumb: "base64_simulated_left_thumb_template"
       })
       
       setBioStatus('done')
@@ -118,10 +99,6 @@ export default function EmployeesPage() {
       console.error(e)
       setBioStatus('idle')
     }
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(amount)
   }
 
   return (
@@ -147,140 +124,103 @@ export default function EmployeesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>First Name</Label>
-                  <Input value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} required />
+                  <Input required value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} />
                 </div>
                 <div className="space-y-2">
                   <Label>Last Name</Label>
-                  <Input value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Position / Job Title</Label>
-                  <Input value={formData.position} onChange={(e) => setFormData({...formData, position: e.target.value})} />
+                  <Input required value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Basic Salary (IDR)</Label>
-                <Input type="number" value={formData.basicSalary} onChange={(e) => setFormData({...formData, basicSalary: e.target.value})} required />
+                <Label>Email</Label>
+                <Input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
               </div>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
-                <Button type="submit">Save</Button>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Position</Label>
+                  <Input required value={formData.position} onChange={(e) => setFormData({...formData, position: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Basic Salary</Label>
+                  <Input type="number" required value={formData.basicSalary} onChange={(e) => setFormData({...formData, basicSalary: e.target.value})} />
+                </div>
               </div>
+              <Button type="submit" className="w-full">Save Employee</Button>
             </CardContent>
           </form>
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Employee Directory</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
-          ) : employees.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No employees found.</p>
-          ) : (
-            <div className="border rounded-md">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="p-3 text-left font-medium">Code</th>
-                    <th className="p-3 text-left font-medium">Name</th>
-                    <th className="p-3 text-left font-medium">Position</th>
-                    <th className="p-3 text-center font-medium">Biometric</th>
-                    <th className="p-3 text-right font-medium">Basic Salary</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {employees.map((e) => (
-                    <tr key={e.id} className="border-b last:border-0 hover:bg-muted/50">
-                      <td className="p-3 font-medium">{e.employee_code}</td>
-                      <td className="p-3">{e.first_name} {e.last_name}</td>
-                      <td className="p-3">{e.position || '-'}</td>
-                      <td className="p-3 text-center">
-                        {e.fingerprint_right_thumb && e.fingerprint_left_thumb ? (
-                          <div className="flex items-center justify-center text-emerald-600 gap-1 font-medium bg-emerald-50 px-2 py-1 rounded-md w-fit mx-auto">
-                            <CheckCircle2 className="w-4 h-4" />
-                            Registered
-                          </div>
-                        ) : (
-                          <Button size="sm" variant="outline" className="h-8 gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50" onClick={() => openBioModal(e)}>
-                            <Fingerprint className="w-4 h-4" />
-                            Register
-                          </Button>
-                        )}
-                      </td>
-                      <td className="p-3 text-right">{formatCurrency(e.basic_salary)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {loading ? (
+        <div className="p-8 flex justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {employees.map((emp) => (
+            <Card key={emp.id}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex justify-between items-center">
+                  <span>{emp.first_name} {emp.last_name}</span>
+                  {emp.has_biometric ? (
+                    <span className="flex items-center text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Biometric Enrolled
+                    </span>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => openBioModal(emp)} className="h-7 text-xs">
+                      <Fingerprint className="h-3 w-3 mr-1" />
+                      Enroll
+                    </Button>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p><strong>Code:</strong> {emp.employee_code}</p>
+                  <p><strong>Position:</strong> {emp.position}</p>
+                  <p><strong>Email:</strong> {emp.email}</p>
+                  <p><strong>Salary:</strong> {formatCurrency(emp.basic_salary || 0)}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      {/* Biometric Registration Modal */}
       <Dialog open={bioModalOpen} onOpenChange={setBioModalOpen}>
-        <DialogContent className="sm:max-w-md text-center">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-center">Register Biometrics</DialogTitle>
-            <DialogDescription className="text-center">
-              Enroll thumb prints for {selectedEmp?.first_name} {selectedEmp?.last_name}
+            <DialogTitle>Enroll Biometrics</DialogTitle>
+            <DialogDescription>
+              Connect hardware scanner to register fingerprint data.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="flex flex-col items-center justify-center py-6 gap-6">
-            <div className={`p-6 rounded-full flex items-center justify-center transition-all duration-500 ${
-              bioStatus === 'idle' ? 'bg-slate-100 text-slate-400' :
-              bioStatus === 'scanning_right' || bioStatus === 'scanning_left' ? 'bg-indigo-100 text-indigo-600 shadow-[0_0_20px_rgba(79,70,229,0.3)]' :
-              'bg-emerald-100 text-emerald-600 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
-            }`}>
-              {bioStatus === 'done' ? (
-                <CheckCircle2 className="w-16 h-16 animate-in zoom-in" />
-              ) : (
-                <Fingerprint className={`w-16 h-16 ${bioStatus.includes('scanning') ? 'animate-pulse' : ''}`} />
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="font-semibold text-lg">
-                {bioStatus === 'idle' ? 'Ready to Scan' :
-                 bioStatus === 'scanning_right' ? 'Scanning Right Thumb...' :
-                 bioStatus === 'scanning_left' ? 'Scanning Left Thumb...' :
-                 'Enrollment Complete!'}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {bioStatus === 'idle' ? 'Place right thumb on the scanner, followed by the left thumb.' :
-                 bioStatus === 'scanning_right' ? 'Please keep right thumb steady on the reader.' :
-                 bioStatus === 'scanning_left' ? 'Now place left thumb on the reader.' :
-                 'Both thumbs successfully registered and saved to database.'}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex justify-center gap-3">
+          <div className="py-6 flex flex-col items-center justify-center space-y-4">
             {bioStatus === 'idle' && (
               <Button onClick={startScanning} className="w-full">
-                <ScanFace className="w-4 h-4 mr-2" /> Start Registration
+                <ScanFace className="mr-2 h-4 w-4" /> Start Hardware Scan
               </Button>
             )}
-            {bioStatus.includes('scanning') && (
-              <Button disabled className="w-full">
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...
-              </Button>
+            
+            {bioStatus === 'scanning_right' && (
+              <div className="text-center space-y-2">
+                <Fingerprint className="h-12 w-12 text-primary animate-pulse mx-auto" />
+                <p className="text-sm font-medium">Place RIGHT THUMB on scanner...</p>
+              </div>
             )}
+
+            {bioStatus === 'scanning_left' && (
+              <div className="text-center space-y-2">
+                <Fingerprint className="h-12 w-12 text-primary animate-pulse mx-auto" />
+                <p className="text-sm font-medium">Place LEFT THUMB on scanner...</p>
+              </div>
+            )}
+
             {bioStatus === 'done' && (
-              <Button onClick={() => setBioModalOpen(false)} className="w-full bg-emerald-600 hover:bg-emerald-700">
-                Finish
-              </Button>
+              <div className="text-center space-y-2">
+                <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto" />
+                <p className="text-sm font-medium text-emerald-600">Templates stored successfully!</p>
+                <Button variant="outline" onClick={() => setBioModalOpen(false)} className="mt-4">Close</Button>
+              </div>
             )}
           </div>
         </DialogContent>

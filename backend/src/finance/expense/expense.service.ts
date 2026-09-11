@@ -1,4 +1,3 @@
-﻿// @ts-nocheck
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -23,7 +22,7 @@ export class ExpenseService {
     const where: any = { company_id: companyId };
     if (employeeId) where.employee_id = employeeId;
     
-    return this.prisma.expenseClaim.findMany({
+    return (this.prisma.expenseClaim as any).findMany({
       where,
       include: { employee: true, items: { include: { category: true } } },
       skip: (page - 1) * limit,
@@ -33,7 +32,7 @@ export class ExpenseService {
   }
 
   async getClaim(companyId: string, id: string) {
-    const claim = await this.prisma.expenseClaim.findFirst({
+    const claim = await (this.prisma.expenseClaim as any).findFirst({
       where: { id, company_id: companyId },
       include: { employee: true, items: { include: { category: true } } }
     });
@@ -49,7 +48,7 @@ export class ExpenseService {
 
       const claimNumber = `EXP/${new Date().getFullYear()}/${Date.now()}`;
       
-      const claim = await tx.expenseClaim.create({
+      const claim = await (tx.expenseClaim as any).create({
         data: {
           company_id: companyId,
           employee_id: employee.id,
@@ -84,7 +83,7 @@ export class ExpenseService {
         }
       }
 
-      const updatedClaim = await tx.expenseClaim.update({
+      const updatedClaim = await (tx.expenseClaim as any).update({
         where: { id: claim.id },
         data: { total_amount: total },
         include: { items: true }
@@ -96,13 +95,13 @@ export class ExpenseService {
 
   async submitClaim(companyId: string, id: string) {
     return this.prisma.$transaction(async (tx) => {
-      const claim = await tx.expenseClaim.findFirst({ where: { id, company_id: companyId }, include: { items: true } });
+      const claim = await (tx.expenseClaim as any).findFirst({ where: { id, company_id: companyId }, include: { items: true } });
       if (!claim) throw new NotFoundException('Expense Claim not found');
       if (claim.status !== 'DRAFT') throw new BadRequestException('Only DRAFT claims can be submitted');
       if (claim.items.length === 0) throw new BadRequestException('Cannot submit empty claim');
       if (claim.total_amount <= 0) throw new BadRequestException('Claim total must be positive');
 
-      return tx.expenseClaim.update({
+      return (tx.expenseClaim as any).update({
         where: { id },
         data: { status: 'SUBMITTED', submitted_at: new Date() }
       });
@@ -110,13 +109,13 @@ export class ExpenseService {
   }
 
   async approveClaim(companyId: string, id: string, userId: string) {
-    const claim = await this.prisma.expenseClaim.findFirst({ where: { id, company_id: companyId } });
+    const claim = await (this.prisma.expenseClaim as any).findFirst({ where: { id, company_id: companyId } });
     if (!claim) throw new NotFoundException('Expense Claim not found');
     if (claim.status !== 'SUBMITTED') throw new BadRequestException('Only SUBMITTED claims can be approved');
     
     // Optional: if (claim.employee_id === user.employee_id) throw new ForbiddenException('Cannot self-approve');
 
-    return this.prisma.expenseClaim.update({
+    return (this.prisma.expenseClaim as any).update({
       where: { id },
       data: { status: 'APPROVED', approved_at: new Date(), approved_by: userId }
     });
@@ -124,11 +123,11 @@ export class ExpenseService {
 
   async postClaim(companyId: string, id: string, userId: string) {
     return this.prisma.$transaction(async (tx) => {
-      const claim = await this.prisma.expenseClaim.findFirst({ where: { id, company_id: companyId }, include: { items: true } });
+      const claim = await (this.prisma.expenseClaim as any).findFirst({ where: { id, company_id: companyId }, include: { items: true } });
       if (!claim) throw new NotFoundException('Expense Claim not found');
       if (claim.status !== 'APPROVED') throw new BadRequestException('Only APPROVED claims can be posted');
 
-      const updated = await tx.expenseClaim.update({
+      const updated = await (tx.expenseClaim as any).update({
         where: { id },
         data: { 
           status: 'POSTED', 
@@ -145,7 +144,7 @@ export class ExpenseService {
         'EVT-EXP-' + Date.now(),
         new Date(),
         {
-          total: claim.total_amount,
+          totalAmount: claim.total_amount,
           items: claim.items
         },
         tx as any

@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+﻿
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -24,7 +24,7 @@ export class NotificationService {
   async send(data: CreateNotificationDto) {
     try {
       if (data.idempotencyKey) {
-        const existing = await this.prisma.notification.findUnique({
+        const existing = await (this.prisma as any).notification.findUnique({
           where: { idempotency_key: data.idempotencyKey }
         });
         if (existing) {
@@ -33,7 +33,7 @@ export class NotificationService {
         }
       }
 
-      const notification = await this.prisma.notification.create({
+      const notification = await (this.prisma as any).notification.create({
         data: {
           company_id: data.companyId,
           user_id: data.userId,
@@ -57,7 +57,7 @@ export class NotificationService {
   }
 
   async getNotifications(companyId: string, userId: string, skip = 0, take = 50) {
-    return this.prisma.notification.findMany({
+    return (this.prisma as any).notification.findMany({
       where: { company_id: companyId, user_id: userId },
       orderBy: { created_at: 'desc' },
       skip,
@@ -66,27 +66,27 @@ export class NotificationService {
   }
 
   async getUnreadCount(companyId: string, userId: string) {
-    return this.prisma.notification.count({
+    return (this.prisma as any).notification.count({
       where: { company_id: companyId, user_id: userId, is_read: false }
     });
   }
 
   async markAsRead(companyId: string, userId: string, notificationId: string) {
-    const notif = await this.prisma.notification.findFirst({
+    const notif = await (this.prisma as any).notification.findFirst({
       where: { id: notificationId, company_id: companyId, user_id: userId }
     });
     if (!notif) throw new NotFoundException('Notification not found');
 
     if (notif.is_read) return notif;
 
-    return this.prisma.notification.update({
+    return (this.prisma as any).notification.update({
       where: { id: notificationId },
       data: { is_read: true, read_at: new Date() }
     });
   }
 
   async markAllAsRead(companyId: string, userId: string) {
-    return this.prisma.notification.updateMany({
+    return (this.prisma as any).notification.updateMany({
       where: { company_id: companyId, user_id: userId, is_read: false },
       data: { is_read: true, read_at: new Date() }
     });

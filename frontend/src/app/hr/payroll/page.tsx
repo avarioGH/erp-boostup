@@ -1,4 +1,5 @@
 "use client"
+import { HrAPI } from "@/lib/api"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,15 +25,14 @@ export default function PayrollPage() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem("erp_token")
       
       const [payRes, empRes] = await Promise.all([
-        fetch("https://api.erp.boostup.id/hr/payroll", { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch("https://api.erp.boostup.id/hr/employees", { headers: { "Authorization": `Bearer ${token}` } })
+        HrAPI.getPayrolls(),
+        HrAPI.getEmployees()
       ])
       
-      if (payRes.ok) setPayrolls(await payRes.json())
-      if (empRes.ok) setEmployees(await empRes.json())
+      setPayrolls(payRes.data)
+      setEmployees(empRes.data)
     } catch (e) {
       console.error(e)
     } finally {
@@ -62,20 +62,13 @@ export default function PayrollPage() {
       if (Number(allowance) > 0) items.push({ type: "ALLOWANCE", name: "General Allowance", amount: Number(allowance) })
       if (Number(deduction) > 0) items.push({ type: "DEDUCTION", name: "General Deduction", amount: Number(deduction) })
       
-      const res = await fetch("https://api.erp.boostup.id/hr/payroll", {
-        method: "POST",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
+      const res = await HrAPI.createPayroll({
           employeeId,
           period,
           basicSalary,
           items
         })
-      })
-      if (res.ok) {
+      if (res.status === 200 || res.status === 201) {
         setShowForm(false)
         setEmployeeId("")
         setPeriod("")

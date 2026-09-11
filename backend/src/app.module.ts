@@ -1,3 +1,4 @@
+import { ApprovalModule } from './approval/approval.module';
 import { EcommerceModule } from './ecommerce/ecommerce.module';
 import { MrpModule } from './mrp/mrp.module';
 import { HealthModule } from './health/health.module';
@@ -38,6 +39,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
+    ApprovalModule,
     EcommerceModule,
     SystemModule,
     ManufacturingModule,

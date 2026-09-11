@@ -1,4 +1,5 @@
 "use client"
+import { HrAPI } from "@/lib/api"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Clock, Banknote } from "lucide-react"
@@ -11,25 +12,20 @@ export default function HrDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("erp_token")
-        
-        const [empRes, attRes, payRes] = await Promise.all([
-          fetch("https://api.erp.boostup.id/hr/employees", { headers: { "Authorization": `Bearer ${token}` } }),
-          fetch("https://api.erp.boostup.id/hr/attendance", { headers: { "Authorization": `Bearer ${token}` } }),
-          fetch("https://api.erp.boostup.id/hr/payroll", { headers: { "Authorization": `Bearer ${token}` } })
+        const [employees, attendance, payrolls] = await Promise.all([
+          HrAPI.getEmployees(),
+          HrAPI.getAttendances(),
+          HrAPI.getPayrolls()
         ])
 
-        const employees = empRes.ok ? await empRes.json() : []
-        const attendance = attRes.ok ? await attRes.json() : []
-        const payrolls = payRes.ok ? await payRes.json() : []
-
-        const today = new Date().toDateString()
-        const presentToday = attendance.filter((a: any) => new Date(a.date).toDateString() === today && a.status === "PRESENT").length
-
         setStats({
-          employees: employees.length || 0,
-          presentToday,
-          payrolls: payrolls.length || 0
+          employees: employees.length,
+          presentToday: attendance.filter((a: any) => {
+            const date = new Date(a.date).toISOString().split('T')[0]
+            const today = new Date().toISOString().split('T')[0]
+            return date === today && a.status === 'Present'
+          }).length,
+          payrolls: payrolls.length
         })
       } catch (e) {
         console.error(e)

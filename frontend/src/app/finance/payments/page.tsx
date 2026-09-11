@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { B2BApi } from '@/lib/api';
+import { FinanceAPI } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, Eye } from 'lucide-react';
@@ -13,7 +13,7 @@ export default function PaymentsPage() {
 
   const fetchPayments = async () => {
     try {
-      const res = await B2BApi.getPayments({ page: 1, limit: 50 });
+      const res = await FinanceAPI.getPayments({ page: 1, limit: 50, type: 'AR' });
       setData(res?.data || []);
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };

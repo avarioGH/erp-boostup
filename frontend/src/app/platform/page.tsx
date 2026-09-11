@@ -1,4 +1,5 @@
 "use client"
+import { api } from "@/lib/api"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,15 +23,14 @@ export default function PlatformDashboard() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem("erp_token")
       
       const [setRes, keyRes] = await Promise.all([
-        fetch("https://api.erp.boostup.id/platform/settings", { headers: { "Authorization": `Bearer ${token}` } }),
-        fetch("https://api.erp.boostup.id/platform/api-keys", { headers: { "Authorization": `Bearer ${token}` } })
+        api.get("/platform/settings"),
+        api.get("/platform/api-keys")
       ])
       
-      if (setRes.ok) setSettings(await setRes.json())
-      if (keyRes.ok) setApiKeys(await keyRes.json())
+      setSettings(setRes.data)
+      setApiKeys(keyRes.data)
     } catch (e) {
       console.error(e)
     } finally {
@@ -45,15 +45,7 @@ export default function PlatformDashboard() {
   const saveSettings = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const token = localStorage.getItem("erp_token")
-      await fetch("https://api.erp.boostup.id/platform/settings", {
-        method: "POST",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(settings)
-      })
+      await api.post("/platform/settings", settings)
       alert("Settings saved successfully!")
     } catch (e) {
       console.error(e)
@@ -65,15 +57,8 @@ export default function PlatformDashboard() {
     if (!newKeyName) return
     try {
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("https://api.erp.boostup.id/platform/api-keys", {
-        method: "POST",
-        headers: { 
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ name: newKeyName, scopes: "all" })
-      })
-      if (res.ok) {
+      const res = await api.post("/platform/api-keys", { name: newKeyName, scopes: "all" })
+      if (res.status === 200 || res.status === 201) {
         setNewKeyName("")
         fetchData()
       }

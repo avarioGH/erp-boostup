@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+﻿
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
@@ -24,7 +24,7 @@ export class ApprovalDomainListener {
     
     switch(event.moduleType) {
       case 'EXPENSE_CLAIM':
-        await tx.expenseClaim.updateMany({
+        await (tx.expenseClaim as any).updateMany({
           where: { id: event.referenceId, company_id: event.companyId, status: 'SUBMITTED' },
           data: { status: 'APPROVED', approved_at: new Date(), approved_by: event.actor }
         });
@@ -58,7 +58,7 @@ export class ApprovalDomainListener {
     
     switch(event.moduleType) {
       case 'EXPENSE_CLAIM':
-        await tx.expenseClaim.updateMany({
+        await (tx.expenseClaim as any).updateMany({
           where: { id: event.referenceId, company_id: event.companyId, status: 'SUBMITTED' },
           data: { status: 'REJECTED', rejected_at: new Date() }
         });

@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+﻿
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageProvider } from './storage.provider';
@@ -47,7 +47,7 @@ export class AttachmentService {
 
     try {
       // 4. Create DB Metadata
-      const attachment = await this.prisma.attachment.create({
+      const attachment = await (this.prisma as any).attachment.create({
         data: {
           company_id: companyId,
           entity_type: entityType,
@@ -85,7 +85,7 @@ export class AttachmentService {
   }
 
   async getAttachments(companyId: string, entityType: string, entityId: string) {
-    return this.prisma.attachment.findMany({
+    return (this.prisma as any).attachment.findMany({
       where: {
         company_id: companyId,
         entity_type: entityType,
@@ -105,7 +105,7 @@ export class AttachmentService {
   }
 
   async downloadAttachment(companyId: string, userId: string, attachmentId: string) {
-    const attachment = await this.prisma.attachment.findFirst({
+    const attachment = await (this.prisma as any).attachment.findFirst({
       where: { id: attachmentId, company_id: companyId, status: 'ACTIVE' }
     });
 
@@ -137,7 +137,7 @@ export class AttachmentService {
 
   async deleteAttachment(companyId: string, userId: string, attachmentId: string) {
     return this.prisma.$transaction(async (tx) => {
-      const attachment = await tx.attachment.findFirst({
+      const attachment = await (tx as any).attachment.findFirst({
         where: { id: attachmentId, company_id: companyId, status: 'ACTIVE' }
       });
 
@@ -148,7 +148,7 @@ export class AttachmentService {
       // Check if the entity is locked/posted, blocking deletion
       await this.enforceImmutability(tx as any, companyId, attachment.entity_type, attachment.entity_id);
 
-      const updated = await tx.attachment.update({
+      const updated = await (tx as any).attachment.update({
         where: { id: attachmentId },
         data: { status: 'DELETED' }
       });

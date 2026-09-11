@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { DashboardAPI, api } from "@/lib/api"
+import { DashboardAPI, api, FinanceAPI } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -27,9 +27,8 @@ function APPaymentContent() {
   const fetchPayments = async () => {
     try {
       setLoading(true)
-      const res = await api.get('/finance/payments')
-      // Only AP payments (linked to AP Invoices)
-      setPayments(res.data.filter((p: any) => p.invoice?.type === 'AP'))
+      const res = await FinanceAPI.getPayments({ type: 'AP' })
+      setPayments(res.data)
     } catch (err) {
       console.error(err)
     } finally {

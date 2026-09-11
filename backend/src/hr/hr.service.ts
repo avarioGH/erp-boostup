@@ -1,5 +1,4 @@
-﻿// @ts-nocheck
-import { EventEmitter2 } from '@nestjs/event-emitter';
+﻿import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PayrollPostedEvent, PayrollPaymentEvent } from '../events/accounting.events';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -184,8 +183,8 @@ export class HrService {
     });
   }
 
-  async calculatePayroll(companyId: string, employeeId: string, period: string) {
-    return this.prisma.$transaction(async (tx) => {
+  async calculatePayroll(companyId: string, employeeId: string, period: string, txClient?: any) {
+    const run = async (tx: any) => {
       const employee = await tx.employee.findUnique({
         where: { id: employeeId, company_id: companyId }
       });
@@ -264,8 +263,9 @@ export class HrService {
          });
       }
 
-      return this.prisma.payroll.findUnique({ where: { id: payroll.id }, include: { items: true } });
-    });
+      return tx.payroll.findUnique({ where: { id: payroll.id }, include: { items: true } });
+    };
+    return txClient ? run(txClient) : this.prisma.$transaction(run);
   }
 
   async approvePayroll(companyId: string, id: string) {
@@ -275,8 +275,8 @@ export class HrService {
     return this.prisma.payroll.update({ where: { id }, data: { status: 'APPROVED' } });
   }
 
-  async postPayroll(companyId: string, id: string) {
-    return this.prisma.$transaction(async (tx) => {
+  async postPayroll(companyId: string, id: string, txClient?: any) {
+    const run = async (tx: any) => {
       const p = await tx.payroll.findFirst({ where: { id, company_id: companyId }, include: { employee: true } });
       if (!p) throw new NotFoundException('Payroll not found');
       if (p.status !== 'APPROVED') throw new BadRequestException('Can only post APPROVED payroll');
@@ -289,11 +289,12 @@ const updatedRes = await tx.payroll.updateMany({ where: { id, status: 'APPROVED'
         const updated = await tx.payroll.findUnique({ where: { id } });
       await this.eventEmitter.emitAsync('payroll.posted', new PayrollPostedEvent(companyId, p.id, 'EVT-' + Date.now(), new Date(), { netSalary: p.net_salary, period: p.period }, tx as any));
       return updated;
-    });
+    };
+    return txClient ? run(txClient) : this.prisma.$transaction(run);
   }
 
-  async payPayroll(companyId: string, id: string) {
-    return this.prisma.$transaction(async (tx) => {
+  async payPayroll(companyId: string, id: string, txClient?: any) {
+    const run = async (tx: any) => {
       const p = await tx.payroll.findFirst({ where: { id, company_id: companyId } });
       if (!p) throw new NotFoundException('Payroll not found');
       if (p.status !== 'POSTED') throw new BadRequestException('Can only pay POSTED payroll');
@@ -327,8 +328,8 @@ const updatedRes = await tx.payroll.updateMany({ where: { id, status: 'APPROVED'
       const updated = await tx.payroll.update({ where: { id }, data: { status: 'PAID', paid_date: new Date() } });
       await this.eventEmitter.emitAsync('payroll.payment', new PayrollPaymentEvent(companyId, p.id, 'EVT-' + Date.now(), new Date(), { amount: p.net_salary }, tx as any));
       return updated;
-    
-    });
+    };
+    return txClient ? run(txClient) : this.prisma.$transaction(run);
   }
 }
 

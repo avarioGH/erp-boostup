@@ -1,0 +1,10 @@
+﻿const fs = require('fs');
+let content = fs.readFileSync('frontend/src/app/hr/payroll/page.tsx', 'utf8');
+content = content.replace('import { api } from "@/lib/api"', 'import { HrAPI } from "@/lib/api"');
+content = content.replace('api.get("/hr/payroll")', 'HrAPI.getPayrolls()');
+content = content.replace('api.get("/hr/employees")', 'HrAPI.getEmployees()');
+content = content.replace(/api\.post\(\/hr\/payroll\/\$\{selectedEmp\}\/calculate, \{ period \}\)/, 'HrAPI.calculatePayroll(selectedEmp, period)');
+content = content.replace(/api\.post\(\/hr\/payroll\/\$\{id\}\/approve\)/, 'HrAPI.approvePayroll(id)');
+content = content.replace(/api\.post\(\/hr\/payroll\/\$\{id\}\/post\)/, 'HrAPI.postPayroll(id)');
+fs.writeFileSync('frontend/src/app/hr/payroll/page.tsx', content);
+console.log('Fixed HR payroll page');

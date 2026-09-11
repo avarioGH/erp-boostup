@@ -10,6 +10,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Assume standard AuthGu
 export class PurchasingController {
   constructor(private service: PurchasingService, private prisma: PrismaService) {}
 
+  @Permissions('purchasing.view')
+  @Get('requests')
+  getPurchaseRequests(@Request() req: any, @Query('page') page: string, @Query('limit') limit: string) {
+    return this.service.getPurchaseRequests(req.user.companyId, +page || 1, +limit || 50);
+  }
+
   @Permissions('purchasing.create')
   @Post('requests')
   createPurchaseRequest(@Request() req: any, @Body() data: any) {

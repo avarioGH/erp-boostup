@@ -1,4 +1,5 @@
 "use client"
+import { api } from "@/lib/api"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Users, ShoppingBag, TrendingUp, Activity } from "lucide-react"
@@ -18,16 +19,12 @@ export default function CRMDashboard() {
         const token = localStorage.getItem("erp_token")
         
         // Fetch Customers
-        const custRes = await fetch("https://api.erp.boostup.id/customers", {
-          headers: { "Authorization": `Bearer ${token}` }
-        })
-        const customers = await custRes.json()
+        const custRes = await api.get("/customers")
+        const customers = custRes.data
 
         // Fetch Orders
-        const ordRes = await fetch("https://api.erp.boostup.id/orders", {
-          headers: { "Authorization": `Bearer ${token}` }
-        })
-        const orders = await ordRes.json()
+        const ordRes = await api.get("/orders")
+        const orders = ordRes.data
 
         let totalSales = 0
         if (Array.isArray(orders)) {

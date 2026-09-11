@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+﻿
 import { Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -34,7 +34,7 @@ export class IntegrationCredentialService {
 
   async storeCredential(integrationId: string, key: string, value: string) {
     const encrypted = this.encrypt(value);
-    await this.prisma.integrationCredential.upsert({
+    await (this.prisma as any).integrationCredential.upsert({
       where: { integration_id_key: { integration_id: integrationId, key } },
       update: { encrypted_value: encrypted },
       create: { integration_id: integrationId, key, encrypted_value: encrypted },
@@ -42,7 +42,7 @@ export class IntegrationCredentialService {
   }
 
   async getCredential(integrationId: string, key: string): Promise<string | null> {
-    const cred = await this.prisma.integrationCredential.findUnique({
+    const cred = await (this.prisma as any).integrationCredential.findUnique({
       where: { integration_id_key: { integration_id: integrationId, key } },
     });
     if (!cred) return null;

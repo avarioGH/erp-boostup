@@ -1,4 +1,5 @@
 "use client"
+import { api } from "@/lib/api"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,13 +17,10 @@ export default function GeneralLedgerPage() {
     try {
       setLoading(true)
       const token = localStorage.getItem("erp_token")
-      const res = await fetch("https://api.erp.boostup.id/gl/journals", {
-        headers: { "Authorization": `Bearer ${token}` }
-      })
+      const res = await api.get("/gl/journals")
       
-      if (res.ok) {
-        const data = await res.json()
-        setJournals(data)
+      if (res.status === 200) {
+        setJournals(res.data)
       } else {
         setError("Failed to fetch journal entries.")
       }

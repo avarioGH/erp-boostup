@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -20,7 +20,7 @@ export class PeriodService {
       throw new BadRequestException('PERIOD_OVERLAP: A period overlapping these dates already exists.');
     }
 
-    return this.prisma.accountingPeriod.create({
+    return (this.prisma.accountingPeriod as any).create({
       data: {
         company_id: companyId,
         name: data.name,
@@ -34,7 +34,7 @@ export class PeriodService {
   }
 
   async getPeriods(companyId: string) {
-    return this.prisma.accountingPeriod.findMany({
+    return (this.prisma.accountingPeriod as any).findMany({
       where: { company_id: companyId },
       orderBy: { start_date: 'desc' },
       include: { closer: { select: { name: true } } }
@@ -54,7 +54,7 @@ export class PeriodService {
       throw new BadRequestException('Only OPEN periods can be closed');
     }
 
-    return this.prisma.accountingPeriod.updateMany({
+    return (this.prisma.accountingPeriod as any).updateMany({
       where: { id: periodId, status: 'OPEN' },
       data: {
         status: 'CLOSED',
@@ -77,7 +77,7 @@ export class PeriodService {
       throw new BadRequestException('Only CLOSED periods can be locked');
     }
 
-    return this.prisma.accountingPeriod.updateMany({
+    return (this.prisma.accountingPeriod as any).updateMany({
       where: { id: periodId, status: 'CLOSED' },
       data: {
         status: 'LOCKED'
