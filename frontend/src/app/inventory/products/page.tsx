@@ -462,7 +462,7 @@ export default function ProductInventory() {
             <AlertTriangle className="w-5 h-5 text-rose-500 mt-0.5" />
             <div>
               <h4 className="font-semibold text-rose-700">Koneksi Database Terputus</h4>
-              <p className="text-sm text-rose-600">Saat ini menampilkan data dummy karena server PostgreSQL tidak dapat dihubungi. Silakan jalankan 'npx prisma db seed' di server Anda.</p>
+              <p className="text-sm text-rose-600">Saat ini menampilkan data dummy karena server MongoDB tidak dapat dihubungi. Silakan periksa koneksi MongoDB di server Anda.</p>
             </div>
           </div>
         )}
@@ -542,3 +542,4 @@ export default function ProductInventory() {
     </div>
   )
 }
+

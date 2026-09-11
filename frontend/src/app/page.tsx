@@ -159,7 +159,7 @@ export default function OwnerDashboard() {
         </div>
         <h2 className="text-xl font-bold text-foreground mb-2">Koneksi Database Terputus</h2>
         <p className="text-muted-foreground max-w-md mb-8 text-sm">
-          Aplikasi gagal mengambil data real dari server PostgreSQL. Pastikan database Anda sedang berjalan.
+          Aplikasi gagal mengambil data real dari server MongoDB. Pastikan database Anda sedang berjalan.
         </p>
         <button 
           onClick={() => window.location.reload()}
@@ -511,3 +511,4 @@ export default function OwnerDashboard() {
     </div>
   )
 }
+
