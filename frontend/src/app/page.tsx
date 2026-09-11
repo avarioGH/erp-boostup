@@ -36,7 +36,7 @@ export default function OwnerDashboard() {
   const [warehouse, setWarehouse] = useState("all")
   
   const [loading, setLoading] = useState(true)
-  const [isError, setIsError] = useState(false)
+  const [errorState, setErrorState] = useState<any>(null)
   const [kpi, setKpi] = useState<any>(null)
   
   const [warehouses, setWarehouses] = useState<any[]>([])
@@ -86,12 +86,12 @@ export default function OwnerDashboard() {
     async function fetchData() {
       try {
         setLoading(true)
-        setIsError(false)
+        setErrorState(null)
         const data = await DashboardAPI.getKPIs('thisMonth', warehouse)
         setKpi(data)
       } catch (error) {
         console.error("Database connection failed:", error)
-        setIsError(true)
+        setErrorState(error.response?.status === 403 ? "FORBIDDEN" : "NETWORK_ERROR")
       } finally {
         setLoading(false)
       }
@@ -144,31 +144,70 @@ export default function OwnerDashboard() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 animate-pulse">
-        <RefreshCcw className="w-8 h-8 text-primary animate-spin" />
-        <p className="text-muted-foreground font-medium text-sm">Menghubungkan ke Database Real...</p>
-      </div>
-    )
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in zoom-in duration-300">
+          <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
+            <AlertTriangle className="w-10 h-10 text-destructive" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">
+            {errorState === "FORBIDDEN" ? "Sesi Berubah / Akses Ditolak" : "Koneksi Database Terputus"}
+          </h2>
+          <p className="text-muted-foreground max-w-md mb-8 text-sm">
+            {errorState === "FORBIDDEN" 
+              ? "Terdapat pembaruan hak akses di sistem. Silakan LOGOUT lalu LOGIN KEMBALI menggunakan akun Anda untuk menyinkronkan akses." 
+              : "Aplikasi gagal mengambil data real dari server MongoDB. Pastikan database Anda sedang berjalan."}
+          </p>
+          <div className="flex gap-4">
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm shadow-sm"
+            >
+              <RefreshCcw className="w-4 h-4" /> Coba Lagi
+            </button>
+            {errorState === "FORBIDDEN" && (
+              <button 
+                onClick={() => { localStorage.clear(); window.location.href = '/login'; }}
+                className="bg-slate-800 text-white px-5 py-2 rounded-md font-medium hover:bg-slate-900 transition-colors flex items-center gap-2 text-sm shadow-sm"
+              >
+                Logout Sekarang
+              </button>
+            )}
+          </div>
+        </div>
+      )
   }
 
-  if (isError) {
+  if (errorState) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in zoom-in duration-300">
-        <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
-          <AlertTriangle className="w-10 h-10 text-destructive" />
+              <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in zoom-in duration-300">
+          <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mb-6">
+            <AlertTriangle className="w-10 h-10 text-destructive" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">
+            {errorState === "FORBIDDEN" ? "Sesi Berubah / Akses Ditolak" : "Koneksi Database Terputus"}
+          </h2>
+          <p className="text-muted-foreground max-w-md mb-8 text-sm">
+            {errorState === "FORBIDDEN" 
+              ? "Terdapat pembaruan hak akses di sistem. Silakan LOGOUT lalu LOGIN KEMBALI menggunakan akun Anda untuk menyinkronkan akses." 
+              : "Aplikasi gagal mengambil data real dari server MongoDB. Pastikan database Anda sedang berjalan."}
+          </p>
+          <div className="flex gap-4">
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm shadow-sm"
+            >
+              <RefreshCcw className="w-4 h-4" /> Coba Lagi
+            </button>
+            {errorState === "FORBIDDEN" && (
+              <button 
+                onClick={() => { localStorage.clear(); window.location.href = '/login'; }}
+                className="bg-slate-800 text-white px-5 py-2 rounded-md font-medium hover:bg-slate-900 transition-colors flex items-center gap-2 text-sm shadow-sm"
+              >
+                Logout Sekarang
+              </button>
+            )}
+          </div>
         </div>
-        <h2 className="text-xl font-bold text-foreground mb-2">Koneksi Database Terputus</h2>
-        <p className="text-muted-foreground max-w-md mb-8 text-sm">
-          Aplikasi gagal mengambil data real dari server MongoDB. Pastikan database Anda sedang berjalan.
-        </p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="bg-primary text-primary-foreground px-5 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm shadow-sm"
-        >
-          <RefreshCcw className="w-4 h-4" /> Coba Lagi
-        </button>
-      </div>
-    )
+      )
   }
 
   // Use data strictly from API (No hardcoded dummy arrays)
@@ -511,4 +550,5 @@ export default function OwnerDashboard() {
     </div>
   )
 }
+
 
