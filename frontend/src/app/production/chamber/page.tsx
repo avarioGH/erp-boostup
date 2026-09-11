@@ -114,7 +114,7 @@ export default function ChamberOperationsPage() {
               <p className="text-sm font-medium">Chamber Volume</p>
               <Cuboid className="h-4 w-4 text-muted-foreground" />
             </div>
-            <div className="text-2xl font-bold">{stats.totalM3.toFixed(4)} M³</div>
+            <div className="text-2xl font-bold">{stats.totalM3.toFixed(4)} MÂ³</div>
             <p className="text-xs text-muted-foreground mt-1">Total volume currently inside chambers</p>
           </CardContent>
         </Card>
@@ -125,7 +125,7 @@ export default function ChamberOperationsPage() {
               <ArrowRight className="h-4 w-4 text-emerald-500" />
             </div>
             <div className="text-2xl font-bold">{stats.inTodayPcs} PCS</div>
-            <p className="text-xs text-muted-foreground mt-1">{stats.inTodayM3.toFixed(4)} M³ entering today</p>
+            <p className="text-xs text-muted-foreground mt-1">{stats.inTodayM3.toFixed(4)} MÂ³ entering today</p>
           </CardContent>
         </Card>
         <Card>
@@ -135,7 +135,7 @@ export default function ChamberOperationsPage() {
               <ArrowLeftRight className="h-4 w-4 text-amber-500" />
             </div>
             <div className="text-2xl font-bold">{stats.outTodayPcs} PCS</div>
-            <p className="text-xs text-muted-foreground mt-1">{stats.outTodayM3.toFixed(4)} M³ exiting today</p>
+            <p className="text-xs text-muted-foreground mt-1">{stats.outTodayM3.toFixed(4)} MÂ³ exiting today</p>
           </CardContent>
         </Card>
       </div>

@@ -135,7 +135,7 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
                 <th className="p-3 px-4 text-left font-medium">Timber Variant</th>
                 <th className="p-3 px-4 text-left font-medium">SKU</th>
                 <th className="p-3 px-4 text-right font-medium">Qty (PCS)</th>
-                <th className="p-3 px-4 text-right font-medium">Volume (M³)</th>
+                <th className="p-3 px-4 text-right font-medium">Volume (MÂ³)</th>
               </tr>
             </thead>
             <tbody>

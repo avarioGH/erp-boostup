@@ -88,14 +88,14 @@ export default function ChamberInPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Source Yard (From)</label>
-                    <Select value={form.fromLocationId} onValueChange={(v) => setForm({...form, fromLocationId: v})}>
+                    <Select value={form.fromLocationId} onValueChange={(v) => setForm({...form, fromLocationId: v || ''})}>
                       <SelectTrigger><SelectValue placeholder="Select Source" /></SelectTrigger>
                       <SelectContent>{normalWarehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Kiln Chamber (To)</label>
-                    <Select value={form.toLocationId} onValueChange={(v) => setForm({...form, toLocationId: v})}>
+                    <Select value={form.toLocationId} onValueChange={(v) => setForm({...form, toLocationId: v || ''})}>
                       <SelectTrigger><SelectValue placeholder="Select Chamber" /></SelectTrigger>
                       <SelectContent>{chambers.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
                     </Select>
@@ -104,7 +104,7 @@ export default function ChamberInPage() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Timber Variant</label>
-                  <Select value={item.timberVariantId} onValueChange={(v) => setItem({...item, timberVariantId: v})}>
+                  <Select value={item.timberVariantId} onValueChange={(v) => setItem({...item, timberVariantId: v || ''})}>
                     <SelectTrigger><SelectValue placeholder="Select Variant from Source Stock" /></SelectTrigger>
                     <SelectContent>
                       {stocks.filter(s => s.currentPcs > 0).map(s => (

@@ -47,23 +47,23 @@ export default function TimberStockPage() {
                     <th className="p-4 px-6 text-left">Location</th>
                     <th className="p-4 px-6 text-right">Stock IN</th>
                     <th className="p-4 px-6 text-right">Stock OUT</th>
-                    <th className="p-4 px-6 text-right bg-indigo-50/50">Current PCS</th>
-                    <th className="p-4 px-6 text-right bg-indigo-50/50">Current M&sup3;</th>
+                    <th className="p-4 px-6 text-right bg-indigo-50/50 dark:bg-indigo-950/40">Current PCS</th>
+                    <th className="p-4 px-6 text-right bg-indigo-50/50 dark:bg-indigo-950/40">Current M&sup3;</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.length === 0 ? <tr><td colSpan={9} className="text-center p-8 text-muted-foreground">No stock found</td></tr> :
                     filtered.map(stock => (
                       <tr key={stock.id} className="border-b last:border-0 hover:bg-muted/10">
-                        <td className="p-4 px-6 font-medium text-emerald-700">{stock.timberVariant?.sku}</td>
+                        <td className="p-4 px-6 font-medium text-emerald-700 dark:text-emerald-400">{stock.timberVariant?.sku}</td>
                         <td className="p-4 px-6">{stock.timberVariant?.species}</td>
                         <td className="p-4 px-6 text-center">{stock.timberVariant?.grade}</td>
                         <td className="p-4 px-6 text-center">{stock.timberVariant?.thickness} &times; {stock.timberVariant?.width} &times; {stock.timberVariant?.length}</td>
                         <td className="p-4 px-6 text-muted-foreground">{stock.location?.name}</td>
-                        <td className="p-4 px-6 text-right text-emerald-600">+{stock.stockInPcs}</td>
-                        <td className="p-4 px-6 text-right text-red-600">-{stock.stockOutPcs}</td>
-                        <td className="p-4 px-6 text-right font-bold bg-indigo-50/30 text-indigo-900">{stock.currentPcs}</td>
-                        <td className="p-4 px-6 text-right font-bold bg-indigo-50/30 text-indigo-700">{stock.currentVolumeM3.toFixed(6)}</td>
+                        <td className="p-4 px-6 text-right text-emerald-600 dark:text-emerald-500">+{stock.stockInPcs}</td>
+                        <td className="p-4 px-6 text-right text-red-600 dark:text-red-500">-{stock.stockOutPcs}</td>
+                        <td className="p-4 px-6 text-right font-bold bg-indigo-50/30 dark:bg-indigo-950/30 text-indigo-900 dark:text-indigo-300">{stock.currentPcs}</td>
+                        <td className="p-4 px-6 text-right font-bold bg-indigo-50/30 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400">{stock.currentVolumeM3.toFixed(6)}</td>
                       </tr>
                     ))
                   }
