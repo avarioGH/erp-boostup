@@ -65,6 +65,9 @@ const items: MenuItem[] = [
         { title: "Input Logs (WIP)", url: "/inventory/input-logs" },
         { title: "Sawn Timber Output", url: "/inventory/sawn-timber/output" },
         
+        { title: "Proses Lanjutan", url: "#", type: "label" },
+        { title: "Chamber (Oven)", url: "/production/chamber" },
+        
         { title: "Stock Kayu", url: "#", type: "label" },
         { title: "Finished Timber Stock", url: "/inventory/timber-stock" },
         { title: "Stock Movements", url: "/inventory/movements" },
