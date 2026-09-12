@@ -59,7 +59,7 @@ export default function SawnTimberOutputDetailPage({ params }: { params: { id: s
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
  <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Operation</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Operation</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
  <div className="grid grid-cols-2 gap-y-4">
  <div><p className="text-muted-foreground">Date</p><p className="font-bold flex items-center gap-1"><Calendar className="w-3 h-3"/> {new Date(data.outputDate).toLocaleDateString("id-ID")}</p></div>
@@ -75,17 +75,17 @@ export default function SawnTimberOutputDetailPage({ params }: { params: { id: s
  <CardContent className="pt-6 space-y-4 text-sm">
  <div className="flex justify-between items-center"><span className="text-muted-foreground">Total Pieces</span><span className="font-bold text-lg">{data.items?.reduce((s:number, i:any)=>s+i.quantityPcs, 0)} PCS</span></div>
  <hr className="border-indigo-100" />
- <div className="flex justify-between items-center"><span className="font-bold text-indigo-900">Total Net Volume</span><span className="font-bold text-2xl text-indigo-700">{data.items?.reduce((s:number, i:any)=>s+i.volumeM3, 0).toFixed(6)} M&sup3;</span></div>
+ <div className="flex justify-between items-center"><span className="font-bold text-indigo-900">Total Net Volume</span><span className="font-bold text-2xl text-primary">{data.items?.reduce((s:number, i:any)=>s+i.volumeM3, 0).toFixed(6)} M&sup3;</span></div>
  </CardContent>
  </Card>
 
  <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg flex items-center gap-2"><Waypoints className="w-4 h-4" /> Traceability</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><Waypoints className="w-4 h-4" /> Traceability</CardTitle></CardHeader>
  <CardContent className="pt-6">
  <div className="flex items-center gap-4 text-sm">
  <div className="p-4 border rounded text-muted-foreground border-dashed">
  <p className="font-medium flex items-center gap-2"><Box className="w-4 h-4" /> INPUT LOG</p>
- <Link href={`/inventory/input-logs/${data.inputLogId}`} className="text-xs font-bold text-indigo-600 hover:underline">{data.inputLog?.inputNumber}</Link>
+ <Link href={`/inventory/input-logs/${data.inputLogId}`} className="text-xs font-bold text-primary hover:underline">{data.inputLog?.inputNumber}</Link>
  </div>
  <div className="h-px bg-border flex-1 mx-2"></div>
  <div className="p-4 border rounded bg-indigo-50 border-indigo-200">
@@ -99,7 +99,7 @@ export default function SawnTimberOutputDetailPage({ params }: { params: { id: s
 
  <Card className="shadow-sm">
  <CardHeader className="border-b pb-4">
- <CardTitle className="text-lg">Product Details</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Product Details</CardTitle>
  </CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
@@ -116,13 +116,13 @@ export default function SawnTimberOutputDetailPage({ params }: { params: { id: s
  </thead>
  <tbody>
  {data.items?.map((item: any) => (
- <tr key={item.id} className="border-b hover:bg-muted/10">
- <td className="p-3 px-6 font-medium text-emerald-700">{item.timberVariant?.sku}</td>
+ <tr key={item.id} className="border-b hover:bg-muted/60 transition-colors">
+ <td className="p-3 px-6 font-medium text-primary">{item.timberVariant?.sku}</td>
  <td className="p-3 px-6">{item.timberVariant?.species}</td>
  <td className="p-3 px-6 text-center">{item.grade}</td>
  <td className="p-3 px-6 text-center">{item.thicknessMm} &times; {item.widthMm} &times; {item.lengthMm}</td>
  <td className="p-3 px-6 text-right font-bold">{item.quantityPcs}</td>
- <td className="p-3 px-6 text-right font-bold text-indigo-700">{item.volumeM3.toFixed(6)}</td>
+ <td className="p-3 px-6 text-right font-bold text-primary">{item.volumeM3.toFixed(6)}</td>
  </tr>
  ))}
  </tbody>

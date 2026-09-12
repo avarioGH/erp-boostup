@@ -34,7 +34,7 @@ export default function ManufacturingOverviewPage() {
  <div className="space-y-6 pb-10">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Manufacturing</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Manufacturing</h1>
  <p className="text-muted-foreground mt-1">Oversee production, MRP, BOM, and quality control operations.</p>
  </div>
  <Button className="" onClick={() => router.push('/manufacturing/orders')}>
@@ -47,8 +47,8 @@ export default function ManufacturingOverviewPage() {
  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
  {[
  { label: 'Draft', value: countByStatus('DRAFT'), color: 'text-muted-foreground' },
- { label: 'In Progress', value: countByStatus('IN_PROGRESS'), color: 'text-indigo-600' },
- { label: 'Completed', value: countByStatus('DONE'), color: 'text-emerald-600' },
+ { label: 'In Progress', value: countByStatus('IN_PROGRESS'), color: 'text-primary' },
+ { label: 'Completed', value: countByStatus('DONE'), color: 'text-primary' },
  { label: 'Cancelled', value: countByStatus('CANCELLED'), color: 'text-red-600' },
  ].map(kpi => (
  <Card key={kpi.label} className="shadow-sm">
@@ -73,10 +73,10 @@ export default function ManufacturingOverviewPage() {
  <div className="flex gap-4 items-start">
  <div className="p-2 rounded-md bg-muted/50 mt-0.5"><card.icon className="h-5 w-5 text-muted-foreground" /></div>
  <div className="flex-1">
- <p className="font-semibold group-hover:text-indigo-600 transition-colors">{card.title}</p>
+ <p className="font-semibold group-hover:text-primary transition-colors">{card.title}</p>
  <p className="text-sm text-muted-foreground mt-0.5">{card.sub}</p>
  </div>
- <ExternalLink className="h-4 w-4 text-muted-foreground/40 group-hover:text-indigo-400 mt-1 transition-colors" />
+ <ExternalLink className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary mt-1 transition-colors" />
  </div>
  </CardContent>
  </Card>
@@ -88,7 +88,7 @@ export default function ManufacturingOverviewPage() {
  <Card className="shadow-sm">
  <CardHeader className="border-b pb-4">
  <div className="flex justify-between items-center">
- <CardTitle className="text-lg">Recent Manufacturing Orders</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Recent Manufacturing Orders</CardTitle>
  <Button variant="ghost" size="sm" onClick={() => router.push('/manufacturing/orders')}>View all</Button>
  </div>
  </CardHeader>
@@ -100,7 +100,7 @@ export default function ManufacturingOverviewPage() {
  ) : (
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y">
+ <thead className="bg-muted border-y border-border">
  <tr>
  <th className="p-3 px-5 text-left font-medium text-muted-foreground">MO Number</th>
  <th className="p-3 px-5 text-left font-medium text-muted-foreground">Product</th>
@@ -110,8 +110,8 @@ export default function ManufacturingOverviewPage() {
  </thead>
  <tbody>
  {orders.slice(0, 5).map((mo: any) => (
- <tr key={mo.id} className="border-b last:border-0 hover:bg-muted/20 cursor-pointer" onClick={() => router.push('/manufacturing/orders')}>
- <td className="p-3 px-5 font-medium text-indigo-600">{mo.order_number || mo.id}</td>
+ <tr key={mo.id} className="border-b last:border-0 hover:bg-muted/60 cursor-pointer transition-colors" onClick={() => router.push('/manufacturing/orders')}>
+ <td className="p-3 px-5 font-medium text-primary">{mo.order_number || mo.id}</td>
  <td className="p-3 px-5">{mo.product?.name || mo.product_id}</td>
  <td className="p-3 px-5 text-center">{mo.planned_qty || mo.quantity}</td>
  <td className="p-3 px-5 text-center"><span className="text-xs font-medium bg-muted px-2 py-1 rounded-full">{mo.status}</span></td>

@@ -82,7 +82,7 @@ export default function GeneralLedgerPage() {
  <BookOpen className="w-8 h-8 text-foreground" />
  General Ledger
  </h1>
- <p className="text-muted-foreground mt-1">View all double-entry journal records automatically posted by the system.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">View all double-entry journal records automatically posted by the system.</p>
  </div>
  <Button 
  variant="outline" 
@@ -143,7 +143,7 @@ export default function GeneralLedgerPage() {
  <td className="p-3 font-mono text-xs text-muted-foreground dark:text-muted-foreground">
  {item.account_id}
  </td>
- <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-medium">
+ <td className="p-3 text-right text-primary dark:text-primary font-medium">
  {Number(item.debit) > 0 ? formatCurrency(Number(item.debit)) :"-"}
  </td>
  <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-medium">
@@ -159,7 +159,7 @@ export default function GeneralLedgerPage() {
  {journal.items && journal.items.length > 0 && (
  <tr className="bg-muted/20 font-semibold border-t-2">
  <td className="p-3 text-right text-xs uppercase tracking-wider text-muted-foreground">Total</td>
- <td className="p-3 text-right text-emerald-700 dark:text-emerald-500">
+ <td className="p-3 text-right text-primary dark:text-emerald-500">
  {formatCurrency(journal.items.reduce((sum: number, i: any) => sum + Number(i.debit || 0), 0))}
  </td>
  <td className="p-3 text-right text-rose-700 dark:text-rose-500">

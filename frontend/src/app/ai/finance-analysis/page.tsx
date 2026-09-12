@@ -123,7 +123,7 @@ export default function AIFinanceAnalysisPage() {
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white flex items-center gap-2">
  Analisis Keuangan AI <Sparkles className="w-6 h-6 text-teal-500" />
  </h1>
- <p className="text-muted-foreground mt-1">Diagnosis otomatis terhadap kesehatan finansial perusahaan Anda.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Diagnosis otomatis terhadap kesehatan finansial perusahaan Anda.</p>
  </div>
  </div>
  <Button onClick={fetchData} disabled={analyzing} className="bg-teal-600 hover:bg-teal-700 text-white gap-2">
@@ -191,7 +191,7 @@ export default function AIFinanceAnalysisPage() {
  <h3 className={`font-bold text-lg mb-1 ${
  insight.type === 'CRITICAL' ? 'text-rose-700 dark:text-rose-400' :
  insight.type === 'WARNING' ? 'text-amber-700 dark:text-amber-400' :
- 'text-emerald-700 dark:text-emerald-400'
+ 'text-primary font-semibold'
  }`}>{insight.title}</h3>
  <p className="text-foreground mb-3">{insight.desc}</p>
  <div className="text-sm bg-card/60 dark:bg-black/20 p-3 rounded-lg border border-white/50 dark:border-white/10">

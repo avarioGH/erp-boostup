@@ -78,7 +78,7 @@ export default function LoyaltyPage() {
  </Link>
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Loyalty & Poin</h1>
- <p className="text-muted-foreground mt-1">Pantau keterlibatan pelanggan dan distribusi program loyalitas.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Pantau keterlibatan pelanggan dan distribusi program loyalitas.</p>
  </div>
  </div>
 
@@ -111,7 +111,7 @@ export default function LoyaltyPage() {
  </Card>
 
  <Card className="border-border shadow-sm relative overflow-hidden group hover:border-emerald-500 transition-colors">
- <div className="absolute top-4 right-4 p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400">
+ <div className="absolute top-4 right-4 p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-primary dark:text-primary">
  <Award className="w-5 h-5" />
  </div>
  <CardHeader className="pb-2 overflow-hidden">

@@ -37,7 +37,7 @@ export default function PurchasingDashboard() {
 
  return (
  <div className="space-y-6">
- <h1 className="text-3xl font-bold tracking-tight">Purchasing Dashboard</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Purchasing Dashboard</h1>
  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
  <Link href="/purchasing/requests">
  <Card className="hover:bg-muted/50 transition-colors">

@@ -6,7 +6,7 @@ export default function AiSalesAnalysis() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Sales Analysis</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Sales Analysis</h1>
  <p className="text-muted-foreground">Manage sales analysis data here.</p>
  </div>
 

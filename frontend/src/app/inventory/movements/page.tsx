@@ -63,8 +63,8 @@ export default function MovementsPage() {
  <tr key={m.id || i} className="border-b border-border/50 hover:bg-slate-800/20">
  <td className="p-4 px-6 text-slate-300">{new Date(m.date || m.created_at || Date.now()).toLocaleDateString('id-ID')}</td>
  <td className="p-4 px-6 font-medium text-slate-200">{productName}</td>
- <td className="p-4 px-6">{getBadgeType(m.type, m.referenceType)}</td>
- <td className="p-4 px-6 text-center text-emerald-400 font-medium">
+ <td className="py-3.5 px-6 text-[13px]">{getBadgeType(m.type, m.referenceType)}</td>
+ <td className="p-4 px-6 text-center text-primary font-medium">
  {isIn ? qty : '-'}
  </td>
  <td className="p-4 px-6 text-center text-red-400 font-medium">

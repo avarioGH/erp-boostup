@@ -6,7 +6,7 @@ export default function ReportsProfit() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Profit</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Profit</h1>
  <p className="text-muted-foreground">Manage profit data here.</p>
  </div>
 

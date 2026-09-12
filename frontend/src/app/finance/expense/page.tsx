@@ -107,8 +107,8 @@ export default function ExpensePage() {
  <div className="space-y-6">
  <div className="flex justify-between items-center">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Expense Claims</h1>
- <p className="text-muted-foreground mt-1">Manage employee expense claims.</p>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Expense Claims</h1>
+ <p className="text-[14px] text-muted-foreground mt-1">Manage employee expense claims.</p>
  </div>
  <Button onClick={() => setIsModalOpen(true)} data-testid="new-claim-btn"><Plus className="w-4 h-4 mr-2" /> New Claim</Button>
  </div>

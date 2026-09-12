@@ -86,7 +86,7 @@ export default function EmployeeReportPage() {
  </Link>
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Laporan Karyawan & SDM</h1>
- <p className="text-muted-foreground mt-1">Ringkasan demografi, departemen, dan status tenaga kerja.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Ringkasan demografi, departemen, dan status tenaga kerja.</p>
  </div>
  </div>
  <div className="flex items-center gap-2">

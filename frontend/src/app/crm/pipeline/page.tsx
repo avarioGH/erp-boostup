@@ -27,8 +27,8 @@ export default function PipelinePage() {
  <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Sales Pipeline</h1>
- <p className="text-muted-foreground mt-1">Track and manage your CRM opportunities across stages.</p>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Sales Pipeline</h1>
+ <p className="text-[14px] text-muted-foreground mt-1">Track and manage your CRM opportunities across stages.</p>
  </div>
  <div className="flex gap-2">
  <Button variant="outline"><Filter className="w-4 h-4 mr-2" /> Filters</Button>
@@ -64,7 +64,7 @@ export default function PipelinePage() {
  <Card key={opp.id} className="shadow-sm border-muted/60 hover:border-indigo-300 transition-colors cursor-pointer group">
  <CardContent className="p-3">
  <div className="flex justify-between items-start mb-2">
- <p className="font-medium text-sm leading-tight group-hover:text-indigo-600 transition-colors">{opp.title}</p>
+ <p className="font-medium text-sm leading-tight group-hover:text-primary transition-colors">{opp.title}</p>
  <Button variant="ghost" size="icon" className="h-6 w-6 -mr-1 -mt-1 opacity-0 group-hover:opacity-100"><MoreHorizontal className="h-3 w-3" /></Button>
  </div>
  
@@ -74,7 +74,7 @@ export default function PipelinePage() {
  <span className="truncate">{opp.company}</span>
  </div>
  <div className="flex justify-between items-center text-xs">
- <span className="flex items-center font-medium text-emerald-600 dark:text-emerald-400">
+ <span className="flex items-center font-medium text-primary dark:text-primary">
  Rp {(opp.amount / 1000000).toFixed(1)}M
  </span>
  <span className="flex items-center text-muted-foreground">

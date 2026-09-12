@@ -111,7 +111,7 @@ export default function CreateRawLogPage() {
  <div className="flex items-center gap-4">
  <Button variant="outline" size="icon" onClick={() => router.push('/inventory/logs')}><ArrowLeft className="w-4 h-4" /></Button>
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Register Raw Log</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Register Raw Log</h1>
  <p className="text-muted-foreground mt-1">Enter physical measurements. Volume will be calculated automatically.</p>
  </div>
  </div>
@@ -119,7 +119,7 @@ export default function CreateRawLogPage() {
  <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
  <div className="md:col-span-2 space-y-6">
  <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">Identity</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Identity</CardTitle></CardHeader>
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2"><label className="text-sm font-medium text-red-600">Log Number *</label><Input required value={form.logNumber} onChange={e => setForm({...form, logNumber: e.target.value})} placeholder="e.g. 199" /></div>
  <div className="space-y-2"><label className="text-sm font-medium">Barcode (Optional)</label><Input value={form.barcode} onChange={e => setForm({...form, barcode: e.target.value})} placeholder="Auto-generated if empty" /></div>
@@ -136,7 +136,7 @@ export default function CreateRawLogPage() {
  </Card>
 
  <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">Measurements</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Measurements</CardTitle></CardHeader>
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
  <div className="space-y-2 md:col-span-4"><label className="text-sm font-medium text-red-600">Original Length (meters) *</label><Input required type="number" step="0.01" value={form.originalLength} onChange={e => setForm({...form, originalLength: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium text-red-600">D1 (cm) *</label><Input required type="number" step="0.01" value={form.diameter1} onChange={e => setForm({...form, diameter1: e.target.value})} /></div>
@@ -180,11 +180,11 @@ export default function CreateRawLogPage() {
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Class</span><span className="font-medium bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-xs">{preview.diaClass}</span></div>
  <hr className="border-emerald-100" />
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Gross Volume</span><span className="font-medium">{preview.gross} m³</span></div>
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground text-red-500">Net Volume</span><span className="font-bold text-xl text-indigo-700">{preview.net > 0 ? preview.net : 0} m³</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground text-red-500">Net Volume</span><span className="font-bold text-xl text-primary">{preview.net > 0 ? preview.net : 0} m³</span></div>
  </CardContent>
  </Card>
  
- <Button type="submit" disabled={loading || preview.net < 0} className="w-full  h-12 text-lg">
+ <Button type="submit" disabled={loading || preview.net < 0} className="w-full h-12 text-lg">
  {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} Save Raw Log
  </Button>
  </div>

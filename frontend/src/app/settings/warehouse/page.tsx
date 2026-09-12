@@ -123,9 +123,9 @@ export default function WarehouseSettings() {
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white flex items-center gap-2">
- <MapPin className="w-8 h-8 text-indigo-600 dark:text-indigo-400" /> Pengaturan Gudang
+ <MapPin className="w-8 h-8 text-primary dark:text-primary" /> Pengaturan Gudang
  </h1>
- <p className="text-muted-foreground mt-1">Kelola lokasi gudang dan cabang Anda (Khusus Owner).</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Kelola lokasi gudang dan cabang Anda (Khusus Owner).</p>
  </div>
  
  <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>

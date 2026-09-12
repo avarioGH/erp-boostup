@@ -138,12 +138,12 @@ export default function PosShiftPage() {
  </Link>
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Shift & Kasir</h1>
- <p className="text-muted-foreground mt-1">Kelola pembukaan dan penutupan shift kasir harian.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Kelola pembukaan dan penutupan shift kasir harian.</p>
  </div>
  </div>
 
  {success && (
- <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg flex items-center gap-3 border border-emerald-200 dark:border-emerald-800">
+ <div className="bg-emerald-50 dark:bg-emerald-900/30 text-primary dark:text-primary p-4 rounded-lg flex items-center gap-3 border border-emerald-200 dark:border-emerald-800">
  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
  <p className="font-medium text-sm">{success}</p>
  </div>
@@ -160,7 +160,7 @@ export default function PosShiftPage() {
  <Card className="border-border shadow-sm overflow-hidden group hover:border-amber-500 transition-colors">
  <div className="h-2 w-full bg-amber-500"></div>
  <form onSubmit={handleCloseShift}>
- <CardHeader className="pb-4">
+ <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex items-center justify-between">
  <div>
  <CardTitle className="flex items-center gap-2">
@@ -168,7 +168,7 @@ export default function PosShiftPage() {
  </CardTitle>
  <CardDescription className="mt-1.5">Anda saat ini memiliki shift yang sedang aktif.</CardDescription>
  </div>
- <div className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-1.5">
+ <div className="bg-emerald-100 text-primary dark:bg-emerald-900/30 dark:text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest flex items-center gap-1.5">
  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> Aktif
  </div>
  </div>
@@ -217,7 +217,7 @@ export default function PosShiftPage() {
  <Card className="border-border shadow-sm overflow-hidden group hover:border-emerald-500 transition-colors">
  <div className="h-2 w-full bg-emerald-500"></div>
  <form onSubmit={handleOpenShift}>
- <CardHeader className="pb-4">
+ <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex items-center justify-between">
  <div>
  <CardTitle className="flex items-center gap-2">
@@ -263,7 +263,7 @@ export default function PosShiftPage() {
  <p className="text-xs text-muted-foreground">Jumlah uang tunai fisik yang ada di laci saat shift ini dimulai.</p>
  </div>
 
- <Button type="submit" disabled={processing} className="w-full h-12  font-bold text-lg shadow-sm shadow-emerald-500/20">
+ <Button type="submit" disabled={processing} className="w-full h-12 font-bold text-lg shadow-sm shadow-emerald-500/20">
  {processing ?"Memproses..." :"Mulai Shift & Buka Kasir"}
  </Button>
  </CardContent>

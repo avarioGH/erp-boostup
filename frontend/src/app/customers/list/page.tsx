@@ -6,7 +6,7 @@ export default function CustomersList() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">List</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">List</h1>
  <p className="text-muted-foreground">Manage list data here.</p>
  </div>
 

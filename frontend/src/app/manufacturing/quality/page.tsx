@@ -52,14 +52,14 @@ export default function QualityPage() {
  <div className="space-y-6 pb-10">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Quality Control</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Quality Control</h1>
  <p className="text-muted-foreground mt-1">Manage quality checks for incoming goods and production output.</p>
  </div>
  </div>
  <Card className="shadow-sm">
- <CardHeader className="pb-4">
+ <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
- <CardTitle className="text-lg">Quality Inspections</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Quality Inspections</CardTitle>
  <div className="relative w-full sm:w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input type="search" placeholder="Search reference..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -70,28 +70,28 @@ export default function QualityPage() {
  {loading ? <div className="flex p-12 justify-center"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div> : (
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y">
+ <thead className="bg-muted border-y border-border">
  <tr>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Reference</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Product</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Check Point</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Status / Result</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Action</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Reference</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Product</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Check Point</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status / Result</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr>
  </thead>
  <tbody>
  {filtered.length === 0 ? (
  <tr><td colSpan={5} className="text-center p-12 text-muted-foreground">No quality checks found.</td></tr>
  ) : filtered.map((item) => (
- <tr key={item.id} className="border-b last:border-0 hover:bg-muted/10">
- <td className="p-4 px-6 font-medium text-indigo-600">{item.reference || '-'}</td>
+ <tr key={item.id} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
+ <td className="py-3.5 px-6 font-semibold text-primary text-[13px]">{item.reference || '-'}</td>
  <td className="p-4 px-6 font-medium">{item.product?.name || item.product_id || '-'}</td>
- <td className="p-4 px-6">{item.point?.name || item.point_id || 'Standard Check'}</td>
- <td className="p-4 px-6 text-center">{getStatusBadge(item.status, item.result)}</td>
- <td className="p-4 px-6 text-center">
+ <td className="py-3.5 px-6 text-[13px]">{item.point?.name || item.point_id || 'Standard Check'}</td>
+ <td className="py-3.5 px-6 text-center text-[13px]">{getStatusBadge(item.status, item.result)}</td>
+ <td className="py-3.5 px-6 text-center text-[13px]">
  {item.status !== 'COMPLETED' ? (
  <div className="flex items-center justify-center gap-2">
- <Button size="sm" variant="outline" className="text-emerald-600 hover:bg-emerald-50" onClick={() => completeCheck(item.id, 'PASS')}>Pass</Button>
+ <Button size="sm" variant="outline" className="text-primary hover:bg-emerald-50" onClick={() => completeCheck(item.id, 'PASS')}>Pass</Button>
  <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50" onClick={() => completeCheck(item.id, 'FAIL')}>Fail</Button>
  </div>
  ) : (

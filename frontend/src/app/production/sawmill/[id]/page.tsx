@@ -87,7 +87,7 @@ export default function SawmillRunDetail({ params }: { params: { id: string } })
  <Button variant="ghost" onClick={() => router.push('/production/sawmill')}>
  <ArrowLeft className="h-4 w-4 mr-2"/> Kembali
  </Button>
- <h2 className="text-2xl font-bold tracking-tight">Detail Produksi: {data.productionNo}</h2>
+ <h2 className="text-[28px] font-bold tracking-tight text-foreground">Detail Produksi: {data.productionNo}</h2>
  <Badge variant={data.status === 'POSTED' ? 'default' : data.status === 'CANCELLED' ? 'destructive' : 'secondary'}>
  {data.status}
  </Badge>

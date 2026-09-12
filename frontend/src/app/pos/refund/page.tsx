@@ -6,7 +6,7 @@ export default function PosRefund() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Refund</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Refund</h1>
  <p className="text-muted-foreground">Manage refund data here.</p>
  </div>
 

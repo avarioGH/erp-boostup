@@ -199,7 +199,7 @@ export default function ProductInventory() {
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white flex items-center gap-2">
- <Box className="w-8 h-8 text-indigo-600 dark:text-indigo-400" /> Manajemen Produk
+ <Box className="w-8 h-8 text-primary dark:text-primary" /> Manajemen Produk
  </h1>
  <p className="text-muted-foreground mt-1">Pantau pergerakan stok multi-gudang dan katalog produk Anda.</p>
  </div>
@@ -242,7 +242,7 @@ export default function ProductInventory() {
  className="bg-accent/50 focus:bg-background"
  required
  />
- <Button type="button" variant="outline" onClick={generateSKU} className="shrink-0 border-indigo-200 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-400 dark:hover:bg-indigo-900/30">
+ <Button type="button" variant="outline" onClick={generateSKU} className="shrink-0 border-indigo-200 text-primary hover:bg-indigo-50 dark:border-indigo-800 dark:text-primary dark:hover:bg-indigo-900/30">
  Generate
  </Button>
  </div>
@@ -275,7 +275,7 @@ export default function ProductInventory() {
  <div className="space-y-2">
  <div className="flex items-center justify-between">
  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kategori Produk</Label>
- <Link href="/inventory/categories" className="text-[10px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-medium">
+ <Link href="/inventory/categories" className="text-[10px] text-primary dark:text-primary hover:underline flex items-center gap-1 font-medium">
  <Edit className="w-3 h-3" /> Kelola Kategori
  </Link>
  </div>
@@ -365,7 +365,7 @@ export default function ProductInventory() {
  disabled={images.length >= 8}
  />
  <label htmlFor="image-upload" className={`flex flex-col items-center justify-center gap-3 ${images.length >= 8 ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
- <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-full shadow-sm">
+ <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 text-primary dark:text-primary rounded-full shadow-sm">
  <Upload className="w-6 h-6" />
  </div>
  <div>
@@ -478,7 +478,7 @@ export default function ProductInventory() {
  {warehouses.map((wh) => (
  <TableHead key={wh.id} className="text-center font-semibold bg-indigo-50/50 dark:bg-indigo-900/10 border-l border-r border-indigo-100 dark:border-indigo-900/30">
  <div className="flex flex-col items-center">
- <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold tracking-widest mb-1">{wh.name}</span>
+ <span className="text-xs text-primary dark:text-primary font-bold tracking-widest mb-1">{wh.name}</span>
  <span className="text-[10px] text-muted-foreground">{wh.location ||"Cabang"}</span>
  </div>
  </TableHead>
@@ -525,7 +525,7 @@ export default function ProductInventory() {
  <TableCell className="text-center">
  <Badge className={`${
  totalStock < 50 ? 'bg-rose-100 text-rose-700 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 border-none' : 
- 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 border-none'
+ 'bg-emerald-100 text-primary hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-primary border-none'
  } font-bold px-2 py-0.5`}>
  {totalStock}
  </Badge>

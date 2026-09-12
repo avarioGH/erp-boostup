@@ -51,7 +51,7 @@ export default function MRPPage() {
  <div className="space-y-6 pb-10">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Material Requirements Planning</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Material Requirements Planning</h1>
  <p className="text-muted-foreground mt-1">Calculate stock shortages and generate production or purchase recommendations.</p>
  </div>
  </div>
@@ -74,7 +74,7 @@ export default function MRPPage() {
  </SelectContent>
  </Select>
  </div>
- <Button onClick={runMRP} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto">
+ <Button onClick={runMRP} disabled={loading} className=" w-full sm:w-auto">
  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Cog className="w-4 h-4 mr-2" />} Calculate Needs
  </Button>
  </CardContent>
@@ -83,30 +83,30 @@ export default function MRPPage() {
  {data.length > 0 && (
  <Card className="shadow-sm">
  <CardHeader className="pb-4 border-b">
- <CardTitle className="text-lg flex items-center gap-2"><TrendingDown className="w-5 h-5" /> Recommendations & Shortages</CardTitle>
+ <CardTitle className="text-[16px] font-semibold flex items-center gap-2"><TrendingDown className="w-5 h-5" /> Recommendations & Shortages</CardTitle>
  </CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y">
+ <thead className="bg-muted border-y border-border">
  <tr>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Product</th>
- <th className="p-4 px-6 text-right font-medium text-muted-foreground">Demand</th>
- <th className="p-4 px-6 text-right font-medium text-muted-foreground">Available</th>
- <th className="p-4 px-6 text-right font-medium text-muted-foreground">Shortage</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Recommendation</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Action</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Product</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Demand</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Available</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Shortage</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Recommendation</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr>
  </thead>
  <tbody>
  {data.map((item, i) => (
- <tr key={i} className="border-b last:border-0 hover:bg-muted/10">
+ <tr key={i} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
  <td className="p-4 px-6 font-medium">{item.product_name || item.product_id || item.product?.name}</td>
- <td className="p-4 px-6 text-right">{item.demand || 0}</td>
- <td className="p-4 px-6 text-right">{item.available || item.on_hand || 0}</td>
+ <td className="py-3.5 px-6 text-right text-[13px]">{item.demand || 0}</td>
+ <td className="py-3.5 px-6 text-right text-[13px]">{item.available || item.on_hand || 0}</td>
  <td className="p-4 px-6 text-right font-bold text-red-600">{item.shortage > 0 ? item.shortage : 0}</td>
- <td className="p-4 px-6 text-center">{getActionBadge(item.action || item.recommendation)}</td>
- <td className="p-4 px-6 text-center">
+ <td className="py-3.5 px-6 text-center text-[13px]">{getActionBadge(item.action || item.recommendation)}</td>
+ <td className="py-3.5 px-6 text-center text-[13px]">
  {(item.action === 'MANUFACTURE' || item.recommendation === 'MANUFACTURE') && (
  <Button variant="outline" size="sm" className="text-amber-600 hover:text-amber-700">Create MO</Button>
  )}

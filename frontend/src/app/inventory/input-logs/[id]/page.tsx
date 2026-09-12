@@ -37,7 +37,7 @@ export default function InputLogDetailPage({ params }: { params: { id: string } 
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
  <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Operation</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Operation</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
  <div className="grid grid-cols-2 gap-y-4">
  <div><p className="text-muted-foreground">Date</p><p className="font-bold flex items-center gap-1"><Calendar className="w-3 h-3"/> {new Date(data.date).toLocaleDateString("id-ID")}</p></div>
@@ -55,12 +55,12 @@ export default function InputLogDetailPage({ params }: { params: { id: string } 
  <div className="flex justify-between items-center"><span className="text-muted-foreground">Total Length</span><span className="font-medium">{data.totalLength?.toFixed(2)} m</span></div>
  <div className="flex justify-between items-center"><span className="text-muted-foreground">Total Gross</span><span className="font-medium">{data.totalGross?.toFixed(4)} m?</span></div>
  <hr className="border-indigo-100" />
- <div className="flex justify-between items-center"><span className="font-bold text-indigo-900">Total Net Volume</span><span className="font-bold text-2xl text-indigo-700">{data.totalVolume?.toFixed(4)} m?</span></div>
+ <div className="flex justify-between items-center"><span className="font-bold text-indigo-900">Total Net Volume</span><span className="font-bold text-2xl text-primary">{data.totalVolume?.toFixed(4)} m?</span></div>
  </CardContent>
  </Card>
 
  <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg flex items-center gap-2"><Waypoints className="w-4 h-4" /> Traceability</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><Waypoints className="w-4 h-4" /> Traceability</CardTitle></CardHeader>
  <CardContent className="pt-6">
  <div className="flex items-center gap-4 text-sm">
  <div className="p-4 border rounded text-muted-foreground border-dashed">
@@ -79,7 +79,7 @@ export default function InputLogDetailPage({ params }: { params: { id: string } 
 
  <Card className="shadow-sm">
  <CardHeader className="border-b pb-4">
- <CardTitle className="text-lg">Source Material (Trimmed Logs)</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Source Material (Trimmed Logs)</CardTitle>
  </CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
@@ -96,11 +96,11 @@ export default function InputLogDetailPage({ params }: { params: { id: string } 
  </thead>
  <tbody>
  {data.items?.map((item: any) => (
- <tr key={item.id} className="border-b hover:bg-muted/10">
- <td className="p-3 px-6 font-medium text-emerald-700">
+ <tr key={item.id} className="border-b hover:bg-muted/60 transition-colors">
+ <td className="p-3 px-6 font-medium text-primary">
  <Link href={`/inventory/trimming/${item.trimmedLogId}`} className="hover:underline">{item.trimmedLog?.trimNumber}</Link>
  </td>
- <td className="p-3 px-6 text-indigo-700">
+ <td className="p-3 px-6 text-primary">
  <Link href={`/inventory/logs/${item.trimmedLog?.rawLogId}`} className="hover:underline">{item.trimmedLog?.rawLog?.logNumber}</Link>
  </td>
  <td className="p-3 px-6 text-right">{item.trimmedLog?.length} m</td>

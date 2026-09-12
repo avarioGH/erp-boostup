@@ -99,21 +99,21 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  <div className="flex items-center gap-4 border-b pb-4">
  <Button variant="outline" size="icon" onClick={() => router.push(`/inventory/logs/${params.id}`)}><ArrowLeft className="w-4 h-4" /></Button>
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Add Trimming Child</h1>
- <p className="text-muted-foreground mt-1">Parent: <span className="font-bold text-emerald-700">{trimInfo.parent.logNumber}</span></p>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Add Trimming Child</h1>
+ <p className="text-muted-foreground mt-1">Parent: <span className="font-bold text-primary">{trimInfo.parent.logNumber}</span></p>
  </div>
  </div>
 
  <div className="flex gap-8 p-4 bg-muted/30 rounded-lg border">
  <div><p className="text-sm text-muted-foreground">Original Length</p><p className="font-bold text-lg">{trimInfo.parent.originalLength} m</p></div>
- <div><p className="text-sm text-muted-foreground">Allocated</p><p className="font-bold text-lg text-emerald-600">{trimInfo.allocated} m</p></div>
+ <div><p className="text-sm text-muted-foreground">Allocated</p><p className="font-bold text-lg text-primary">{trimInfo.allocated} m</p></div>
  <div><p className="text-sm text-muted-foreground">Remaining</p><p className="font-bold text-lg text-amber-600">{remaining} m</p></div>
  </div>
 
  <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
  <div className="md:col-span-2 space-y-6">
  <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">Measurements</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Measurements</CardTitle></CardHeader>
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
  <div className="space-y-2 md:col-span-4">
  <label className="text-sm font-medium text-red-600">Trimmed Length (meters) *</label>
@@ -129,7 +129,7 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  </CardContent>
  </Card>
  <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">Additional Info</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Additional Info</CardTitle></CardHeader>
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2"><label className="text-sm font-medium">Location (Overrides Parent)</label>
  <Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val ||""})}>
@@ -151,10 +151,10 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Rounded ?</span><span className="font-bold text-lg">{preview.rnd} cm</span></div>
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Gross Volume</span><span className="font-medium">{preview.gross} m?</span></div>
  <hr className="border-emerald-100" />
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground text-red-500">Net Volume</span><span className="font-bold text-xl text-indigo-700">{preview.net > 0 ? preview.net : 0} m?</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground text-red-500">Net Volume</span><span className="font-bold text-xl text-primary">{preview.net > 0 ? preview.net : 0} m?</span></div>
  </CardContent>
  </Card>
- <Button type="submit" disabled={submitting || preview.net < 0 || isExceeding || remaining <= 0} className="w-full  h-12 text-lg">
+ <Button type="submit" disabled={submitting || preview.net < 0 || isExceeding || remaining <= 0} className="w-full h-12 text-lg">
  {submitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} Save Child Log
  </Button>
  </div>

@@ -74,7 +74,7 @@ export default function FinanceCashOut() {
  </Link>
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Catat Pengeluaran</h1>
- <p className="text-muted-foreground mt-1">Keluarkan dana untuk operasional perusahaan.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Keluarkan dana untuk operasional perusahaan.</p>
  </div>
  </div>
 
@@ -90,7 +90,7 @@ export default function FinanceCashOut() {
  <CardContent className="space-y-6">
  
  {success && (
- <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg flex items-center gap-3">
+ <div className="bg-emerald-50 dark:bg-emerald-900/30 text-primary dark:text-primary p-4 rounded-lg flex items-center gap-3">
  <CheckCircle2 className="w-5 h-5" />
  <p className="font-medium text-sm">Pengeluaran berhasil dicatat! Mengalihkan...</p>
  </div>

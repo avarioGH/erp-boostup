@@ -63,7 +63,7 @@ export default function AIInsightsPage() {
  <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto">
  <div>
  <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent flex items-center gap-2">
- <BrainCircuit className="w-8 h-8 text-indigo-600" />
+ <BrainCircuit className="w-8 h-8 text-primary" />
  Boostup AI Insights
  </h1>
  <p className="text-muted-foreground mt-1">
@@ -73,7 +73,7 @@ export default function AIInsightsPage() {
 
  <Card className="border-t-4 border-t-indigo-600 shadow-xl flex flex-col h-[600px]">
  <CardHeader className="bg-muted/30 border-b pb-4">
- <CardTitle className="text-lg flex items-center gap-2">
+ <CardTitle className="text-[16px] font-semibold flex items-center gap-2">
  <Sparkles className="w-5 h-5 text-indigo-500" />
  AI Business Assistant
  </CardTitle>
@@ -137,7 +137,7 @@ export default function AIInsightsPage() {
  className="flex-1 bg-background"
  disabled={loading}
  />
- <Button type="submit" disabled={loading || !prompt.trim()} className="bg-indigo-600 hover:bg-indigo-700">
+ <Button type="submit" disabled={loading || !prompt.trim()} className="">
  <Send className="w-4 h-4 mr-2" />
  Ask AI
  </Button>

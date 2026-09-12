@@ -66,7 +66,7 @@ function GoodsReceiptContent() {
  <Button variant="outline" size="icon" onClick={() => setSelectedDoc(null)}><ChevronLeft className="h-4 w-4" /></Button>
  <div>
  <div className="flex items-center gap-3">
- <h1 className="text-2xl font-bold tracking-tight">{details.receipt_number}</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">{details.receipt_number}</h1>
  {getStatusBadge(details.status)}
  </div>
  <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2"><Truck className="h-4 w-4" /> Goods Receipt</p>
@@ -78,7 +78,7 @@ function GoodsReceiptContent() {
  View Purchase Order
  </Button>
  )}
- <Button variant="outline" onClick={() => router.push('/finance/vendor-bills')} className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+ <Button variant="outline" onClick={() => router.push('/finance/vendor-bills')} className="border-emerald-200 text-primary hover:bg-emerald-50">
  Create Vendor Bill
  </Button>
  </div>
@@ -89,7 +89,7 @@ function GoodsReceiptContent() {
  ) : (
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
  <Card className="md:col-span-2 shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">Received Items</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Received Items</CardTitle></CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
@@ -103,11 +103,11 @@ function GoodsReceiptContent() {
  {(details.items || []).length === 0 ? (
  <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No items in this receipt.</td></tr>
  ) : details.items.map((item: any, i: number) => (
- <tr key={i} className="border-b last:border-0 hover:bg-muted/10">
+ <tr key={i} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
  <td className="p-4 font-medium">{item.product?.name || item.product_id}</td>
  <td className="p-4 text-center text-muted-foreground">{item.ordered_qty || item.qty || '-'}</td>
  <td className="p-4 text-center text-muted-foreground">{item.previously_received_qty || 0}</td>
- <td className="p-4 text-center font-bold text-indigo-600">{item.received_qty || item.qty}</td>
+ <td className="p-4 text-center font-bold text-primary">{item.received_qty || item.qty}</td>
  </tr>
  ))}
  </tbody>
@@ -117,11 +117,11 @@ function GoodsReceiptContent() {
  </Card>
 
  <Card className="shadow-sm h-fit">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">Receipt Information</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Receipt Information</CardTitle></CardHeader>
  <CardContent className="space-y-4 pt-6">
  <div><p className="text-sm font-medium text-muted-foreground mb-1">Supplier</p><p className="font-medium">{details.supplier?.name || '-'}</p></div>
  <div><p className="text-sm font-medium text-muted-foreground mb-1">Purchase Order</p>
- <p className="font-medium text-indigo-600 cursor-pointer hover:underline" onClick={() => router.push('/purchasing/orders')}>
+ <p className="font-medium text-primary cursor-pointer hover:underline" onClick={() => router.push('/purchasing/orders')}>
  {details.purchase_order?.order_number || '-'}
  </p>
  </div>
@@ -141,7 +141,7 @@ function GoodsReceiptContent() {
  <div className="space-y-6">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Goods Receipts</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Goods Receipts</h1>
  <p className="text-muted-foreground mt-1">Track incoming goods from suppliers. Validated receipts update inventory automatically.</p>
  </div>
  </div>
@@ -149,19 +149,19 @@ function GoodsReceiptContent() {
  {poIdParam && (
  <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-950 dark:border-indigo-800 shadow-sm">
  <CardContent className="pt-4 flex items-center gap-3">
- <Package className="h-5 w-5 text-indigo-600" />
+ <Package className="h-5 w-5 text-primary" />
  <div>
- <p className="font-medium text-indigo-800 dark:text-indigo-300">Receiving goods for Purchase Order</p>
- <p className="text-sm text-indigo-600 dark:text-indigo-400">PO ID: {poIdParam} — Create a new receipt below or validate an existing draft.</p>
+ <p className="font-medium text-indigo-800 dark:text-primary">Receiving goods for Purchase Order</p>
+ <p className="text-sm text-primary dark:text-primary">PO ID: {poIdParam} — Create a new receipt below or validate an existing draft.</p>
  </div>
  </CardContent>
  </Card>
  )}
 
  <Card className="shadow-sm">
- <CardHeader className="pb-4">
+ <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
- <CardTitle className="text-lg">Receipt Records</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Receipt Records</CardTitle>
  <div className="flex items-center gap-2">
  <div className="relative w-full sm:w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -175,25 +175,25 @@ function GoodsReceiptContent() {
  {loading ? <div className="flex p-12 justify-center"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div> : (
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y"><tr>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Receipt No</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Purchase Order</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Supplier</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Date</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Status</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Action</th>
+ <thead className="bg-muted border-y border-border"><tr>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Receipt No</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Purchase Order</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Supplier</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Date</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr></thead>
  <tbody>
  {filtered.length === 0 ? (
  <tr><td colSpan={6} className="text-center p-12 text-muted-foreground">No goods receipts found.</td></tr>
  ) : filtered.map((item) => (
  <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => viewDetails(item)}>
- <td className="p-4 px-6 font-medium text-indigo-600 dark:text-indigo-400">{item.receipt_number}</td>
+ <td className="py-3.5 px-6 font-semibold text-primary text-[13px] dark:text-primary">{item.receipt_number}</td>
  <td className="p-4 px-6 font-medium">{item.purchase_order?.order_number || '-'}</td>
- <td className="p-4 px-6">{item.supplier?.name || '-'}</td>
+ <td className="py-3.5 px-6 text-[13px]">{item.supplier?.name || '-'}</td>
  <td className="p-4 px-6 text-muted-foreground">{new Date(item.receipt_date || item.createdAt || Date.now()).toLocaleDateString('id-ID')}</td>
- <td className="p-4 px-6 text-center">{getStatusBadge(item.status)}</td>
- <td className="p-4 px-6 text-center"><Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">View</Button></td>
+ <td className="py-3.5 px-6 text-center text-[13px]">{getStatusBadge(item.status)}</td>
+ <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">View</Button></td>
  </tr>
  ))}
  </tbody>

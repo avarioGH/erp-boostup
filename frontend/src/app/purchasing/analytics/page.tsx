@@ -19,7 +19,7 @@ function MetricCard({ title, value, sub, color, icon: Icon, onClick }: { title: 
  </div>
  {Icon && <div className="p-2 rounded-md bg-muted/50"><Icon className="h-5 w-5 text-muted-foreground" /></div>}
  </div>
- {onClick && <p className="text-xs text-indigo-600 mt-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><ExternalLink className="h-3 w-3" /> View details</p>}
+ {onClick && <p className="text-xs text-primary mt-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><ExternalLink className="h-3 w-3" /> View details</p>}
  </CardContent>
  </Card>
  )
@@ -47,7 +47,7 @@ export default function PurchasingOverviewPage() {
  if (error || !data) return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Purchasing Overview</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Purchasing Overview</h1>
  <p className="text-muted-foreground mt-1">Procurement analytics and workflow overview.</p>
  </div>
  <Card className="border-destructive/40 bg-destructive/5 shadow-sm">
@@ -81,7 +81,7 @@ export default function PurchasingOverviewPage() {
  <div className="space-y-6 pb-10">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Purchasing Overview</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Purchasing Overview</h1>
  <p className="text-muted-foreground mt-1">Procurement analytics and Procure-to-Pay workflow status.</p>
  </div>
  <Button className="shadow-sm" onClick={() => router.push('/purchasing/rfqs')}>
@@ -116,7 +116,7 @@ export default function PurchasingOverviewPage() {
  {data.top_suppliers && data.top_suppliers.length > 0 && (
  <Card className="shadow-sm">
  <CardHeader className="border-b pb-4">
- <CardTitle className="text-lg">Top Suppliers by Spend</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Top Suppliers by Spend</CardTitle>
  <CardDescription>Based on confirmed Purchase Orders</CardDescription>
  </CardHeader>
  <CardContent className="pt-6">

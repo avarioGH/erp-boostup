@@ -19,7 +19,7 @@ export default function FinanceReports() {
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Laporan Keuangan</h1>
- <p className="text-muted-foreground mt-1">Unduh dan analisis performa keuangan perusahaan Anda secara komprehensif.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Unduh dan analisis performa keuangan perusahaan Anda secara komprehensif.</p>
  </div>
  <div className="flex items-center gap-3">
  <Button variant="outline" className="flex items-center gap-2">
@@ -36,7 +36,7 @@ export default function FinanceReports() {
  <Card className="border-border shadow-sm hover:shadow-md transition-shadow group">
  <CardHeader className="pb-3">
  <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
- <BarChart3 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+ <BarChart3 className="w-6 h-6 text-primary dark:text-primary" />
  </div>
  <CardTitle>Laporan Laba Rugi</CardTitle>
  <CardDescription>Profit & Loss Statement</CardDescription>
@@ -50,7 +50,7 @@ export default function FinanceReports() {
  <Calendar className="w-3 h-3" /> Bulan Ini
  </span>
  <Link href="/finance/reports/profit-loss">
- <Button variant="ghost" size="sm" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 hover:bg-indigo-50">
+ <Button variant="ghost" size="sm" className="text-primary dark:text-primary hover:text-primary hover:bg-indigo-50">
  Lihat Detail &rarr;
  </Button>
  </Link>
@@ -62,7 +62,7 @@ export default function FinanceReports() {
  <Card className="border-border shadow-sm hover:shadow-md transition-shadow group">
  <CardHeader className="pb-3">
  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
- <BarChart3 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+ <BarChart3 className="w-6 h-6 text-primary dark:text-primary" />
  </div>
  <CardTitle>Arus Kas (Cash Flow)</CardTitle>
  <CardDescription>Pergerakan dana masuk & keluar</CardDescription>
@@ -76,7 +76,7 @@ export default function FinanceReports() {
  <Calendar className="w-3 h-3" /> Bulan Ini
  </span>
  <Link href="/finance/reports/cash-flow">
- <Button variant="ghost" size="sm" className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 hover:bg-emerald-50">
+ <Button variant="ghost" size="sm" className="text-primary dark:text-primary hover:text-primary hover:bg-emerald-50">
  Lihat Detail &rarr;
  </Button>
  </Link>

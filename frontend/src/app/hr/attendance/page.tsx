@@ -56,7 +56,7 @@ export default function HrAttendance() {
  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Absensi Pegawai</h1>
- <p className="text-muted-foreground mt-1">Pantau kehadiran harian dan integrasi mesin biometrik (Fingerprint).</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Pantau kehadiran harian dan integrasi mesin biometrik (Fingerprint).</p>
  </div>
  </div>
 
@@ -130,7 +130,7 @@ export default function HrAttendance() {
  <TableCell>{new Date(att.date).toLocaleDateString('id-ID')}</TableCell>
  <TableCell>
  {att.check_in ? (
- <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+ <span className="inline-flex items-center gap-1 text-primary dark:text-primary font-medium">
  <Clock className="w-3 h-3" /> {new Date(att.check_in).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}
  </span>
  ) :"-"}
@@ -144,7 +144,7 @@ export default function HrAttendance() {
  </TableCell>
  <TableCell>
  <span className={`px-2 py-1 rounded-full text-xs font-bold ${
- att.status === 'PRESENT' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+ att.status === 'PRESENT' ? 'bg-emerald-100 text-primary dark:bg-emerald-900/30 dark:text-primary' :
  'bg-muted/50 text-foreground dark:text-muted-foreground'
  }`}>
  {att.status}

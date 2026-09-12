@@ -39,7 +39,7 @@ export default function HrDashboard() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">HR & Payroll Dashboard</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">HR & Payroll Dashboard</h1>
  <p className="text-muted-foreground">Overview of employees, attendance, and salary.</p>
  </div>
 

@@ -139,7 +139,7 @@ export default function AIPredictionPage() {
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white flex items-center gap-2">
  Prediksi AI (Forecasting) <Sparkles className="w-6 h-6 text-violet-500" />
  </h1>
- <p className="text-muted-foreground mt-1">Peramalan penjualan masa depan menggunakan model regresi linier.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Peramalan penjualan masa depan menggunakan model regresi linier.</p>
  </div>
  </div>
  <Button onClick={fetchData} disabled={analyzing} className="bg-violet-600 hover:bg-violet-700 text-white gap-2">

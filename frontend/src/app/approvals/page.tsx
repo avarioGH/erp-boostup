@@ -44,8 +44,8 @@ export default function ApprovalsPage() {
  <div className="space-y-6">
  <div className="flex justify-between items-center">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Approval Center</h1>
- <p className="text-muted-foreground mt-1">Review and action pending requests across all modules.</p>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Approval Center</h1>
+ <p className="text-[14px] text-muted-foreground mt-1">Review and action pending requests across all modules.</p>
  </div>
  </div>
 

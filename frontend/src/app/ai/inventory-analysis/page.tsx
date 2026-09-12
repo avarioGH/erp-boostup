@@ -109,7 +109,7 @@ export default function AIInventoryAnalysisPage() {
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white flex items-center gap-2">
  Analisis Inventaris AI <Sparkles className="w-6 h-6 text-indigo-500" />
  </h1>
- <p className="text-muted-foreground mt-1">Sistem cerdas untuk mendeteksi status stok Anda secara proaktif.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Sistem cerdas untuk mendeteksi status stok Anda secara proaktif.</p>
  </div>
  </div>
  <Button onClick={fetchData} disabled={analyzing} className="gap-2">
@@ -119,7 +119,7 @@ export default function AIInventoryAnalysisPage() {
 
  {analyzing ? (
  <Card className="border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/10 shadow-sm">
- <CardContent className="py-12 flex flex-col items-center justify-center text-indigo-600 dark:text-indigo-400">
+ <CardContent className="py-12 flex flex-col items-center justify-center text-primary dark:text-primary">
  <div className="relative w-16 h-16 mb-4">
  <div className="absolute inset-0 border-4 border-indigo-200 rounded-full"></div>
  <div className="absolute inset-0 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>

@@ -62,8 +62,8 @@ function APPaymentContent() {
  <div className="space-y-6">
  <div className="flex justify-between items-center">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Pembayaran Vendor (AP Payments)</h1>
- <p className="text-muted-foreground mt-1">Daftar pembayaran pengeluaran kas/bank untuk hutang usaha.</p>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Pembayaran Vendor (AP Payments)</h1>
+ <p className="text-[14px] text-muted-foreground mt-1">Daftar pembayaran pengeluaran kas/bank untuk hutang usaha.</p>
  </div>
  </div>
 

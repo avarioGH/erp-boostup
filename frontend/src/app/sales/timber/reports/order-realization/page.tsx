@@ -84,8 +84,8 @@ export default function OrderRealizationReport() {
  <td className="border border-border p-2 text-right font-medium">{row.orderQty}</td>
  <td className="border border-border p-2 text-right">{row.orderM3.toFixed(4)}</td>
  
- <td className="border border-border p-2 text-right text-emerald-700 font-medium">{row.realizedQty}</td>
- <td className="border border-border p-2 text-right text-emerald-700">{row.realizedM3.toFixed(4)}</td>
+ <td className="border border-border p-2 text-right text-primary font-medium">{row.realizedQty}</td>
+ <td className="border border-border p-2 text-right text-primary">{row.realizedM3.toFixed(4)}</td>
  
  <td className="border border-border p-2 text-right text-amber-700 font-medium">{row.orderQty - row.realizedQty}</td>
  <td className="border border-border p-2 text-right text-amber-700">{(row.orderM3 - row.realizedM3).toFixed(4)}</td>

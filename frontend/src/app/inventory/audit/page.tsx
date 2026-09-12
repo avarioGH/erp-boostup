@@ -67,7 +67,7 @@ export default function AuditPage() {
  return (
  <div className="space-y-6 pb-10">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Inventory Audit Dashboard</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Inventory Audit Dashboard</h1>
  <p className="text-muted-foreground mt-1">Data integrity, system health, and reconciliation status.</p>
  </div>
 
@@ -103,7 +103,7 @@ export default function AuditPage() {
  <CardContent className="pt-6">
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y">
+ <thead className="bg-muted border-y border-border">
  <tr>
  <th className="p-3 px-4 text-left">Dataset</th>
  <th className="p-3 px-4 text-right">Excel Rows</th>
@@ -120,10 +120,10 @@ export default function AuditPage() {
  { dataset: 'Sawn Output M3 ? 1. Oktober 2025', excel: 1208, match: 1208, rounding: 0, mismatch: 0, verdict: 'PASS' },
  { dataset: 'Stock M3 Formula ? 13. PROD SWM', excel: 85, match: 85, rounding: 0, mismatch: 0, verdict: 'PASS' },
  ].map(r => (
- <tr key={r.dataset} className="border-b hover:bg-muted/10">
+ <tr key={r.dataset} className="border-b hover:bg-muted/60 transition-colors">
  <td className="p-3 px-4 font-medium">{r.dataset}</td>
  <td className="p-3 px-4 text-right">{r.excel.toLocaleString()}</td>
- <td className="p-3 px-4 text-right text-emerald-600 font-bold">{r.match}</td>
+ <td className="p-3 px-4 text-right text-primary font-bold">{r.match}</td>
  <td className="p-3 px-4 text-right text-amber-600">{r.rounding}</td>
  <td className="p-3 px-4 text-right text-red-600">{r.mismatch}</td>
  <td className="p-3 px-4 text-center">
@@ -145,7 +145,7 @@ export default function AuditPage() {
  {/* System Architecture Checks */}
  <Card className="shadow-sm">
  <CardHeader className="border-b pb-4">
- <CardTitle className="text-lg flex items-center gap-2">
+ <CardTitle className="text-[16px] font-semibold flex items-center gap-2">
  <BarChart3 className="w-5 h-5" /> Architecture & Integrity Checks
  </CardTitle>
  </CardHeader>
@@ -160,7 +160,7 @@ export default function AuditPage() {
  </thead>
  <tbody>
  {checks.map(c => (
- <tr key={c.label} className="border-b hover:bg-muted/10">
+ <tr key={c.label} className="border-b hover:bg-muted/60 transition-colors">
  <td className="p-3 px-6 font-medium">{c.label}</td>
  <td className="p-3 px-6 text-muted-foreground">{c.detail}</td>
  <td className="p-3 px-6 text-center">

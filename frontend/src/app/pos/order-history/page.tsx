@@ -47,7 +47,7 @@ export default function PosOrderHistoryPage() {
  </Link>
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Riwayat Penjualan</h1>
- <p className="text-muted-foreground mt-1">Pantau seluruh transaksi kasir yang telah berhasil dilakukan.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Pantau seluruh transaksi kasir yang telah berhasil dilakukan.</p>
  </div>
  </div>
 
@@ -89,7 +89,7 @@ export default function PosOrderHistoryPage() {
  <div className="flex items-center gap-2">
  <span className="font-bold text-foreground dark:text-white">{order.order_number}</span>
  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
- order.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+ order.status === 'COMPLETED' ? 'bg-emerald-100 text-primary dark:bg-emerald-900/30 dark:text-primary' :
  order.status === 'CANCELLED' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' :
  'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
  }`}>

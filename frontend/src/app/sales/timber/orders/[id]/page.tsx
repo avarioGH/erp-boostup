@@ -39,14 +39,14 @@ export default function TimberOrderDetail({ params }: { params: { id: string } }
 
  <div className="grid grid-cols-2 gap-6">
  <Card>
- <CardHeader><CardTitle className="text-lg">Customer Info</CardTitle></CardHeader>
+ <CardHeader><CardTitle className="text-[16px] font-semibold">Customer Info</CardTitle></CardHeader>
  <CardContent className="space-y-2">
  <p><span className="font-semibold text-muted-foreground w-24 inline-block">Name:</span> {order.customer?.name}</p>
  <p><span className="font-semibold text-muted-foreground w-24 inline-block">Code:</span> {order.customer?.code}</p>
  </CardContent>
  </Card>
  <Card>
- <CardHeader><CardTitle className="text-lg">Order Info</CardTitle></CardHeader>
+ <CardHeader><CardTitle className="text-[16px] font-semibold">Order Info</CardTitle></CardHeader>
  <CardContent className="space-y-2">
  <p><span className="font-semibold text-muted-foreground w-24 inline-block">Date:</span> {new Date(order.orderDate).toLocaleDateString()}</p>
  <p><span className="font-semibold text-muted-foreground w-24 inline-block">Partai:</span> {order.partai ||"-"}</p>
@@ -81,8 +81,8 @@ export default function TimberOrderDetail({ params }: { params: { id: string } }
  <td className="p-3 font-medium">{item.thicknessMm} × {item.widthMm} × {item.lengthMm}</td>
  <td className="p-3">{item.orderQty} PCS</td>
  <td className="p-3">{item.orderM3.toFixed(4)}</td>
- <td className="p-3 text-emerald-600 font-semibold">{item.realizedQty} PCS</td>
- <td className="p-3 text-emerald-600">{item.realizedM3.toFixed(4)}</td>
+ <td className="p-3 text-primary font-semibold">{item.realizedQty} PCS</td>
+ <td className="p-3 text-primary">{item.realizedM3.toFixed(4)}</td>
  <td className="p-3 text-amber-600 font-semibold">{remaining} PCS</td>
  <td className="p-3">
  <div className="w-full bg-slate-200 rounded-full h-2.5">

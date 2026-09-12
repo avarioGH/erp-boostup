@@ -59,7 +59,7 @@ export default function FinanceTransfer() {
  </Link>
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Transfer Kas/Bank</h1>
- <p className="text-muted-foreground mt-1">Pindahkan dana antar rekening perusahaan.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Pindahkan dana antar rekening perusahaan.</p>
  </div>
  </div>
 
@@ -75,7 +75,7 @@ export default function FinanceTransfer() {
  <CardContent className="space-y-6">
  
  {success && (
- <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg flex items-center gap-3">
+ <div className="bg-emerald-50 dark:bg-emerald-900/30 text-primary dark:text-primary p-4 rounded-lg flex items-center gap-3">
  <CheckCircle2 className="w-5 h-5" />
  <p className="font-medium text-sm">Transfer berhasil diproses! Mengalihkan...</p>
  </div>

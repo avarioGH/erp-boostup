@@ -87,7 +87,7 @@ export default function Customer360Page() {
  <div>
  <div className="flex items-center gap-3 mb-2">
  <h1 className="text-2xl font-bold">{profile.name}</h1>
- <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400">Active</Badge>
+ <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-primary">Active</Badge>
  </div>
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm text-muted-foreground">
  <div className="flex items-center gap-2"><Building2 className="h-4 w-4" /> {profile.code}</div>
@@ -153,16 +153,16 @@ export default function Customer360Page() {
  {/* OVERVIEW */}
  <TabsContent value="overview" className="space-y-6 mt-4">
  <Card className="shadow-sm">
- <CardHeader><CardTitle className="text-lg">Unified Timeline</CardTitle></CardHeader>
+ <CardHeader><CardTitle className="text-[16px] font-semibold">Unified Timeline</CardTitle></CardHeader>
  <CardContent>
  <div className="space-y-6 relative border-l-2 border-muted ml-3">
  {allEvents.slice(0, 50).map((event: any, i: number) => (
  <div key={`${event.id}-${i}`} className="mb-6 ml-6 group">
  <span className="absolute flex items-center justify-center w-8 h-8 bg-background rounded-full -left-4 ring-4 ring-muted/30 group-hover:ring-primary/20 transition-all">
- {event.type === 'INVOICE' || event.type === 'PAYMENT' ? <CreditCard className="w-4 h-4 text-emerald-600" /> :
+ {event.type === 'INVOICE' || event.type === 'PAYMENT' ? <CreditCard className="w-4 h-4 text-primary" /> :
  event.type === 'DELIVERY' ? <Truck className="w-4 h-4 text-orange-600" /> :
  event.type === 'ORDER' || event.type === 'QUOTATION' ? <ShoppingCart className="w-4 h-4 text-blue-600" /> :
- event.type === 'ACTIVITY' ? <Activity className="w-4 h-4 text-indigo-600" /> :
+ event.type === 'ACTIVITY' ? <Activity className="w-4 h-4 text-primary" /> :
  <FileClock className="w-4 h-4 text-purple-600" />}
  </span>
  <div className="p-3 bg-muted/20 border rounded-md">
@@ -190,7 +190,7 @@ export default function Customer360Page() {
  <TabsContent value="crm" className="space-y-4 mt-4">
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
- <CardTitle className="text-lg">Opportunities</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Opportunities</CardTitle>
  <Link href="/crm/opportunities"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
@@ -220,7 +220,7 @@ export default function Customer360Page() {
 
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
- <CardTitle className="text-lg">Activities</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Activities</CardTitle>
  </CardHeader>
  <CardContent className="overflow-x-auto">
  <table className="w-full text-sm text-left whitespace-nowrap">
@@ -252,7 +252,7 @@ export default function Customer360Page() {
  <TabsContent value="sales" className="space-y-4 mt-4">
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
- <CardTitle className="text-lg">Quotations</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Quotations</CardTitle>
  <Link href="/sales/quotations"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
@@ -282,7 +282,7 @@ export default function Customer360Page() {
 
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
- <CardTitle className="text-lg">Sales Orders</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Sales Orders</CardTitle>
  <Link href="/sales/orders"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
@@ -315,7 +315,7 @@ export default function Customer360Page() {
  <TabsContent value="deliveries" className="mt-4">
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
- <CardTitle className="text-lg">Deliveries</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Deliveries</CardTitle>
  <Link href="/sales/deliveries"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
@@ -346,7 +346,7 @@ export default function Customer360Page() {
  <TabsContent value="finance" className="space-y-4 mt-4">
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
- <CardTitle className="text-lg">Invoices</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Invoices</CardTitle>
  <Link href="/finance/invoices"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
@@ -378,7 +378,7 @@ export default function Customer360Page() {
  
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
- <CardTitle className="text-lg">Payments Received</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Payments Received</CardTitle>
  <Link href="/finance/payments"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
@@ -397,7 +397,7 @@ export default function Customer360Page() {
  <td className="px-4 py-3 font-mono text-xs">{p.payment_number}</td>
  <td className="px-4 py-3">{new Date(p.payment_date || p.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{p.method}</Badge></td>
- <td className="px-4 py-3 text-right font-medium text-emerald-600">{formatCurrency(p.amount)}</td>
+ <td className="px-4 py-3 text-right font-medium text-primary">{formatCurrency(p.amount)}</td>
  </tr>
  ))}
  {finance.payments.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No payments found.</td></tr>}

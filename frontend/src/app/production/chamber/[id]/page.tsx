@@ -77,7 +77,7 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
  <Button variant="outline" size="icon" onClick={() => router.back()}><ArrowLeft className="w-4 h-4" /></Button>
  <div>
  <div className="flex items-center gap-3">
- <h1 className="text-2xl font-bold tracking-tight">{data.transferNumber}</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">{data.transferNumber}</h1>
  <Badge variant={data.status === 'POSTED' ? 'default' : data.status === 'CANCELLED' ? 'destructive' : 'outline'}>{data.status}</Badge>
  <Badge variant="secondary" className="bg-primary/10 text-primary">{opType}</Badge>
  </div>
@@ -126,7 +126,7 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
 
  <Card>
  <CardHeader className="border-b bg-muted/10 pb-3">
- <CardTitle className="text-lg">Transfer Items</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Transfer Items</CardTitle>
  </CardHeader>
  <CardContent className="p-0">
  <table className="w-full text-sm">
@@ -140,7 +140,7 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
  </thead>
  <tbody>
  {data.items?.map((item: any) => (
- <tr key={item.id} className="border-b hover:bg-muted/10">
+ <tr key={item.id} className="border-b hover:bg-muted/60 transition-colors">
  <td className="p-3 px-4 font-medium">{item.timberVariant?.name}</td>
  <td className="p-3 px-4 text-muted-foreground">{item.timberVariant?.sku}</td>
  <td className="p-3 px-4 text-right font-bold">{item.quantityPcs}</td>

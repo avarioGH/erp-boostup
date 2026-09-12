@@ -203,7 +203,7 @@ export default function PosTransaction() {
  <Card className="w-full lg:w-[400px] flex flex-col border-border bg-card shadow-lg overflow-hidden shrink-0">
  <CardHeader className="border-b border-border py-4 bg-accent/30">
  <div className="flex items-center justify-between">
- <CardTitle className="text-lg flex items-center gap-2">
+ <CardTitle className="text-[16px] font-semibold flex items-center gap-2">
  <ShoppingCart className="w-5 h-5 text-primary" /> Keranjang
  </CardTitle>
  <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none transition-colors">

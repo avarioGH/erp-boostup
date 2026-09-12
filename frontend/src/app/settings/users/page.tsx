@@ -134,7 +134,7 @@ export default function UsersSettingsPage() {
  </div>
 
  {success && (
- <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg flex items-center gap-3 border border-emerald-200 dark:border-emerald-800">
+ <div className="bg-emerald-50 dark:bg-emerald-900/30 text-primary dark:text-primary p-4 rounded-lg flex items-center gap-3 border border-emerald-200 dark:border-emerald-800">
  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
  <p className="font-medium text-sm">{success}</p>
  </div>
@@ -290,7 +290,7 @@ export default function UsersSettingsPage() {
  <div className="sm:text-right">
  <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Akses Cabang</div>
  {user.role?.name === 'Owner' ? (
- <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Seluruh Cabang (Superadmin)</div>
+ <div className="text-sm font-semibold text-primary dark:text-primary">Seluruh Cabang (Superadmin)</div>
  ) : (
  <div className="flex flex-wrap sm:justify-end gap-1">
  {user.warehouse_accesses?.length > 0 ? (

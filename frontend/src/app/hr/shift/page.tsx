@@ -34,7 +34,7 @@ export default function HrShift() {
  <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
  <Clock className="w-8 h-8 text-primary" /> Pengaturan Shift
  </h1>
- <p className="text-muted-foreground mt-1">Kelola jam kerja dan jadwal shift pegawai.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Kelola jam kerja dan jadwal shift pegawai.</p>
  </div>
  </div>
 

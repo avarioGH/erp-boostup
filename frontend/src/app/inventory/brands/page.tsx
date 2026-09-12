@@ -6,7 +6,7 @@ export default function InventoryBrands() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Brands</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Brands</h1>
  <p className="text-muted-foreground">Manage brands data here.</p>
  </div>
 

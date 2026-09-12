@@ -22,8 +22,8 @@ export default function AssetsPage() {
  <div className="space-y-6">
  <div className="flex justify-between items-center">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Asset Register</h1>
- <p className="text-muted-foreground mt-1">Manage fixed assets, capitalization, and depreciation.</p>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Asset Register</h1>
+ <p className="text-[14px] text-muted-foreground mt-1">Manage fixed assets, capitalization, and depreciation.</p>
  </div>
  <Button><Plus className="w-4 h-4 mr-2" /> Register Asset</Button>
  </div>

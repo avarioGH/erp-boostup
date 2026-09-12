@@ -85,7 +85,7 @@ export default function IntegrationsPage() {
  return (
  <div className="space-y-6 max-w-4xl mx-auto pb-10 animate-in fade-in duration-500">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Integrasi Sistem</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Integrasi Sistem</h1>
  <p className="text-muted-foreground">Hubungkan ERP Boostup dengan platform pihak ketiga.</p>
  </div>
 
@@ -99,7 +99,7 @@ export default function IntegrationsPage() {
  <CardDescription>Otomatisasi penarikan pesanan dan mutasi saldo Shopee ke Modul Keuangan.</CardDescription>
  </div>
  {status?.isConnected ? (
- <span className="flex items-center text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
+ <span className="flex items-center text-sm font-medium text-primary bg-emerald-50 px-2 py-1 rounded-md">
  <CheckCircle2 className="w-4 h-4 mr-1" /> Terhubung
  </span>
  ) : (
@@ -175,7 +175,7 @@ export default function IntegrationsPage() {
  </div>
  <div className="border rounded-lg p-3">
  <p className="text-xs text-muted-foreground">Status Sinkronisasi</p>
- <p className="font-medium text-emerald-600">Aktif (Setiap 1 Jam)</p>
+ <p className="font-medium text-primary">Aktif (Setiap 1 Jam)</p>
  </div>
  </div>
  

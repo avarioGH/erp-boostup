@@ -69,7 +69,7 @@ export default function CashFlowPage() {
  <div className="space-y-8">
  {/* Cash Inflow */}
  <div>
- <h3 className="font-semibold text-lg text-emerald-600 dark:text-emerald-400 border-b pb-2 mb-3">Kas Masuk (Inflows)</h3>
+ <h3 className="font-semibold text-lg text-primary dark:text-primary border-b pb-2 mb-3">Kas Masuk (Inflows)</h3>
  <div className="space-y-3">
  {data?.cashInflows?.map((item: any, idx: number) => (
  <div key={idx} className="flex justify-between text-sm items-center border-b border-border/60 pb-2">
@@ -77,12 +77,12 @@ export default function CashFlowPage() {
  <div className="text-xs text-muted-foreground">{formatDate(item.date)}</div>
  <div className="text-foreground font-medium">{item.description}</div>
  </div>
- <span className="font-semibold text-emerald-600">{formatIDR(item.amount)}</span>
+ <span className="font-semibold text-primary">{formatIDR(item.amount)}</span>
  </div>
  ))}
  {data?.cashInflows?.length === 0 && <p className="text-sm text-muted-foreground italic">Belum ada kas masuk.</p>}
  </div>
- <div className="flex justify-between font-bold mt-4 text-emerald-700 dark:text-emerald-500">
+ <div className="flex justify-between font-bold mt-4 text-primary dark:text-emerald-500">
  <span>Total Kas Masuk</span>
  <span>{formatIDR(data?.totalInflow || 0)}</span>
  </div>

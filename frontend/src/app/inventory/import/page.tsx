@@ -61,8 +61,8 @@ export default function ImportWizardPage() {
  return (
  <div className="space-y-6 pb-10">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Excel Import Wizard</h1>
- <p className="text-muted-foreground mt-1">Migrate historical inventory data from Excel safely.</p>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Excel Import Wizard</h1>
+ <p className="text-[14px] text-muted-foreground mt-1">Migrate historical inventory data from Excel safely.</p>
  </div>
 
  {step === 1 && (
@@ -118,13 +118,13 @@ export default function ImportWizardPage() {
  <div className="space-y-6">
  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
  <Card><CardContent className="p-6 text-center"><p className="text-sm text-muted-foreground">Total Rows</p><p className="text-3xl font-bold">{preview.validRows + preview.invalidRows}</p></CardContent></Card>
- <Card><CardContent className="p-6 text-center"><p className="text-sm text-muted-foreground">Valid</p><p className="text-3xl font-bold text-emerald-600">{preview.validRows}</p></CardContent></Card>
+ <Card><CardContent className="p-6 text-center"><p className="text-sm text-muted-foreground">Valid</p><p className="text-3xl font-bold text-primary">{preview.validRows}</p></CardContent></Card>
  <Card><CardContent className="p-6 text-center"><p className="text-sm text-muted-foreground">Errors</p><p className="text-3xl font-bold text-red-600">{preview.invalidRows}</p></CardContent></Card>
- <Card><CardContent className="p-6 text-center"><p className="text-sm text-muted-foreground">Total M&sup3;</p><p className="text-3xl font-bold text-indigo-600">{preview.totalM3.toFixed(4)}</p></CardContent></Card>
+ <Card><CardContent className="p-6 text-center"><p className="text-sm text-muted-foreground">Total M&sup3;</p><p className="text-3xl font-bold text-primary">{preview.totalM3.toFixed(4)}</p></CardContent></Card>
  </div>
 
  <Card>
- <CardHeader className="pb-4"><CardTitle>Data Preview (First 100 Rows)</CardTitle></CardHeader>
+ <CardHeader className="pb-4 border-b border-border/40"><CardTitle>Data Preview (First 100 Rows)</CardTitle></CardHeader>
  <CardContent className="p-0 overflow-x-auto">
  <table className="w-full text-sm text-left">
  <thead className="bg-muted/50"><tr><th className="p-3">Status</th><th className="p-3">Data</th><th className="p-3 text-right">Excel M&sup3;</th><th className="p-3 text-right">Calc M&sup3;</th></tr></thead>
@@ -147,7 +147,7 @@ export default function ImportWizardPage() {
 
  <div className="flex gap-4 max-w-2xl">
  <Button variant="outline" onClick={() => setStep(2)}>Back to Config</Button>
- <Button onClick={handleImport} disabled={loading || preview.invalidRows > 0} className="flex-1 bg-indigo-600 hover:bg-indigo-700">
+ <Button onClick={handleImport} disabled={loading || preview.invalidRows > 0} className="flex-1 ">
  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />} Execute Final Import
  </Button>
  </div>

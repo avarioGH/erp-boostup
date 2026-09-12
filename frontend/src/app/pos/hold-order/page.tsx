@@ -6,7 +6,7 @@ export default function PosHoldOrder() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Hold Order</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Hold Order</h1>
  <p className="text-muted-foreground">Manage hold order data here.</p>
  </div>
 

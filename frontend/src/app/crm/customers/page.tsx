@@ -63,7 +63,7 @@ export default function CustomersPage() {
  <div className="space-y-6">
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Customer Master</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Customer Master</h1>
  <p className="text-muted-foreground">Manage your client database and CRM relationships.</p>
  </div>
  <Button onClick={() => setShowForm(!showForm)} className="shadow-sm">
@@ -76,7 +76,7 @@ export default function CustomersPage() {
  <Card className="border-primary/20 shadow-sm animate-in slide-in-from-top-4">
  <form onSubmit={handleSave}>
  <CardHeader className="bg-muted/20 border-b pb-4">
- <CardTitle className="text-lg">Create New Customer</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Create New Customer</CardTitle>
  </CardHeader>
  <CardContent className="space-y-4 pt-6">
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -103,9 +103,9 @@ export default function CustomersPage() {
  )}
 
  <Card className="shadow-sm">
- <CardHeader className="pb-4">
+ <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
- <CardTitle className="text-lg">Customer Database</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Customer Database</CardTitle>
  <div className="flex items-center gap-2">
  <div className="relative w-full sm:w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -154,7 +154,7 @@ export default function CustomersPage() {
  <tbody>
  {filteredCustomers.map((c) => (
  <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => router.push(`/crm/customers/${c.id}`)}>
- <td className="p-3 px-4 font-medium text-indigo-600 dark:text-indigo-400">{c.code}</td>
+ <td className="p-3 px-4 font-medium text-primary dark:text-primary">{c.code}</td>
  <td className="p-3 px-4 font-medium">{c.name}</td>
  <td className="p-3 px-4 text-muted-foreground">
  <div className="flex flex-col">
@@ -163,7 +163,7 @@ export default function CustomersPage() {
  </div>
  </td>
  <td className="p-3 px-4">
- <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-400">Active</Badge>
+ <Badge variant="secondary" className="bg-emerald-100 text-primary hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-primary">Active</Badge>
  </td>
  <td className="p-3 px-4 text-right">
  <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">

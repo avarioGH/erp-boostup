@@ -65,14 +65,14 @@ export default function CreateInputLogPage() {
  <div className="flex items-center gap-4 border-b pb-4">
  <Button variant="outline" size="icon" onClick={() => router.push('/inventory/input-logs')}><ArrowLeft className="w-4 h-4" /></Button>
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Create Input Log</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Create Input Log</h1>
  <p className="text-muted-foreground mt-1">Assign trimmed logs for production.</p>
  </div>
  </div>
 
  <form onSubmit={handleSubmit} className="space-y-6">
  <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">General Information</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">General Information</CardTitle></CardHeader>
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
  <div className="space-y-2"><label className="text-sm font-medium">Date</label><Input required type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">Shift</label><Select value={form.shift} onValueChange={(val) => setForm({...form, shift: val || ''})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">Shift 1</SelectItem><SelectItem value="2">Shift 2</SelectItem><SelectItem value="3">Shift 3</SelectItem></SelectContent></Select></div>
@@ -85,7 +85,7 @@ export default function CreateInputLogPage() {
  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
  <div className="lg:col-span-2">
  <Card className="shadow-sm h-full">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">Select Trimmed Logs</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Select Trimmed Logs</CardTitle></CardHeader>
  <CardContent className="p-0">
  <div className="max-h-[400px] overflow-y-auto">
  <table className="w-full text-sm">

@@ -65,7 +65,7 @@ export default function ProfitLossPage() {
  <div className="space-y-6">
  {/* Pendapatan */}
  <div>
- <h3 className="font-semibold text-lg text-emerald-600 dark:text-emerald-400 border-b pb-2 mb-3">Pendapatan (Revenue)</h3>
+ <h3 className="font-semibold text-lg text-primary dark:text-primary border-b pb-2 mb-3">Pendapatan (Revenue)</h3>
  <div className="space-y-2">
  {data?.revenue?.map((item: any, idx: number) => (
  <div key={idx} className="flex justify-between text-sm">
@@ -75,7 +75,7 @@ export default function ProfitLossPage() {
  ))}
  {data?.revenue?.length === 0 && <p className="text-sm text-muted-foreground italic">Belum ada transaksi pendapatan.</p>}
  </div>
- <div className="flex justify-between font-bold mt-4 pt-2 border-t text-emerald-700 dark:text-emerald-500">
+ <div className="flex justify-between font-bold mt-4 pt-2 border-t text-primary dark:text-emerald-500">
  <span>Total Pendapatan</span>
  <span>{formatIDR(data?.totalRevenue || 0)}</span>
  </div>
@@ -102,7 +102,7 @@ export default function ProfitLossPage() {
  {/* Net Profit */}
  <div className={`p-4 rounded-xl flex justify-between items-center text-xl font-bold ${
  (data?.netProfit || 0) >= 0 
- ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800' 
+ ? 'bg-emerald-50 text-primary dark:bg-emerald-900/20 dark:text-primary border border-emerald-200 dark:border-emerald-800' 
  : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800'
  }`}>
  <span>Laba / Rugi Bersih (Net Profit)</span>

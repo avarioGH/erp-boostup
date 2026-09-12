@@ -87,7 +87,7 @@ export default function InventoryCategories() {
  <div className="space-y-6 animate-in fade-in duration-500">
  <div className="flex items-center justify-between">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Kategori Produk</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Kategori Produk</h1>
  <p className="text-muted-foreground">Kelola kategori untuk mengklasifikasikan barang Anda.</p>
  </div>
  <Button onClick={openAddModal}>

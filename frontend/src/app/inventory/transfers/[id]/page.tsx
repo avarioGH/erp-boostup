@@ -58,7 +58,7 @@ export default function TransferDetailPage({ params }: { params: { id: string } 
 
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
  <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">Transfer Route</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Transfer Route</CardTitle></CardHeader>
  <CardContent className="pt-6">
  <div className="flex items-center justify-between">
  <div className="text-center p-4 border rounded bg-muted/30 flex-1">
@@ -66,10 +66,10 @@ export default function TransferDetailPage({ params }: { params: { id: string } 
  <p className="text-xs text-muted-foreground uppercase font-bold">From Location</p>
  <p className="font-bold mt-1 text-lg">{data.fromLocation?.name}</p>
  </div>
- <div className="px-4"><ArrowRightLeft className="w-6 h-6 text-indigo-400" /></div>
+ <div className="px-4"><ArrowRightLeft className="w-6 h-6 text-primary" /></div>
  <div className="text-center p-4 border rounded bg-indigo-50 border-indigo-100 flex-1">
- <MapPin className="w-5 h-5 mx-auto text-indigo-400 mb-2" />
- <p className="text-xs text-indigo-600 uppercase font-bold">To Location</p>
+ <MapPin className="w-5 h-5 mx-auto text-primary mb-2" />
+ <p className="text-xs text-primary uppercase font-bold">To Location</p>
  <p className="font-bold mt-1 text-lg text-indigo-900">{data.toLocation?.name}</p>
  </div>
  </div>
@@ -82,7 +82,7 @@ export default function TransferDetailPage({ params }: { params: { id: string } 
  </div>
 
  <Card className="shadow-sm">
- <CardHeader className="border-b pb-4"><CardTitle className="text-lg">Items Transferred</CardTitle></CardHeader>
+ <CardHeader className="border-b pb-4"><CardTitle className="text-[16px] font-semibold">Items Transferred</CardTitle></CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
@@ -97,12 +97,12 @@ export default function TransferDetailPage({ params }: { params: { id: string } 
  </thead>
  <tbody>
  {data.items?.map((item: any) => (
- <tr key={item.id} className="border-b hover:bg-muted/10">
- <td className="p-3 px-6 font-medium text-emerald-700">{item.timberVariant?.sku}</td>
+ <tr key={item.id} className="border-b hover:bg-muted/60 transition-colors">
+ <td className="p-3 px-6 font-medium text-primary">{item.timberVariant?.sku}</td>
  <td className="p-3 px-6">{item.timberVariant?.species}</td>
  <td className="p-3 px-6 text-center">{item.timberVariant?.grade}</td>
  <td className="p-3 px-6 text-right font-bold">{item.quantityPcs}</td>
- <td className="p-3 px-6 text-right font-bold text-indigo-700">{item.volumeM3.toFixed(6)}</td>
+ <td className="p-3 px-6 text-right font-bold text-primary">{item.volumeM3.toFixed(6)}</td>
  </tr>
  ))}
  </tbody>

@@ -65,7 +65,7 @@ export default function DeliveriesPage() {
  const getStatusBadge = (status: string) => {
  switch (status) {
  case 'DRAFT': return <Badge variant="secondary" className="bg-muted/50 text-foreground">Draft</Badge>
- case 'READY': return <Badge className="bg-indigo-500 hover:bg-indigo-600">Ready</Badge>
+ case 'READY': return <Badge className="">Ready</Badge>
  case 'DONE': return <Badge className="">Done</Badge>
  case 'CANCELLED': return <Badge variant="destructive">Cancelled</Badge>
  default: return <Badge variant="outline">{status}</Badge>
@@ -88,7 +88,7 @@ export default function DeliveriesPage() {
  </Button>
  <div>
  <div className="flex items-center gap-3">
- <h1 className="text-2xl font-bold tracking-tight">{details.delivery_number}</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">{details.delivery_number}</h1>
  {getStatusBadge(details.status)}
  </div>
  <p className="text-muted-foreground flex items-center gap-2 mt-1 text-sm">
@@ -114,7 +114,7 @@ export default function DeliveriesPage() {
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
  <Card className="md:col-span-2 shadow-sm">
  <CardHeader className="border-b bg-muted/10 pb-4">
- <CardTitle className="text-lg">Delivery Operations</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Delivery Operations</CardTitle>
  </CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
@@ -131,7 +131,7 @@ export default function DeliveriesPage() {
  <tr><td colSpan={3} className="text-center p-8 text-muted-foreground">No items to deliver.</td></tr>
  ) : (
  details.lines.map((line: any, i: number) => (
- <tr key={i} className="border-b last:border-0 hover:bg-muted/10">
+ <tr key={i} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
  <td className="p-4">
  <p className="font-medium">{line.product?.name || line.product_id}</p>
  </td>
@@ -148,7 +148,7 @@ export default function DeliveriesPage() {
 
  <Card className="shadow-sm h-fit">
  <CardHeader className="border-b bg-muted/10 pb-4">
- <CardTitle className="text-lg">Shipping Information</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Shipping Information</CardTitle>
  </CardHeader>
  <CardContent className="space-y-4 pt-6">
  <div>
@@ -166,7 +166,7 @@ export default function DeliveriesPage() {
  {details.order_id && (
  <div>
  <p className="text-sm font-medium text-muted-foreground mb-1">Source Document</p>
- <p className="font-medium text-indigo-600 hover:underline cursor-pointer" onClick={() => router.push("/sales/orders")}>
+ <p className="font-medium text-primary hover:underline cursor-pointer" onClick={() => router.push("/sales/orders")}>
  View Sales Order
  </p>
  </div>
@@ -183,16 +183,16 @@ export default function DeliveriesPage() {
  <div className="space-y-6">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Deliveries</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Deliveries</h1>
  <p className="text-muted-foreground mt-1">Manage outbound shipments and delivery orders (Surat Jalan).</p>
  </div>
  <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New Delivery</Button>
  </div>
 
  <Card className="shadow-sm">
- <CardHeader className="pb-4">
+ <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
- <CardTitle className="text-lg">Delivery Records</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Delivery Records</CardTitle>
  <div className="flex items-center gap-2">
  <div className="relative w-full sm:w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -216,13 +216,13 @@ export default function DeliveriesPage() {
  ) : (
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y">
+ <thead className="bg-muted border-y border-border">
  <tr>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Delivery No</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Customer</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Date</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Status</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Action</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Delivery No</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Customer</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Date</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr>
  </thead>
  <tbody>
@@ -230,11 +230,11 @@ export default function DeliveriesPage() {
  <tr><td colSpan={5} className="text-center p-12 text-muted-foreground">No deliveries found.</td></tr>
  ) : filtered.map((item) => (
  <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => viewDetails(item)}>
- <td className="p-4 px-6 font-medium text-indigo-600 dark:text-indigo-400">{item.delivery_number}</td>
+ <td className="py-3.5 px-6 font-semibold text-primary text-[13px] dark:text-primary">{item.delivery_number}</td>
  <td className="p-4 px-6 font-medium">{item.customer?.name || '-'}</td>
  <td className="p-4 px-6 text-muted-foreground">{new Date(item.scheduled_date || item.createdAt).toLocaleDateString('id-ID')}</td>
- <td className="p-4 px-6 text-center">{getStatusBadge(item.status)}</td>
- <td className="p-4 px-6 text-center">
+ <td className="py-3.5 px-6 text-center text-[13px]">{getStatusBadge(item.status)}</td>
+ <td className="py-3.5 px-6 text-center text-[13px]">
  <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
  View
  </Button>

@@ -99,7 +99,7 @@ export default function VouchersPage() {
  </div>
 
  {success && (
- <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg flex items-center gap-3 border border-emerald-200 dark:border-emerald-800">
+ <div className="bg-emerald-50 dark:bg-emerald-900/30 text-primary dark:text-primary p-4 rounded-lg flex items-center gap-3 border border-emerald-200 dark:border-emerald-800">
  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
  <p className="font-medium text-sm">{success}</p>
  </div>
@@ -242,7 +242,7 @@ export default function VouchersPage() {
  <Tag className={`w-4 h-4 ${voucher.status ? 'text-pink-500' : 'text-muted-foreground'}`} />
  <span className={voucher.status ? 'text-pink-600 dark:text-pink-400' : 'text-muted-foreground'}>{voucher.code}</span>
  </div>
- <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${voucher.status ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-slate-200 text-muted-foreground dark:text-muted-foreground'}`}>
+ <div className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${voucher.status ? 'bg-emerald-100 text-primary dark:bg-emerald-900/30 dark:text-primary' : 'bg-slate-200 text-muted-foreground dark:text-muted-foreground'}`}>
  {voucher.status ? 'Aktif' : 'Nonaktif'}
  </div>
  </div>

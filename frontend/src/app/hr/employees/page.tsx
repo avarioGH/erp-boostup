@@ -105,7 +105,7 @@ export default function EmployeesPage() {
  <div className="space-y-6">
  <div className="flex items-center justify-between">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Employees</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Employees</h1>
  <p className="text-muted-foreground">Manage your workforce and biometrics.</p>
  </div>
  <Button onClick={() => setShowForm(!showForm)}>
@@ -218,7 +218,7 @@ export default function EmployeesPage() {
  {bioStatus === 'done' && (
  <div className="text-center space-y-2">
  <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto" />
- <p className="text-sm font-medium text-emerald-600">Templates stored successfully!</p>
+ <p className="text-sm font-medium text-primary">Templates stored successfully!</p>
  <Button variant="outline" onClick={() => setBioModalOpen(false)} className="mt-4">Close</Button>
  </div>
  )}

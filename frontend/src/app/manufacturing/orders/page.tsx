@@ -65,7 +65,7 @@ export default function MOPage() {
  <Button variant="outline" size="icon" onClick={() => setSelectedDoc(null)}><ChevronLeft className="h-4 w-4" /></Button>
  <div>
  <div className="flex items-center gap-3">
- <h1 className="text-2xl font-bold tracking-tight">{selectedDoc.order_number || selectedDoc.id.slice(0,8)}</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">{selectedDoc.order_number || selectedDoc.id.slice(0,8)}</h1>
  {getStatusBadge(selectedDoc.status)}
  </div>
  <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2"><Factory className="h-4 w-4" /> Manufacturing Order</p>
@@ -98,7 +98,7 @@ export default function MOPage() {
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
  <Card className="md:col-span-2 shadow-sm">
  <CardHeader className="border-b bg-muted/10 pb-4">
- <CardTitle className="text-lg">Material Components</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Material Components</CardTitle>
  </CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
@@ -115,11 +115,11 @@ export default function MOPage() {
  {(selectedDoc.items || []).length === 0 ? (
  <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No components.</td></tr>
  ) : selectedDoc.items.map((item: any, i: number) => (
- <tr key={i} className="border-b last:border-0 hover:bg-muted/10">
+ <tr key={i} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
  <td className="p-4 font-medium">{item.product?.name || item.product_id}</td>
  <td className="p-4 text-right">{item.required_qty || item.quantity}</td>
  <td className="p-4 text-right text-blue-600">{item.reserved_qty || 0}</td>
- <td className="p-4 text-right font-medium text-emerald-600">{item.consumed_qty || 0}</td>
+ <td className="p-4 text-right font-medium text-primary">{item.consumed_qty || 0}</td>
  </tr>
  ))}
  </tbody>
@@ -129,16 +129,16 @@ export default function MOPage() {
  </Card>
 
  <Card className="shadow-sm h-fit">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">Order Details</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Order Details</CardTitle></CardHeader>
  <CardContent className="space-y-4 pt-6">
  <div><p className="text-sm font-medium text-muted-foreground mb-1">Product to Produce</p>
- <p className="font-medium text-indigo-600 cursor-pointer hover:underline" onClick={() => router.push('/inventory/products')}>
+ <p className="font-medium text-primary cursor-pointer hover:underline" onClick={() => router.push('/inventory/products')}>
  {selectedDoc.product?.name || selectedDoc.product_id || '-'}
  </p>
  </div>
  <div className="grid grid-cols-2 gap-4">
  <div><p className="text-sm font-medium text-muted-foreground mb-1">Planned Qty</p><p className="font-bold text-lg">{selectedDoc.planned_qty || selectedDoc.quantity}</p></div>
- <div><p className="text-sm font-medium text-muted-foreground mb-1">Produced</p><p className="font-bold text-lg text-emerald-600">{selectedDoc.produced_qty || 0}</p></div>
+ <div><p className="text-sm font-medium text-muted-foreground mb-1">Produced</p><p className="font-bold text-lg text-primary">{selectedDoc.produced_qty || 0}</p></div>
  </div>
  <div><p className="text-sm font-medium text-muted-foreground mb-1">BOM Version</p><p className="font-medium text-sm">{selectedDoc.bom?.code || selectedDoc.bom_id || 'Manual'}</p></div>
  <div className="pt-4 border-t">
@@ -156,15 +156,15 @@ export default function MOPage() {
  <div className="space-y-6 pb-10">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Manufacturing Orders</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Manufacturing Orders</h1>
  <p className="text-muted-foreground mt-1">Manage production execution, materials, and output.</p>
  </div>
  <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> Create MO</Button>
  </div>
  <Card className="shadow-sm">
- <CardHeader className="pb-4">
+ <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
- <CardTitle className="text-lg">Orders List</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Orders List</CardTitle>
  <div className="relative w-full sm:w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input type="search" placeholder="Search MO..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -175,13 +175,13 @@ export default function MOPage() {
  {loading ? <div className="flex p-12 justify-center"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div> : (
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y">
+ <thead className="bg-muted border-y border-border">
  <tr>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Order No</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Product</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Planned</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Produced</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Status</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Order No</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Product</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Planned</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Produced</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status</th>
  </tr>
  </thead>
  <tbody>
@@ -189,11 +189,11 @@ export default function MOPage() {
  <tr><td colSpan={5} className="text-center p-12 text-muted-foreground">No orders found.</td></tr>
  ) : filtered.map((item) => (
  <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setSelectedDoc(item)}>
- <td className="p-4 px-6 font-medium text-indigo-600 dark:text-indigo-400">{item.order_number || item.id?.slice(0,8)}</td>
+ <td className="py-3.5 px-6 font-semibold text-primary text-[13px] dark:text-primary">{item.order_number || item.id?.slice(0,8)}</td>
  <td className="p-4 px-6 font-medium">{item.product?.name || item.product_id || '-'}</td>
- <td className="p-4 px-6 text-center">{item.planned_qty || item.quantity}</td>
- <td className="p-4 px-6 text-center font-medium text-emerald-600">{item.produced_qty || 0}</td>
- <td className="p-4 px-6 text-center">{getStatusBadge(item.status)}</td>
+ <td className="py-3.5 px-6 text-center text-[13px]">{item.planned_qty || item.quantity}</td>
+ <td className="p-4 px-6 text-center font-medium text-primary">{item.produced_qty || 0}</td>
+ <td className="py-3.5 px-6 text-center text-[13px]">{getStatusBadge(item.status)}</td>
  </tr>
  ))}
  </tbody>

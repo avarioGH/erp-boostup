@@ -77,7 +77,7 @@ export default function AuditLogPage() {
 
  <Card className="border-border shadow-sm overflow-hidden">
  <CardHeader className="bg-muted/20 border-b border-border/60">
- <CardTitle className="text-lg">Jejak Aktivitas (Chronological Order)</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Jejak Aktivitas (Chronological Order)</CardTitle>
  <CardDescription>Menampilkan 50 aktivitas terakhir di sistem ini.</CardDescription>
  </CardHeader>
  <CardContent className="p-0">

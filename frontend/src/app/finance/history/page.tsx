@@ -34,7 +34,7 @@ export default function FinanceHistoryPage() {
 
  const getStatusColor = (status: string) => {
  switch (status.toUpperCase()) {
- case 'COMPLETED': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+ case 'COMPLETED': return 'bg-emerald-100 text-primary dark:bg-emerald-900/30 dark:text-primary'
  case 'PENDING': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
  case 'CANCELLED': return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
  default: return 'bg-muted/50 text-foreground dark:text-muted-foreground'
@@ -46,7 +46,7 @@ export default function FinanceHistoryPage() {
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
  <div>
  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground dark:text-white flex items-center gap-2">
- <History className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+ <History className="w-8 h-8 text-primary dark:text-primary" />
  Riwayat Keuangan
  </h1>
  <p className="text-sm text-muted-foreground mt-1">
@@ -100,7 +100,7 @@ export default function FinanceHistoryPage() {
  hour: '2-digit', minute: '2-digit'
  })}
  </td>
- <td className="px-6 py-4 font-medium text-indigo-600 dark:text-indigo-400">
+ <td className="px-6 py-4 font-medium text-primary dark:text-primary">
  {tx.transaction_no}
  </td>
  <td className="px-6 py-4">
@@ -116,7 +116,7 @@ export default function FinanceHistoryPage() {
  {tx.description || '-'}
  </td>
  <td className={`px-6 py-4 text-right font-bold whitespace-nowrap ${
- (tx.transaction_type === 'Income' || tx.transaction_type === 'Cash In') ? 'text-emerald-600 dark:text-emerald-400' : 
+ (tx.transaction_type === 'Income' || tx.transaction_type === 'Cash In') ? 'text-primary dark:text-primary' : 
  (tx.transaction_type === 'Expense' || tx.transaction_type === 'Cash Out') ? 'text-rose-600 dark:text-rose-400' : ''
  }`}>
  {(tx.transaction_type === 'Income' || tx.transaction_type === 'Cash In') ? '+' : (tx.transaction_type === 'Expense' || tx.transaction_type === 'Cash Out') ? '-' : ''}

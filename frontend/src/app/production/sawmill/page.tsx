@@ -47,7 +47,7 @@ export default function SawmillProductionList() {
  <div className="space-y-6">
  <div className="flex justify-between items-center">
  <div>
- <h2 className="text-2xl font-bold tracking-tight">Sawmill Production</h2>
+ <h2 className="text-[28px] font-bold tracking-tight text-foreground">Sawmill Production</h2>
  <p className="text-muted-foreground">Manage sawmill production runs and yield.</p>
  </div>
  <Button onClick={() => router.push('/production/sawmill/create')}>

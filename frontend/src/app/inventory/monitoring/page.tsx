@@ -43,8 +43,8 @@ export default function DailyMonitoringPage() {
  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">LOG RECEIVING (Raw Logs)</CardTitle></CardHeader>
  <CardContent>
  <div className="text-2xl font-bold text-white">{data.receiving.count} <span className="text-sm font-normal text-muted-foreground">BTG</span></div>
- <div className="text-sm text-emerald-400 mt-2">Gross: {data.receiving.grossM3.toFixed(2)} M³</div>
- <div className="text-sm text-indigo-400">Net: {data.receiving.netM3.toFixed(2)} M³</div>
+ <div className="text-sm text-primary mt-2">Gross: {data.receiving.grossM3.toFixed(2)} M³</div>
+ <div className="text-sm text-primary">Net: {data.receiving.netM3.toFixed(2)} M³</div>
  </CardContent>
  </Card>
 
@@ -52,7 +52,7 @@ export default function DailyMonitoringPage() {
  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">TRIMMING YIELD</CardTitle></CardHeader>
  <CardContent>
  <div className="text-2xl font-bold text-white">{data.trimming.count} <span className="text-sm font-normal text-muted-foreground">PCS</span></div>
- <div className="text-sm text-indigo-400 mt-2">Volume: {data.trimming.m3.toFixed(2)} M³</div>
+ <div className="text-sm text-primary mt-2">Volume: {data.trimming.m3.toFixed(2)} M³</div>
  </CardContent>
  </Card>
 
@@ -69,7 +69,7 @@ export default function DailyMonitoringPage() {
  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">SAWN TIMBER OUTPUT</CardTitle></CardHeader>
  <CardContent>
  <div className="text-2xl font-bold text-white">{data.output.count} <span className="text-sm font-normal text-muted-foreground">Bundles</span></div>
- <div className="text-sm text-emerald-400 mt-2">Volume: {data.output.m3.toFixed(4)} M³</div>
+ <div className="text-sm text-primary mt-2">Volume: {data.output.m3.toFixed(4)} M³</div>
  <div className="text-sm font-bold text-amber-500">Rendement: {data.output.rendement.toFixed(2)}%</div>
  </CardContent>
  </Card>

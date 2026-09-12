@@ -6,7 +6,7 @@ export default function PosClosingShift() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Closing Shift</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Closing Shift</h1>
  <p className="text-muted-foreground">Manage closing shift data here.</p>
  </div>
 

@@ -47,13 +47,13 @@ export default function RawLogDetailPage({ params }: { params: { id: string } })
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
  <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg flex items-center gap-2"><Ruler className="w-4 h-4" /> Measurements</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><Ruler className="w-4 h-4" /> Measurements</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
  <div className="grid grid-cols-2 gap-y-4">
  <div><p className="text-muted-foreground">Original Length</p><p className="font-bold">{data.originalLength} m</p></div>
  <div><p className="text-muted-foreground">Class</p><p className="font-bold">{data.diameterClass}</p></div>
  <div><p className="text-muted-foreground">Avg ?</p><p className="font-bold">{data.averageDiameter} cm</p></div>
- <div><p className="text-muted-foreground">Rounded ?</p><p className="font-bold text-lg text-emerald-700">{data.roundedDiameter} cm</p></div>
+ <div><p className="text-muted-foreground">Rounded ?</p><p className="font-bold text-lg text-primary">{data.roundedDiameter} cm</p></div>
  </div>
  <hr />
  <div className="grid grid-cols-4 gap-2 text-center text-xs">
@@ -72,12 +72,12 @@ export default function RawLogDetailPage({ params }: { params: { id: string } })
  <div className="flex justify-between items-center"><span className="text-muted-foreground text-red-500">Gerowong Volume</span><span>- {data.hollowVolume || 0} m?</span></div>
  <div className="flex justify-between items-center"><span className="text-muted-foreground text-amber-500">Trimming Volume</span><span>- {data.trimmingVolume || 0} m?</span></div>
  <hr className="border-indigo-100" />
- <div className="flex justify-between items-center"><span className="font-bold text-indigo-900">Net Volume</span><span className="font-bold text-2xl text-indigo-700">{data.netVolume} m?</span></div>
+ <div className="flex justify-between items-center"><span className="font-bold text-indigo-900">Net Volume</span><span className="font-bold text-2xl text-primary">{data.netVolume} m?</span></div>
  </CardContent>
  </Card>
 
  <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Identity & Location</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Identity & Location</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
  <div><p className="text-muted-foreground mb-1">Barcode / System ID</p><p className="font-mono bg-muted p-1.5 rounded text-xs">{data.barcode}</p></div>
  <div><p className="text-muted-foreground mb-1">Partai</p><p className="font-medium">{data.batch ||"-"}</p></div>
@@ -89,7 +89,7 @@ export default function RawLogDetailPage({ params }: { params: { id: string } })
 
  <Card className="shadow-sm">
  <CardHeader className="border-b pb-4 flex flex-row items-center justify-between">
- <CardTitle className="text-lg flex items-center gap-2"><Factory className="w-4 h-4" /> Trimming Children</CardTitle>
+ <CardTitle className="text-[16px] font-semibold flex items-center gap-2"><Factory className="w-4 h-4" /> Trimming Children</CardTitle>
  <Button size="sm" onClick={() => router.push(`/inventory/logs/${params.id}/trimming/create`)}><Plus className="w-4 h-4 mr-2"/> Add Trimming</Button>
  </CardHeader>
  <CardContent className="pt-6">
@@ -99,12 +99,12 @@ export default function RawLogDetailPage({ params }: { params: { id: string } })
  <div className="space-y-6">
  <div className="flex gap-8 text-sm">
  <div><p className="text-muted-foreground">Original Length</p><p className="font-bold text-lg">{data.originalLength} m</p></div>
- <div><p className="text-muted-foreground">Allocated</p><p className="font-bold text-lg text-emerald-600">{trimming.allocated} m</p></div>
+ <div><p className="text-muted-foreground">Allocated</p><p className="font-bold text-lg text-primary">{trimming.allocated} m</p></div>
  <div><p className="text-muted-foreground">Remaining</p><p className="font-bold text-lg text-amber-600">{trimming.remaining} m</p></div>
  </div>
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y">
+ <thead className="bg-muted border-y border-border">
  <tr>
  <th className="p-3 text-left">Trim Code</th>
  <th className="p-3 text-right">Length</th>
@@ -116,12 +116,12 @@ export default function RawLogDetailPage({ params }: { params: { id: string } })
  </thead>
  <tbody>
  {trimming.children.map((c: any) => (
- <tr key={c.id} className="border-b hover:bg-muted/20 cursor-pointer" onClick={() => router.push(`/inventory/trimming/${c.id}`)}>
- <td className="p-3 font-medium text-emerald-700">{c.trimNumber}</td>
+ <tr key={c.id} className="border-b hover:bg-muted/60 cursor-pointer transition-colors" onClick={() => router.push(`/inventory/trimming/${c.id}`)}>
+ <td className="p-3 font-medium text-primary">{c.trimNumber}</td>
  <td className="p-3 text-right">{c.length} m</td>
  <td className="p-3 text-right">{c.averageDiameter} cm</td>
  <td className="p-3 text-right">{c.grossVolume}</td>
- <td className="p-3 text-right font-bold text-indigo-700">{c.netVolume}</td>
+ <td className="p-3 text-right font-bold text-primary">{c.netVolume}</td>
  <td className="p-3 text-center"><Badge variant="secondary">{c.status}</Badge></td>
  </tr>
  ))}

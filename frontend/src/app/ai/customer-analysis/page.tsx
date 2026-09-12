@@ -6,7 +6,7 @@ export default function AiCustomerAnalysis() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Customer Analysis</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Customer Analysis</h1>
  <p className="text-muted-foreground">Manage customer analysis data here.</p>
  </div>
 

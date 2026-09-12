@@ -37,8 +37,8 @@ export default function TraceabilityPage() {
  return (
  <div className="space-y-6 pb-10">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Log Traceability</h1>
- <p className="text-muted-foreground mt-1 text-[14px]">Search and trace production logs across bundles, inputs, trim codes, and raw log records.</p>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Log Traceability</h1>
+ <p className="text-[14px] text-muted-foreground mt-1">Search and trace production logs across bundles, inputs, trim codes, and raw log records.</p>
  </div>
 
  <Card>

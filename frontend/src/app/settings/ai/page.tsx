@@ -6,7 +6,7 @@ export default function SettingsAi() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Ai</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Ai</h1>
  <p className="text-muted-foreground">Manage ai data here.</p>
  </div>
 

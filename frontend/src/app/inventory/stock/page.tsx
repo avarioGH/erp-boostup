@@ -31,15 +31,15 @@ export default function StockPage() {
  <div className="space-y-6 pb-10">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Current Stock</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Current Stock</h1>
  <p className="text-muted-foreground mt-1">Real-time inventory levels across all warehouses.</p>
  </div>
  </div>
 
  <Card className="shadow-sm">
- <CardHeader className="pb-4">
+ <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
- <CardTitle className="text-lg flex items-center gap-2"><Box className="w-5 h-5" /> Stock Levels</CardTitle>
+ <CardTitle className="text-[16px] font-semibold flex items-center gap-2"><Box className="w-5 h-5" /> Stock Levels</CardTitle>
  <div className="flex items-center gap-2 w-full sm:w-auto">
  <Select value={selectedWarehouse} onValueChange={(val) => setSelectedWarehouse(val ||"")}>
  <SelectTrigger className="w-[180px]">
@@ -63,13 +63,13 @@ export default function StockPage() {
  ) : (
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y">
+ <thead className="bg-muted border-y border-border">
  <tr>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Product</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">SKU</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Warehouse</th>
- <th className="p-4 px-6 text-right font-medium text-muted-foreground">Current Quantity</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Unit</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Product</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">SKU</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Warehouse</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Current Quantity</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Unit</th>
  </tr>
  </thead>
  <tbody>
@@ -80,7 +80,7 @@ export default function StockPage() {
  <td className="p-4 px-6 font-medium">{s.product?.name || '-'}</td>
  <td className="p-4 px-6 text-muted-foreground">{s.product?.sku || '-'}</td>
  <td className="p-4 px-6 text-muted-foreground">{s.warehouse?.name || '-'}</td>
- <td className="p-4 px-6 text-right font-bold text-indigo-700">{s.quantity || s.qty || 0}</td>
+ <td className="py-3.5 px-6 text-right font-bold text-primary text-[13px]">{s.quantity || s.qty || 0}</td>
  <td className="p-4 px-6 text-muted-foreground">{s.product?.unit?.name || s.unit || '-'}</td>
  </tr>
  ))}

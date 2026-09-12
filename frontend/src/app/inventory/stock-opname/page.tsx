@@ -46,7 +46,7 @@ export default function StockOpnamePage() {
  <div className="space-y-6 pb-10">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Stock Opname</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Stock Opname</h1>
  <p className="text-muted-foreground mt-1">Physical stock counting and reconciliation.</p>
  </div>
  </div>
@@ -74,8 +74,8 @@ export default function StockOpnamePage() {
  </Card>
 
  <Card className="shadow-sm">
- <CardHeader className="pb-4">
- <CardTitle className="text-lg">Opname History</CardTitle>
+ <CardHeader className="pb-4 border-b border-border/40">
+ <CardTitle className="text-[16px] font-semibold">Opname History</CardTitle>
  </CardHeader>
  <CardContent className="p-0">
  {loading ? (
@@ -83,12 +83,12 @@ export default function StockOpnamePage() {
  ) : (
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y"><tr>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Opname No</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Warehouse</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Date</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Status</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Action</th>
+ <thead className="bg-muted border-y border-border"><tr>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Opname No</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Warehouse</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Date</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr></thead>
  <tbody>
  {data.length === 0 ? (
@@ -98,8 +98,8 @@ export default function StockOpnamePage() {
  <td className="p-4 px-6 font-medium text-purple-600">{t.transaction_number || t.id.slice(0,8)}</td>
  <td className="p-4 px-6 font-medium">{t.warehouse?.name || '-'}</td>
  <td className="p-4 px-6 text-muted-foreground">{new Date(t.date || t.created_at || Date.now()).toLocaleDateString('id-ID')}</td>
- <td className="p-4 px-6 text-center"><Badge variant={t.status === 'DONE' ? 'default' : 'secondary'}>{t.status || 'PENDING'}</Badge></td>
- <td className="p-4 px-6 text-center"><Button variant="ghost" size="sm">Review</Button></td>
+ <td className="py-3.5 px-6 text-center text-[13px]"><Badge variant={t.status === 'DONE' ? 'default' : 'secondary'}>{t.status || 'PENDING'}</Badge></td>
+ <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="ghost" size="sm">Review</Button></td>
  </tr>
  ))}
  </tbody>

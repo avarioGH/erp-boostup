@@ -42,7 +42,7 @@ export default function CustomersPage() {
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Pelanggan (CRM)</h1>
- <p className="text-muted-foreground mt-1">Kelola data pelanggan, loyalitas, dan riwayat interaksi mereka.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Kelola data pelanggan, loyalitas, dan riwayat interaksi mereka.</p>
  </div>
  <div className="flex items-center gap-3">
  <Link href="/customers/loyalty">

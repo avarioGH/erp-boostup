@@ -6,7 +6,7 @@ export default function ReportsPos() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Pos</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Pos</h1>
  <p className="text-muted-foreground">Manage pos data here.</p>
  </div>
 

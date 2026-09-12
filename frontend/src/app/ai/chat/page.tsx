@@ -49,7 +49,7 @@ export default function AiChatPage() {
  const parts = text.split(/(\*\*.*?\*\*)/g)
  return parts.map((part, i) => {
  if (part.startsWith('**') && part.endsWith('**')) {
- return <strong key={i} className="font-bold text-indigo-400">{part.slice(2, -2)}</strong>
+ return <strong key={i} className="font-bold text-primary">{part.slice(2, -2)}</strong>
  }
  return part
  })
@@ -70,13 +70,13 @@ export default function AiChatPage() {
  </div>
  <div>
  <h2 className="font-bold text-foreground dark:text-white">Boostup AI Assistant</h2>
- <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+ <div className="flex items-center gap-1.5 text-xs text-primary dark:text-primary">
  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
  Online & Siap Membantu
  </div>
  </div>
  </div>
- <Button variant="outline" size="sm" className="gap-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-900 dark:text-indigo-400 dark:hover:bg-indigo-900/30">
+ <Button variant="outline" size="sm" className="gap-2 border-indigo-200 text-primary hover:bg-indigo-50 dark:border-indigo-900 dark:text-primary dark:hover:bg-indigo-900/30">
  <Sparkles className="w-4 h-4" /> Generate Report
  </Button>
  </div>

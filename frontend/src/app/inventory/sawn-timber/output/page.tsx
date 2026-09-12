@@ -28,17 +28,17 @@ export default function SawnTimberOutputPage() {
  <div className="space-y-6 pb-10">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Sawn Timber Output</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Sawn Timber Output</h1>
  <p className="text-muted-foreground mt-1">Production output bundles and finished timber.</p>
  </div>
- <Button onClick={() => router.push('/inventory/sawn-timber/output/create')} className="bg-indigo-600 hover:bg-indigo-700">
+ <Button onClick={() => router.push('/inventory/sawn-timber/output/create')} className="">
  <Plus className="w-4 h-4 mr-2" /> Create Output
  </Button>
  </div>
 
  <Card className="shadow-sm">
- <CardHeader className="pb-4 flex flex-row items-center justify-between">
- <CardTitle className="text-lg">Production Registry</CardTitle>
+ <CardHeader className="pb-4 flex flex-row items-center justify-between border-b border-border/40">
+ <CardTitle className="text-[16px] font-semibold">Production Registry</CardTitle>
  <div className="relative w-full sm:w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input type="search" placeholder="Search bundle or input..." className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -48,30 +48,30 @@ export default function SawnTimberOutputPage() {
  {loading ? <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div> : (
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y">
+ <thead className="bg-muted border-y border-border">
  <tr>
- <th className="p-4 px-6 text-left">Bundle No</th>
- <th className="p-4 px-6 text-left">Date</th>
- <th className="p-4 px-6 text-left">Source Input</th>
- <th className="p-4 px-6 text-left">Product</th>
- <th className="p-4 px-6 text-right">Qty (PCS)</th>
- <th className="p-4 px-6 text-right">Total M?</th>
- <th className="p-4 px-6 text-center">Status</th>
- <th className="p-4 px-6 text-center">Action</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Bundle No</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Date</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Source Input</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Product</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Qty (PCS)</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Total M?</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr>
  </thead>
  <tbody>
- {filtered.length === 0 ? <tr><td colSpan={8} className="text-center p-8 text-muted-foreground">No records found</td></tr> :
+ {filtered.length === 0 ? <tr><td colSpan={8} className="p-14 text-center"><div className="flex flex-col items-center"><svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-muted-foreground mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><p className="text-sm font-semibold text-foreground mb-1">No records found</p><p className="text-xs text-muted-foreground">Try adjusting your search or filters.</p></div></td></tr> :
  filtered.map(out => (
- <tr key={out.id} className="border-b last:border-0 hover:bg-muted/20 cursor-pointer" onClick={() => router.push(`/inventory/sawn-timber/output/${out.id}`)}>
- <td className="p-4 px-6 font-medium text-indigo-700">{out.bundleNumber}</td>
- <td className="p-4 px-6">{new Date(out.outputDate).toLocaleDateString("id-ID")}</td>
+ <tr key={out.id} className="border-b last:border-0 hover:bg-muted/60 cursor-pointer transition-colors" onClick={() => router.push(`/inventory/sawn-timber/output/${out.id}`)}>
+ <td className="py-3.5 px-6 font-semibold text-primary text-[13px]">{out.bundleNumber}</td>
+ <td className="py-3.5 px-6 text-[13px]">{new Date(out.outputDate).toLocaleDateString("id-ID")}</td>
  <td className="p-4 px-6 text-muted-foreground">{out.inputLog?.inputNumber}</td>
- <td className="p-4 px-6">{out.items?.[0]?.timberVariant?.sku ||"-"}</td>
+ <td className="py-3.5 px-6 text-[13px]">{out.items?.[0]?.timberVariant?.sku ||"-"}</td>
  <td className="p-4 px-6 text-right font-bold">{out.items?.reduce((s:number, i:any)=>s+i.quantityPcs, 0)}</td>
- <td className="p-4 px-6 text-right font-bold text-indigo-700">{out.items?.reduce((s:number, i:any)=>s+i.volumeM3, 0).toFixed(4)}</td>
- <td className="p-4 px-6 text-center"><Badge variant={out.status ==="POSTED" ?"default" : (out.status ==="DRAFT" ?"secondary" :"destructive")}>{out.status}</Badge></td>
- <td className="p-4 px-6 text-center"><Button variant="ghost" size="sm"><ChevronRight className="w-4 h-4" /></Button></td>
+ <td className="py-3.5 px-6 text-right font-bold text-primary text-[13px]">{out.items?.reduce((s:number, i:any)=>s+i.volumeM3, 0).toFixed(4)}</td>
+ <td className="py-3.5 px-6 text-center text-[13px]"><Badge variant={out.status ==="POSTED" ?"default" : (out.status ==="DRAFT" ?"secondary" :"destructive")}>{out.status}</Badge></td>
+ <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="ghost" size="sm"><ChevronRight className="w-4 h-4" /></Button></td>
  </tr>
  ))
  }

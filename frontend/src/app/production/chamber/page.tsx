@@ -143,7 +143,7 @@ export default function ChamberOperationsPage() {
  <Card>
  <CardHeader className="pb-3 border-b bg-muted/10">
  <div className="flex justify-between items-center">
- <CardTitle className="text-lg">Transfer History</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Transfer History</CardTitle>
  <div className="relative w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input 

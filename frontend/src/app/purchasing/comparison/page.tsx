@@ -65,7 +65,7 @@ export default function SupplierComparisonPage() {
  <div className="flex items-center gap-4">
  <Button variant="outline" size="icon" onClick={() => router.back()}><ArrowLeft className="h-4 w-4" /></Button>
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Supplier Comparison</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Supplier Comparison</h1>
  <p className="text-muted-foreground mt-1 flex items-center gap-2"><PackageSearch className="w-4 h-4" /> Compare vendors for selected product</p>
  </div>
  </div>
@@ -93,7 +93,7 @@ export default function SupplierComparisonPage() {
  {comparisons.map((c) => (
  <tr key={c.id} className="border-b last:border-0 hover:bg-muted/30">
  <td className="p-4 font-bold">{c.supplier?.name}</td>
- <td className="p-4 text-right text-emerald-600 font-semibold">{formatIDR(c.unit_price)}</td>
+ <td className="p-4 text-right text-primary font-semibold">{formatIDR(c.unit_price)}</td>
  <td className="p-4 text-center">{c.lead_time_days}</td>
  <td className="p-4 text-center">{c.minimum_order_qty}</td>
  <td className="p-4 text-center">{c.active ?"Available" :"Unavailable"}</td>
@@ -103,7 +103,7 @@ export default function SupplierComparisonPage() {
  size="sm" 
  disabled={converting || !c.active || qty < c.minimum_order_qty}
  onClick={() => awardSupplier(c.supplier_id, c.unit_price)}
- className="bg-indigo-600 hover:bg-indigo-700"
+ className=""
  >
  <CheckCircle2 className="w-4 h-4 mr-2" /> Award & Create RFQ
  </Button>

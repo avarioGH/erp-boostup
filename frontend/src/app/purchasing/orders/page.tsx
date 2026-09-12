@@ -68,7 +68,7 @@ export default function PurchaseOrdersPage() {
  const getStatusBadge = (status: string) => {
  switch (status) {
  case 'DRAFT': return <Badge variant="secondary" className="bg-muted/50 text-foreground">Draft (RFQ)</Badge>
- case 'CONFIRMED': return <Badge className="bg-indigo-500 hover:bg-indigo-600">Confirmed</Badge>
+ case 'CONFIRMED': return <Badge className="">Confirmed</Badge>
  case 'CANCELLED': return <Badge variant="destructive">Cancelled</Badge>
  default: return <Badge variant="outline">{status}</Badge>
  }
@@ -107,7 +107,7 @@ export default function PurchaseOrdersPage() {
  </Button>
  <div>
  <div className="flex items-center gap-3">
- <h1 className="text-2xl font-bold tracking-tight">{details.order_number}</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">{details.order_number}</h1>
  {getStatusBadge(details.status)}
  </div>
  <p className="text-muted-foreground flex items-center gap-2 mt-1 text-sm">
@@ -126,7 +126,7 @@ export default function PurchaseOrdersPage() {
  )}
  
  {details.status === 'CONFIRMED' && details.receipt_status !== 'PENDING' && details.bill_status !== 'BILLED' && (
- <Button onClick={createVendorBill} variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+ <Button onClick={createVendorBill} variant="outline" className="border-emerald-200 text-primary hover:bg-emerald-50">
  <FileOutput className="w-4 h-4 mr-2" /> Create Vendor Bill
  </Button>
  )}
@@ -141,19 +141,19 @@ export default function PurchaseOrdersPage() {
 
  {/* Workflow Ribbon UX */}
  <div className="flex items-center justify-between p-4 bg-muted/30 border rounded-lg overflow-x-auto text-sm font-medium">
- <div className={`flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300`}>
+ <div className={`flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-primary dark:bg-emerald-900/50 dark:text-emerald-300`}>
  <CheckCircle2 className="w-4 h-4" /> Request / RFQ
  </div>
  <div className="h-px bg-border flex-1 mx-2 min-w-[20px]"></div>
- <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
+ <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-100 text-primary dark:bg-indigo-900/50 dark:text-primary">
  <CheckCircle2 className="w-4 h-4" /> Purchase Order
  </div>
  <div className="h-px bg-border flex-1 mx-2 min-w-[20px]"></div>
- <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${details.receipt_status === 'RECEIVED' || details.receipt_status === 'PARTIAL' ? 'bg-emerald-100 text-emerald-700' : 'text-muted-foreground'}`}>
+ <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${details.receipt_status === 'RECEIVED' || details.receipt_status === 'PARTIAL' ? 'bg-emerald-100 text-primary' : 'text-muted-foreground'}`}>
  <Truck className="w-4 h-4" /> Receipt
  </div>
  <div className="h-px bg-border flex-1 mx-2 min-w-[20px]"></div>
- <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${details.bill_status === 'BILLED' ? 'bg-emerald-100 text-emerald-700' : 'text-muted-foreground'}`}>
+ <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${details.bill_status === 'BILLED' ? 'bg-emerald-100 text-primary' : 'text-muted-foreground'}`}>
  <FileOutput className="w-4 h-4" /> Vendor Bill
  </div>
  </div>
@@ -164,7 +164,7 @@ export default function PurchaseOrdersPage() {
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
  <Card className="md:col-span-2 shadow-sm">
  <CardHeader className="border-b bg-muted/10 pb-4">
- <CardTitle className="text-lg">Order Lines (Three-Way Match)</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Order Lines (Three-Way Match)</CardTitle>
  </CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
@@ -184,13 +184,13 @@ export default function PurchaseOrdersPage() {
  <tr><td colSpan={6} className="text-center p-8 text-muted-foreground">No lines available.</td></tr>
  ) : (
  details.items.map((line: any, i: number) => (
- <tr key={i} className="border-b last:border-0 hover:bg-muted/10">
+ <tr key={i} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
  <td className="p-4">
  <p className="font-medium">{line.product?.name || line.product_id}</p>
  </td>
  <td className="p-4 text-center font-medium">{line.qty}</td>
- <td className="p-4 text-center text-indigo-600 font-medium">{line.received_qty || 0}</td>
- <td className="p-4 text-center text-emerald-600 font-medium">{line.billed_qty || 0}</td>
+ <td className="p-4 text-center text-primary font-medium">{line.received_qty || 0}</td>
+ <td className="p-4 text-center text-primary font-medium">{line.billed_qty || 0}</td>
  <td className="p-4 text-right">Rp {Number(line.unit_price || 0).toLocaleString('id-ID')}</td>
  <td className="p-4 text-right font-medium">Rp {Number(line.subtotal || (line.qty * line.unit_price) || 0).toLocaleString('id-ID')}</td>
  </tr>
@@ -211,7 +211,7 @@ export default function PurchaseOrdersPage() {
 
  <Card className="shadow-sm h-fit">
  <CardHeader className="border-b bg-muted/10 pb-4">
- <CardTitle className="text-lg">Procurement Details</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Procurement Details</CardTitle>
  </CardHeader>
  <CardContent className="space-y-4 pt-6">
  <div>
@@ -254,16 +254,16 @@ export default function PurchaseOrdersPage() {
  <div className="space-y-6">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Purchase Orders</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Purchase Orders</h1>
  <p className="text-muted-foreground mt-1">Manage confirmed procurement orders and track fulfillment.</p>
  </div>
  <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New Order</Button>
  </div>
 
  <Card className="shadow-sm">
- <CardHeader className="pb-4">
+ <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
- <CardTitle className="text-lg">Purchase Order Database</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Purchase Order Database</CardTitle>
  <div className="flex items-center gap-2">
  <div className="relative w-full sm:w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -287,15 +287,15 @@ export default function PurchaseOrdersPage() {
  ) : (
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y">
+ <thead className="bg-muted border-y border-border">
  <tr>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">PO Number</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Supplier</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Date</th>
- <th className="p-4 px-6 text-right font-medium text-muted-foreground">Total</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Receipt</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Billing</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Action</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">PO Number</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Supplier</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Date</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Total</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Receipt</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Billing</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr>
  </thead>
  <tbody>
@@ -303,13 +303,13 @@ export default function PurchaseOrdersPage() {
  <tr><td colSpan={7} className="text-center p-12 text-muted-foreground">No purchase orders found.</td></tr>
  ) : filtered.map((item) => (
  <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => viewDetails(item)}>
- <td className="p-4 px-6 font-medium text-indigo-600 dark:text-indigo-400">{item.order_number}</td>
+ <td className="py-3.5 px-6 font-semibold text-primary text-[13px] dark:text-primary">{item.order_number}</td>
  <td className="p-4 px-6 font-medium">{item.supplier?.name || '-'}</td>
  <td className="p-4 px-6 text-muted-foreground">{new Date(item.order_date || item.createdAt).toLocaleDateString('id-ID')}</td>
  <td className="p-4 px-6 text-right font-medium">Rp {Number(item.total_amount || 0).toLocaleString('id-ID')}</td>
- <td className="p-4 px-6 text-center">{getReceiptBadge(item.receipt_status)}</td>
- <td className="p-4 px-6 text-center">{getBillBadge(item.bill_status)}</td>
- <td className="p-4 px-6 text-center">
+ <td className="py-3.5 px-6 text-center text-[13px]">{getReceiptBadge(item.receipt_status)}</td>
+ <td className="py-3.5 px-6 text-center text-[13px]">{getBillBadge(item.bill_status)}</td>
+ <td className="py-3.5 px-6 text-center text-[13px]">
  <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
  View
  </Button>

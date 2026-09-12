@@ -50,7 +50,7 @@ export default function WarehousesPage() {
  <div className="space-y-6">
  <div className="flex items-center justify-between">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Warehouses</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Warehouses</h1>
  <p className="text-muted-foreground">Manage your storage locations.</p>
  </div>
  <Button onClick={() => setShowForm(!showForm)}>

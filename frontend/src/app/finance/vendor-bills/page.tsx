@@ -43,8 +43,8 @@ export default function VendorBillsPage() {
  <div className="space-y-6">
  <div className="flex justify-between items-center">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Tagihan Vendor (Vendor Bills)</h1>
- <p className="text-muted-foreground mt-1">Daftar tagihan hutang (Account Payables).</p>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Tagihan Vendor (Vendor Bills)</h1>
+ <p className="text-[14px] text-muted-foreground mt-1">Daftar tagihan hutang (Account Payables).</p>
  </div>
  </div>
 

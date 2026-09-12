@@ -6,7 +6,7 @@ export default function CustomersTransactionHistory() {
  return (
  <div className="space-y-6">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Transaction History</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Transaction History</h1>
  <p className="text-muted-foreground">Manage transaction history data here.</p>
  </div>
 

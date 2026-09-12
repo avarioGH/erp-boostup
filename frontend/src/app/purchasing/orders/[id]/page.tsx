@@ -116,9 +116,9 @@ export default function PurchaseOrderDetailPage() {
  <div className="space-y-6 animate-in fade-in pb-12">
  <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-card p-6 rounded-lg border shadow-sm">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">{po.order_number}</h1>
- <p className="text-muted-foreground mt-1">
- Supplier: <Link href="/crm/customers" className="text-indigo-600 hover:underline">{po.supplier?.name}</Link> | Date: {new Date(po.order_date).toLocaleDateString()}
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">{po.order_number}</h1>
+ <p className="text-[14px] text-muted-foreground mt-1">
+ Supplier: <Link href="/crm/customers" className="text-primary hover:underline">{po.supplier?.name}</Link> | Date: {new Date(po.order_date).toLocaleDateString()}
  </p>
  </div>
  <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
@@ -141,10 +141,10 @@ export default function PurchaseOrderDetailPage() {
  <tr>
  <th className="p-4 text-left font-medium text-muted-foreground">Product</th>
  <th className="p-4 text-center font-medium text-muted-foreground">Ordered</th>
- <th className="p-4 text-center font-medium text-emerald-600 bg-emerald-50/50">Received</th>
+ <th className="p-4 text-center font-medium text-primary bg-emerald-50/50">Received</th>
  <th className="p-4 text-center font-medium text-muted-foreground">Remaining</th>
  {po.status === 'CONFIRMED' && po.receipt_status !== 'RECEIVED' && (
- <th className="p-4 text-center font-medium text-indigo-600 bg-indigo-50/50">Receive Now</th>
+ <th className="p-4 text-center font-medium text-primary bg-indigo-50/50">Receive Now</th>
  )}
  </tr>
  </thead>
@@ -152,10 +152,10 @@ export default function PurchaseOrderDetailPage() {
  {po.items.map((item: any) => {
  const remaining = item.qty - (item.received_qty || 0);
  return (
- <tr key={item.id} className="border-b last:border-0 hover:bg-muted/10">
+ <tr key={item.id} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
  <td className="p-4 font-medium">{item.product?.name || item.product_id}</td>
  <td className="p-4 text-center">{item.qty}</td>
- <td className="p-4 text-center font-bold text-emerald-600 bg-emerald-50/20">{item.received_qty || 0}</td>
+ <td className="p-4 text-center font-bold text-primary bg-emerald-50/20">{item.received_qty || 0}</td>
  <td className="p-4 text-center text-muted-foreground">{Math.max(0, remaining)}</td>
  {po.status === 'CONFIRMED' && po.receipt_status !== 'RECEIVED' && (
  <td className="p-4 bg-indigo-50/20">
@@ -179,7 +179,7 @@ export default function PurchaseOrderDetailPage() {
 
  <Card>
  <CardHeader className="border-b bg-muted/10 pb-4">
- <CardTitle className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-indigo-600" /> Three-Way Matching Status</CardTitle>
+ <CardTitle className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> Three-Way Matching Status</CardTitle>
  </CardHeader>
  <CardContent className="p-0 overflow-x-auto">
  <table className="w-full text-sm">
@@ -197,7 +197,7 @@ export default function PurchaseOrderDetailPage() {
  const received = item.received_qty || 0;
  const billed = item.billed_qty || 0;
  let matchStatus ="MATCHED";
- let matchColor ="text-emerald-600 bg-emerald-50";
+ let matchColor ="text-primary bg-emerald-50";
  
  if (received < item.qty) {
  matchStatus ="PENDING RECEIPT";
@@ -212,7 +212,7 @@ export default function PurchaseOrderDetailPage() {
  }
 
  return (
- <tr key={'match-'+item.id} className="border-b last:border-0 hover:bg-muted/10">
+ <tr key={'match-'+item.id} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
  <td className="p-4 font-medium">{item.product?.name || item.product_id}</td>
  <td className="p-4 text-center">{item.qty}</td>
  <td className="p-4 text-center">{received}</td>
@@ -243,7 +243,7 @@ export default function PurchaseOrderDetailPage() {
  </div>
  <div className="flex justify-between items-center text-lg font-bold">
  <span>Total</span>
- <span className="text-indigo-600">{formatCurrency(po.total_amount)}</span>
+ <span className="text-primary">{formatCurrency(po.total_amount)}</span>
  </div>
  </CardContent>
  </Card>

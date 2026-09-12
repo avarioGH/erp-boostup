@@ -160,7 +160,7 @@ export default function StockOutPage() {
  </Link>
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Stok Keluar</h1>
- <p className="text-muted-foreground mt-1">Catat pengeluaran barang untuk operasional, produksi, atau retur.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Catat pengeluaran barang untuk operasional, produksi, atau retur.</p>
  </div>
  </div>
 
@@ -176,7 +176,7 @@ export default function StockOutPage() {
  <CardContent className="space-y-6">
  
  {success && (
- <div className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 p-4 rounded-lg flex items-center gap-3 border border-emerald-200 dark:border-emerald-800">
+ <div className="bg-emerald-50 dark:bg-emerald-900/30 text-primary dark:text-primary p-4 rounded-lg flex items-center gap-3 border border-emerald-200 dark:border-emerald-800">
  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
  <p className="font-medium text-sm">Transaksi berhasil disimpan! Mengalihkan ke halaman inventaris...</p>
  </div>

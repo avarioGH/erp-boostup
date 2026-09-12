@@ -25,16 +25,16 @@ export default function OpportunitiesPage() {
  <div className="space-y-6 pb-10">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Opportunities</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Opportunities</h1>
  <p className="text-muted-foreground mt-1">Manage and track potential sales deals.</p>
  </div>
  <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New Opportunity</Button>
  </div>
 
  <Card className="shadow-sm">
- <CardHeader className="pb-4">
+ <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
- <CardTitle className="text-lg">All Opportunities</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">All Opportunities</CardTitle>
  <div className="flex items-center gap-2">
  <div className="relative w-full sm:w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -55,27 +55,27 @@ export default function OpportunitiesPage() {
  <CardContent className="p-0">
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y">
+ <thead className="bg-muted border-y border-border">
  <tr>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Opportunity Name</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Customer</th>
- <th className="p-4 px-6 text-right font-medium text-muted-foreground">Expected Revenue</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Stage</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Probability</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Owner</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Action</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Opportunity Name</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Customer</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Expected Revenue</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Stage</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Probability</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Owner</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr>
  </thead>
  <tbody>
  {filtered.map((item) => (
  <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer">
- <td className="p-4 px-6 font-medium text-indigo-600 dark:text-indigo-400">{item.title}</td>
- <td className="p-4 px-6">{item.company}</td>
+ <td className="py-3.5 px-6 font-semibold text-primary text-[13px] dark:text-primary">{item.title}</td>
+ <td className="py-3.5 px-6 text-[13px]">{item.company}</td>
  <td className="p-4 px-6 text-right font-medium">Rp {item.amount.toLocaleString('id-ID')}</td>
- <td className="p-4 px-6 text-center">
+ <td className="py-3.5 px-6 text-center text-[13px]">
  <Badge variant="secondary" className="bg-muted/50 text-foreground">{item.stage}</Badge>
  </td>
- <td className="p-4 px-6 text-center">
+ <td className="py-3.5 px-6 text-center text-[13px]">
  <div className="flex items-center justify-center gap-2">
  <span className="w-8 text-right text-xs">{item.probability}%</span>
  <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -87,12 +87,12 @@ export default function OpportunitiesPage() {
  </div>
  </td>
  <td className="p-4 px-6 text-muted-foreground flex items-center gap-2">
- <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">
+ <div className="w-6 h-6 rounded-full bg-indigo-100 text-primary flex items-center justify-center text-xs font-bold">
  {item.owner.charAt(0)}
  </div>
  {item.owner}
  </td>
- <td className="p-4 px-6 text-center">
+ <td className="py-3.5 px-6 text-center text-[13px]">
  <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
  View <ChevronRight className="ml-1 h-3 w-3" />
  </Button>

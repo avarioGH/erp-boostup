@@ -51,7 +51,7 @@ export default function AdjustmentsPage() {
  <Button variant="outline" size="icon" onClick={() => setSelectedDoc(null)}><ChevronLeft className="h-4 w-4" /></Button>
  <div>
  <div className="flex items-center gap-3">
- <h1 className="text-2xl font-bold tracking-tight">{selectedDoc.transaction_number || 'Adjustment'}</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">{selectedDoc.transaction_number || 'Adjustment'}</h1>
  <Badge variant={selectedDoc.status === 'DONE' ? 'default' : 'secondary'}>{selectedDoc.status || 'PENDING'}</Badge>
  </div>
  <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" /> Stock Adjustment</p>
@@ -68,7 +68,7 @@ export default function AdjustmentsPage() {
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
  <Card className="md:col-span-2 shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">Adjusted Items</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Adjusted Items</CardTitle></CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
@@ -80,9 +80,9 @@ export default function AdjustmentsPage() {
  {(selectedDoc.items || []).length === 0 ? (
  <tr><td colSpan={2} className="p-8 text-center text-muted-foreground">No items in this adjustment.</td></tr>
  ) : selectedDoc.items.map((item: any, i: number) => (
- <tr key={i} className="border-b last:border-0 hover:bg-muted/10">
+ <tr key={i} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
  <td className="p-4 font-medium">{item.product?.name || item.product_id}</td>
- <td className={`p-4 text-center font-bold ${item.quantity > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+ <td className={`p-4 text-center font-bold ${item.quantity > 0 ? 'text-primary' : 'text-red-600'}`}>
  {item.quantity > 0 ? '+' : ''}{item.quantity || item.qty}
  </td>
  </tr>
@@ -94,9 +94,9 @@ export default function AdjustmentsPage() {
  </Card>
 
  <Card className="shadow-sm h-fit">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">Adjustment Details</CardTitle></CardHeader>
+ <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Adjustment Details</CardTitle></CardHeader>
  <CardContent className="space-y-4 pt-6">
- <div><p className="text-sm font-medium text-muted-foreground mb-1">Warehouse</p><p className="font-medium text-indigo-600">{selectedDoc.warehouse?.name || '-'}</p></div>
+ <div><p className="text-sm font-medium text-muted-foreground mb-1">Warehouse</p><p className="font-medium text-primary">{selectedDoc.warehouse?.name || '-'}</p></div>
  <div><p className="text-sm font-medium text-muted-foreground mb-1">Date</p><p className="font-medium">{new Date(selectedDoc.date || selectedDoc.created_at || Date.now()).toLocaleDateString('id-ID')}</p></div>
  <div><p className="text-sm font-medium text-muted-foreground mb-1">Reason</p><p className="font-medium text-sm">{selectedDoc.notes || '-'}</p></div>
  </CardContent>
@@ -110,16 +110,16 @@ export default function AdjustmentsPage() {
  <div className="space-y-6 pb-10">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-3xl font-bold tracking-tight">Stock Adjustments</h1>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Stock Adjustments</h1>
  <p className="text-muted-foreground mt-1">Manual corrections for discrepancies.</p>
  </div>
  <Button className="shadow-sm">New Adjustment</Button>
  </div>
 
  <Card className="shadow-sm">
- <CardHeader className="pb-4">
+ <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
- <CardTitle className="text-lg">Adjustment Records</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Adjustment Records</CardTitle>
  <div className="relative w-full sm:w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input type="search" placeholder="Search adjustment, warehouse..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
@@ -132,13 +132,13 @@ export default function AdjustmentsPage() {
  ) : (
  <div className="overflow-x-auto">
  <table className="w-full text-sm">
- <thead className="bg-muted/50 border-y"><tr>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Adj No</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Warehouse</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Date</th>
- <th className="p-4 px-6 text-left font-medium text-muted-foreground">Reason</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Status</th>
- <th className="p-4 px-6 text-center font-medium text-muted-foreground">Action</th>
+ <thead className="bg-muted border-y border-border"><tr>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Adj No</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Warehouse</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Date</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Reason</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr></thead>
  <tbody>
  {filtered.length === 0 ? (
@@ -146,11 +146,11 @@ export default function AdjustmentsPage() {
  ) : filtered.map((t) => (
  <tr key={t.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => setSelectedDoc(t)}>
  <td className="p-4 px-6 font-medium text-amber-600 dark:text-amber-500">{t.transaction_number || t.id.slice(0,8)}</td>
- <td className="p-4 px-6 text-indigo-600">{t.warehouse?.name || '-'}</td>
+ <td className="p-4 px-6 text-primary">{t.warehouse?.name || '-'}</td>
  <td className="p-4 px-6 text-muted-foreground">{new Date(t.date || t.created_at || Date.now()).toLocaleDateString('id-ID')}</td>
  <td className="p-4 px-6 text-muted-foreground truncate max-w-[200px]">{t.notes || '-'}</td>
- <td className="p-4 px-6 text-center"><Badge variant={t.status === 'DONE' ? 'default' : 'secondary'}>{t.status || 'PENDING'}</Badge></td>
- <td className="p-4 px-6 text-center"><Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">View</Button></td>
+ <td className="py-3.5 px-6 text-center text-[13px]"><Badge variant={t.status === 'DONE' ? 'default' : 'secondary'}>{t.status || 'PENDING'}</Badge></td>
+ <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">View</Button></td>
  </tr>
  ))}
  </tbody>

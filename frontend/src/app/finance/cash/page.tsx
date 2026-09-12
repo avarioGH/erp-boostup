@@ -91,13 +91,13 @@ export default function FinanceDashboard() {
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white">Finance Dashboard</h1>
- <p className="text-muted-foreground mt-1">Pantau arus kas, laba rugi, dan transaksi keuangan perusahaan.</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Pantau arus kas, laba rugi, dan transaksi keuangan perusahaan.</p>
  </div>
  <div className="flex items-center gap-3">
  <Link href="/finance/cash-out" className="flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 dark:text-rose-400 px-4 py-2 rounded-xl border border-rose-200 dark:border-rose-800 transition-colors font-medium text-sm">
  <Minus className="w-4 h-4" /> Catat Pengeluaran
  </Link>
- <Link href="/finance/cash-in" className="flex items-center gap-2  px-4 py-2 rounded-xl transition-colors font-medium text-sm shadow-sm shadow-emerald-500/20">
+ <Link href="/finance/cash-in" className="flex items-center gap-2 px-4 py-2 rounded-xl transition-colors font-medium text-sm shadow-sm shadow-emerald-500/20">
  <Plus className="w-4 h-4" /> Catat Pemasukan
  </Link>
  </div>
@@ -124,7 +124,7 @@ export default function FinanceDashboard() {
  </Card>
 
  <Card className="border-border shadow-sm bg-background relative overflow-hidden group hover:border-emerald-500 transition-colors">
- <div className="absolute top-4 right-4 p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400">
+ <div className="absolute top-4 right-4 p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg text-primary dark:text-primary">
  <TrendingUp className="w-5 h-5" />
  </div>
  <CardHeader className="pb-2 overflow-hidden">
@@ -133,7 +133,7 @@ export default function FinanceDashboard() {
  </CardHeader>
  <CardContent>
  <div className="flex items-center gap-2 text-sm">
- <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+ <span className="flex items-center gap-1 text-primary dark:text-primary font-medium">
  <ArrowUpRight className="w-3 h-3" /> +12.5%
  </span>
  <span className="text-muted-foreground">vs bulan lalu</span>
@@ -222,7 +222,7 @@ export default function FinanceDashboard() {
  transactions.slice(0, 5).map((tx, i) => (
  <div key={i} className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className={`p-2 rounded-full ${tx.transaction_type === 'Income' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'}`}>
+ <div className={`p-2 rounded-full ${tx.transaction_type === 'Income' ? 'bg-emerald-100 text-primary dark:bg-emerald-900/30 dark:text-primary' : 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'}`}>
  {tx.transaction_type === 'Income' ? <ArrowDownRight className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
  </div>
  <div>
@@ -230,7 +230,7 @@ export default function FinanceDashboard() {
  <p className="text-xs text-muted-foreground">{new Date(tx.transaction_date).toLocaleDateString('id-ID')}</p>
  </div>
  </div>
- <div className={`font-semibold text-sm ${tx.transaction_type === 'Income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground dark:text-white'}`}>
+ <div className={`font-semibold text-sm ${tx.transaction_type === 'Income' ? 'text-primary dark:text-primary' : 'text-foreground dark:text-white'}`}>
  {tx.transaction_type === 'Income' ? '+' : '-'}{formatIDR(tx.total_amount)}
  </div>
  </div>
