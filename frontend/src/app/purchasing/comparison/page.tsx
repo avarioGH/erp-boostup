@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { PurchasingAPI } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { formatIDR } from "@/lib/utils";
-import { ArrowLeft, CheckCircle2, PackageSearch } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from"react";
+import { useSearchParams, useRouter } from"next/navigation";
+import { PurchasingAPI } from"@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card";
+import { Button } from"@/components/ui/button";
+import { formatIDR } from"@/lib/utils";
+import { ArrowLeft, CheckCircle2, PackageSearch } from"lucide-react";
+import { useToast } from"@/hooks/use-toast";
 
 export default function SupplierComparisonPage() {
  const searchParams = useSearchParams();
@@ -31,7 +31,7 @@ export default function SupplierComparisonPage() {
  })
  .catch((err: any) => {
  console.error(err);
- toast({ title: "Error", description: "Failed to load supplier comparison", variant: "destructive" });
+ toast({ title:"Error", description:"Failed to load supplier comparison", variant:"destructive" });
  })
  .finally(() => setLoading(false));
  }, [productId, toast]);
@@ -48,10 +48,10 @@ export default function SupplierComparisonPage() {
  notes: `Converted from PR ${prId}`
  };
  const rfq = await PurchasingAPI.createRFQ(payload);
- toast({ title: "RFQ Created", description: "Supplier awarded successfully." });
+ toast({ title:"RFQ Created", description:"Supplier awarded successfully." });
  router.push(`/purchasing/rfqs`);
  } catch (e: any) {
- toast({ title: "Error", description: e.response?.data?.message || "Failed to award supplier", variant: "destructive" });
+ toast({ title:"Error", description: e.response?.data?.message ||"Failed to award supplier", variant:"destructive" });
  } finally {
  setConverting(false);
  }
@@ -96,7 +96,7 @@ export default function SupplierComparisonPage() {
  <td className="p-4 text-right text-emerald-600 font-semibold">{formatIDR(c.unit_price)}</td>
  <td className="p-4 text-center">{c.lead_time_days}</td>
  <td className="p-4 text-center">{c.minimum_order_qty}</td>
- <td className="p-4 text-center">{c.active ? "Available" : "Unavailable"}</td>
+ <td className="p-4 text-center">{c.active ?"Available" :"Unavailable"}</td>
  {prId && (
  <td className="p-4 text-center">
  <Button 

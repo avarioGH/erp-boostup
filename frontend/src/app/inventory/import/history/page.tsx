@@ -1,11 +1,11 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, History, ArrowLeft } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from"react"
+import { TimberAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Badge } from"@/components/ui/badge"
+import { Loader2, History, ArrowLeft } from"lucide-react"
+import { useRouter } from"next/navigation"
+import { Button } from"@/components/ui/button"
 
 export default function ImportHistoryPage() {
  const router = useRouter()
@@ -50,7 +50,7 @@ export default function ImportHistoryPage() {
  <td className="p-4 px-6 font-medium text-indigo-700">{t.fileName}</td>
  <td className="p-4 px-6">{t.importType}</td>
  <td className="p-4 px-6 text-right font-bold">{t.importedRows} / {t.totalRows}</td>
- <td className="p-4 px-6 text-center"><Badge variant={t.status === "COMPLETED" ? "default" : (t.status === "FAILED" ? "destructive" : "secondary")}>{t.status}</Badge></td>
+ <td className="p-4 px-6 text-center"><Badge variant={t.status ==="COMPLETED" ?"default" : (t.status ==="FAILED" ?"destructive" :"secondary")}>{t.status}</Badge></td>
  <td className="p-4 px-6 text-muted-foreground">{t.createdBy}</td>
  </tr>
  ))

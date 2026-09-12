@@ -1,10 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
-import { ApprovalAPI } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import { useState, useEffect } from"react";
+import { ApprovalAPI } from"@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card";
+import { Button } from"@/components/ui/button";
+import { Badge } from"@/components/ui/badge";
+import { Loader2, CheckCircle, XCircle } from"lucide-react";
 
 export default function ApprovalsPage() {
  const [data, setData] = useState<any[]>([]);
@@ -24,7 +24,7 @@ export default function ApprovalsPage() {
 
  const handleApprove = async (id: string) => {
  try {
- await ApprovalAPI.approve(id, "Approved from dashboard");
+ await ApprovalAPI.approve(id,"Approved from dashboard");
  fetchApprovals();
  } catch (e) {
  console.error(e);
@@ -33,7 +33,7 @@ export default function ApprovalsPage() {
 
  const handleReject = async (id: string) => {
  try {
- await ApprovalAPI.reject(id, "Rejected from dashboard");
+ await ApprovalAPI.reject(id,"Rejected from dashboard");
  fetchApprovals();
  } catch (e) {
  console.error(e);
@@ -81,7 +81,7 @@ export default function ApprovalsPage() {
  <Badge variant="outline">{item.status}</Badge>
  </td>
  <td className="p-4 text-right flex justify-end gap-2">
- <Button size="sm" onClick={() => handleApprove(item.id)} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+ <Button size="sm" onClick={() => handleApprove(item.id)} className="">
  <CheckCircle className="w-4 h-4 mr-2" /> Approve
  </Button>
  <Button size="sm" variant="destructive" onClick={() => handleReject(item.id)}>

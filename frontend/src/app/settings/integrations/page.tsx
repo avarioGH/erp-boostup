@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { AlertCircle, CheckCircle2, ShoppingBag, RefreshCw } from "lucide-react"
-import { api } from "@/lib/api"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useState, useEffect } from"react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Label } from"@/components/ui/label"
+import { AlertCircle, CheckCircle2, ShoppingBag, RefreshCw } from"lucide-react"
+import { api } from"@/lib/api"
+import { Alert, AlertDescription, AlertTitle } from"@/components/ui/alert"
 
 export default function IntegrationsPage() {
  const [loading, setLoading] = useState(true)
@@ -16,8 +16,8 @@ export default function IntegrationsPage() {
  const [status, setStatus] = useState<any>(null)
  
  const [formData, setFormData] = useState({
- partnerId: "",
- partnerKey: ""
+ partnerId:"",
+ partnerKey:""
  })
 
  useEffect(() => {
@@ -66,7 +66,7 @@ export default function IntegrationsPage() {
  fetchStatus()
  }
  } catch (e: any) {
- alert(e.response?.data?.message || "Gagal mendapatkan URL Otorisasi.")
+ alert(e.response?.data?.message ||"Gagal mendapatkan URL Otorisasi.")
  }
  }
 
@@ -76,7 +76,7 @@ export default function IntegrationsPage() {
  const res = await api.post('/integrations/shopee/sync-orders')
  alert(`Sinkronisasi berhasil! ${res.data.synced_orders} pesanan ditarik sebesar Rp ${res.data.total_amount.toLocaleString('id-ID')}`)
  } catch (e: any) {
- alert(e.response?.data?.message || "Gagal melakukan sinkronisasi.")
+ alert(e.response?.data?.message ||"Gagal melakukan sinkronisasi.")
  } finally {
  setSyncing(false)
  }
@@ -120,7 +120,7 @@ export default function IntegrationsPage() {
  </Alert>
  )}
 
- <form onSubmit={handleSaveCredentials} className="space-y-4 border p-4 rounded-lg bg-muted/30/50 ">
+ <form onSubmit={handleSaveCredentials} className="space-y-4 border p-4 rounded-lg bg-muted/30/50">
  <h3 className="font-medium text-sm">Pengaturan Kredensial API</h3>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">

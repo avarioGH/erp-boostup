@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { InventoryAPI, TimberAPI } from "@/lib/api";
-import { ArrowRight, ArrowLeftRight, Search, Loader2, ThermometerSun, Cuboid } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { useState, useEffect } from"react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card";
+import { Button } from"@/components/ui/button";
+import { InventoryAPI, TimberAPI } from"@/lib/api";
+import { ArrowRight, ArrowLeftRight, Search, Loader2, ThermometerSun, Cuboid } from"lucide-react";
+import { Input } from"@/components/ui/input";
+import { Badge } from"@/components/ui/badge";
+import { useRouter } from"next/navigation";
+import { useToast } from"@/hooks/use-toast";
+import { format } from"date-fns";
 
 export default function ChamberOperationsPage() {
  const [data, setData] = useState<any[]>([]);
@@ -66,7 +66,7 @@ export default function ChamberOperationsPage() {
  setStats({ totalPcs, totalM3, inTodayPcs: inPcs, inTodayM3: inM3, outTodayPcs: outPcs, outTodayM3: outM3 });
 
  } catch (error: any) {
- toast({ title: "Error", description: error.message, variant: "destructive" });
+ toast({ title:"Error", description: error.message, variant:"destructive" });
  } finally {
  setLoading(false);
  }
@@ -88,7 +88,7 @@ export default function ChamberOperationsPage() {
  <p className="text-muted-foreground mt-1">Manage timber drying physical movements.</p>
  </div>
  <div className="flex gap-2">
- <Button onClick={() => router.push('/production/chamber/in')} className="bg-emerald-600 hover:bg-emerald-700">
+ <Button onClick={() => router.push('/production/chamber/in')} className="">
  <ArrowRight className="w-4 h-4 mr-2" /> Chamber IN
  </Button>
  <Button onClick={() => router.push('/production/chamber/out')} className="bg-amber-600 hover:bg-amber-700 text-white">

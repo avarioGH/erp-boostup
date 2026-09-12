@@ -1,22 +1,22 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Send, Bot, User, Sparkles, MessageSquare, History, Plus } from "lucide-react"
-import { api } from "@/lib/api"
-import Link from "next/link"
+import { useState, useRef, useEffect } from"react"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Send, Bot, User, Sparkles, MessageSquare, History, Plus } from"lucide-react"
+import { api } from"@/lib/api"
+import Link from"next/link"
 
 export default function AiChatPage() {
  const [messages, setMessages] = useState([
- { role: 'ai', content: "Halo! Saya adalah Boostup AI Assistant, penasihat bisnis pribadi Anda. Anda bisa menanyakan analisis performa toko, ketersediaan stok di berbagai gudang, laporan keuangan, maupun performa karyawan. Ada yang bisa saya bantu hari ini?" }
+ { role: 'ai', content:"Halo! Saya adalah Boostup AI Assistant, penasihat bisnis pribadi Anda. Anda bisa menanyakan analisis performa toko, ketersediaan stok di berbagai gudang, laporan keuangan, maupun performa karyawan. Ada yang bisa saya bantu hari ini?" }
  ])
  const [input, setInput] = useState("")
  const [isLoading, setIsLoading] = useState(false)
  const messagesEndRef = useRef<HTMLDivElement>(null)
 
  const scrollToBottom = () => {
- messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+ messagesEndRef.current?.scrollIntoView({ behavior:"smooth" })
  }
 
  useEffect(() => {
@@ -37,7 +37,7 @@ export default function AiChatPage() {
  setMessages(prev => [...prev, { role: 'ai', content: (res.data.insight || res.data.response) }])
  } catch (err) {
  console.error(err)
- setMessages(prev => [...prev, { role: 'ai', content: "Maaf, terjadi kesalahan saat menghubungi server AI. Silakan coba lagi." }])
+ setMessages(prev => [...prev, { role: 'ai', content:"Maaf, terjadi kesalahan saat menghubungi server AI. Silakan coba lagi." }])
  } finally {
  setIsLoading(false)
  }

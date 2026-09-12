@@ -33,12 +33,12 @@ export default function RFQPage() {
  setActionLoading(true)
  try {
  await PurchasingAPI.confirmRFQ(id)
- toast({ title: "RFQ Confirmed", description: "Successfully converted to a Purchase Order." })
+ toast({ title:"RFQ Confirmed", description:"Successfully converted to a Purchase Order." })
  setSelectedDoc(null)
  fetchRFQs()
  router.push('/purchasing/orders')
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || "Failed to confirm RFQ.", variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message ||"Failed to confirm RFQ.", variant:"destructive" })
  } finally { setActionLoading(false) }
  }
 

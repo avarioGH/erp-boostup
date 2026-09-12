@@ -24,7 +24,7 @@ export default function BOMPage() {
 
  const getStatusBadge = (status: string) => {
  switch(status) {
- case 'ACTIVE': return <Badge className="bg-emerald-500 hover:bg-emerald-600">Active</Badge>
+ case 'ACTIVE': return <Badge className="">Active</Badge>
  case 'DRAFT': return <Badge variant="secondary" className="bg-muted/50 text-foreground">Draft</Badge>
  case 'OBSOLETE': return <Badge variant="destructive">Obsolete</Badge>
  default: return <Badge variant="outline">{status || 'Draft'}</Badge>

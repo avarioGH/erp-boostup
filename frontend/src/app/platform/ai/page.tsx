@@ -1,11 +1,11 @@
 "use client"
-import { api } from "@/lib/api"
+import { api } from"@/lib/api"
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Sparkles, Send, BrainCircuit, AlertCircle } from "lucide-react"
+import { useState } from"react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Sparkles, Send, BrainCircuit, AlertCircle } from"lucide-react"
 
 export default function AIInsightsPage() {
  const [prompt, setPrompt] = useState("")
@@ -23,18 +23,18 @@ export default function AIInsightsPage() {
 
  try {
  const token = localStorage.getItem("erp_token")
- const res = await api.post("/platform/ai/ask", { prompt: userMsg, contextData: { source: "ERP User Request" } })
+ const res = await api.post("/platform/ai/ask", { prompt: userMsg, contextData: { source:"ERP User Request" } })
  
  const data = res.data
  
  if ((res.status === 200 || res.status === 201) && data.success) {
- setHistory(prev => [...prev, { role: 'ai', content: data.answer || "Processing complete." }])
+ setHistory(prev => [...prev, { role: 'ai', content: data.answer ||"Processing complete." }])
  } else {
- setHistory(prev => [...prev, { role: 'ai', content: "Error communicating with AI service." }])
+ setHistory(prev => [...prev, { role: 'ai', content:"Error communicating with AI service." }])
  }
  } catch (e) {
  console.error(e)
- setHistory(prev => [...prev, { role: 'ai', content: "Sorry, I couldn't connect to the server." }])
+ setHistory(prev => [...prev, { role: 'ai', content:"Sorry, I couldn't connect to the server." }])
  } finally {
  setLoading(false)
  }

@@ -84,7 +84,7 @@ export default function PurchasingOverviewPage() {
  <h1 className="text-3xl font-bold tracking-tight">Purchasing Overview</h1>
  <p className="text-muted-foreground mt-1">Procurement analytics and Procure-to-Pay workflow status.</p>
  </div>
- <Button className="shadow-sm " onClick={() => router.push('/purchasing/rfqs')}>
+ <Button className="shadow-sm" onClick={() => router.push('/purchasing/rfqs')}>
  <ShoppingCart className="w-4 h-4 mr-2" /> New RFQ
  </Button>
  </div>

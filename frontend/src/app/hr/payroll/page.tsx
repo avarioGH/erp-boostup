@@ -1,13 +1,13 @@
 "use client"
-import { HrAPI } from "@/lib/api"
+import { HrAPI } from"@/lib/api"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus } from "lucide-react"
+import { useState, useEffect } from"react"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Label } from"@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Plus } from"lucide-react"
 
 export default function PayrollPage() {
  const [payrolls, setPayrolls] = useState<any[]>([])
@@ -59,8 +59,8 @@ export default function PayrollPage() {
  try {
  const token = localStorage.getItem("erp_token")
  const items = []
- if (Number(allowance) > 0) items.push({ type: "ALLOWANCE", name: "General Allowance", amount: Number(allowance) })
- if (Number(deduction) > 0) items.push({ type: "DEDUCTION", name: "General Deduction", amount: Number(deduction) })
+ if (Number(allowance) > 0) items.push({ type:"ALLOWANCE", name:"General Allowance", amount: Number(allowance) })
+ if (Number(deduction) > 0) items.push({ type:"DEDUCTION", name:"General Deduction", amount: Number(deduction) })
  
  const res = await HrAPI.createPayroll({
  employeeId,
@@ -83,7 +83,7 @@ export default function PayrollPage() {
  }
 
  const formatCurrency = (amount: number) => {
- return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(amount)
+ return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR" }).format(amount)
  }
 
  return (
@@ -109,7 +109,7 @@ export default function PayrollPage() {
  <div className="grid grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label>Employee</Label>
- <Select value={employeeId} onValueChange={(val) => setEmployeeId(val || "")} required>
+ <Select value={employeeId} onValueChange={(val) => setEmployeeId(val ||"")} required>
  <SelectTrigger><SelectValue placeholder="Select Employee" /></SelectTrigger>
  <SelectContent>
  {employees.map(e => <SelectItem key={e.id} value={e.id}>{e.first_name} {e.last_name}</SelectItem>)}

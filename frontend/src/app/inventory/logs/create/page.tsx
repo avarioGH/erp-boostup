@@ -1,13 +1,13 @@
 ﻿"use client"
-import { useState, useEffect } from "react"
-import { TimberAPI, InventoryAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowLeft, Save, Calculator } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from"react"
+import { TimberAPI, InventoryAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Loader2, ArrowLeft, Save, Calculator } from"lucide-react"
+import { useRouter } from"next/navigation"
+import { useToast } from"@/hooks/use-toast"
 
 export default function CreateRawLogPage() {
  const router = useRouter()
@@ -16,22 +16,22 @@ export default function CreateRawLogPage() {
  const [loading, setLoading] = useState(false)
 
  const [form, setForm] = useState({
- logNumber: "",
- species: "Ulin Lokal",
- batch: "",
- locationId: "",
- originalLength: "",
- diameter1: "",
- diameter2: "",
- diameter3: "",
- diameter4: "",
- gerowong: "",
- trimmingLength: "",
- barcode: ""
+ logNumber:"",
+ species:"Ulin Lokal",
+ batch:"",
+ locationId:"",
+ originalLength:"",
+ diameter1:"",
+ diameter2:"",
+ diameter3:"",
+ diameter4:"",
+ gerowong:"",
+ trimmingLength:"",
+ barcode:""
  })
 
  // Live preview
- const [preview, setPreview] = useState({ avg: 0, rnd: 0, gross: 0, gerowong: 0, trimming: 0, net: 0, diaClass: "", gDia: 0 })
+ const [preview, setPreview] = useState({ avg: 0, rnd: 0, gross: 0, gerowong: 0, trimming: 0, net: 0, diaClass:"", gDia: 0 })
 
  useEffect(() => {
  InventoryAPI.getWarehouses().then((res: any) => setWarehouses(Array.isArray(res) ? res : [])).catch(console.error)
@@ -39,25 +39,25 @@ export default function CreateRawLogPage() {
 
  useEffect(() => {
  // Live preview calculations (Mirroring TimberCalculationService purely for UI UX)
- const d1 = parseFloat(form.diameter1.toString().replace(",", ".")) || 0;
- const d2 = parseFloat(form.diameter2.toString().replace(",", ".")) || 0;
- const d3 = parseFloat(form.diameter3.toString().replace(",", ".")) || 0;
- const d4 = parseFloat(form.diameter4.toString().replace(",", ".")) || 0;
- const len = parseFloat(form.originalLength.toString().replace(",", ".")) || 0;
- const gDia = parseFloat(form.gerowong.toString().replace(",", ".")) || 0;
- const tLen = parseFloat(form.trimmingLength.toString().replace(",", ".")) || 0;
+ const d1 = parseFloat(form.diameter1.toString().replace(",",".")) || 0;
+ const d2 = parseFloat(form.diameter2.toString().replace(",",".")) || 0;
+ const d3 = parseFloat(form.diameter3.toString().replace(",",".")) || 0;
+ const d4 = parseFloat(form.diameter4.toString().replace(",",".")) || 0;
+ const len = parseFloat(form.originalLength.toString().replace(",",".")) || 0;
+ const gDia = parseFloat(form.gerowong.toString().replace(",",".")) || 0;
+ const tLen = parseFloat(form.trimmingLength.toString().replace(",",".")) || 0;
 
  const avg = (d1 + d2 + d3 + d4) / 4;
  const rnd = Math.round(avg);
  
- let diaClass = "100 Cm Up";
- if (rnd < 40) diaClass = "30 - 39 Cm";
- else if (rnd < 50) diaClass = "40 - 49 Cm";
- else if (rnd < 60) diaClass = "50 - 59 Cm";
- else if (rnd < 70) diaClass = "60 - 69 Cm";
- else if (rnd < 80) diaClass = "70 - 79 Cm";
- else if (rnd < 90) diaClass = "80 - 89 Cm";
- else if (rnd < 100) diaClass = "90 - 99 Cm";
+ let diaClass ="100 Cm Up";
+ if (rnd < 40) diaClass ="30 - 39 Cm";
+ else if (rnd < 50) diaClass ="40 - 49 Cm";
+ else if (rnd < 60) diaClass ="50 - 59 Cm";
+ else if (rnd < 70) diaClass ="60 - 69 Cm";
+ else if (rnd < 80) diaClass ="70 - 79 Cm";
+ else if (rnd < 90) diaClass ="80 - 89 Cm";
+ else if (rnd < 100) diaClass ="90 - 99 Cm";
 
  const grossRaw = (Math.pow(rnd, 2) * len * 0.7854) / 10000;
  const gross = Math.round(grossRaw * 100) / 100;
@@ -89,18 +89,18 @@ export default function CreateRawLogPage() {
  try {
  await TimberAPI.createRawLog({
  ...form,
- originalLength: parseFloat(form.originalLength.toString().replace(",", ".")),
- diameter1: parseFloat(form.diameter1.toString().replace(",", ".")),
- diameter2: parseFloat(form.diameter2.toString().replace(",", ".")),
- diameter3: parseFloat(form.diameter3.toString().replace(",", ".")),
- diameter4: parseFloat(form.diameter4.toString().replace(",", ".")),
- gerowong: form.gerowong ? parseFloat(form.gerowong.toString().replace(",", ".")) : null,
- trimmingLength: form.trimmingLength ? parseFloat(form.trimmingLength.toString().replace(",", ".")) : null
+ originalLength: parseFloat(form.originalLength.toString().replace(",",".")),
+ diameter1: parseFloat(form.diameter1.toString().replace(",",".")),
+ diameter2: parseFloat(form.diameter2.toString().replace(",",".")),
+ diameter3: parseFloat(form.diameter3.toString().replace(",",".")),
+ diameter4: parseFloat(form.diameter4.toString().replace(",",".")),
+ gerowong: form.gerowong ? parseFloat(form.gerowong.toString().replace(",",".")) : null,
+ trimmingLength: form.trimmingLength ? parseFloat(form.trimmingLength.toString().replace(",",".")) : null
  })
- toast({ title: "Success", description: "Raw log registered successfully." })
+ toast({ title:"Success", description:"Raw log registered successfully." })
  router.push('/inventory/logs')
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || "Failed to create log.", variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message ||"Failed to create log.", variant:"destructive" })
  } finally {
  setLoading(false)
  }
@@ -127,7 +127,7 @@ export default function CreateRawLogPage() {
  <div className="space-y-2"><label className="text-sm font-medium">Partai / Batch</label><Input value={form.batch} onChange={e => setForm({...form, batch: e.target.value})} placeholder="e.g. BATCH-01" /></div>
  <div className="space-y-2 md:col-span-2">
  <label className="text-sm font-medium">Location</label>
- <Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val || ""})}>
+ <Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val ||""})}>
  <SelectTrigger><SelectValue placeholder="Select location" /></SelectTrigger>
  <SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
  </Select>
@@ -184,7 +184,7 @@ export default function CreateRawLogPage() {
  </CardContent>
  </Card>
  
- <Button type="submit" disabled={loading || preview.net < 0} className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-lg">
+ <Button type="submit" disabled={loading || preview.net < 0} className="w-full  h-12 text-lg">
  {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} Save Raw Log
  </Button>
  </div>

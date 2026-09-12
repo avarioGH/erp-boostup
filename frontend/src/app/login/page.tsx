@@ -1,12 +1,12 @@
 "use client"
-import { api } from "@/lib/api"
+import { api } from"@/lib/api"
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Activity } from "lucide-react"
+import { useState } from"react"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Button } from"@/components/ui/button"
+import { Label } from"@/components/ui/label"
+import { Activity } from"lucide-react"
 
 export default function LoginPage() {
  const [username, setUsername] = useState("")
@@ -25,7 +25,7 @@ export default function LoginPage() {
  const data = res.data
  
  if (res.status !== 200 && res.status !== 201) {
- throw new Error(data.message || "Login failed")
+ throw new Error(data.message ||"Login failed")
  }
 
  // Simpan token (Dalam versi Production, sebaiknya gunakan HttpOnly Cookies, tapi ini untuk MVP)
@@ -33,7 +33,7 @@ export default function LoginPage() {
  localStorage.setItem("erp_user", JSON.stringify(data.user))
  
  // Redirect ke dashboard
- window.location.href = "/"
+ window.location.href ="/"
  } catch (err: any) {
  setError(err.message)
  } finally {
@@ -94,18 +94,18 @@ export default function LoginPage() {
  </CardContent>
  <CardFooter>
  <Button type="submit" className="w-full" disabled={loading}>
- {loading ? "Signing in..." : "Sign In"}
+ {loading ?"Signing in..." :"Sign In"}
  </Button>
  </CardFooter>
  </form>
  </Card>
  
  <p className="px-8 text-center text-sm text-muted-foreground">
- By clicking continue, you agree to our{" "}
+ By clicking continue, you agree to our{""}
  <a href="#" className="underline underline-offset-4 hover:text-primary">
  Terms of Service
- </a>{" "}
- and{" "}
+ </a>{""}
+ and{""}
  <a href="#" className="underline underline-offset-4 hover:text-primary">
  Privacy Policy
  </a>

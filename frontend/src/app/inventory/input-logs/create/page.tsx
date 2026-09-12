@@ -1,14 +1,14 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI, InventoryAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2, ArrowLeft, Save, Calculator } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from"react"
+import { TimberAPI, InventoryAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Checkbox } from"@/components/ui/checkbox"
+import { Loader2, ArrowLeft, Save, Calculator } from"lucide-react"
+import { useRouter } from"next/navigation"
+import { useToast } from"@/hooks/use-toast"
 
 export default function CreateInputLogPage() {
  const router = useRouter()
@@ -18,7 +18,7 @@ export default function CreateInputLogPage() {
  const [loading, setLoading] = useState(true)
  const [submitting, setSubmitting] = useState(false)
 
- const [form, setForm] = useState({ date: "", shift: "1", machine: "1", locationId: "", batch: "", notes: "" })
+ const [form, setForm] = useState({ date:"", shift:"1", machine:"1", locationId:"", batch:"", notes:"" })
  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
  useEffect(() => {
@@ -43,16 +43,16 @@ export default function CreateInputLogPage() {
  const handleSubmit = async (e: any) => {
  e.preventDefault()
  if (selectedIds.length === 0) {
- toast({ title: "Validation Error", description: "Please select at least one trimmed log.", variant: "destructive" })
+ toast({ title:"Validation Error", description:"Please select at least one trimmed log.", variant:"destructive" })
  return
  }
  setSubmitting(true)
  try {
  await TimberAPI.createInputLog({ ...form, trimmedLogIds: selectedIds })
- toast({ title: "Success", description: "Input Log created successfully." })
+ toast({ title:"Success", description:"Input Log created successfully." })
  router.push('/inventory/input-logs')
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || "Failed to create.", variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message ||"Failed to create.", variant:"destructive" })
  } finally {
  setSubmitting(false)
  }
@@ -78,7 +78,7 @@ export default function CreateInputLogPage() {
  <div className="space-y-2"><label className="text-sm font-medium">Shift</label><Select value={form.shift} onValueChange={(val) => setForm({...form, shift: val || ''})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">Shift 1</SelectItem><SelectItem value="2">Shift 2</SelectItem><SelectItem value="3">Shift 3</SelectItem></SelectContent></Select></div>
  <div className="space-y-2"><label className="text-sm font-medium">Machine</label><Select value={form.machine} onValueChange={(val) => setForm({...form, machine: val || ''})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">MSAW-1</SelectItem><SelectItem value="2">MSAW-2</SelectItem><SelectItem value="3">MSAW-3</SelectItem></SelectContent></Select></div>
  <div className="space-y-2"><label className="text-sm font-medium">Partai</label><Input value={form.batch} onChange={e => setForm({...form, batch: e.target.value})} /></div>
- <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Location</label><Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val || ""})}><SelectTrigger><SelectValue placeholder="Select Warehouse..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+ <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Location</label><Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val ||""})}><SelectTrigger><SelectValue placeholder="Select Warehouse..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
  </CardContent>
  </Card>
 

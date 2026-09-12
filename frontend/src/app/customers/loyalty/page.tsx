@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Star, TrendingUp, Users, Award, Trophy } from "lucide-react"
-import { api } from "@/lib/api"
-import Link from "next/link"
+} from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { ArrowLeft, Star, TrendingUp, Users, Award, Trophy } from"lucide-react"
+import { api } from"@/lib/api"
+import Link from"next/link"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts'
 
 export default function LoyaltyPage() {

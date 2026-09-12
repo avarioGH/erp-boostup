@@ -1,19 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
+} from"@/components/ui/card"
 import { 
  TrendingUp, TrendingDown, DollarSign, 
  CreditCard, Activity, ArrowUpRight, ArrowDownRight, RefreshCcw, AlertTriangle, Plus, Minus
-} from "lucide-react"
+} from"lucide-react"
 import { 
  Area, AreaChart, Bar, BarChart, CartesianGrid, 
  ResponsiveContainer, Tooltip, XAxis, YAxis 
-} from "recharts"
-import { api } from "@/lib/api"
-import Link from "next/link"
+} from"recharts"
+import { api } from"@/lib/api"
+import Link from"next/link"
 
 export default function FinanceDashboard() {
  const [loading, setLoading] = useState(true)
@@ -47,8 +47,8 @@ export default function FinanceDashboard() {
  // Helper to format currency
  const formatIDR = (value: number) => {
  return new Intl.NumberFormat("id-ID", {
- style: "currency",
- currency: "IDR",
+ style:"currency",
+ currency:"IDR",
  maximumFractionDigits: 0
  }).format(value)
  }
@@ -97,7 +97,7 @@ export default function FinanceDashboard() {
  <Link href="/finance/cash-out" className="flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 dark:text-rose-400 px-4 py-2 rounded-xl border border-rose-200 dark:border-rose-800 transition-colors font-medium text-sm">
  <Minus className="w-4 h-4" /> Catat Pengeluaran
  </Link>
- <Link href="/finance/cash-in" className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl transition-colors font-medium text-sm shadow-sm shadow-emerald-500/20">
+ <Link href="/finance/cash-in" className="flex items-center gap-2  px-4 py-2 rounded-xl transition-colors font-medium text-sm shadow-sm shadow-emerald-500/20">
  <Plus className="w-4 h-4" /> Catat Pemasukan
  </Link>
  </div>

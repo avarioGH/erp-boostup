@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardHeader, CardTitle, CardFooter
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
+} from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Button } from"@/components/ui/button"
+import { Badge } from"@/components/ui/badge"
+import { ScrollArea } from"@/components/ui/scroll-area"
 import {
  Dialog,
  DialogContent,
@@ -15,12 +15,12 @@ import {
  DialogFooter,
  DialogHeader,
  DialogTitle,
-} from "@/components/ui/dialog"
+} from"@/components/ui/dialog"
 import { 
  Search, ScanLine, ShoppingCart, Plus, Minus, 
  Trash2, CreditCard, Banknote, QrCode, User, AlertTriangle
-} from "lucide-react"
-import { InventoryAPI, PosAPI } from "@/lib/api"
+} from"lucide-react"
+import { InventoryAPI, PosAPI } from"@/lib/api"
 
 type CartItem = {
  id: string
@@ -64,10 +64,10 @@ export default function PosTransaction() {
  const mapped = dbProducts.map((p: any) => ({
  id: p.id,
  name: p.name,
- category: p.category?.name || "Lainnya",
+ category: p.category?.name ||"Lainnya",
  price: Number(p.selling_price),
  stock: p.warehouse_stocks?.reduce((acc: number, ws: any) => acc + ws.current_stock, 0) || 0,
- img: "📦" // default icon
+ img:"📦" // default icon
  }))
  setProducts(mapped)
 
@@ -87,14 +87,14 @@ export default function PosTransaction() {
 
  const formatIDR = (value: number) => {
  return new Intl.NumberFormat("id-ID", {
- style: "currency",
- currency: "IDR",
+ style:"currency",
+ currency:"IDR",
  maximumFractionDigits: 0
  }).format(value)
  }
 
  const filteredProducts = products.filter(p => 
- (activeCategory === "Semua" || p.category === activeCategory) &&
+ (activeCategory ==="Semua" || p.category === activeCategory) &&
  p.name.toLowerCase().includes(searchQuery.toLowerCase())
  )
 
@@ -153,7 +153,7 @@ export default function PosTransaction() {
  {categories.map(c => (
  <Button 
  key={c}
- variant={activeCategory === c ? "default" : "outline"}
+ variant={activeCategory === c ?"default" :"outline"}
  className={`rounded-full px-5 ${activeCategory === c ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm shadow-primary/20' : 'bg-card border-border text-muted-foreground'}`}
  onClick={() => setActiveCategory(c)}
  >
@@ -357,7 +357,7 @@ export default function PosTransaction() {
  setIsPaymentOpen(false);
  } catch (error: any) {
  console.error("Checkout failed", error);
- const errMessage = error?.response?.data?.message || error.message || "Unknown error";
+ const errMessage = error?.response?.data?.message || error.message ||"Unknown error";
  alert(`Gagal terhubung ke Database. Error: ${errMessage}`);
  setCart([]);
  setIsPaymentOpen(false);
@@ -366,7 +366,7 @@ export default function PosTransaction() {
  }
  }}
  >
- {isCheckingOut ? "Memproses..." : "Proses Transaksi"}
+ {isCheckingOut ?"Memproses..." :"Proses Transaksi"}
  </Button>
  </DialogFooter>
  </DialogContent>

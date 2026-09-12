@@ -1,11 +1,11 @@
 "use client"
-import { useState, useEffect } from "react"
-import { api, InventoryAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Search, Package, Box } from "lucide-react"
+import { useState, useEffect } from"react"
+import { api, InventoryAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Loader2, Search, Package, Box } from"lucide-react"
 
 export default function StockPage() {
  const [data, setData] = useState<any[]>([])
@@ -22,7 +22,7 @@ export default function StockPage() {
  }, [])
 
  const filtered = data.filter(item => 
- (selectedWarehouse === "all" || item.warehouse_id === selectedWarehouse) &&
+ (selectedWarehouse ==="all" || item.warehouse_id === selectedWarehouse) &&
  (item.product?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
  item.product?.sku?.toLowerCase().includes(searchTerm.toLowerCase()))
  )
@@ -41,7 +41,7 @@ export default function StockPage() {
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <CardTitle className="text-lg flex items-center gap-2"><Box className="w-5 h-5" /> Stock Levels</CardTitle>
  <div className="flex items-center gap-2 w-full sm:w-auto">
- <Select value={selectedWarehouse} onValueChange={(val) => setSelectedWarehouse(val || "")}>
+ <Select value={selectedWarehouse} onValueChange={(val) => setSelectedWarehouse(val ||"")}>
  <SelectTrigger className="w-[180px]">
  <SelectValue placeholder="All Warehouses" />
  </SelectTrigger>

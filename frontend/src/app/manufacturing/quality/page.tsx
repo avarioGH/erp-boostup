@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Loader2, Search, CheckCircle2, AlertTriangle, Play, ChevronLeft } from 'lucide-react'
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from"@/hooks/use-toast"
 
 export default function QualityPage() {
  const { toast } = useToast()
@@ -27,10 +27,10 @@ export default function QualityPage() {
  const completeCheck = async (id: string, result: string) => {
  try {
  await api.post(`/manufacturing/quality/checks/${id}/complete`, { result })
- toast({ title: "Check Completed", description: `Quality check marked as ${result}.` })
+ toast({ title:"Check Completed", description: `Quality check marked as ${result}.` })
  fetchChecks()
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || "Failed to complete check.", variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message ||"Failed to complete check.", variant:"destructive" })
  }
  }
 

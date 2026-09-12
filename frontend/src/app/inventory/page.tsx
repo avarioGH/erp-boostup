@@ -1,9 +1,9 @@
 'use client';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Box, PackageSearch, AlertTriangle, ArrowRightLeft } from "lucide-react";
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
-import { formatCurrency } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card";
+import { Box, PackageSearch, AlertTriangle, ArrowRightLeft } from"lucide-react";
+import { useEffect, useState } from"react";
+import { api } from"@/lib/api";
+import { formatCurrency } from"@/lib/utils";
 
 export default function InventoryDashboard() {
  const [data, setData] = useState<any>(null);

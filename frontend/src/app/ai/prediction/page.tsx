@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Sparkles, LineChart as LineChartIcon, RefreshCw } from "lucide-react"
-import { api } from "@/lib/api"
-import { formatIDR } from "@/lib/utils"
-import Link from "next/link"
+} from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { ArrowLeft, Sparkles, LineChart as LineChartIcon, RefreshCw } from"lucide-react"
+import { api } from"@/lib/api"
+import { formatIDR } from"@/lib/utils"
+import Link from"next/link"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts'
 
 export default function AIPredictionPage() {
@@ -67,7 +67,7 @@ export default function AIPredictionPage() {
  last7DaysSales: Object.entries(pastMap).map(([date, amount]) => ({ date, amount }))
  }
 
- const prompt = `Tolong analisis data historis penjualan 7 hari terakhir ini. Prediksikan total omzet untuk 7 hari ke depan. Berikan output HANYA format JSON tanpa markdown block: {"projectedGrowth": number (persentase pertumbuhan/penurunan total 7 hari depan vs 7 hari lalu, misal 5.5), "accuracyConfidence": number (tingkat kepercayaan model 1-100), "predictedSales": [number, number, number, number, number, number, number] (array 7 angka untuk prediksi 7 hari ke depan secara berurutan)}`
+ const prompt = `Tolong analisis data historis penjualan 7 hari terakhir ini. Prediksikan total omzet untuk 7 hari ke depan. Berikan output HANYA format JSON tanpa markdown block: {"projectedGrowth": number (persentase pertumbuhan/penurunan total 7 hari depan vs 7 hari lalu, misal 5.5),"accuracyConfidence": number (tingkat kepercayaan model 1-100),"predictedSales": [number, number, number, number, number, number, number] (array 7 angka untuk prediksi 7 hari ke depan secara berurutan)}`
 
  const res = await api.post('/platform/ai/ask', {
  prompt,

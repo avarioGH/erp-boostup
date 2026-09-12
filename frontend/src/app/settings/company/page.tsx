@@ -1,16 +1,16 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Settings, Building2, Globe, Banknote, Save, AlertCircle, CheckCircle2 } from "lucide-react"
-import { api } from "@/lib/api"
-import Link from "next/link"
+} from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Button } from"@/components/ui/button"
+import { Label } from"@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { ArrowLeft, Settings, Building2, Globe, Banknote, Save, AlertCircle, CheckCircle2 } from"lucide-react"
+import { api } from"@/lib/api"
+import Link from"next/link"
 
 export default function CompanySettingsPage() {
  const [loading, setLoading] = useState(true)
@@ -19,10 +19,10 @@ export default function CompanySettingsPage() {
  const [error, setError] = useState("")
 
  const [formData, setFormData] = useState({
- companyName: "",
- currency: "IDR",
- timezone: "Asia/Jakarta",
- invoicePrefix: "INV-"
+ companyName:"",
+ currency:"IDR",
+ timezone:"Asia/Jakarta",
+ invoicePrefix:"INV-"
  })
 
  useEffect(() => {
@@ -35,10 +35,10 @@ export default function CompanySettingsPage() {
  const res = await api.get('/platform/settings')
  if (res.data) {
  setFormData({
- companyName: res.data.company?.name || "",
- currency: res.data.currency || "IDR",
- timezone: res.data.timezone || "Asia/Jakarta",
- invoicePrefix: res.data.invoice_prefix || "INV-"
+ companyName: res.data.company?.name ||"",
+ currency: res.data.currency ||"IDR",
+ timezone: res.data.timezone ||"Asia/Jakarta",
+ invoicePrefix: res.data.invoice_prefix ||"INV-"
  })
  }
  } catch (err) {
@@ -59,7 +59,7 @@ export default function CompanySettingsPage() {
  setSuccess("Pengaturan sistem berhasil disimpan.")
  setTimeout(() => setSuccess(""), 3000)
  } catch (err: any) {
- setError(err.response?.data?.message || "Gagal menyimpan pengaturan.")
+ setError(err.response?.data?.message ||"Gagal menyimpan pengaturan.")
  } finally {
  setProcessing(false)
  }
@@ -170,7 +170,7 @@ export default function CompanySettingsPage() {
 
  <div className="pt-6 border-t border-border/60 flex justify-end">
  <Button type="submit" disabled={processing} className="bg-slate-900 hover:bg-slate-800 dark:bg-card dark:hover:bg-slate-200 dark:text-foreground text-white min-w-[150px] gap-2 h-11">
- {processing ? "Menyimpan..." : <><Save className="w-4 h-4"/> Simpan Pengaturan</>}
+ {processing ?"Menyimpan..." : <><Save className="w-4 h-4"/> Simpan Pengaturan</>}
  </Button>
  </div>
  </CardContent>

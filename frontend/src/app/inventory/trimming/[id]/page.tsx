@@ -1,12 +1,12 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, ArrowLeft, Ruler, Box, Waypoints, CheckCircle2, Factory } from "lucide-react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useState, useEffect } from"react"
+import { TimberAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Badge } from"@/components/ui/badge"
+import { Loader2, ArrowLeft, Ruler, Box, Waypoints, CheckCircle2, Factory } from"lucide-react"
+import { useRouter } from"next/navigation"
+import Link from"next/link"
 
 export default function TrimmedLogDetailPage({ params }: { params: { id: string } }) {
  const router = useRouter()
@@ -28,7 +28,7 @@ export default function TrimmedLogDetailPage({ params }: { params: { id: string 
  <div>
  <div className="flex items-center gap-3">
  <h1 className="text-3xl font-bold tracking-tight text-emerald-800">{data.trimNumber}</h1>
- <Badge variant={data.status === "AVAILABLE" ? "default" : "secondary"} className={data.status === "AVAILABLE" ? "bg-emerald-500" : ""}>{data.status}</Badge>
+ <Badge variant={data.status ==="AVAILABLE" ?"default" :"secondary"} className={data.status ==="AVAILABLE" ?"bg-emerald-500" :""}>{data.status}</Badge>
  </div>
  <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2"><Factory className="w-4 h-4" /> Trimmed Timber Log ? {data.species}</p>
  </div>
@@ -74,7 +74,7 @@ export default function TrimmedLogDetailPage({ params }: { params: { id: string 
  <CardContent className="pt-6 space-y-4 text-sm">
  <div><p className="text-muted-foreground mb-1">Barcode / System ID</p><p className="font-mono bg-muted p-1.5 rounded text-xs">{data.barcode}</p></div>
  <div><p className="text-muted-foreground mb-1">Parent Raw Log</p><Link href={`/inventory/logs/${data.rawLogId}`} className="font-bold text-emerald-600 hover:underline">{data.rawLog?.logNumber}</Link></div>
- <div><p className="text-muted-foreground mb-1">Location</p><p className="font-medium text-blue-700">{data.location?.name || "-"}</p></div>
+ <div><p className="text-muted-foreground mb-1">Location</p><p className="font-medium text-blue-700">{data.location?.name ||"-"}</p></div>
  <div><p className="text-muted-foreground mb-1">Created At</p><p className="font-medium">{new Date(data.createdAt).toLocaleDateString("id-ID")}</p></div>
  </CardContent>
  </Card>
@@ -96,7 +96,7 @@ export default function TrimmedLogDetailPage({ params }: { params: { id: string 
  <div className="h-px bg-border flex-1 mx-2"></div>
  <div className="p-4 border rounded text-muted-foreground border-dashed">
  <p className="font-medium flex items-center gap-2"><Box className="w-4 h-4" /> INPUT LOG</p>
- <p className="text-xs">{data.inputLogId ? <Link href={`/inventory/input-logs/${data.inputLogId}`} className="font-bold text-indigo-600 hover:underline">{data.inputLog?.inputNumber}</Link> : "Pending"}</p>
+ <p className="text-xs">{data.inputLogId ? <Link href={`/inventory/input-logs/${data.inputLogId}`} className="font-bold text-indigo-600 hover:underline">{data.inputLog?.inputNumber}</Link> :"Pending"}</p>
  </div>
  </div>
  </CardContent>

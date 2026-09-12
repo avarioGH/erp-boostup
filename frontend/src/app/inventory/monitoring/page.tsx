@@ -1,9 +1,9 @@
 ﻿"use client"
-import { useState, useEffect } from "react"
-import { api } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { useState, useEffect } from"react"
+import { api } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Loader2 } from"lucide-react"
+import { Input } from"@/components/ui/input"
 
 export default function DailyMonitoringPage() {
  const [data, setData] = useState<any>(null)

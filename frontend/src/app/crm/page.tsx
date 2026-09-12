@@ -1,9 +1,9 @@
 "use client"
-import { api } from "@/lib/api"
+import { api } from"@/lib/api"
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Users, ShoppingBag, TrendingUp, Activity } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Users, ShoppingBag, TrendingUp, Activity } from"lucide-react"
+import { useEffect, useState } from"react"
 
 export default function CRMDashboard() {
  const [loading, setLoading] = useState(true)
@@ -46,7 +46,7 @@ export default function CRMDashboard() {
  }, [])
 
  const formatCurrency = (amount: number) => {
- return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(amount)
+ return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR" }).format(amount)
  }
 
  return (
@@ -63,7 +63,7 @@ export default function CRMDashboard() {
  <Users className="w-4 h-4 text-muted-foreground" />
  </CardHeader>
  <CardContent>
- <div className="text-2xl font-bold">{loading ? "..." : stats.customers}</div>
+ <div className="text-2xl font-bold">{loading ?"..." : stats.customers}</div>
  <p className="text-xs text-muted-foreground">Registered clients</p>
  </CardContent>
  </Card>
@@ -73,7 +73,7 @@ export default function CRMDashboard() {
  <ShoppingBag className="w-4 h-4 text-muted-foreground" />
  </CardHeader>
  <CardContent>
- <div className="text-2xl font-bold">{loading ? "..." : stats.orders}</div>
+ <div className="text-2xl font-bold">{loading ?"..." : stats.orders}</div>
  <p className="text-xs text-muted-foreground">Sales orders created</p>
  </CardContent>
  </Card>
@@ -83,7 +83,7 @@ export default function CRMDashboard() {
  <TrendingUp className="w-4 h-4 text-emerald-500" />
  </CardHeader>
  <CardContent>
- <div className="text-2xl font-bold">{loading ? "..." : formatCurrency(stats.sales)}</div>
+ <div className="text-2xl font-bold">{loading ?"..." : formatCurrency(stats.sales)}</div>
  <p className="text-xs text-muted-foreground">Lifetime revenue</p>
  </CardContent>
  </Card>

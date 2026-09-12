@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Label } from "@/components/ui/label"
+} from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Button } from"@/components/ui/button"
+import { Badge } from"@/components/ui/badge"
+import { Label } from"@/components/ui/label"
 import {
  Table,
  TableBody,
@@ -15,29 +15,29 @@ import {
  TableHead,
  TableHeader,
  TableRow,
-} from "@/components/ui/table"
+} from"@/components/ui/table"
 import { 
  Search, Plus, Download, Box, LayoutGrid, AlertTriangle, RefreshCcw
-} from "lucide-react"
-import { InventoryAPI } from "@/lib/api"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import imageCompression from "browser-image-compression"
+} from"lucide-react"
+import { InventoryAPI } from"@/lib/api"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import imageCompression from"browser-image-compression"
 
-import { Upload, X, QrCode, Edit } from "lucide-react"
-import Link from "next/link"
+import { Upload, X, QrCode, Edit } from"lucide-react"
+import Link from"next/link"
 import {
  DropdownMenu,
  DropdownMenuCheckboxItem,
  DropdownMenuContent,
  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from"@/components/ui/dropdown-menu"
 
 export default function ProductInventory() {
  const [searchQuery, setSearchQuery] = useState("")
  const [showForm, setShowForm] = useState(false)
  const [isSubmitting, setIsSubmitting] = useState(false)
  const [formData, setFormData] = useState({ 
- code: "", barcode: "", name: "", purchasePrice: "", sellingPrice: "", description: "", categoryId: "" 
+ code:"", barcode:"", name:"", purchasePrice:"", sellingPrice:"", description:"", categoryId:"" 
  })
  const [images, setImages] = useState<File[]>([])
  
@@ -81,7 +81,7 @@ export default function ProductInventory() {
  id: p.id,
  sku: p.code,
  name: p.name,
- category: p.category?.name || "-",
+ category: p.category?.name ||"-",
  price: Number(p.selling_price),
  stockMap
  }
@@ -153,7 +153,7 @@ export default function ProductInventory() {
 
  await InventoryAPI.createProduct(payload)
  setShowForm(false)
- setFormData({ code: "", barcode: "", name: "", purchasePrice: "", sellingPrice: "", description: "", categoryId: "" })
+ setFormData({ code:"", barcode:"", name:"", purchasePrice:"", sellingPrice:"", description:"", categoryId:"" })
  setImages([])
  
  // Refresh Data
@@ -167,7 +167,7 @@ export default function ProductInventory() {
  id: p.id,
  sku: p.code,
  name: p.name,
- category: p.category?.name || "-",
+ category: p.category?.name ||"-",
  price: Number(p.selling_price),
  stockMap
  }
@@ -183,8 +183,8 @@ export default function ProductInventory() {
 
  const formatIDR = (value: number) => {
  return new Intl.NumberFormat("id-ID", {
- style: "currency",
- currency: "IDR",
+ style:"currency",
+ currency:"IDR",
  maximumFractionDigits: 0
  }).format(value)
  }
@@ -208,7 +208,7 @@ export default function ProductInventory() {
  <Download className="w-4 h-4" /> Export
  </Button>
  <Button onClick={() => setShowForm(!showForm)} className="gap-2 shadow-md shadow-indigo-600/20">
- <Plus className="w-4 h-4" /> {showForm ? "Batal" : "Tambah Produk"}
+ <Plus className="w-4 h-4" /> {showForm ?"Batal" :"Tambah Produk"}
  </Button>
  </div>
  </div>
@@ -279,7 +279,7 @@ export default function ProductInventory() {
  <Edit className="w-3 h-3" /> Kelola Kategori
  </Link>
  </div>
- <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val || ""})}>
+ <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val ||""})}>
  <SelectTrigger className="w-full bg-accent/50 focus:bg-background">
  <SelectValue placeholder="Pilih Kategori" />
  </SelectTrigger>
@@ -402,8 +402,8 @@ export default function ProductInventory() {
 
  <div className="flex justify-end gap-3 pt-6 border-t border-border/50">
  <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="w-24">Batal</Button>
- <Button type="submit" className=" min-w-[140px] shadow-md shadow-indigo-500/20" disabled={isSubmitting}>
- {isSubmitting ? "Menyimpan..." : "Simpan Produk"}
+ <Button type="submit" className="min-w-[140px] shadow-md shadow-indigo-500/20" disabled={isSubmitting}>
+ {isSubmitting ?"Menyimpan..." :"Simpan Produk"}
  </Button>
  </div>
  </CardContent>
@@ -479,7 +479,7 @@ export default function ProductInventory() {
  <TableHead key={wh.id} className="text-center font-semibold bg-indigo-50/50 dark:bg-indigo-900/10 border-l border-r border-indigo-100 dark:border-indigo-900/30">
  <div className="flex flex-col items-center">
  <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold tracking-widest mb-1">{wh.name}</span>
- <span className="text-[10px] text-muted-foreground">{wh.location || "Cabang"}</span>
+ <span className="text-[10px] text-muted-foreground">{wh.location ||"Cabang"}</span>
  </div>
  </TableHead>
  ))}

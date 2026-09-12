@@ -1,12 +1,12 @@
 ﻿"use client"
-import { useState, useEffect } from "react"
-import { api } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Loader2, Search, SlidersHorizontal, ChevronLeft, CheckCircle2 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from"react"
+import { api } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Badge } from"@/components/ui/badge"
+import { Input } from"@/components/ui/input"
+import { Loader2, Search, SlidersHorizontal, ChevronLeft, CheckCircle2 } from"lucide-react"
+import { useToast } from"@/hooks/use-toast"
 
 export default function AdjustmentsPage() {
  const { toast } = useToast()
@@ -30,11 +30,11 @@ export default function AdjustmentsPage() {
  setActionLoading(true)
  try {
  await api.post(`/inventory/adjustment/${id}/validate`)
- toast({ title: "Adjustment Validated", description: "Stock levels have been adjusted." })
+ toast({ title:"Adjustment Validated", description:"Stock levels have been adjusted." })
  setSelectedDoc(null)
  fetchAdjustments()
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || "Failed to validate adjustment.", variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message ||"Failed to validate adjustment.", variant:"destructive" })
  } finally { setActionLoading(false) }
  }
 

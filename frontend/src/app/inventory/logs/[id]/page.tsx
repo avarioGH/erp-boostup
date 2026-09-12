@@ -1,11 +1,11 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, ArrowLeft, Ruler, Box, Waypoints, CheckCircle2, Factory, Plus } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from"react"
+import { TimberAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Badge } from"@/components/ui/badge"
+import { Loader2, ArrowLeft, Ruler, Box, Waypoints, CheckCircle2, Factory, Plus } from"lucide-react"
+import { useRouter } from"next/navigation"
 
 export default function RawLogDetailPage({ params }: { params: { id: string } }) {
  const router = useRouter()
@@ -34,13 +34,13 @@ export default function RawLogDetailPage({ params }: { params: { id: string } })
  <div>
  <div className="flex items-center gap-3">
  <h1 className="text-3xl font-bold tracking-tight text-emerald-800">{data.logNumber}</h1>
- <Badge variant={data.status === "AVAILABLE" ? "default" : "secondary"} className={data.status === "AVAILABLE" ? "bg-emerald-500" : ""}>{data.status}</Badge>
+ <Badge variant={data.status ==="AVAILABLE" ?"default" :"secondary"} className={data.status ==="AVAILABLE" ?"bg-emerald-500" :""}>{data.status}</Badge>
  </div>
  <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2"><Box className="w-4 h-4" /> Raw Timber Log ? {data.species}</p>
  </div>
  </div>
  <div className="flex items-center gap-2">
- {data.status === "AVAILABLE" && <Button variant="outline">Edit</Button>}
+ {data.status ==="AVAILABLE" && <Button variant="outline">Edit</Button>}
  <Button variant="outline">Print Barcode</Button>
  </div>
  </div>
@@ -80,8 +80,8 @@ export default function RawLogDetailPage({ params }: { params: { id: string } })
  <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Identity & Location</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
  <div><p className="text-muted-foreground mb-1">Barcode / System ID</p><p className="font-mono bg-muted p-1.5 rounded text-xs">{data.barcode}</p></div>
- <div><p className="text-muted-foreground mb-1">Partai</p><p className="font-medium">{data.batch || "-"}</p></div>
- <div><p className="text-muted-foreground mb-1">Location</p><p className="font-medium text-blue-700">{data.location?.name || "-"}</p></div>
+ <div><p className="text-muted-foreground mb-1">Partai</p><p className="font-medium">{data.batch ||"-"}</p></div>
+ <div><p className="text-muted-foreground mb-1">Location</p><p className="font-medium text-blue-700">{data.location?.name ||"-"}</p></div>
  <div><p className="text-muted-foreground mb-1">Receiving Date</p><p className="font-medium">{new Date(data.receivingDate).toLocaleDateString("id-ID")}</p></div>
  </CardContent>
  </Card>

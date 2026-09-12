@@ -1,12 +1,12 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, Plus, Search, ChevronRight } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from"react"
+import { TimberAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Badge } from"@/components/ui/badge"
+import { Loader2, Plus, Search, ChevronRight } from"lucide-react"
+import { useRouter } from"next/navigation"
 
 export default function InputLogsPage() {
  const router = useRouter()
@@ -30,7 +30,7 @@ export default function InputLogsPage() {
  <h1 className="text-3xl font-bold tracking-tight">Input Logs (WIP)</h1>
  <p className="text-muted-foreground mt-1">Material allocated for sawmill production.</p>
  </div>
- <Button onClick={() => router.push('/inventory/input-logs/create')} className="bg-emerald-600 hover:bg-emerald-700">
+ <Button onClick={() => router.push('/inventory/input-logs/create')} className="">
  <Plus className="w-4 h-4 mr-2" /> Create Input Log
  </Button>
  </div>
@@ -64,10 +64,10 @@ export default function InputLogsPage() {
  <tr key={log.id} className="border-b last:border-0 hover:bg-muted/20 cursor-pointer" onClick={() => router.push(`/inventory/input-logs/${log.id}`)}>
  <td className="p-4 px-6 font-medium text-emerald-700">{log.inputNumber}</td>
  <td className="p-4 px-6">{new Date(log.date).toLocaleDateString("id-ID")}</td>
- <td className="p-4 px-6">{log.batch || "-"}</td>
+ <td className="p-4 px-6">{log.batch ||"-"}</td>
  <td className="p-4 px-6 text-right">{log.totalQty}</td>
  <td className="p-4 px-6 text-right font-bold text-indigo-700">{log.totalVolume}</td>
- <td className="p-4 px-6 text-center"><Badge variant={log.status === "AVAILABLE" ? "default" : "secondary"}>{log.status}</Badge></td>
+ <td className="p-4 px-6 text-center"><Badge variant={log.status ==="AVAILABLE" ?"default" :"secondary"}>{log.status}</Badge></td>
  <td className="p-4 px-6 text-center"><Button variant="ghost" size="sm"><ChevronRight className="w-4 h-4" /></Button></td>
  </tr>
  ))

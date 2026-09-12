@@ -1,9 +1,9 @@
 "use client"
-import { HrAPI } from "@/lib/api"
+import { HrAPI } from"@/lib/api"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, Clock, Banknote } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Users, Clock, Banknote } from"lucide-react"
+import { useEffect, useState } from"react"
 
 export default function HrDashboard() {
  const [loading, setLoading] = useState(true)
@@ -50,7 +50,7 @@ export default function HrDashboard() {
  <Users className="w-4 h-4 text-blue-500" />
  </CardHeader>
  <CardContent>
- <div className="text-2xl font-bold">{loading ? "..." : stats.employees}</div>
+ <div className="text-2xl font-bold">{loading ?"..." : stats.employees}</div>
  </CardContent>
  </Card>
  <Card>
@@ -59,7 +59,7 @@ export default function HrDashboard() {
  <Clock className="w-4 h-4 text-emerald-500" />
  </CardHeader>
  <CardContent>
- <div className="text-2xl font-bold">{loading ? "..." : stats.presentToday}</div>
+ <div className="text-2xl font-bold">{loading ?"..." : stats.presentToday}</div>
  </CardContent>
  </Card>
  <Card>
@@ -68,7 +68,7 @@ export default function HrDashboard() {
  <Banknote className="w-4 h-4 text-amber-500" />
  </CardHeader>
  <CardContent>
- <div className="text-2xl font-bold">{loading ? "..." : stats.payrolls}</div>
+ <div className="text-2xl font-bold">{loading ?"..." : stats.payrolls}</div>
  </CardContent>
  </Card>
  </div>

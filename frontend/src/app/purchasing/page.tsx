@@ -1,9 +1,9 @@
 ﻿"use client";
-import { useEffect, useState } from "react";
-import { PurchasingAPI } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShoppingCart, FileText, ClipboardList, CheckCircle } from "lucide-react";
-import Link from "next/link";
+import { useEffect, useState } from"react";
+import { PurchasingAPI } from"@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card";
+import { ShoppingCart, FileText, ClipboardList, CheckCircle } from"lucide-react";
+import Link from"next/link";
 
 export default function PurchasingDashboard() {
  const [metrics, setMetrics] = useState({

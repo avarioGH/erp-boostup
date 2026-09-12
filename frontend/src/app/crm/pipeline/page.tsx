@@ -32,7 +32,7 @@ export default function PipelinePage() {
  </div>
  <div className="flex gap-2">
  <Button variant="outline"><Filter className="w-4 h-4 mr-2" /> Filters</Button>
- <Button className="shadow-sm "><Plus className="w-4 h-4 mr-2" /> New Opportunity</Button>
+ <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New Opportunity</Button>
  </div>
  </div>
 

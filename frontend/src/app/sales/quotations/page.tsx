@@ -62,9 +62,9 @@ export default function QuotationsPage() {
 
  const getStatusBadge = (status: string) => {
  switch (status) {
- case 'DRAFT': return <Badge variant="secondary" className="bg-muted/50 text-foreground ">Draft</Badge>
+ case 'DRAFT': return <Badge variant="secondary" className="bg-muted/50 text-foreground">Draft</Badge>
  case 'SENT': return <Badge variant="outline" className="text-indigo-600 border-indigo-200 bg-indigo-50 dark:border-indigo-900 dark:bg-indigo-900/30 dark:text-indigo-400">Sent</Badge>
- case 'CONFIRMED': return <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">Confirmed</Badge>
+ case 'CONFIRMED': return <Badge className="">Confirmed</Badge>
  case 'CANCELLED': return <Badge variant="destructive">Cancelled</Badge>
  default: return <Badge variant="outline">{status}</Badge>
  }
@@ -106,7 +106,7 @@ export default function QuotationsPage() {
  </>
  )}
  {details.status === 'CONFIRMED' && (
- <Button onClick={() => window.location.href="/sales/orders"} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+ <Button onClick={() => window.location.href="/sales/orders"} className="">
  View Sales Order
  </Button>
  )}

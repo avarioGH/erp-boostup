@@ -1,17 +1,17 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from"react"
+import { useRouter } from"next/navigation"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter 
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Save, Repeat, AlertCircle, CheckCircle2 } from "lucide-react"
-import { api } from "@/lib/api"
-import Link from "next/link"
+} from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Label } from"@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Button } from"@/components/ui/button"
+import { ArrowLeft, Save, Repeat, AlertCircle, CheckCircle2 } from"lucide-react"
+import { api } from"@/lib/api"
+import Link from"next/link"
 
 export default function FinanceTransfer() {
  const router = useRouter()
@@ -20,10 +20,10 @@ export default function FinanceTransfer() {
  const [error, setError] = useState("")
 
  const [formData, setFormData] = useState({
- amount: "",
- fromAccount: "",
- toAccount: "",
- description: "",
+ amount:"",
+ fromAccount:"",
+ toAccount:"",
+ description:"",
  date: new Date().toISOString().split('T')[0]
  })
 
@@ -104,7 +104,7 @@ export default function FinanceTransfer() {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
  <div className="space-y-2">
  <Label className="text-foreground">Dari Rekening (Sumber)</Label>
- <Select value={formData.fromAccount} onValueChange={(val) => setFormData({...formData, fromAccount: val || ""})}>
+ <Select value={formData.fromAccount} onValueChange={(val) => setFormData({...formData, fromAccount: val ||""})}>
  <SelectTrigger>
  <SelectValue placeholder="Pilih Rekening Sumber" />
  </SelectTrigger>
@@ -117,7 +117,7 @@ export default function FinanceTransfer() {
  </div>
  <div className="space-y-2">
  <Label className="text-foreground">Ke Rekening (Tujuan)</Label>
- <Select value={formData.toAccount} onValueChange={(val) => setFormData({...formData, toAccount: val || ""})}>
+ <Select value={formData.toAccount} onValueChange={(val) => setFormData({...formData, toAccount: val ||""})}>
  <SelectTrigger>
  <SelectValue placeholder="Pilih Rekening Tujuan" />
  </SelectTrigger>
@@ -156,8 +156,8 @@ export default function FinanceTransfer() {
  </CardContent>
  <CardFooter className="bg-muted/40 flex justify-end gap-3 pt-6">
  <Button type="button" variant="outline" onClick={() => router.push('/finance')} disabled={loading || success}>Batal</Button>
- <Button type="submit" className=" gap-2" disabled={loading || success}>
- {loading ? "Memproses..." : <><Save className="w-4 h-4" /> Proses Transfer</>}
+ <Button type="submit" className="gap-2" disabled={loading || success}>
+ {loading ?"Memproses..." : <><Save className="w-4 h-4" /> Proses Transfer</>}
  </Button>
  </CardFooter>
  </form>

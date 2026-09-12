@@ -1,7 +1,7 @@
 ﻿'use client';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
 import { Settings, Wrench, Clock, AlertTriangle } from 'lucide-react';
 
 export default function MaintenanceDashboard() {

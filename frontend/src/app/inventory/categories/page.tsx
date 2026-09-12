@@ -1,18 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Plus, Edit, Trash2 } from "lucide-react"
-import { api } from "@/lib/api"
+import { useState, useEffect } from"react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Label } from"@/components/ui/label"
+import { Plus, Edit, Trash2 } from"lucide-react"
+import { api } from"@/lib/api"
 import {
  Dialog,
  DialogContent,
  DialogHeader,
  DialogTitle,
-} from "@/components/ui/dialog"
+} from"@/components/ui/dialog"
 
 export default function InventoryCategories() {
  const [categories, setCategories] = useState<any[]>([])
@@ -22,8 +22,8 @@ export default function InventoryCategories() {
  const [currentId, setCurrentId] = useState<string | null>(null)
  
  const [formData, setFormData] = useState({ 
- name: "", 
- description: "" 
+ name:"", 
+ description:"" 
  })
 
  useEffect(() => {
@@ -45,14 +45,14 @@ export default function InventoryCategories() {
  const openAddModal = () => {
  setIsEditing(false)
  setCurrentId(null)
- setFormData({ name: "", description: "" })
+ setFormData({ name:"", description:"" })
  setModalOpen(true)
  }
 
  const openEditModal = (cat: any) => {
  setIsEditing(true)
  setCurrentId(cat.id)
- setFormData({ name: cat.name, description: cat.description || "" })
+ setFormData({ name: cat.name, description: cat.description ||"" })
  setModalOpen(true)
  }
 
@@ -79,7 +79,7 @@ export default function InventoryCategories() {
  fetchData()
  } catch (e: any) {
  console.error(e)
- alert(e.response?.data?.message || "Gagal menghapus kategori. Mungkin sedang digunakan oleh produk.")
+ alert(e.response?.data?.message ||"Gagal menghapus kategori. Mungkin sedang digunakan oleh produk.")
  }
  }
 

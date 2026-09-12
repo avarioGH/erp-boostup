@@ -1,9 +1,9 @@
 ﻿"use client";
-import React, { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import api from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import React, { useEffect, useState } from"react";
+import { Card, CardHeader, CardTitle, CardContent } from"@/components/ui/card";
+import { Badge } from"@/components/ui/badge";
+import api from"@/lib/api";
+import { Loader2 } from"lucide-react";
 
 export default function TimberOrderDetail({ params }: { params: { id: string } }) {
  const [order, setOrder] = useState<any>(null);
@@ -20,7 +20,7 @@ export default function TimberOrderDetail({ params }: { params: { id: string } }
  const res = await api.get(`/sales/timber-orders/${params.id}`);
  setOrder(res.data.data);
  } catch (err: any) {
- setError(err.response?.data?.message || "Failed to load order");
+ setError(err.response?.data?.message ||"Failed to load order");
  } finally {
  setLoading(false);
  }
@@ -49,7 +49,7 @@ export default function TimberOrderDetail({ params }: { params: { id: string } }
  <CardHeader><CardTitle className="text-lg">Order Info</CardTitle></CardHeader>
  <CardContent className="space-y-2">
  <p><span className="font-semibold text-muted-foreground w-24 inline-block">Date:</span> {new Date(order.orderDate).toLocaleDateString()}</p>
- <p><span className="font-semibold text-muted-foreground w-24 inline-block">Partai:</span> {order.partai || "-"}</p>
+ <p><span className="font-semibold text-muted-foreground w-24 inline-block">Partai:</span> {order.partai ||"-"}</p>
  </CardContent>
  </Card>
  </div>

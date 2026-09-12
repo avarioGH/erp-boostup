@@ -1,20 +1,20 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
+} from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Button } from"@/components/ui/button"
+import { Label } from"@/components/ui/label"
+import { Checkbox } from"@/components/ui/checkbox"
 import { 
  Building2, Users, Save, Plus, Shield, UserPlus, 
  Trash2, AlertCircle, Key, CheckCircle2, LayoutDashboard
-} from "lucide-react"
-import { ArrowLeft } from "lucide-react"
-import { api } from "@/lib/api"
-import Link from "next/link"
+} from"lucide-react"
+import { ArrowLeft } from"lucide-react"
+import { api } from"@/lib/api"
+import Link from"next/link"
 
 const AVAILABLE_MODULES = [
  { id: 'inventory', name: 'Inventaris & Gudang' },
@@ -36,10 +36,10 @@ export default function UsersSettingsPage() {
  const [error, setError] = useState("")
 
  const [formData, setFormData] = useState({
- username: "",
- name: "",
- email: "",
- password: "",
+ username:"",
+ name:"",
+ email:"",
+ password:"",
  warehouse_ids: [] as string[],
  modules: [] as string[]
  })
@@ -103,10 +103,10 @@ export default function UsersSettingsPage() {
  fetchData()
  
  // Reset form
- setFormData({ username: "", name: "", email: "", password: "", warehouse_ids: [], modules: [] })
+ setFormData({ username:"", name:"", email:"", password:"", warehouse_ids: [], modules: [] })
  setTimeout(() => setSuccess(""), 4000)
  } catch (err: any) {
- setError(err.response?.data?.message || "Gagal membuat pengguna. Pastikan Anda login sebagai Owner.")
+ setError(err.response?.data?.message ||"Gagal membuat pengguna. Pastikan Anda login sebagai Owner.")
  } finally {
  setProcessing(false)
  }
@@ -127,7 +127,7 @@ export default function UsersSettingsPage() {
  </div>
  </div>
  {!showForm && (
- <Button onClick={() => setShowForm(true)} className=" gap-2">
+ <Button onClick={() => setShowForm(true)} className="gap-2">
  <UserPlus className="w-4 h-4" /> Tambah Staf Baru
  </Button>
  )}
@@ -167,7 +167,7 @@ export default function UsersSettingsPage() {
  <Input 
  required placeholder="Misal: Budi Santoso" 
  value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
- className="bg-card "
+ className="bg-card"
  />
  </div>
  
@@ -185,7 +185,7 @@ export default function UsersSettingsPage() {
  <Input 
  type="email" placeholder="budi@perusahaan.com" 
  value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})}
- className="bg-card "
+ className="bg-card"
  />
  </div>
 
@@ -196,7 +196,7 @@ export default function UsersSettingsPage() {
  <Input 
  required type="password" placeholder="••••••••" 
  value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})}
- className="pl-9 bg-card "
+ className="pl-9 bg-card"
  />
  </div>
  </div>
@@ -249,8 +249,8 @@ export default function UsersSettingsPage() {
 
  <div className="flex justify-end gap-3 pt-6 border-t border-border/60">
  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Batal</Button>
- <Button type="submit" disabled={processing} className=" min-w-[150px] gap-2">
- {processing ? "Memproses..." : <><Save className="w-4 h-4"/> Simpan Akun</>}
+ <Button type="submit" disabled={processing} className="min-w-[150px] gap-2">
+ {processing ?"Memproses..." : <><Save className="w-4 h-4"/> Simpan Akun</>}
  </Button>
  </div>
  </CardContent>

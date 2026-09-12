@@ -45,7 +45,7 @@ function GoodsReceiptContent() {
  const getStatusBadge = (status: string) => {
  switch(status) {
  case 'DRAFT': return <Badge variant="secondary" className="bg-muted/50 text-foreground">Draft</Badge>
- case 'DONE': return <Badge className="bg-emerald-500 hover:bg-emerald-600">Validated</Badge>
+ case 'DONE': return <Badge className="">Validated</Badge>
  case 'CANCELLED': return <Badge variant="destructive">Cancelled</Badge>
  default: return <Badge variant="outline">{status || 'Received'}</Badge>
  }

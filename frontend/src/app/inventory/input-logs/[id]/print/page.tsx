@@ -1,7 +1,7 @@
 ﻿"use client"
-import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { api } from "@/lib/api"
+import { useEffect, useState } from"react"
+import { useParams } from"next/navigation"
+import { api } from"@/lib/api"
 
 export default function PrintInputTally() {
  const params = useParams()

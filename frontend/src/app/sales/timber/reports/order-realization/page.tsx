@@ -1,8 +1,8 @@
 ﻿"use client";
-import React, { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import api from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import React, { useEffect, useState } from"react";
+import { Card, CardHeader, CardTitle, CardContent } from"@/components/ui/card";
+import api from"@/lib/api";
+import { Loader2 } from"lucide-react";
 
 export default function OrderRealizationReport() {
  const [data, setData] = useState([]);

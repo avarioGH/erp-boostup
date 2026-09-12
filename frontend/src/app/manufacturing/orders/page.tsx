@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Loader2, Plus, Search, ChevronLeft, Factory, CheckCircle2, Play, AlertCircle, XCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from"@/hooks/use-toast"
 
 export default function MOPage() {
  const { toast } = useToast()
@@ -32,12 +32,12 @@ export default function MOPage() {
  setActionLoading(true)
  try {
  await api.post(`/manufacturing/mo/${selectedDoc.id}/${action}`)
- toast({ title: "Success", description: `Manufacturing order updated.` })
+ toast({ title:"Success", description: `Manufacturing order updated.` })
  const res = await api.get(`/manufacturing/mo/${selectedDoc.id}`)
  setSelectedDoc(res.data)
  fetchMOs()
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || `Failed to ${action} MO.`, variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message || `Failed to ${action} MO.`, variant:"destructive" })
  } finally { setActionLoading(false) }
  }
 
@@ -46,7 +46,7 @@ export default function MOPage() {
  case 'DRAFT': return <Badge variant="secondary">Draft</Badge>
  case 'RESERVED': return <Badge className="bg-blue-500 hover:bg-blue-600">Reserved</Badge>
  case 'IN_PROGRESS': return <Badge className="bg-amber-500 hover:bg-amber-600">In Progress</Badge>
- case 'DONE': return <Badge className="bg-emerald-500 hover:bg-emerald-600">Done</Badge>
+ case 'DONE': return <Badge className="">Done</Badge>
  case 'CANCELLED': return <Badge variant="destructive">Cancelled</Badge>
  default: return <Badge variant="outline">{status || 'Draft'}</Badge>
  }
@@ -83,7 +83,7 @@ export default function MOPage() {
  </Button>
  )}
  {(selectedDoc.status === 'IN_PROGRESS') && (
- <Button onClick={() => handleAction('complete')} disabled={actionLoading} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+ <Button onClick={() => handleAction('complete')} disabled={actionLoading} className="">
  {actionLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />} Mark as Done
  </Button>
  )}
@@ -159,7 +159,7 @@ export default function MOPage() {
  <h1 className="text-3xl font-bold tracking-tight">Manufacturing Orders</h1>
  <p className="text-muted-foreground mt-1">Manage production execution, materials, and output.</p>
  </div>
- <Button className="shadow-sm "><Plus className="w-4 h-4 mr-2" /> Create MO</Button>
+ <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> Create MO</Button>
  </div>
  <Card className="shadow-sm">
  <CardHeader className="pb-4">

@@ -1,13 +1,13 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, ArrowLeft, Box, Waypoints, CheckCircle2, Factory, Calendar, FileCheck, XCircle } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
-import Link from "next/link"
+import { useState, useEffect } from"react"
+import { TimberAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Badge } from"@/components/ui/badge"
+import { Loader2, ArrowLeft, Box, Waypoints, CheckCircle2, Factory, Calendar, FileCheck, XCircle } from"lucide-react"
+import { useRouter } from"next/navigation"
+import { useToast } from"@/hooks/use-toast"
+import Link from"next/link"
 
 export default function SawnTimberOutputDetailPage({ params }: { params: { id: string } }) {
  const router = useRouter()
@@ -21,15 +21,15 @@ export default function SawnTimberOutputDetailPage({ params }: { params: { id: s
  }
  useEffect(() => { loadData() }, [params.id])
 
- const handleAction = async (action: "post" | "cancel") => {
+ const handleAction = async (action:"post" |"cancel") => {
  setActionLoading(true)
  try {
- if (action === "post") await TimberAPI.postSawnOutput(params.id)
+ if (action ==="post") await TimberAPI.postSawnOutput(params.id)
  else await TimberAPI.cancelSawnOutput(params.id)
- toast({ title: "Success", description: `Output ${action === "post" ? "posted" : "cancelled"} successfully.` })
+ toast({ title:"Success", description: `Output ${action ==="post" ?"posted" :"cancelled"} successfully.` })
  loadData()
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || `Failed to ${action}.`, variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message || `Failed to ${action}.`, variant:"destructive" })
  } finally {
  setActionLoading(false)
  }
@@ -46,14 +46,14 @@ export default function SawnTimberOutputDetailPage({ params }: { params: { id: s
  <div>
  <div className="flex items-center gap-3">
  <h1 className="text-3xl font-bold tracking-tight text-indigo-900">{data.bundleNumber}</h1>
- <Badge variant={data.status === "POSTED" ? "default" : (data.status === "DRAFT" ? "secondary" : "destructive")}>{data.status}</Badge>
+ <Badge variant={data.status ==="POSTED" ?"default" : (data.status ==="DRAFT" ?"secondary" :"destructive")}>{data.status}</Badge>
  </div>
  <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2"><Factory className="w-4 h-4" /> Sawn Timber Bundle Output</p>
  </div>
  </div>
  <div className="flex items-center gap-2">
- {data.status === "DRAFT" && <Button onClick={() => handleAction("post")} disabled={actionLoading} className="bg-emerald-600 hover:bg-emerald-700"><FileCheck className="w-4 h-4 mr-2" /> Post to Stock</Button>}
- {data.status === "POSTED" && <Button onClick={() => handleAction("cancel")} disabled={actionLoading} variant="destructive"><XCircle className="w-4 h-4 mr-2" /> Cancel & Reverse</Button>}
+ {data.status ==="DRAFT" && <Button onClick={() => handleAction("post")} disabled={actionLoading} className=""><FileCheck className="w-4 h-4 mr-2" /> Post to Stock</Button>}
+ {data.status ==="POSTED" && <Button onClick={() => handleAction("cancel")} disabled={actionLoading} variant="destructive"><XCircle className="w-4 h-4 mr-2" /> Cancel & Reverse</Button>}
  </div>
  </div>
 
@@ -63,9 +63,9 @@ export default function SawnTimberOutputDetailPage({ params }: { params: { id: s
  <CardContent className="pt-6 space-y-4 text-sm">
  <div className="grid grid-cols-2 gap-y-4">
  <div><p className="text-muted-foreground">Date</p><p className="font-bold flex items-center gap-1"><Calendar className="w-3 h-3"/> {new Date(data.outputDate).toLocaleDateString("id-ID")}</p></div>
- <div><p className="text-muted-foreground">Shift</p><p className="font-bold">{data.shift || "-"}</p></div>
+ <div><p className="text-muted-foreground">Shift</p><p className="font-bold">{data.shift ||"-"}</p></div>
  <div><p className="text-muted-foreground">Location</p><p className="font-bold">{data.location?.name}</p></div>
- <div><p className="text-muted-foreground">Partai</p><p className="font-bold">{data.batch || "-"}</p></div>
+ <div><p className="text-muted-foreground">Partai</p><p className="font-bold">{data.batch ||"-"}</p></div>
  </div>
  </CardContent>
  </Card>

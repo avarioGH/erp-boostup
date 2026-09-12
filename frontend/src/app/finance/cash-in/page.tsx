@@ -1,17 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from"react"
+import { useRouter } from"next/navigation"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter 
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Save, Plus, AlertCircle, CheckCircle2 } from "lucide-react"
-import { api, FinanceAPI } from "@/lib/api"
-import Link from "next/link"
+} from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Label } from"@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Button } from"@/components/ui/button"
+import { ArrowLeft, Save, Plus, AlertCircle, CheckCircle2 } from"lucide-react"
+import { api, FinanceAPI } from"@/lib/api"
+import Link from"next/link"
 
 export default function FinanceCashIn() {
  const router = useRouter()
@@ -24,7 +24,7 @@ export default function FinanceCashIn() {
  async function loadCategories() {
  try {
  const data = await FinanceAPI.getCategories()
- setCategories(data.filter((c: any) => c.type === "INCOME"))
+ setCategories(data.filter((c: any) => c.type ==="INCOME"))
  } catch (err) {
  console.error("Failed to load categories:", err)
  }
@@ -33,9 +33,9 @@ export default function FinanceCashIn() {
  }, [])
 
  const [formData, setFormData] = useState({
- amount: "",
- categoryId: "", 
- description: "",
+ amount:"",
+ categoryId:"", 
+ description:"",
  date: new Date().toISOString().split('T')[0]
  })
 
@@ -129,7 +129,7 @@ export default function FinanceCashIn() {
  </div>
  <div className="space-y-2">
  <Label htmlFor="category" className="text-foreground">Kategori</Label>
- <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val || ""})}>
+ <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val ||""})}>
  <SelectTrigger>
  <SelectValue placeholder="Pilih Kategori" />
  </SelectTrigger>
@@ -157,8 +157,8 @@ export default function FinanceCashIn() {
  </CardContent>
  <CardFooter className="bg-muted/40 flex justify-end gap-3 pt-6">
  <Button type="button" variant="outline" onClick={() => router.push('/finance')} disabled={loading || success}>Batal</Button>
- <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2" disabled={loading || success}>
- {loading ? "Menyimpan..." : <><Save className="w-4 h-4" /> Simpan Pemasukan</>}
+ <Button type="submit" className="gap-2" disabled={loading || success}>
+ {loading ?"Menyimpan..." : <><Save className="w-4 h-4" /> Simpan Pemasukan</>}
  </Button>
  </CardFooter>
  </form>

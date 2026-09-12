@@ -1,10 +1,10 @@
 ﻿"use client";
-import React, { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import api from "@/lib/api";
-import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import React, { useEffect, useState } from"react";
+import { Card, CardHeader, CardTitle, CardContent } from"@/components/ui/card";
+import { Badge } from"@/components/ui/badge";
+import api from"@/lib/api";
+import Link from"next/link";
+import { Loader2 } from"lucide-react";
 
 export default function TimberOrdersList() {
  const [orders, setOrders] = useState([]);
@@ -21,7 +21,7 @@ export default function TimberOrdersList() {
  const res = await api.get("/sales/timber-orders");
  setOrders(res.data.data || []);
  } catch (err: any) {
- setError(err.response?.data?.message || "Failed to load orders");
+ setError(err.response?.data?.message ||"Failed to load orders");
  } finally {
  setLoading(false);
  }
@@ -81,9 +81,9 @@ export default function TimberOrdersList() {
  {order.orderNumber}
  </Link>
  </td>
- <td className="p-3">{order.customer?.name || "-"}</td>
+ <td className="p-3">{order.customer?.name ||"-"}</td>
  <td className="p-3">{new Date(order.orderDate).toLocaleDateString()}</td>
- <td className="p-3">{order.partai || "-"}</td>
+ <td className="p-3">{order.partai ||"-"}</td>
  <td className="p-3">
  <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
  </td>

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card";
 import { formatIDR as formatCurrency } from '@/lib/utils';
 import { Truck, Receipt, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -196,19 +196,19 @@ export default function PurchaseOrderDetailPage() {
  {po.items.map((item: any) => {
  const received = item.received_qty || 0;
  const billed = item.billed_qty || 0;
- let matchStatus = "MATCHED";
- let matchColor = "text-emerald-600 bg-emerald-50";
+ let matchStatus ="MATCHED";
+ let matchColor ="text-emerald-600 bg-emerald-50";
  
  if (received < item.qty) {
- matchStatus = "PENDING RECEIPT";
- matchColor = "text-amber-600 bg-amber-50";
+ matchStatus ="PENDING RECEIPT";
+ matchColor ="text-amber-600 bg-amber-50";
  }
  if (billed > received) {
- matchStatus = "EXCEPTION (Billed > Received)";
- matchColor = "text-red-600 bg-red-50 font-bold";
+ matchStatus ="EXCEPTION (Billed > Received)";
+ matchColor ="text-red-600 bg-red-50 font-bold";
  } else if (billed < received) {
- matchStatus = "PENDING BILL";
- matchColor = "text-blue-600 bg-blue-50";
+ matchStatus ="PENDING BILL";
+ matchColor ="text-blue-600 bg-blue-50";
  }
 
  return (
@@ -260,7 +260,7 @@ export default function PurchaseOrderDetailPage() {
  )}
  
  {po.status === 'CONFIRMED' && po.receipt_status !== 'RECEIVED' && (
- <Button onClick={receiveGoods} disabled={actionLoading} className="w-full bg-emerald-600 hover:bg-emerald-700">
+ <Button onClick={receiveGoods} disabled={actionLoading} className="w-full">
  <Truck className="w-4 h-4 mr-2" /> Receive Goods
  </Button>
  )}

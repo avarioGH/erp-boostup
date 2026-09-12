@@ -1,11 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
-import { AssetAPI } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { useState, useEffect } from"react";
+import { AssetAPI } from"@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card";
+import { Button } from"@/components/ui/button";
+import { Badge } from"@/components/ui/badge";
+import { Loader2, Plus, ArrowRight } from"lucide-react";
+import Link from"next/link";
 
 export default function AssetsPage() {
  const [data, setData] = useState<any[]>([]);

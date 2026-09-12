@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Sparkles, TrendingDown, Activity, RefreshCw, AlertCircle } from "lucide-react"
-import { api, FinanceAPI } from "@/lib/api"
-import { formatIDR } from "@/lib/utils"
-import Link from "next/link"
+} from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { ArrowLeft, Sparkles, TrendingDown, Activity, RefreshCw, AlertCircle } from"lucide-react"
+import { api, FinanceAPI } from"@/lib/api"
+import { formatIDR } from"@/lib/utils"
+import Link from"next/link"
 
 export default function AIFinanceAnalysisPage() {
  const [loading, setLoading] = useState(true)
@@ -69,7 +69,7 @@ export default function AIFinanceAnalysisPage() {
  }))
  }
 
- const prompt = `Tolong analisis data keuangan berikut dan berikan: 1. estimasi burn rate bulanan (angka), 2. estimasi runway (angka bulan), 3. insights (minimal 2, dengan type: 'CRITICAL', 'GOOD', atau 'WARNING', title, desc, dan recommendation). Format jawaban HARUS HANYA JSON murni tanpa markdown block. Struktur JSON yang benar: {"burnRate": number, "runway": number, "insights": [{"type": "string", "title": "string", "desc": "string", "recommendation": "string"}]}`
+ const prompt = `Tolong analisis data keuangan berikut dan berikan: 1. estimasi burn rate bulanan (angka), 2. estimasi runway (angka bulan), 3. insights (minimal 2, dengan type: 'CRITICAL', 'GOOD', atau 'WARNING', title, desc, dan recommendation). Format jawaban HARUS HANYA JSON murni tanpa markdown block. Struktur JSON yang benar: {"burnRate": number,"runway": number,"insights": [{"type":"string","title":"string","desc":"string","recommendation":"string"}]}`
 
  const res = await api.post('/platform/ai/ask', {
  prompt,

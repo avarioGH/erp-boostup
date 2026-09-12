@@ -1,11 +1,11 @@
 ﻿"use client"
-import { useState } from "react"
-import { api } from "@/lib/api"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Search, Loader2, ArrowDown, History } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { useState } from"react"
+import { api } from"@/lib/api"
+import { Input } from"@/components/ui/input"
+import { Button } from"@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Search, Loader2, ArrowDown, History } from"lucide-react"
+import { Badge } from"@/components/ui/badge"
 
 export default function TraceabilityPage() {
  const [search, setSearch] = useState("")
@@ -28,7 +28,7 @@ export default function TraceabilityPage() {
  setError("No traceability timeline found for this identifier.")
  }
  } catch (err: any) {
- setError(err?.response?.data?.message || "Failed to search traceability")
+ setError(err?.response?.data?.message ||"Failed to search traceability")
  } finally {
  setLoading(false)
  }

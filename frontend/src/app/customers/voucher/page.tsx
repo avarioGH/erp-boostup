@@ -1,17 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Ticket, Plus, Tag, CheckCircle2, AlertCircle } from "lucide-react"
-import { api } from "@/lib/api"
-import Link from "next/link"
-import { formatIDR } from "@/lib/utils"
+} from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Button } from"@/components/ui/button"
+import { Label } from"@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { ArrowLeft, Ticket, Plus, Tag, CheckCircle2, AlertCircle } from"lucide-react"
+import { api } from"@/lib/api"
+import Link from"next/link"
+import { formatIDR } from"@/lib/utils"
 
 export default function VouchersPage() {
  const [loading, setLoading] = useState(true)
@@ -23,13 +23,13 @@ export default function VouchersPage() {
  const [error, setError] = useState("")
 
  const [formData, setFormData] = useState({
- code: "",
- name: "",
- discount_type: "NOMINAL",
- discount_value: "",
- min_purchase: "",
- max_discount: "",
- quota: "100",
+ code:"",
+ name:"",
+ discount_type:"NOMINAL",
+ discount_value:"",
+ min_purchase:"",
+ max_discount:"",
+ quota:"100",
  valid_from: new Date().toISOString().split('T')[0],
  valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
  })
@@ -71,7 +71,7 @@ export default function VouchersPage() {
  
  setTimeout(() => setSuccess(""), 3000)
  } catch (err: any) {
- setError(err.response?.data?.message || "Gagal membuat voucher")
+ setError(err.response?.data?.message ||"Gagal membuat voucher")
  } finally {
  setProcessing(false)
  }
@@ -129,7 +129,7 @@ export default function VouchersPage() {
  <Input 
  required placeholder="Misal: MERDEKA50" 
  value={formData.code} onChange={e => setFormData({...formData, code: e.target.value.toUpperCase()})}
- className="font-mono uppercase bg-card "
+ className="font-mono uppercase bg-card"
  />
  </div>
  <div className="space-y-2">
@@ -137,7 +137,7 @@ export default function VouchersPage() {
  <Input 
  required placeholder="Misal: Diskon Kemerdekaan 50rb" 
  value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
- className="bg-card "
+ className="bg-card"
  />
  </div>
  </div>
@@ -146,7 +146,7 @@ export default function VouchersPage() {
  <div className="space-y-2">
  <Label>Tipe Diskon</Label>
  <Select value={formData.discount_type} onValueChange={(val) => setFormData({...formData, discount_type: val as string})}>
- <SelectTrigger className="bg-card ">
+ <SelectTrigger className="bg-card">
  <SelectValue placeholder="Pilih Tipe" />
  </SelectTrigger>
  <SelectContent>
@@ -174,7 +174,7 @@ export default function VouchersPage() {
  <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">Rp</div>
  <Input 
  type="text" value={formData.min_purchase} onChange={e => setFormData({...formData, min_purchase: e.target.value})}
- className="pl-9 bg-card "
+ className="pl-9 bg-card"
  />
  </div>
  </div>
@@ -185,7 +185,7 @@ export default function VouchersPage() {
  <div className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">Rp</div>
  <Input 
  type="text" value={formData.max_discount} onChange={e => setFormData({...formData, max_discount: e.target.value})}
- className="pl-9 bg-card "
+ className="pl-9 bg-card"
  />
  </div>
  </div>
@@ -197,21 +197,21 @@ export default function VouchersPage() {
  <Label>Kuota Penggunaan</Label>
  <Input 
  type="number" min="1" value={formData.quota} onChange={e => setFormData({...formData, quota: e.target.value})}
- className="bg-card "
+ className="bg-card"
  />
  </div>
  <div className="space-y-2">
  <Label>Berlaku Dari</Label>
  <Input 
  type="date" required value={formData.valid_from} onChange={e => setFormData({...formData, valid_from: e.target.value})}
- className="bg-card "
+ className="bg-card"
  />
  </div>
  <div className="space-y-2">
  <Label>Berlaku Sampai</Label>
  <Input 
  type="date" required value={formData.valid_until} onChange={e => setFormData({...formData, valid_until: e.target.value})}
- className="bg-card "
+ className="bg-card"
  />
  </div>
  </div>
@@ -219,7 +219,7 @@ export default function VouchersPage() {
  <div className="flex justify-end gap-3 pt-4">
  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Batal</Button>
  <Button type="submit" disabled={processing} className="bg-pink-600 hover:bg-pink-700 text-white min-w-[120px]">
- {processing ? "Menyimpan..." : "Simpan Voucher"}
+ {processing ?"Menyimpan..." :"Simpan Voucher"}
  </Button>
  </div>
  </CardContent>

@@ -1,13 +1,13 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI, InventoryAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowLeft, Save, Box } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from"react"
+import { TimberAPI, InventoryAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Loader2, ArrowLeft, Save, Box } from"lucide-react"
+import { useRouter } from"next/navigation"
+import { useToast } from"@/hooks/use-toast"
 
 export default function CreateTransferPage() {
  const router = useRouter()
@@ -17,8 +17,8 @@ export default function CreateTransferPage() {
  const [loading, setLoading] = useState(true)
  const [submitting, setSubmitting] = useState(false)
 
- const [form, setForm] = useState({ date: "", fromLocationId: "", toLocationId: "", notes: "" })
- const [item, setItem] = useState({ timberVariantId: "", quantityPcs: "" })
+ const [form, setForm] = useState({ date:"", fromLocationId:"", toLocationId:"", notes:"" })
+ const [item, setItem] = useState({ timberVariantId:"", quantityPcs:"" })
 
  useEffect(() => {
  InventoryAPI.getWarehouses()
@@ -40,8 +40,8 @@ export default function CreateTransferPage() {
 
  const handleSubmit = async (e: any) => {
  e.preventDefault()
- if (!selectedStock) return toast({ title: "Error", description: "Select a valid SKU", variant: "destructive" })
- if (qty > selectedStock.currentPcs) return toast({ title: "Error", description: "Insufficient stock", variant: "destructive" })
+ if (!selectedStock) return toast({ title:"Error", description:"Select a valid SKU", variant:"destructive" })
+ if (qty > selectedStock.currentPcs) return toast({ title:"Error", description:"Insufficient stock", variant:"destructive" })
  
  setSubmitting(true)
  try {
@@ -58,10 +58,10 @@ export default function CreateTransferPage() {
  }]
  }
  await TimberAPI.createTransfer(payload)
- toast({ title: "Success", description: "Transfer created (DRAFT)" })
+ toast({ title:"Success", description:"Transfer created (DRAFT)" })
  router.push('/inventory/transfers')
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || "Failed to create.", variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message ||"Failed to create.", variant:"destructive" })
  } finally {
  setSubmitting(false)
  }
@@ -85,8 +85,8 @@ export default function CreateTransferPage() {
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
  <div className="space-y-2"><label className="text-sm font-medium">Date *</label><Input required type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">Notes</label><Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
- <div className="space-y-2"><label className="text-sm font-medium">From Location *</label><Select value={form.fromLocationId} onValueChange={(val) => setForm({...form, fromLocationId: val || ""})}><SelectTrigger><SelectValue placeholder="Select Source..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
- <div className="space-y-2"><label className="text-sm font-medium">To Location *</label><Select value={form.toLocationId} onValueChange={(val) => setForm({...form, toLocationId: val || ""})}><SelectTrigger><SelectValue placeholder="Select Destination..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+ <div className="space-y-2"><label className="text-sm font-medium">From Location *</label><Select value={form.fromLocationId} onValueChange={(val) => setForm({...form, fromLocationId: val ||""})}><SelectTrigger><SelectValue placeholder="Select Source..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+ <div className="space-y-2"><label className="text-sm font-medium">To Location *</label><Select value={form.toLocationId} onValueChange={(val) => setForm({...form, toLocationId: val ||""})}><SelectTrigger><SelectValue placeholder="Select Destination..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
  </CardContent>
  </Card>
 
@@ -96,7 +96,7 @@ export default function CreateTransferPage() {
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
  <div className="space-y-2 md:col-span-2">
  <label className="text-sm font-medium">Stock SKU (Available in Source Location)</label>
- <Select value={item.timberVariantId} onValueChange={(val) => setItem({...item, timberVariantId: val || ""})}>
+ <Select value={item.timberVariantId} onValueChange={(val) => setItem({...item, timberVariantId: val ||""})}>
  <SelectTrigger><SelectValue placeholder="Select SKU to transfer..."/></SelectTrigger>
  <SelectContent>
  {stocks.filter(s => s.currentPcs > 0).map(s => <SelectItem key={s.timberVariantId} value={s.timberVariantId}>{s.timberVariant?.sku} (Available: {s.currentPcs} PCS)</SelectItem>)}

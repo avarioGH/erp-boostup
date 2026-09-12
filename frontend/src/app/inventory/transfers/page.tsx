@@ -1,12 +1,12 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, Plus, Search, ChevronRight, ArrowRightLeft } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from"react"
+import { TimberAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Badge } from"@/components/ui/badge"
+import { Loader2, Plus, Search, ChevronRight, ArrowRightLeft } from"lucide-react"
+import { useRouter } from"next/navigation"
 
 export default function TransfersPage() {
  const router = useRouter()
@@ -66,7 +66,7 @@ export default function TransfersPage() {
  <td className="p-4 px-6">{t.toLocation?.name}</td>
  <td className="p-4 px-6 text-right font-bold">{t.items?.reduce((s:number, i:any)=>s+i.quantityPcs, 0)}</td>
  <td className="p-4 px-6 text-right font-bold text-indigo-700">{t.items?.reduce((s:number, i:any)=>s+i.volumeM3, 0).toFixed(4)}</td>
- <td className="p-4 px-6 text-center"><Badge variant={t.status === "POSTED" ? "default" : (t.status === "DRAFT" ? "secondary" : "destructive")}>{t.status}</Badge></td>
+ <td className="p-4 px-6 text-center"><Badge variant={t.status ==="POSTED" ?"default" : (t.status ==="DRAFT" ?"secondary" :"destructive")}>{t.status}</Badge></td>
  <td className="p-4 px-6 text-center"><Button variant="ghost" size="sm"><ChevronRight className="w-4 h-4" /></Button></td>
  </tr>
  ))

@@ -1,19 +1,19 @@
 "use client"
-import { api } from "@/lib/api"
+import { api } from"@/lib/api"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from"react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from"@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from"@/components/ui/tabs"
+import { Input } from"@/components/ui/input"
+import { Label } from"@/components/ui/label"
+import { Button } from"@/components/ui/button"
 
 export default function PlatformDashboard() {
  const [settings, setSettings] = useState({
- companyName: "",
- currency: "IDR",
- timezone: "Asia/Jakarta",
- invoicePrefix: "INV-"
+ companyName:"",
+ currency:"IDR",
+ timezone:"Asia/Jakarta",
+ invoicePrefix:"INV-"
  })
  
  const [apiKeys, setApiKeys] = useState<any[]>([])
@@ -57,7 +57,7 @@ export default function PlatformDashboard() {
  if (!newKeyName) return
  try {
  const token = localStorage.getItem("erp_token")
- const res = await api.post("/platform/api-keys", { name: newKeyName, scopes: "all" })
+ const res = await api.post("/platform/api-keys", { name: newKeyName, scopes:"all" })
  if (res.status === 200 || res.status === 201) {
  setNewKeyName("")
  fetchData()
@@ -93,7 +93,7 @@ export default function PlatformDashboard() {
  <div className="grid gap-2">
  <Label>Company Name</Label>
  <Input 
- value={settings.companyName || ""} 
+ value={settings.companyName ||""} 
  onChange={e => setSettings({...settings, companyName: e.target.value})} 
  />
  </div>
@@ -101,14 +101,14 @@ export default function PlatformDashboard() {
  <div className="grid gap-2">
  <Label>Currency</Label>
  <Input 
- value={settings.currency || ""} 
+ value={settings.currency ||""} 
  onChange={e => setSettings({...settings, currency: e.target.value})} 
  />
  </div>
  <div className="grid gap-2">
  <Label>Timezone</Label>
  <Input 
- value={settings.timezone || ""} 
+ value={settings.timezone ||""} 
  onChange={e => setSettings({...settings, timezone: e.target.value})} 
  />
  </div>
@@ -116,7 +116,7 @@ export default function PlatformDashboard() {
  <div className="grid gap-2">
  <Label>Invoice Prefix</Label>
  <Input 
- value={settings.invoicePrefix || ""} 
+ value={settings.invoicePrefix ||""} 
  onChange={e => setSettings({...settings, invoicePrefix: e.target.value})} 
  />
  </div>

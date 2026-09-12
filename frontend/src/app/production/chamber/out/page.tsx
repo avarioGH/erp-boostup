@@ -1,13 +1,13 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI, InventoryAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowLeft, Save, ArrowLeftRight } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from"react"
+import { TimberAPI, InventoryAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Loader2, ArrowLeft, Save, ArrowLeftRight } from"lucide-react"
+import { useRouter } from"next/navigation"
+import { useToast } from"@/hooks/use-toast"
 
 export default function ChamberOutPage() {
  const router = useRouter()
@@ -17,8 +17,8 @@ export default function ChamberOutPage() {
  const [loading, setLoading] = useState(true)
  const [submitting, setSubmitting] = useState(false)
 
- const [form, setForm] = useState({ date: new Date().toISOString().substring(0,10), fromLocationId: "", toLocationId: "", notes: "Chamber OUT Operation" })
- const [item, setItem] = useState({ timberVariantId: "", quantityPcs: "" })
+ const [form, setForm] = useState({ date: new Date().toISOString().substring(0,10), fromLocationId:"", toLocationId:"", notes:"Chamber OUT Operation" })
+ const [item, setItem] = useState({ timberVariantId:"", quantityPcs:"" })
 
  useEffect(() => {
  InventoryAPI.getWarehouses()
@@ -40,9 +40,9 @@ export default function ChamberOutPage() {
 
  const handleSubmit = async (e: any) => {
  e.preventDefault()
- if (!form.fromLocationId || !form.toLocationId) return toast({ title: "Error", description: "Select chamber and destination locations", variant: "destructive" })
- if (!selectedStock) return toast({ title: "Error", description: "Select a valid SKU", variant: "destructive" })
- if (qty > selectedStock.currentPcs) return toast({ title: "Error", description: "Insufficient stock in chamber", variant: "destructive" })
+ if (!form.fromLocationId || !form.toLocationId) return toast({ title:"Error", description:"Select chamber and destination locations", variant:"destructive" })
+ if (!selectedStock) return toast({ title:"Error", description:"Select a valid SKU", variant:"destructive" })
+ if (qty > selectedStock.currentPcs) return toast({ title:"Error", description:"Insufficient stock in chamber", variant:"destructive" })
  
  setSubmitting(true)
  try {
@@ -57,10 +57,10 @@ export default function ChamberOutPage() {
  ...form,
  items: [{ timberVariantId: item.timberVariantId, quantityPcs: qty, volumeM3 }]
  })
- toast({ title: "Success", description: "Timber moved out of chamber" })
+ toast({ title:"Success", description:"Timber moved out of chamber" })
  router.push('/production/chamber')
  } catch (error: any) {
- toast({ title: "Error", description: error.message, variant: "destructive" })
+ toast({ title:"Error", description: error.message, variant:"destructive" })
  } finally {
  setSubmitting(false)
  }

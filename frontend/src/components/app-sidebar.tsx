@@ -215,7 +215,7 @@ export function AppSidebar() {
  
  <SidebarContent className="px-3 py-4 custom-scrollbar">
  <SidebarGroup>
- <SidebarGroupLabel className="text-[11px] font-semibold tracking-widest text-sidebar-foreground/50 uppercase mb-3 px-2">Core Modules</SidebarGroupLabel>
+ <SidebarGroupLabel className="text-[11px] font-[650] tracking-widest text-[#8A94A6] uppercase mb-4 px-2 mt-2">Core Modules</SidebarGroupLabel>
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
  {items.filter(item => {
@@ -283,7 +283,7 @@ export function AppSidebar() {
  </SidebarGroup>
  
  <SidebarGroup className="mt-6 mb-4">
- <SidebarGroupLabel className="text-[11px] font-semibold tracking-widest text-sidebar-foreground/50 uppercase mb-3 px-2">Settings</SidebarGroupLabel>
+ <SidebarGroupLabel className="text-[11px] font-[650] tracking-widest text-[#8A94A6] uppercase mb-4 px-2 mt-2">Settings</SidebarGroupLabel>
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
  {settings.filter(item => {

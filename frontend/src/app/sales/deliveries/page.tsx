@@ -64,9 +64,9 @@ export default function DeliveriesPage() {
 
  const getStatusBadge = (status: string) => {
  switch (status) {
- case 'DRAFT': return <Badge variant="secondary" className="bg-muted/50 text-foreground ">Draft</Badge>
+ case 'DRAFT': return <Badge variant="secondary" className="bg-muted/50 text-foreground">Draft</Badge>
  case 'READY': return <Badge className="bg-indigo-500 hover:bg-indigo-600">Ready</Badge>
- case 'DONE': return <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">Done</Badge>
+ case 'DONE': return <Badge className="">Done</Badge>
  case 'CANCELLED': return <Badge variant="destructive">Cancelled</Badge>
  default: return <Badge variant="outline">{status}</Badge>
  }
@@ -101,7 +101,7 @@ export default function DeliveriesPage() {
  <Button variant="outline"><Download className="w-4 h-4 mr-2" /> Print SJ</Button>
  
  {(details.status === 'DRAFT' || details.status === 'READY') && (
- <Button onClick={handleValidate} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+ <Button onClick={handleValidate} className="">
  <CheckCircle2 className="w-4 h-4 mr-2" /> Validate Delivery
  </Button>
  )}

@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { api } from "@/lib/api"
-import { formatIDR } from "@/lib/utils"
-import { History, ArrowUpRight, ArrowDownRight, ArrowRightLeft } from "lucide-react"
+import { useState, useEffect } from"react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { api } from"@/lib/api"
+import { formatIDR } from"@/lib/utils"
+import { History, ArrowUpRight, ArrowDownRight, ArrowRightLeft } from"lucide-react"
 
 export default function FinanceHistoryPage() {
  const [transactions, setTransactions] = useState<any[]>([])

@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Briefcase, Building, Download, Printer } from "lucide-react"
-import { api } from "@/lib/api"
-import Link from "next/link"
+} from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { ArrowLeft, Users, Briefcase, Building, Download, Printer } from"lucide-react"
+import { api } from"@/lib/api"
+import Link from"next/link"
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 
 export default function EmployeeReportPage() {

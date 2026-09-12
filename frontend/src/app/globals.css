@@ -5,15 +5,15 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Modern Industrial SaaS Light Theme */
-  --background: #F6F8FB;
+  /* Modern Industrial SaaS Light Theme - Calibrated */
+  --background: #F5F7FA;
   --foreground: #172033;
   
   --primary: #2563EB;
   --primary-foreground: #FFFFFF;
   
-  --secondary: #F9FAFC;
-  --secondary-foreground: #172033;
+  --secondary: #F8FAFC;
+  --secondary-foreground: #5F6B7A;
   
   --popover: #FFFFFF;
   --popover-foreground: #172033;
@@ -21,10 +21,10 @@
   --card: #FFFFFF;
   --card-foreground: #172033;
   
-  --muted: #F3F6FA;
+  --muted: #F8FAFC;
   --muted-foreground: #8A94A6;
   
-  --accent: #F4F7FB;
+  --accent: #F5F8FC;
   --accent-foreground: #172033;
   
   --destructive: #FEE2E2;
@@ -39,19 +39,21 @@
   --info: #DBEAFE;
   --info-foreground: #1E40AF;
   
-  --border: #E6EAF0;
-  --input: #E6EAF0;
+  --border: #E2E8F0;
+  --input: #F8FAFC;
   --ring: #2563EB;
   
   --radius: 12px;
   
   --sidebar-background: #FFFFFF;
-  --sidebar-foreground: #172033;
+  --sidebar-foreground: #526174;
   --sidebar-primary: #2563EB;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #EEF4FF;
-  --sidebar-accent-foreground: #1D4ED8;
-  --sidebar-border: #E8ECF2;
+  --sidebar-accent: #F5F8FC;
+  --sidebar-accent-foreground: #172033;
+  --sidebar-active: #EEF4FF;
+  --sidebar-active-foreground: #1D4ED8;
+  --sidebar-border: #E2E8F0;
   --sidebar-ring: #2563EB;
 }
 
@@ -158,6 +160,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
 
   --shadow-sm: 0 1px 2px rgba(15,23,42,0.04);
   --shadow-md: 0 4px 12px rgba(15,23,42,0.06);

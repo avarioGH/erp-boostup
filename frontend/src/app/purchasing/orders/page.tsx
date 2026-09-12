@@ -59,7 +59,7 @@ export default function PurchaseOrdersPage() {
  await fetchOrders()
  router.push("/finance/vendor-bills")
  } catch (e: any) {
- alert(e.response?.data?.message || "Failed to create vendor bill.")
+ alert(e.response?.data?.message ||"Failed to create vendor bill.")
  } finally {
  setDocLoading(false)
  }
@@ -78,7 +78,7 @@ export default function PurchaseOrdersPage() {
  switch(status) {
  case 'PENDING': return <Badge variant="outline" className="text-amber-600 border-amber-200">Pending Receipt</Badge>
  case 'PARTIAL': return <Badge variant="outline" className="text-blue-600 border-blue-200">Partially Received</Badge>
- case 'RECEIVED': return <Badge className="bg-emerald-500 hover:bg-emerald-600">Fully Received</Badge>
+ case 'RECEIVED': return <Badge className="">Fully Received</Badge>
  default: return null
  }
  }
@@ -86,7 +86,7 @@ export default function PurchaseOrdersPage() {
  const getBillBadge = (status: string) => {
  switch(status) {
  case 'PENDING': return <Badge variant="outline" className="text-amber-600 border-amber-200">Unbilled</Badge>
- case 'BILLED': return <Badge className="bg-emerald-500 hover:bg-emerald-600">Billed</Badge>
+ case 'BILLED': return <Badge className="">Billed</Badge>
  default: return null
  }
  }
@@ -257,7 +257,7 @@ export default function PurchaseOrdersPage() {
  <h1 className="text-3xl font-bold tracking-tight">Purchase Orders</h1>
  <p className="text-muted-foreground mt-1">Manage confirmed procurement orders and track fulfillment.</p>
  </div>
- <Button className="shadow-sm "><Plus className="w-4 h-4 mr-2" /> New Order</Button>
+ <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New Order</Button>
  </div>
 
  <Card className="shadow-sm">

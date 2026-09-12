@@ -1,12 +1,12 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, Search, ChevronRight } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from"react"
+import { TimberAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Badge } from"@/components/ui/badge"
+import { Loader2, Search, ChevronRight } from"lucide-react"
+import { useRouter } from"next/navigation"
 
 export default function TrimmingListPage() {
  const router = useRouter()
@@ -64,7 +64,7 @@ export default function TrimmingListPage() {
  <td className="p-4 px-6">{log.species}</td>
  <td className="p-4 px-6 text-right">{log.length} m</td>
  <td className="p-4 px-6 text-right font-bold text-indigo-700">{log.netVolume}</td>
- <td className="p-4 px-6 text-center"><Badge variant={log.status === "AVAILABLE" ? "default" : "secondary"} className={log.status === "AVAILABLE" ? "bg-emerald-500" : ""}>{log.status}</Badge></td>
+ <td className="p-4 px-6 text-center"><Badge variant={log.status ==="AVAILABLE" ?"default" :"secondary"} className={log.status ==="AVAILABLE" ?"bg-emerald-500" :""}>{log.status}</Badge></td>
  <td className="p-4 px-6 text-center"><Button variant="ghost" size="sm"><ChevronRight className="w-4 h-4" /></Button></td>
  </tr>
  ))

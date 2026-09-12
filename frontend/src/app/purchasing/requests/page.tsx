@@ -27,7 +27,7 @@ export default function PurchaseRequestsPage() {
  const getStatusBadge = (status: string) => {
  switch(status) {
  case 'SUBMITTED': return <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">Submitted</Badge>
- case 'APPROVED': return <Badge className="bg-emerald-500 hover:bg-emerald-600">Approved</Badge>
+ case 'APPROVED': return <Badge className="">Approved</Badge>
  case 'REJECTED': return <Badge variant="destructive">Rejected</Badge>
  case 'CONVERTED': return <Badge variant="outline" className="text-indigo-600 border-indigo-200">Converted to RFQ</Badge>
  default: return <Badge variant="outline">{status || 'Draft'}</Badge>

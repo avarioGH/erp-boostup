@@ -1,13 +1,13 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI, InventoryAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowLeft, Save, Calculator } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from"react"
+import { TimberAPI, InventoryAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Loader2, ArrowLeft, Save, Calculator } from"lucide-react"
+import { useRouter } from"next/navigation"
+import { useToast } from"@/hooks/use-toast"
 
 export default function CreateOutputPage() {
  const router = useRouter()
@@ -17,14 +17,14 @@ export default function CreateOutputPage() {
  const [loading, setLoading] = useState(true)
  const [submitting, setSubmitting] = useState(false)
 
- const [form, setForm] = useState({ date: "", shift: "1", locationId: "", inputLogId: "", batch: "", notes: "" })
- const [item, setItem] = useState({ grade: "A", thickness: "", width: "", length: "", quantityPcs: "" })
+ const [form, setForm] = useState({ date:"", shift:"1", locationId:"", inputLogId:"", batch:"", notes:"" })
+ const [item, setItem] = useState({ grade:"A", thickness:"", width:"", length:"", quantityPcs:"" })
  const [preview, setPreview] = useState(0)
 
  useEffect(() => {
  Promise.all([
  InventoryAPI.getWarehouses(),
- TimberAPI.getInputLogs({ status: "IN_PROCESS" }).catch(() => ({ items: [] }))
+ TimberAPI.getInputLogs({ status:"IN_PROCESS" }).catch(() => ({ items: [] }))
  ]).then(([wRes, lRes]) => {
  setWarehouses(Array.isArray(wRes) ? wRes : [])
  setInputLogs(Array.isArray(lRes?.items) ? lRes.items : [])
@@ -42,7 +42,7 @@ export default function CreateOutputPage() {
 
  const handleSubmit = async (e: any) => {
  e.preventDefault()
- if (!form.inputLogId) { toast({ title: "Error", description: "Source Input Log is required", variant: "destructive" }); return; }
+ if (!form.inputLogId) { toast({ title:"Error", description:"Source Input Log is required", variant:"destructive" }); return; }
  setSubmitting(true)
  try {
  const payload = {
@@ -57,10 +57,10 @@ export default function CreateOutputPage() {
  }]
  }
  await TimberAPI.createSawnOutput(payload)
- toast({ title: "Success", description: "Output created successfully. (DRAFT)" })
+ toast({ title:"Success", description:"Output created successfully. (DRAFT)" })
  router.push('/inventory/sawn-timber/output')
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || "Failed to create.", variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message ||"Failed to create.", variant:"destructive" })
  } finally {
  setSubmitting(false)
  }
@@ -85,7 +85,7 @@ export default function CreateOutputPage() {
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2 md:col-span-2">
  <label className="text-sm font-medium">Source Input Log *</label>
- <Select value={form.inputLogId} onValueChange={(val) => setForm({...form, inputLogId: val || ""})}>
+ <Select value={form.inputLogId} onValueChange={(val) => setForm({...form, inputLogId: val ||""})}>
  <SelectTrigger><SelectValue placeholder="Select IN_PROCESS Input Log..."/></SelectTrigger>
  <SelectContent>
  {inputLogs.map(l => <SelectItem key={l.id} value={l.id}>{l.inputNumber} ({l.species})</SelectItem>)}
@@ -93,8 +93,8 @@ export default function CreateOutputPage() {
  </Select>
  </div>
  <div className="space-y-2"><label className="text-sm font-medium">Date *</label><Input required type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
- <div className="space-y-2"><label className="text-sm font-medium">Shift</label><Select value={form.shift} onValueChange={(val) => setForm({...form, shift: val || "1"})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">Shift 1</SelectItem><SelectItem value="2">Shift 2</SelectItem><SelectItem value="3">Shift 3</SelectItem></SelectContent></Select></div>
- <div className="space-y-2"><label className="text-sm font-medium">Warehouse *</label><Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val || ""})}><SelectTrigger><SelectValue placeholder="Select Warehouse..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+ <div className="space-y-2"><label className="text-sm font-medium">Shift</label><Select value={form.shift} onValueChange={(val) => setForm({...form, shift: val ||"1"})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">Shift 1</SelectItem><SelectItem value="2">Shift 2</SelectItem><SelectItem value="3">Shift 3</SelectItem></SelectContent></Select></div>
+ <div className="space-y-2"><label className="text-sm font-medium">Warehouse *</label><Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val ||""})}><SelectTrigger><SelectValue placeholder="Select Warehouse..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
  <div className="space-y-2"><label className="text-sm font-medium">Partai</label><Input value={form.batch} onChange={e => setForm({...form, batch: e.target.value})} /></div>
  </CardContent>
  </Card>
@@ -105,7 +105,7 @@ export default function CreateOutputPage() {
  <div className="space-y-2"><label className="text-sm font-medium">Thickness (mm) *</label><Input required type="number" min="1" value={item.thickness} onChange={e => setItem({...item, thickness: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">Width (mm) *</label><Input required type="number" min="1" value={item.width} onChange={e => setItem({...item, width: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">Length (mm) *</label><Input required type="number" min="1" value={item.length} onChange={e => setItem({...item, length: e.target.value})} /></div>
- <div className="space-y-2"><label className="text-sm font-medium">Grade</label><Select value={item.grade} onValueChange={(val) => setItem({...item, grade: val || "A"})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="A">Grade A</SelectItem><SelectItem value="B">Grade B</SelectItem><SelectItem value="C">Grade C</SelectItem></SelectContent></Select></div>
+ <div className="space-y-2"><label className="text-sm font-medium">Grade</label><Select value={item.grade} onValueChange={(val) => setItem({...item, grade: val ||"A"})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="A">Grade A</SelectItem><SelectItem value="B">Grade B</SelectItem><SelectItem value="C">Grade C</SelectItem></SelectContent></Select></div>
  <div className="space-y-2 md:col-span-4"><label className="text-sm font-medium">Quantity (PCS) *</label><Input required type="number" min="1" value={item.quantityPcs} onChange={e => setItem({...item, quantityPcs: e.target.value})} /></div>
  </CardContent>
  </Card>
@@ -133,7 +133,7 @@ export default function CreateOutputPage() {
  <div className="flex justify-between items-center">
  <span className="text-sm font-bold text-foreground">Calculated M&sup3;</span>
  <span className="font-bold text-2xl text-primary">
- {preview > 0 ? preview.toFixed(6) : "0"}
+ {preview > 0 ? preview.toFixed(6) :"0"}
  </span>
  </div>
  </CardContent>

@@ -1,12 +1,12 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, ArrowLeft, ArrowRightLeft, FileCheck, XCircle, MapPin } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from"react"
+import { TimberAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Badge } from"@/components/ui/badge"
+import { Loader2, ArrowLeft, ArrowRightLeft, FileCheck, XCircle, MapPin } from"lucide-react"
+import { useRouter } from"next/navigation"
+import { useToast } from"@/hooks/use-toast"
 
 export default function TransferDetailPage({ params }: { params: { id: string } }) {
  const router = useRouter()
@@ -20,15 +20,15 @@ export default function TransferDetailPage({ params }: { params: { id: string } 
  }
  useEffect(() => { loadData() }, [params.id])
 
- const handleAction = async (action: "post" | "cancel") => {
+ const handleAction = async (action:"post" |"cancel") => {
  setActionLoading(true)
  try {
- if (action === "post") await TimberAPI.postTransfer(params.id)
+ if (action ==="post") await TimberAPI.postTransfer(params.id)
  else await TimberAPI.cancelTransfer(params.id)
- toast({ title: "Success", description: `Transfer ${action === "post" ? "posted" : "cancelled"} successfully.` })
+ toast({ title:"Success", description: `Transfer ${action ==="post" ?"posted" :"cancelled"} successfully.` })
  loadData()
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || `Failed to ${action}.`, variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message || `Failed to ${action}.`, variant:"destructive" })
  } finally {
  setActionLoading(false)
  }
@@ -45,14 +45,14 @@ export default function TransferDetailPage({ params }: { params: { id: string } 
  <div>
  <div className="flex items-center gap-3">
  <h1 className="text-3xl font-bold tracking-tight text-indigo-900">{data.transferNumber}</h1>
- <Badge variant={data.status === "POSTED" ? "default" : (data.status === "DRAFT" ? "secondary" : "destructive")}>{data.status}</Badge>
+ <Badge variant={data.status ==="POSTED" ?"default" : (data.status ==="DRAFT" ?"secondary" :"destructive")}>{data.status}</Badge>
  </div>
  <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2"><ArrowRightLeft className="w-4 h-4" /> Internal Stock Transfer</p>
  </div>
  </div>
  <div className="flex items-center gap-2">
- {data.status === "DRAFT" && <Button onClick={() => handleAction("post")} disabled={actionLoading} className="bg-emerald-600 hover:bg-emerald-700"><FileCheck className="w-4 h-4 mr-2" /> Post Transfer</Button>}
- {data.status === "POSTED" && <Button onClick={() => handleAction("cancel")} disabled={actionLoading} variant="destructive"><XCircle className="w-4 h-4 mr-2" /> Cancel & Reverse</Button>}
+ {data.status ==="DRAFT" && <Button onClick={() => handleAction("post")} disabled={actionLoading} className=""><FileCheck className="w-4 h-4 mr-2" /> Post Transfer</Button>}
+ {data.status ==="POSTED" && <Button onClick={() => handleAction("cancel")} disabled={actionLoading} variant="destructive"><XCircle className="w-4 h-4 mr-2" /> Cancel & Reverse</Button>}
  </div>
  </div>
 
@@ -75,7 +75,7 @@ export default function TransferDetailPage({ params }: { params: { id: string } 
  </div>
  <div className="mt-6 pt-4 border-t flex justify-between text-sm">
  <span className="text-muted-foreground">Date: {new Date(data.transferDate).toLocaleDateString("id-ID")}</span>
- <span className="text-muted-foreground">Notes: {data.notes || "-"}</span>
+ <span className="text-muted-foreground">Notes: {data.notes ||"-"}</span>
  </div>
  </CardContent>
  </Card>

@@ -2,12 +2,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { CRMAPI } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from"@/components/ui/tabs";
 import { formatCurrency } from '@/lib/utils';
 import { User, Activity, FileText, ShoppingCart, Truck, CreditCard, CheckCircle, AlertTriangle, ArrowLeft, Building2, MapPin, Phone, Mail, FileClock, Navigation } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from"@/components/ui/button";
+import { Badge } from"@/components/ui/badge";
 import Link from 'next/link';
 
 export default function Customer360Page() {

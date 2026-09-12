@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+} from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Button } from"@/components/ui/button"
+import { Label } from"@/components/ui/label"
 import {
  Table,
  TableBody,
@@ -14,7 +14,7 @@ import {
  TableHead,
  TableHeader,
  TableRow,
-} from "@/components/ui/table"
+} from"@/components/ui/table"
 import {
  Dialog,
  DialogContent,
@@ -23,10 +23,10 @@ import {
  DialogHeader,
  DialogTitle,
  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Plus, Edit, Trash2, MapPin, Search } from "lucide-react"
-import { InventoryAPI } from "@/lib/api"
-import { useRouter } from "next/navigation"
+} from"@/components/ui/dialog"
+import { Plus, Edit, Trash2, MapPin, Search } from"lucide-react"
+import { InventoryAPI } from"@/lib/api"
+import { useRouter } from"next/navigation"
 
 export default function WarehouseSettings() {
  const router = useRouter()
@@ -41,7 +41,7 @@ export default function WarehouseSettings() {
  
  // Form states
  const [selectedWh, setSelectedWh] = useState<any>(null)
- const [formData, setFormData] = useState({ name: "", address: "" })
+ const [formData, setFormData] = useState({ name:"", address:"" })
  const [searchQuery, setSearchQuery] = useState("")
 
  const checkAuth = () => {
@@ -49,7 +49,7 @@ export default function WarehouseSettings() {
  if (storedUser) {
  const parsedUser = JSON.parse(storedUser)
  setUser(parsedUser)
- if (parsedUser.role !== "Owner") {
+ if (parsedUser.role !=="Owner") {
  router.push("/")
  }
  } else {
@@ -79,7 +79,7 @@ export default function WarehouseSettings() {
  try {
  await InventoryAPI.createWarehouse(formData)
  setIsAddOpen(false)
- setFormData({ name: "", address: "" })
+ setFormData({ name:"", address:"" })
  fetchWarehouses()
  } catch (e) {
  alert("Gagal menambahkan gudang")
@@ -116,7 +116,7 @@ export default function WarehouseSettings() {
  (wh.address && wh.address.toLowerCase().includes(searchQuery.toLowerCase()))
  )
 
- if (user?.role !== "Owner") return null;
+ if (user?.role !=="Owner") return null;
 
  return (
  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -208,11 +208,11 @@ export default function WarehouseSettings() {
  ) : (
  filteredWarehouses.map((wh) => (
  <TableRow key={wh.id} className="border-border/60 hover:bg-muted/30/50 dark:hover:bg-slate-800/50">
- <TableCell className="font-medium text-foreground ">
+ <TableCell className="font-medium text-foreground">
  {wh.name}
  </TableCell>
  <TableCell className="text-muted-foreground dark:text-muted-foreground">
- {wh.address || "-"}
+ {wh.address ||"-"}
  </TableCell>
  <TableCell className="text-right">
  <div className="flex justify-end gap-2">
@@ -222,7 +222,7 @@ export default function WarehouseSettings() {
  className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
  onClick={() => {
  setSelectedWh(wh)
- setFormData({ name: wh.name, address: wh.address || "" })
+ setFormData({ name: wh.name, address: wh.address ||"" })
  setIsEditOpen(true)
  }}
  >

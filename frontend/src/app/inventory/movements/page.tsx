@@ -1,9 +1,9 @@
 ﻿"use client"
-import { useState, useEffect } from "react"
-import { api } from "@/lib/api"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Loader2 } from "lucide-react"
+import { useState, useEffect } from"react"
+import { api } from"@/lib/api"
+import { Card, CardContent } from"@/components/ui/card"
+import { Badge } from"@/components/ui/badge"
+import { Loader2 } from"lucide-react"
 
 export default function MovementsPage() {
  const [data, setData] = useState<any[]>([])

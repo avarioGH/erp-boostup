@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import api from '@/lib/api'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Clock, Fingerprint, UserCheck } from "lucide-react"
-import { HrAPI } from "@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from"@/components/ui/table"
+import { Clock, Fingerprint, UserCheck } from"lucide-react"
+import { HrAPI } from"@/lib/api"
 
 export default function HrAttendance() {
  const [attendances, setAttendances] = useState<any[]>([])
@@ -45,7 +45,7 @@ export default function HrAttendance() {
  setEmployeeCode("")
  fetchAttendances()
  } catch (err: any) {
- setError(err.response?.data?.message || "Gagal melakukan absensi. Pastikan kode pegawai benar.")
+ setError(err.response?.data?.message ||"Gagal melakukan absensi. Pastikan kode pegawai benar.")
  } finally {
  setProcessing(false)
  }
@@ -85,12 +85,12 @@ export default function HrAttendance() {
  placeholder="Contoh: EMP-12345" 
  value={employeeCode}
  onChange={(e) => setEmployeeCode(e.target.value)}
- className="pl-9 bg-card "
+ className="pl-9 bg-card"
  />
  </div>
  </div>
- <Button type="submit" disabled={processing} className="w-full ">
- {processing ? "Memproses..." : <><Clock className="w-4 h-4 mr-2"/> Absen Sekarang</>}
+ <Button type="submit" disabled={processing} className="w-full">
+ {processing ?"Memproses..." : <><Clock className="w-4 h-4 mr-2"/> Absen Sekarang</>}
  </Button>
  </form>
  </CardContent>
@@ -124,7 +124,7 @@ export default function HrAttendance() {
  {attendances.map((att) => (
  <TableRow key={att.id}>
  <TableCell>
- <div className="font-medium text-foreground ">{att.employee?.first_name} {att.employee?.last_name}</div>
+ <div className="font-medium text-foreground">{att.employee?.first_name} {att.employee?.last_name}</div>
  <div className="text-xs text-muted-foreground">{att.employee?.employee_code}</div>
  </TableCell>
  <TableCell>{new Date(att.date).toLocaleDateString('id-ID')}</TableCell>
@@ -133,7 +133,7 @@ export default function HrAttendance() {
  <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
  <Clock className="w-3 h-3" /> {new Date(att.check_in).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}
  </span>
- ) : "-"}
+ ) :"-"}
  </TableCell>
  <TableCell>
  {att.check_out ? (

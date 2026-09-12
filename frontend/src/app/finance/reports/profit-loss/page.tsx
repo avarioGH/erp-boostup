@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { FinanceAPI } from "@/lib/api"
-import { ArrowLeft, Loader2, Download } from "lucide-react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect } from"react"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { FinanceAPI } from"@/lib/api"
+import { ArrowLeft, Loader2, Download } from"lucide-react"
+import Link from"next/link"
+import { Button } from"@/components/ui/button"
 
 export default function ProfitLossPage() {
  const [data, setData] = useState<any>(null)
@@ -27,7 +27,7 @@ export default function ProfitLossPage() {
  }
 
  const formatIDR = (val: number) => {
- return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(val)
+ return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR" }).format(val)
  }
 
  if (loading) {

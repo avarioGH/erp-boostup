@@ -1,13 +1,13 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI, InventoryAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowLeft, Save, Calculator, AlertCircle } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from"react"
+import { TimberAPI, InventoryAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Loader2, ArrowLeft, Save, Calculator, AlertCircle } from"lucide-react"
+import { useRouter } from"next/navigation"
+import { useToast } from"@/hooks/use-toast"
 
 export default function CreateTrimmedLogPage({ params }: { params: { id: string } }) {
  const router = useRouter()
@@ -18,11 +18,11 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  const [submitting, setSubmitting] = useState(false)
 
  const [form, setForm] = useState({
- length: "", diameter1: "", diameter2: "", diameter3: "", diameter4: "",
- gerowong: "", trimmingLength: "", barcode: "", locationId: "", notes: ""
+ length:"", diameter1:"", diameter2:"", diameter3:"", diameter4:"",
+ gerowong:"", trimmingLength:"", barcode:"", locationId:"", notes:""
  })
 
- const [preview, setPreview] = useState({ avg: 0, rnd: 0, gross: 0, net: 0, diaClass: "" })
+ const [preview, setPreview] = useState({ avg: 0, rnd: 0, gross: 0, net: 0, diaClass:"" })
 
  useEffect(() => {
  Promise.all([
@@ -46,14 +46,14 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  const avg = (d1 + d2 + d3 + d4) / 4;
  const rnd = Math.round(avg);
  
- let diaClass = "100 Cm Up";
- if (rnd < 40) diaClass = "30 - 39 Cm";
- else if (rnd < 50) diaClass = "40 - 49 Cm";
- else if (rnd < 60) diaClass = "50 - 59 Cm";
- else if (rnd < 70) diaClass = "60 - 69 Cm";
- else if (rnd < 80) diaClass = "70 - 79 Cm";
- else if (rnd < 90) diaClass = "80 - 89 Cm";
- else if (rnd < 100) diaClass = "90 - 99 Cm";
+ let diaClass ="100 Cm Up";
+ if (rnd < 40) diaClass ="30 - 39 Cm";
+ else if (rnd < 50) diaClass ="40 - 49 Cm";
+ else if (rnd < 60) diaClass ="50 - 59 Cm";
+ else if (rnd < 70) diaClass ="60 - 69 Cm";
+ else if (rnd < 80) diaClass ="70 - 79 Cm";
+ else if (rnd < 90) diaClass ="80 - 89 Cm";
+ else if (rnd < 100) diaClass ="90 - 99 Cm";
 
  const gross = (Math.pow(rnd, 2) * len * 0.7854) / 10000;
  const gVol = (Math.pow(gDia, 2) * (len - tLen) * 0.7854) / 10000;
@@ -78,10 +78,10 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  gerowong: form.gerowong ? parseFloat(form.gerowong) : null,
  trimmingLength: form.trimmingLength ? parseFloat(form.trimmingLength) : null
  })
- toast({ title: "Success", description: "Trimmed log added successfully." })
+ toast({ title:"Success", description:"Trimmed log added successfully." })
  router.push(`/inventory/logs/${params.id}`)
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || "Failed to create.", variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message ||"Failed to create.", variant:"destructive" })
  } finally {
  setSubmitting(false)
  }
@@ -117,7 +117,7 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
  <div className="space-y-2 md:col-span-4">
  <label className="text-sm font-medium text-red-600">Trimmed Length (meters) *</label>
- <Input required type="number" step="0.01" value={form.length} onChange={e => setForm({...form, length: e.target.value})} className={isExceeding ? "border-red-500" : ""} />
+ <Input required type="number" step="0.01" value={form.length} onChange={e => setForm({...form, length: e.target.value})} className={isExceeding ?"border-red-500" :""} />
  {isExceeding && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Total panjang trimming melebihi panjang log induk.</p>}
  </div>
  <div className="space-y-2"><label className="text-sm font-medium text-red-600">D1 (cm) *</label><Input required type="number" step="0.01" value={form.diameter1} onChange={e => setForm({...form, diameter1: e.target.value})} /></div>
@@ -132,7 +132,7 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg">Additional Info</CardTitle></CardHeader>
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2"><label className="text-sm font-medium">Location (Overrides Parent)</label>
- <Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val || ""})}>
+ <Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val ||""})}>
  <SelectTrigger><SelectValue placeholder="Inherit from parent" /></SelectTrigger>
  <SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
  </Select>
@@ -154,7 +154,7 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground text-red-500">Net Volume</span><span className="font-bold text-xl text-indigo-700">{preview.net > 0 ? preview.net : 0} m?</span></div>
  </CardContent>
  </Card>
- <Button type="submit" disabled={submitting || preview.net < 0 || isExceeding || remaining <= 0} className="w-full bg-emerald-600 hover:bg-emerald-700 h-12 text-lg">
+ <Button type="submit" disabled={submitting || preview.net < 0 || isExceeding || remaining <= 0} className="w-full  h-12 text-lg">
  {submitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} Save Child Log
  </Button>
  </div>

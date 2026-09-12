@@ -1,12 +1,12 @@
 "use client"
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { CreditCard, CheckCircle } from "lucide-react"
-import { api, FinanceAPI } from "@/lib/api"
-import { useToast } from "@/hooks/use-toast"
-import { Badge } from "@/components/ui/badge"
-import Link from "next/link"
+import { useState, useEffect } from"react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { CreditCard, CheckCircle } from"lucide-react"
+import { api, FinanceAPI } from"@/lib/api"
+import { useToast } from"@/hooks/use-toast"
+import { Badge } from"@/components/ui/badge"
+import Link from"next/link"
 
 export default function VendorBillsPage() {
  const [bills, setBills] = useState<any[]>([])
@@ -35,7 +35,7 @@ export default function VendorBillsPage() {
  alert("Tagihan vendor berhasil diposting")
  fetchBills()
  } catch (err: any) {
- alert(err.response?.data?.message || "Gagal posting tagihan")
+ alert(err.response?.data?.message ||"Gagal posting tagihan")
  }
  }
 
@@ -95,7 +95,7 @@ export default function VendorBillsPage() {
  </Button>
  )}
  {bill.status === 'POSTED' && bill.remaining_amount > 0 && (
- <Button size="sm" variant="outline" onClick={() => window.location.href = "/finance/ap-payments?bill=" + bill.id}>
+ <Button size="sm" variant="outline" onClick={() => window.location.href ="/finance/ap-payments?bill=" + bill.id}>
  <CreditCard className="w-4 h-4 mr-2" /> Bayar
  </Button>
  )}

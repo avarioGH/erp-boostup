@@ -1,7 +1,7 @@
 "use client"
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { api } from "@/lib/api"
+import { useState, useEffect } from"react"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { api } from"@/lib/api"
 
 export default function AccountingDashboard() {
  const [journals, setJournals] = useState<any[]>([])

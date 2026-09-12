@@ -1,17 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from"react"
+import { useRouter } from"next/navigation"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Save, PackagePlus, AlertCircle, CheckCircle2, Plus, Trash2 } from "lucide-react"
-import { api } from "@/lib/api"
-import Link from "next/link"
+} from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Label } from"@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Button } from"@/components/ui/button"
+import { ArrowLeft, Save, PackagePlus, AlertCircle, CheckCircle2, Plus, Trash2 } from"lucide-react"
+import { api } from"@/lib/api"
+import Link from"next/link"
 
 export default function StockInPage() {
  const router = useRouter()
@@ -23,10 +23,10 @@ export default function StockInPage() {
  const [products, setProducts] = useState<any[]>([])
 
  const [formData, setFormData] = useState({
- warehouseId: "",
- notes: "",
+ warehouseId:"",
+ notes:"",
  items: [
- { productId: "", qty: 1, unitCost: 0, notes: "" }
+ { productId:"", qty: 1, unitCost: 0, notes:"" }
  ]
  })
 
@@ -46,7 +46,7 @@ export default function StockInPage() {
  // Auto select first warehouse if available and no user-specific active warehouse
  if (whRes.data.length > 0) {
  const storedActive = localStorage.getItem("active_warehouse")
- if (storedActive && storedActive !== "undefined" && storedActive !== "null") {
+ if (storedActive && storedActive !=="undefined" && storedActive !=="null") {
  try {
  const parsed = JSON.parse(storedActive)
  if (parsed && parsed.id && whRes.data.some((w: any) => w.id === parsed.id)) {
@@ -67,7 +67,7 @@ export default function StockInPage() {
  const addItem = () => {
  setFormData(prev => ({
  ...prev,
- items: [...prev.items, { productId: "", qty: 1, unitCost: 0, notes: "" }]
+ items: [...prev.items, { productId:"", qty: 1, unitCost: 0, notes:"" }]
  }))
  }
 
@@ -124,7 +124,7 @@ export default function StockInPage() {
  }, 2000)
  } catch (err: any) {
  console.error(err)
- setError(err.response?.data?.message || "Gagal menyimpan transaksi inbound.")
+ setError(err.response?.data?.message ||"Gagal menyimpan transaksi inbound.")
  } finally {
  setLoading(false)
  }
@@ -175,7 +175,7 @@ export default function StockInPage() {
  <Select value={formData.warehouseId} onValueChange={(val) => setFormData({...formData, warehouseId: val as string})}>
  <SelectTrigger className="bg-card border-border dark:border-border">
  <SelectValue placeholder="Pilih Gudang">
- {warehouses.find(w => w.id === formData.warehouseId)?.name || "Pilih Gudang"}
+ {warehouses.find(w => w.id === formData.warehouseId)?.name ||"Pilih Gudang"}
  </SelectValue>
  </SelectTrigger>
  <SelectContent>
@@ -223,7 +223,7 @@ export default function StockInPage() {
  <Select value={item.productId} onValueChange={(val) => updateItem(index, 'productId', val as string)}>
  <SelectTrigger className="bg-card border-border dark:border-border">
  <SelectValue placeholder="Pilih Produk">
- {products.find(p => p.id === item.productId)?.name || "Pilih Produk"}
+ {products.find(p => p.id === item.productId)?.name ||"Pilih Produk"}
  </SelectValue>
  </SelectTrigger>
  <SelectContent>
@@ -262,8 +262,8 @@ export default function StockInPage() {
  <Link href="/inventory">
  <Button type="button" variant="outline">Batal</Button>
  </Link>
- <Button type="submit" disabled={loading} className=" min-w-[140px]">
- {loading ? "Memproses..." : (
+ <Button type="submit" disabled={loading} className="min-w-[140px]">
+ {loading ?"Memproses..." : (
  <span className="flex items-center gap-2"><Save className="w-4 h-4" /> Simpan Stok Masuk</span>
  )}
  </Button>

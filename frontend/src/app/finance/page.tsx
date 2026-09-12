@@ -1,19 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
+} from"@/components/ui/card"
 import { 
  TrendingUp, TrendingDown, DollarSign, 
  CreditCard, Activity, ArrowUpRight, ArrowDownRight, RefreshCcw, AlertTriangle, Plus, Minus
-} from "lucide-react"
+} from"lucide-react"
 import { 
  Bar, BarChart, CartesianGrid, 
  ResponsiveContainer, Tooltip, XAxis, YAxis, Legend
-} from "recharts"
-import { api, FinanceAPI } from "@/lib/api"
-import Link from "next/link"
+} from"recharts"
+import { api, FinanceAPI } from"@/lib/api"
+import Link from"next/link"
 
 export default function FinanceDashboard() {
  const [loading, setLoading] = useState(true)
@@ -47,8 +47,8 @@ export default function FinanceDashboard() {
  // Helper to format currency
  const formatIDR = (value: number) => {
  return new Intl.NumberFormat("id-ID", {
- style: "currency",
- currency: "IDR",
+ style:"currency",
+ currency:"IDR",
  maximumFractionDigits: 0
  }).format(value || 0)
  }
@@ -70,11 +70,11 @@ export default function FinanceDashboard() {
  const isZero = value === 0;
  const isGood = invertColors ? !isPositive : isPositive;
  
- let colorClass = "text-muted-foreground bg-accent";
+ let colorClass ="text-muted-foreground bg-accent";
  let icon = <Minus className="w-3 h-3" />;
  
  if (!isZero) {
- colorClass = isGood ? "text-success bg-success/10" : "text-destructive bg-destructive/10";
+ colorClass = isGood ?"text-success bg-success/10" :"text-destructive bg-destructive/10";
  icon = isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />;
  }
 

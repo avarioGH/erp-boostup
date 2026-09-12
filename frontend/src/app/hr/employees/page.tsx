@@ -1,19 +1,19 @@
 "use client"
-import { HrAPI } from "@/lib/api"
-import { formatCurrency } from "@/lib/format"
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Plus, Fingerprint, CheckCircle2, ScanFace, Loader2 } from "lucide-react"
+import { HrAPI } from"@/lib/api"
+import { formatCurrency } from"@/lib/format"
+import { useState, useEffect } from"react"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Label } from"@/components/ui/label"
+import { Plus, Fingerprint, CheckCircle2, ScanFace, Loader2 } from"lucide-react"
 import {
  Dialog,
  DialogContent,
  DialogDescription,
  DialogHeader,
  DialogTitle,
-} from "@/components/ui/dialog"
+} from"@/components/ui/dialog"
 
 export default function EmployeesPage() {
  const [employees, setEmployees] = useState<any[]>([])
@@ -21,11 +21,11 @@ export default function EmployeesPage() {
  const [loading, setLoading] = useState(true)
  const [showForm, setShowForm] = useState(false)
  const [formData, setFormData] = useState({ 
- firstName: "", 
- lastName: "",
- email: "",
- position: "",
- basicSalary: ""
+ firstName:"", 
+ lastName:"",
+ email:"",
+ position:"",
+ basicSalary:""
  })
 
  // Biometric Modal State
@@ -65,7 +65,7 @@ export default function EmployeesPage() {
  basicSalary: Number(formData.basicSalary)
  })
  setShowForm(false)
- setFormData({ firstName: "", lastName: "", email: "", position: "", basicSalary: "" })
+ setFormData({ firstName:"", lastName:"", email:"", position:"", basicSalary:"" })
  fetchData()
  } catch (e) {
  console.error(e)
@@ -89,8 +89,8 @@ export default function EmployeesPage() {
  try {
  await HrAPI.registerBiometric(selectedEmp.id, {
  employeeId: selectedEmp.id,
- rightThumb: "base64_simulated_right_thumb_template",
- leftThumb: "base64_simulated_left_thumb_template"
+ rightThumb:"base64_simulated_right_thumb_template",
+ leftThumb:"base64_simulated_left_thumb_template"
  })
  
  setBioStatus('done')

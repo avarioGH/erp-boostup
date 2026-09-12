@@ -1,15 +1,15 @@
 "use client"
-import { api, B2BApi } from "@/lib/api"
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Plus, Search, Filter, Phone, Mail, MapPin, Building2, ChevronLeft, ArrowRight, User } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { useRouter } from "next/navigation"
-import { useDataTable } from "@/hooks/use-data-table"
-import { PaginationControls } from "@/components/ui/pagination-controls"
+import { api, B2BApi } from"@/lib/api"
+import { useState, useEffect } from"react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Label } from"@/components/ui/label"
+import { Plus, Search, Filter, Phone, Mail, MapPin, Building2, ChevronLeft, ArrowRight, User } from"lucide-react"
+import { Badge } from"@/components/ui/badge"
+import { useRouter } from"next/navigation"
+import { useDataTable } from"@/hooks/use-data-table"
+import { PaginationControls } from"@/components/ui/pagination-controls"
 
 export default function CustomersPage() {
  const [customers, setCustomers] = useState<any[]>([])
@@ -135,7 +135,7 @@ export default function CustomersPage() {
  <Building2 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
  <h3 className="font-medium text-lg">No customers found</h3>
  <p className="text-muted-foreground text-sm max-w-sm mx-auto mt-1">
- {inputValue ? "Try adjusting your search filters." : "Create your first customer to get started with CRM and Sales."}
+ {inputValue ?"Try adjusting your search filters." :"Create your first customer to get started with CRM and Sales."}
  </p>
  </div>
  ) : (

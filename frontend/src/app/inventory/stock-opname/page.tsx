@@ -1,12 +1,12 @@
 "use client"
-import { useState, useEffect } from "react"
-import { api, InventoryAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Search, ClipboardCheck, ChevronLeft, CheckCircle2, Play } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from"react"
+import { api, InventoryAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Badge } from"@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Loader2, Search, ClipboardCheck, ChevronLeft, CheckCircle2, Play } from"lucide-react"
+import { useToast } from"@/hooks/use-toast"
 
 export default function StockOpnamePage() {
  const { toast } = useToast()
@@ -30,15 +30,15 @@ export default function StockOpnamePage() {
  }
 
  const startOpname = async () => {
- if (!selectedWarehouse) return toast({ title: "Required", description: "Please select a warehouse.", variant: "destructive" })
+ if (!selectedWarehouse) return toast({ title:"Required", description:"Please select a warehouse.", variant:"destructive" })
  setActionLoading(true)
  try {
  await api.post(`/inventory/stock-opname`, { warehouseId: selectedWarehouse })
- toast({ title: "Opname Started", description: "Stock opname session has been created." })
+ toast({ title:"Opname Started", description:"Stock opname session has been created." })
  setSelectedWarehouse("")
  fetchData()
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || "Failed to start opname.", variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message ||"Failed to start opname.", variant:"destructive" })
  } finally { setActionLoading(false) }
  }
 
@@ -58,7 +58,7 @@ export default function StockOpnamePage() {
  <CardContent className="pt-6 flex flex-col sm:flex-row gap-4 items-end">
  <div className="w-full sm:w-1/2 space-y-2">
  <label className="text-sm font-medium">Select Warehouse</label>
- <Select value={selectedWarehouse} onValueChange={(val) => setSelectedWarehouse(val || "")}>
+ <Select value={selectedWarehouse} onValueChange={(val) => setSelectedWarehouse(val ||"")}>
  <SelectTrigger>
  <SelectValue placeholder="Select warehouse to count..." />
  </SelectTrigger>

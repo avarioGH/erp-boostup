@@ -1,15 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Search, Filter, Receipt, Calendar, User, Clock, ArrowRight } from "lucide-react"
-import { api } from "@/lib/api"
-import { formatIDR } from "@/lib/utils"
-import Link from "next/link"
+} from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Button } from"@/components/ui/button"
+import { ArrowLeft, Search, Filter, Receipt, Calendar, User, Clock, ArrowRight } from"lucide-react"
+import { api } from"@/lib/api"
+import { formatIDR } from"@/lib/utils"
+import Link from"next/link"
 
 export default function PosOrderHistoryPage() {
  const [loading, setLoading] = useState(true)
@@ -34,7 +34,7 @@ export default function PosOrderHistoryPage() {
 
  const filteredOrders = orders.filter(o => 
  o.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
- (o.customer?.name || "").toLowerCase().includes(searchQuery.toLowerCase())
+ (o.customer?.name ||"").toLowerCase().includes(searchQuery.toLowerCase())
  )
 
  return (
@@ -108,7 +108,7 @@ export default function PosOrderHistoryPage() {
  </div>
  <div className="flex items-center gap-1.5">
  <User className="w-3.5 h-3.5" />
- <span>{order.customer?.name || "Pelanggan Umum"}</span>
+ <span>{order.customer?.name ||"Pelanggan Umum"}</span>
  </div>
  </div>
  </div>

@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Users, Search, Plus, Filter, Mail, Phone, MapPin, Star, MoreVertical } from "lucide-react"
-import { api } from "@/lib/api"
-import Link from "next/link"
+} from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Button } from"@/components/ui/button"
+import { Users, Search, Plus, Filter, Mail, Phone, MapPin, Star, MoreVertical } from"lucide-react"
+import { api } from"@/lib/api"
+import Link from"next/link"
 
 export default function CustomersPage() {
  const [loading, setLoading] = useState(true)
@@ -50,7 +50,7 @@ export default function CustomersPage() {
  <Star className="w-4 h-4 text-amber-500" /> Poin & Loyalty
  </Button>
  </Link>
- <Button className=" gap-2">
+ <Button className="gap-2">
  <Plus className="w-4 h-4" /> Pelanggan Baru
  </Button>
  </div>
@@ -109,15 +109,15 @@ export default function CustomersPage() {
  <div className="space-y-2 text-sm text-muted-foreground dark:text-muted-foreground">
  <div className="flex items-center gap-2">
  <Phone className="w-4 h-4 text-muted-foreground" />
- <span>{customer.phone || "-"}</span>
+ <span>{customer.phone ||"-"}</span>
  </div>
  <div className="flex items-center gap-2">
  <Mail className="w-4 h-4 text-muted-foreground" />
- <span className="truncate">{customer.email || "-"}</span>
+ <span className="truncate">{customer.email ||"-"}</span>
  </div>
  <div className="flex items-start gap-2">
  <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
- <span className="line-clamp-1">{customer.address || "-"}</span>
+ <span className="line-clamp-1">{customer.address ||"-"}</span>
  </div>
  </div>
  

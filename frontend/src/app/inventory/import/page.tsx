@@ -1,14 +1,14 @@
 "use client"
-import { useState } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, Upload, FileSpreadsheet, Play, CheckCircle2, AlertCircle } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useToast } from "@/hooks/use-toast"
+import { useState } from"react"
+import { TimberAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Badge } from"@/components/ui/badge"
+import { Loader2, Upload, FileSpreadsheet, Play, CheckCircle2, AlertCircle } from"lucide-react"
+import { useRouter } from"next/navigation"
+import { useToast } from"@/hooks/use-toast"
 
 export default function ImportWizardPage() {
  const router = useRouter()
@@ -18,7 +18,7 @@ export default function ImportWizardPage() {
  const [uploading, setUploading] = useState(false)
  const [session, setSession] = useState<any>(null)
  
- const [config, setConfig] = useState({ sheet: "", importType: "SAWN_TIMBER_OUTPUT" })
+ const [config, setConfig] = useState({ sheet:"", importType:"SAWN_TIMBER_OUTPUT" })
  const [preview, setPreview] = useState<any>(null)
  const [loading, setLoading] = useState(false)
 
@@ -29,10 +29,10 @@ export default function ImportWizardPage() {
  const fd = new FormData(); fd.append("file", file)
  const res = await TimberAPI.uploadImport(fd)
  setSession(res)
- setConfig({ ...config, sheet: res.sheets[0] || "" })
+ setConfig({ ...config, sheet: res.sheets[0] ||"" })
  setStep(2)
  } catch (err: any) {
- toast({ title: "Upload Failed", description: err.message, variant: "destructive" })
+ toast({ title:"Upload Failed", description: err.message, variant:"destructive" })
  } finally { setUploading(false) }
  }
 
@@ -43,7 +43,7 @@ export default function ImportWizardPage() {
  setPreview(res)
  setStep(3)
  } catch (err: any) {
- toast({ title: "Preview Failed", description: err.message, variant: "destructive" })
+ toast({ title:"Preview Failed", description: err.message, variant:"destructive" })
  } finally { setLoading(false) }
  }
 
@@ -51,10 +51,10 @@ export default function ImportWizardPage() {
  setLoading(true)
  try {
  await TimberAPI.executeImport(session.id, config)
- toast({ title: "Success", description: "Import completed successfully." })
+ toast({ title:"Success", description:"Import completed successfully." })
  router.push("/inventory/import/history")
  } catch (err: any) {
- toast({ title: "Import Failed", description: err.message, variant: "destructive" })
+ toast({ title:"Import Failed", description: err.message, variant:"destructive" })
  } finally { setLoading(false) }
  }
 

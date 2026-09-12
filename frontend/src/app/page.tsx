@@ -1,21 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
+} from"@/components/ui/card"
 import {
  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select"
+} from"@/components/ui/select"
 import { 
  TrendingUp, TrendingDown, Package, 
  CreditCard, Users, Activity, ShoppingCart, AlertCircle, ArrowUpRight, ArrowDownRight, Award, AlertTriangle, RefreshCcw, Minus, CheckCircle
-} from "lucide-react"
+} from"lucide-react"
 import { 
  Area, AreaChart, Bar, BarChart, CartesianGrid, 
  ResponsiveContainer, Tooltip, XAxis, YAxis, Legend
-} from "recharts"
-import { DashboardAPI, InventoryAPI } from "@/lib/api"
+} from"recharts"
+import { DashboardAPI, InventoryAPI } from"@/lib/api"
 
 // Helper function
 const timeAgo = (dateStr: string) => {
@@ -23,7 +23,7 @@ const timeAgo = (dateStr: string) => {
  const now = new Date()
  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
  
- if (diffInSeconds < 60) return "Baru saja"
+ if (diffInSeconds < 60) return"Baru saja"
  const diffInMinutes = Math.floor(diffInSeconds / 60)
  if (diffInMinutes < 60) return `${diffInMinutes} menit lalu`
  const diffInHours = Math.floor(diffInMinutes / 60)
@@ -61,7 +61,7 @@ export default function OwnerDashboard() {
  name: p.name,
  stock: p.warehouse_stocks?.reduce((acc: number, ws: any) => acc + ws.current_stock, 0) || 0,
  min: p.minimum_stock || 20,
- loc: p.warehouse_stocks?.[0]?.warehouse?.name || "Pusat"
+ loc: p.warehouse_stocks?.[0]?.warehouse?.name ||"Pusat"
  }))
  setLowStocks(lows)
 
@@ -91,7 +91,7 @@ export default function OwnerDashboard() {
  setKpi(data)
  } catch (error: any) {
  console.error("Database connection failed:", error)
- setErrorState((error as any).response?.status === 403 ? "FORBIDDEN" : "NETWORK_ERROR")
+ setErrorState((error as any).response?.status === 403 ?"FORBIDDEN" :"NETWORK_ERROR")
  } finally {
  setLoading(false)
  }
@@ -101,8 +101,8 @@ export default function OwnerDashboard() {
 
  const formatIDR = (value: number) => {
  return new Intl.NumberFormat("id-ID", {
- style: "currency",
- currency: "IDR",
+ style:"currency",
+ currency:"IDR",
  maximumFractionDigits: 0
  }).format(value || 0)
  }
@@ -124,11 +124,11 @@ export default function OwnerDashboard() {
  const isZero = value === 0;
  const isGood = invertColors ? !isPositive : isPositive;
  
- let colorClass = "text-muted-foreground bg-accent";
+ let colorClass ="text-muted-foreground bg-accent";
  let icon = <Minus className="w-3 h-3" />;
  
  if (!isZero) {
- colorClass = isGood ? "text-success bg-success/10" : "text-destructive bg-destructive/10";
+ colorClass = isGood ?"text-success bg-success/10" :"text-destructive bg-destructive/10";
  icon = isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />;
  }
 
@@ -169,7 +169,7 @@ export default function OwnerDashboard() {
  {errorState && (
  <div className="flex items-center gap-1.5 bg-destructive/10 text-destructive px-3 py-1.5 rounded-lg border border-destructive/20 text-xs font-semibold animate-pulse">
  <AlertTriangle className="w-3.5 h-3.5" />
- {errorState === "FORBIDDEN" ? "Akses Ditolak" : "Mode Offline"}
+ {errorState ==="FORBIDDEN" ?"Akses Ditolak" :"Mode Offline"}
  </div>
  )}
  {!errorState && !loading && kpi && (

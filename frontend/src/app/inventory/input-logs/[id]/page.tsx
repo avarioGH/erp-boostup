@@ -1,12 +1,12 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, ArrowLeft, Box, Waypoints, CheckCircle2, Factory, Calendar } from "lucide-react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useState, useEffect } from"react"
+import { TimberAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Badge } from"@/components/ui/badge"
+import { Loader2, ArrowLeft, Box, Waypoints, CheckCircle2, Factory, Calendar } from"lucide-react"
+import { useRouter } from"next/navigation"
+import Link from"next/link"
 
 export default function InputLogDetailPage({ params }: { params: { id: string } }) {
  const router = useRouter()
@@ -28,7 +28,7 @@ export default function InputLogDetailPage({ params }: { params: { id: string } 
  <div>
  <div className="flex items-center gap-3">
  <h1 className="text-3xl font-bold tracking-tight text-indigo-900">{data.inputNumber}</h1>
- <Badge variant={data.status === "AVAILABLE" ? "default" : "secondary"}>{data.status}</Badge>
+ <Badge variant={data.status ==="AVAILABLE" ?"default" :"secondary"}>{data.status}</Badge>
  </div>
  <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2"><Factory className="w-4 h-4" /> Input Log (WIP) ? {data.species}</p>
  </div>
@@ -41,9 +41,9 @@ export default function InputLogDetailPage({ params }: { params: { id: string } 
  <CardContent className="pt-6 space-y-4 text-sm">
  <div className="grid grid-cols-2 gap-y-4">
  <div><p className="text-muted-foreground">Date</p><p className="font-bold flex items-center gap-1"><Calendar className="w-3 h-3"/> {new Date(data.date).toLocaleDateString("id-ID")}</p></div>
- <div><p className="text-muted-foreground">Shift</p><p className="font-bold">{data.shift || "-"}</p></div>
- <div><p className="text-muted-foreground">Machine</p><p className="font-bold">MSAW-{data.machine || "1"}</p></div>
- <div><p className="text-muted-foreground">Partai</p><p className="font-bold">{data.batch || "-"}</p></div>
+ <div><p className="text-muted-foreground">Shift</p><p className="font-bold">{data.shift ||"-"}</p></div>
+ <div><p className="text-muted-foreground">Machine</p><p className="font-bold">MSAW-{data.machine ||"1"}</p></div>
+ <div><p className="text-muted-foreground">Partai</p><p className="font-bold">{data.batch ||"-"}</p></div>
  </div>
  </CardContent>
  </Card>

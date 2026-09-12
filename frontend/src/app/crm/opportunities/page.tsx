@@ -28,7 +28,7 @@ export default function OpportunitiesPage() {
  <h1 className="text-3xl font-bold tracking-tight">Opportunities</h1>
  <p className="text-muted-foreground mt-1">Manage and track potential sales deals.</p>
  </div>
- <Button className="shadow-sm "><Plus className="w-4 h-4 mr-2" /> New Opportunity</Button>
+ <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New Opportunity</Button>
  </div>
 
  <Card className="shadow-sm">
@@ -73,7 +73,7 @@ export default function OpportunitiesPage() {
  <td className="p-4 px-6">{item.company}</td>
  <td className="p-4 px-6 text-right font-medium">Rp {item.amount.toLocaleString('id-ID')}</td>
  <td className="p-4 px-6 text-center">
- <Badge variant="secondary" className="bg-muted/50 text-foreground ">{item.stage}</Badge>
+ <Badge variant="secondary" className="bg-muted/50 text-foreground">{item.stage}</Badge>
  </td>
  <td className="p-4 px-6 text-center">
  <div className="flex items-center justify-center gap-2">

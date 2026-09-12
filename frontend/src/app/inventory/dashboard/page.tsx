@@ -21,7 +21,7 @@ export default function InventoryDashboard() {
  if (!data) return <div className="p-8 text-red-500">Failed to load dashboard.</div>;
 
  return (
- <div className="p-8 space-y-8 min-h-screen bg-muted/30 dark:bg-transparent text-foreground ">
+ <div className="p-8 space-y-8 min-h-screen bg-muted/30 dark:bg-transparent text-foreground">
  <div className="flex items-center justify-between">
  <h1 className="text-3xl font-bold">Inventory Timber & Logs Dashboard</h1>
  </div>

@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { InventoryAPI } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, CheckCircle, XCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect } from"react";
+import { InventoryAPI } from"@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card";
+import { Button } from"@/components/ui/button";
+import { Loader2, ArrowLeft, CheckCircle, XCircle } from"lucide-react";
+import { useRouter } from"next/navigation";
+import { useToast } from"@/hooks/use-toast";
+import { format } from"date-fns";
+import { Badge } from"@/components/ui/badge";
 
 export default function ChamberDetailPage({ params }: { params: { id: string } }) {
  const router = useRouter();
@@ -27,7 +27,7 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
  const res = await InventoryAPI.getTransfer(params.id);
  setData(res);
  } catch (error: any) {
- toast({ title: "Error", description: error.message, variant: "destructive" });
+ toast({ title:"Error", description: error.message, variant:"destructive" });
  } finally {
  setLoading(false);
  }
@@ -38,10 +38,10 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
  setProcessing(true);
  try {
  await InventoryAPI.postTransfer(params.id);
- toast({ title: "Success", description: "Transfer posted successfully." });
+ toast({ title:"Success", description:"Transfer posted successfully." });
  fetchData();
  } catch (error: any) {
- toast({ title: "Error", description: error.response?.data?.message || error.message, variant: "destructive" });
+ toast({ title:"Error", description: error.response?.data?.message || error.message, variant:"destructive" });
  } finally {
  setProcessing(false);
  }
@@ -52,10 +52,10 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
  setProcessing(true);
  try {
  await InventoryAPI.cancelTransfer(params.id);
- toast({ title: "Success", description: "Transfer cancelled successfully." });
+ toast({ title:"Success", description:"Transfer cancelled successfully." });
  fetchData();
  } catch (error: any) {
- toast({ title: "Error", description: error.response?.data?.message || error.message, variant: "destructive" });
+ toast({ title:"Error", description: error.response?.data?.message || error.message, variant:"destructive" });
  } finally {
  setProcessing(false);
  }
@@ -66,9 +66,9 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
 
  const isFromChamber = data.fromLocation?.code?.startsWith('CH-');
  const isToChamber = data.toLocation?.code?.startsWith('CH-');
- let opType = "TRANSFER";
- if (isToChamber && !isFromChamber) opType = "CHAMBER IN";
- if (isFromChamber && !isToChamber) opType = "CHAMBER OUT";
+ let opType ="TRANSFER";
+ if (isToChamber && !isFromChamber) opType ="CHAMBER IN";
+ if (isFromChamber && !isToChamber) opType ="CHAMBER OUT";
 
  return (
  <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in duration-300 pb-10">
@@ -89,7 +89,7 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
  
  <div className="flex gap-2">
  {data.status === 'DRAFT' && (
- <Button onClick={handlePost} disabled={processing} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+ <Button onClick={handlePost} disabled={processing} className="">
  {processing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
  POST Transfer
  </Button>

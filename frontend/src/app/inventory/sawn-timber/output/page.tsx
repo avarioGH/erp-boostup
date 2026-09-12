@@ -1,12 +1,12 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, Plus, Search, ChevronRight } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from"react"
+import { TimberAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Badge } from"@/components/ui/badge"
+import { Loader2, Plus, Search, ChevronRight } from"lucide-react"
+import { useRouter } from"next/navigation"
 
 export default function SawnTimberOutputPage() {
  const router = useRouter()
@@ -67,10 +67,10 @@ export default function SawnTimberOutputPage() {
  <td className="p-4 px-6 font-medium text-indigo-700">{out.bundleNumber}</td>
  <td className="p-4 px-6">{new Date(out.outputDate).toLocaleDateString("id-ID")}</td>
  <td className="p-4 px-6 text-muted-foreground">{out.inputLog?.inputNumber}</td>
- <td className="p-4 px-6">{out.items?.[0]?.timberVariant?.sku || "-"}</td>
+ <td className="p-4 px-6">{out.items?.[0]?.timberVariant?.sku ||"-"}</td>
  <td className="p-4 px-6 text-right font-bold">{out.items?.reduce((s:number, i:any)=>s+i.quantityPcs, 0)}</td>
  <td className="p-4 px-6 text-right font-bold text-indigo-700">{out.items?.reduce((s:number, i:any)=>s+i.volumeM3, 0).toFixed(4)}</td>
- <td className="p-4 px-6 text-center"><Badge variant={out.status === "POSTED" ? "default" : (out.status === "DRAFT" ? "secondary" : "destructive")}>{out.status}</Badge></td>
+ <td className="p-4 px-6 text-center"><Badge variant={out.status ==="POSTED" ?"default" : (out.status ==="DRAFT" ?"secondary" :"destructive")}>{out.status}</Badge></td>
  <td className="p-4 px-6 text-center"><Button variant="ghost" size="sm"><ChevronRight className="w-4 h-4" /></Button></td>
  </tr>
  ))

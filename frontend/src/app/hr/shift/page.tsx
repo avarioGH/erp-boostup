@@ -1,30 +1,30 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, Clock, Calendar, Users, AlertCircle } from "lucide-react"
+import { useState } from"react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Label } from"@/components/ui/label"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from"@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from"@/components/ui/tabs"
+import { Badge } from"@/components/ui/badge"
+import { Plus, Edit, Trash2, Clock, Calendar, Users, AlertCircle } from"lucide-react"
 
 export default function HrShift() {
  const [activeTab, setActiveTab] = useState("master")
 
  // Mock Data for Demo
  const [shifts, setShifts] = useState([
- { id: 1, code: "SHF-PAGI", name: "Shift Pagi", startTime: "08:00", endTime: "16:00", active: true },
- { id: 2, code: "SHF-SIANG", name: "Shift Siang", startTime: "14:00", endTime: "22:00", active: true },
- { id: 3, code: "SHF-MALAM", name: "Shift Malam", startTime: "22:00", endTime: "06:00", active: true },
- { id: 4, code: "SHF-OFF", name: "Libur (Off)", startTime: "-", endTime: "-", active: true },
+ { id: 1, code:"SHF-PAGI", name:"Shift Pagi", startTime:"08:00", endTime:"16:00", active: true },
+ { id: 2, code:"SHF-SIANG", name:"Shift Siang", startTime:"14:00", endTime:"22:00", active: true },
+ { id: 3, code:"SHF-MALAM", name:"Shift Malam", startTime:"22:00", endTime:"06:00", active: true },
+ { id: 4, code:"SHF-OFF", name:"Libur (Off)", startTime:"-", endTime:"-", active: true },
  ])
 
  const [schedules, setSchedules] = useState([
- { id: 1, employee: "Budi Santoso", department: "Gudang", date: "2026-09-04", shift: "Shift Pagi" },
- { id: 2, employee: "Siti Aminah", department: "Kasir", date: "2026-09-04", shift: "Shift Siang" },
- { id: 3, employee: "Agus Pratama", department: "Keamanan", date: "2026-09-04", shift: "Shift Malam" },
+ { id: 1, employee:"Budi Santoso", department:"Gudang", date:"2026-09-04", shift:"Shift Pagi" },
+ { id: 2, employee:"Siti Aminah", department:"Kasir", date:"2026-09-04", shift:"Shift Siang" },
+ { id: 3, employee:"Agus Pratama", department:"Keamanan", date:"2026-09-04", shift:"Shift Malam" },
  ])
 
  return (

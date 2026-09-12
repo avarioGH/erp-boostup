@@ -1,13 +1,13 @@
 'use client';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useEffect, useState } from "react";
-import { SawmillProductionAPI, InventoryAPI } from "@/lib/api";
-import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from"@/components/ui/table";
+import { Button } from"@/components/ui/button";
+import { Badge } from"@/components/ui/badge";
+import { useEffect, useState } from"react";
+import { SawmillProductionAPI, InventoryAPI } from"@/lib/api";
+import { ArrowLeft, CheckCircle, XCircle } from"lucide-react";
+import { useRouter } from"next/navigation";
+import { Label } from"@/components/ui/label";
 
 export default function SawmillRunDetail({ params }: { params: { id: string } }) {
  const [data, setData] = useState<any>(null);
@@ -111,7 +111,7 @@ export default function SawmillRunDetail({ params }: { params: { id: string } })
  )}
 
  {data.status === 'DRAFT' && (
- <Button onClick={handlePost} disabled={posting} className="bg-green-600 hover:bg-green-700">
+ <Button onClick={handlePost} disabled={posting} className="">
  <CheckCircle className="mr-2 h-4 w-4" /> POST
  </Button>
  )}

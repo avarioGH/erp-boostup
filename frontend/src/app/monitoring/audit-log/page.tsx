@@ -1,14 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardHeader, CardTitle, CardDescription 
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ArrowLeft, ShieldAlert, Search, ShieldCheck, Monitor, MapPin, Key } from "lucide-react"
-import { api } from "@/lib/api"
-import Link from "next/link"
+} from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { ArrowLeft, ShieldAlert, Search, ShieldCheck, Monitor, MapPin, Key } from"lucide-react"
+import { api } from"@/lib/api"
+import Link from"next/link"
 
 export default function AuditLogPage() {
  const [loading, setLoading] = useState(true)
@@ -70,7 +70,7 @@ export default function AuditLogPage() {
  <Input 
  placeholder="Cari aktivitas..." 
  value={search} onChange={e => setSearch(e.target.value)}
- className="pl-9 bg-card "
+ className="pl-9 bg-card"
  />
  </div>
  </div>

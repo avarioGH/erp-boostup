@@ -1,13 +1,13 @@
 ﻿"use client";
-import { useState, useEffect } from "react";
-import { ExpenseAPI, HrAPI, FinanceAPI, ApprovalAPI } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Loader2, Plus, ArrowRight, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { useState, useEffect } from"react";
+import { ExpenseAPI, HrAPI, FinanceAPI, ApprovalAPI } from"@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card";
+import { Button } from"@/components/ui/button";
+import { Badge } from"@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from"@/components/ui/dialog";
+import { Input } from"@/components/ui/input";
+import { Loader2, Plus, ArrowRight, Trash2 } from"lucide-react";
+import Link from"next/link";
 
 export default function ExpensePage() {
  const [data, setData] = useState<any[]>([]);
@@ -20,10 +20,10 @@ export default function ExpensePage() {
  const [errorMsg, setErrorMsg] = useState("");
 
  const [form, setForm] = useState({
- employeeId: "",
- title: "",
- description: "",
- items: [{ categoryId: "", amount: "", description: "" }]
+ employeeId:"",
+ title:"",
+ description:"",
+ items: [{ categoryId:"", amount:"", description:"" }]
  });
 
  const loadData = () => {
@@ -41,7 +41,7 @@ export default function ExpensePage() {
  }, []);
 
  const handleAddItem = () => {
- setForm({ ...form, items: [...form.items, { categoryId: "", amount: "", description: "" }] });
+ setForm({ ...form, items: [...form.items, { categoryId:"", amount:"", description:"" }] });
  };
 
  const handleRemoveItem = (index: number) => {
@@ -94,10 +94,10 @@ export default function ExpensePage() {
  }
 
  setIsModalOpen(false);
- setForm({ employeeId: "", title: "", description: "", items: [{ categoryId: "", amount: "", description: "" }] });
+ setForm({ employeeId:"", title:"", description:"", items: [{ categoryId:"", amount:"", description:"" }] });
  loadData();
  } catch (err: any) {
- setErrorMsg(err?.response?.data?.message || err.message || "Failed to create claim");
+ setErrorMsg(err?.response?.data?.message || err.message ||"Failed to create claim");
  } finally {
  setSubmitting(false);
  }
@@ -220,7 +220,7 @@ export default function ExpensePage() {
  </div>
 
  {form.items.map((item, idx) => (
- <div key={idx} className="flex gap-2 items-start border p-3 rounded bg-muted/30 ">
+ <div key={idx} className="flex gap-2 items-start border p-3 rounded bg-muted/30">
  <div className="space-y-3 flex-1">
  <select 
  className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"

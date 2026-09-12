@@ -4,9 +4,9 @@ import { api, InventoryAPI } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
 import { Loader2, Calculator, AlertTriangle, ArrowRight, Cog, TrendingDown } from 'lucide-react'
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from"@/hooks/use-toast"
 
 export default function MRPPage() {
  const { toast } = useToast()
@@ -29,9 +29,9 @@ export default function MRPPage() {
  : '/mrp/calculate'
  const res = await api.get(endpoint)
  setData(Array.isArray(res.data?.recommendations) ? res.data.recommendations : (Array.isArray(res.data) ? res.data : []))
- toast({ title: "MRP Calculated", description: "Material requirements have been computed." })
+ toast({ title:"MRP Calculated", description:"Material requirements have been computed." })
  } catch (err: any) {
- toast({ title: "Error", description: err.response?.data?.message || "Failed to calculate MRP.", variant: "destructive" })
+ toast({ title:"Error", description: err.response?.data?.message ||"Failed to calculate MRP.", variant:"destructive" })
  } finally {
  setLoading(false)
  }
@@ -64,7 +64,7 @@ export default function MRPPage() {
  <CardContent className="pt-6 flex flex-col sm:flex-row gap-4 items-end">
  <div className="w-full sm:w-1/3 space-y-2">
  <label className="text-sm font-medium">Warehouse Scope</label>
- <Select value={selectedWarehouse} onValueChange={(val) => setSelectedWarehouse(val || "")}>
+ <Select value={selectedWarehouse} onValueChange={(val) => setSelectedWarehouse(val ||"")}>
  <SelectTrigger>
  <SelectValue placeholder="All Warehouses (Global)" />
  </SelectTrigger>

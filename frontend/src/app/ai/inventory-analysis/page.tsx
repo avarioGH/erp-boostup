@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Sparkles, AlertTriangle, TrendingUp, PackageX, RefreshCw } from "lucide-react"
-import { api } from "@/lib/api"
-import Link from "next/link"
+} from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { ArrowLeft, Sparkles, AlertTriangle, TrendingUp, PackageX, RefreshCw } from"lucide-react"
+import { api } from"@/lib/api"
+import Link from"next/link"
 
 export default function AIInventoryAnalysisPage() {
  const [loading, setLoading] = useState(true)
@@ -112,7 +112,7 @@ export default function AIInventoryAnalysisPage() {
  <p className="text-muted-foreground mt-1">Sistem cerdas untuk mendeteksi status stok Anda secara proaktif.</p>
  </div>
  </div>
- <Button onClick={fetchData} disabled={analyzing} className=" gap-2">
+ <Button onClick={fetchData} disabled={analyzing} className="gap-2">
  <RefreshCw className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} /> Analisis Ulang
  </Button>
  </div>

@@ -1,18 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from"react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, PlayCircle, StopCircle, Wallet, Clock, User, AlertCircle, CheckCircle2 } from "lucide-react"
-import { api } from "@/lib/api"
-import { formatIDR } from "@/lib/utils"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+} from"@/components/ui/card"
+import { Input } from"@/components/ui/input"
+import { Label } from"@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
+import { Button } from"@/components/ui/button"
+import { ArrowLeft, PlayCircle, StopCircle, Wallet, Clock, User, AlertCircle, CheckCircle2 } from"lucide-react"
+import { api } from"@/lib/api"
+import { formatIDR } from"@/lib/utils"
+import Link from"next/link"
+import { useRouter } from"next/navigation"
 
 export default function PosShiftPage() {
  const router = useRouter()
@@ -25,12 +25,12 @@ export default function PosShiftPage() {
  const [warehouses, setWarehouses] = useState<any[]>([])
 
  const [openFormData, setOpenFormData] = useState({
- warehouseId: "",
- startingCash: ""
+ warehouseId:"",
+ startingCash:""
  })
 
  const [closeFormData, setCloseFormData] = useState({
- endingCash: ""
+ endingCash:""
  })
 
  useEffect(() => {
@@ -50,7 +50,7 @@ export default function PosShiftPage() {
 
  if (!shiftRes.data && whRes.data.length > 0) {
  const storedActive = localStorage.getItem("active_warehouse")
- if (storedActive && storedActive !== "undefined" && storedActive !== "null") {
+ if (storedActive && storedActive !=="undefined" && storedActive !=="null") {
  try {
  const parsed = JSON.parse(storedActive)
  if (parsed && parsed.id) {
@@ -96,7 +96,7 @@ export default function PosShiftPage() {
  
  fetchData()
  } catch (err: any) {
- setError(err.response?.data?.message || "Gagal membuka shift")
+ setError(err.response?.data?.message ||"Gagal membuka shift")
  } finally {
  setProcessing(false)
  }
@@ -118,7 +118,7 @@ export default function PosShiftPage() {
  }, 3000)
  fetchData()
  } catch (err: any) {
- setError(err.response?.data?.message || "Gagal menutup shift")
+ setError(err.response?.data?.message ||"Gagal menutup shift")
  } finally {
  setProcessing(false)
  }
@@ -208,7 +208,7 @@ export default function PosShiftPage() {
  </div>
 
  <Button type="submit" disabled={processing} className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-white font-bold text-lg shadow-sm shadow-amber-500/20">
- {processing ? "Memproses..." : "Tutup Shift Sekarang"}
+ {processing ?"Memproses..." :"Tutup Shift Sekarang"}
  </Button>
  </CardContent>
  </form>
@@ -263,8 +263,8 @@ export default function PosShiftPage() {
  <p className="text-xs text-muted-foreground">Jumlah uang tunai fisik yang ada di laci saat shift ini dimulai.</p>
  </div>
 
- <Button type="submit" disabled={processing} className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg shadow-sm shadow-emerald-500/20">
- {processing ? "Memproses..." : "Mulai Shift & Buka Kasir"}
+ <Button type="submit" disabled={processing} className="w-full h-12  font-bold text-lg shadow-sm shadow-emerald-500/20">
+ {processing ?"Memproses..." :"Mulai Shift & Buka Kasir"}
  </Button>
  </CardContent>
  </form>

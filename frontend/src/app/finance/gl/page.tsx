@@ -1,10 +1,10 @@
 "use client"
-import { api } from "@/lib/api"
+import { api } from"@/lib/api"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Download, BookOpen, AlertCircle } from "lucide-react"
+import { useState, useEffect } from"react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Download, BookOpen, AlertCircle } from"lucide-react"
 
 export default function GeneralLedgerPage() {
  const [journals, setJournals] = useState<any[]>([])
@@ -40,7 +40,7 @@ export default function GeneralLedgerPage() {
  if (journals.length === 0) return
 
  // Define CSV headers
- let csvContent = "Date,Journal No,Reference Type,Reference ID,Account ID,Debit,Credit,Description\n"
+ let csvContent ="Date,Journal No,Reference Type,Reference ID,Account ID,Debit,Credit,Description\n"
 
  // Flatten journals and items into rows
  journals.forEach(journal => {
@@ -48,14 +48,14 @@ export default function GeneralLedgerPage() {
  if (journal.items && journal.items.length > 0) {
  journal.items.forEach((item: any) => {
  // Escape quotes and commas in description
- const desc = `"${(journal.description || "").replace(/"/g, '""')}"`
+ const desc = `"${(journal.description ||"").replace(/"/g, '""')}"`
  const debit = item.debit || 0
  const credit = item.credit || 0
  
  csvContent += `${date},${journal.journal_no},${journal.reference_type},${journal.reference_id || ''},${item.account_id},${debit},${credit},${desc}\n`
  })
  } else {
- const desc = `"${(journal.description || "").replace(/"/g, '""')}"`
+ const desc = `"${(journal.description ||"").replace(/"/g, '""')}"`
  csvContent += `${date},${journal.journal_no},${journal.reference_type},${journal.reference_id || ''},,0,0,${desc}\n`
  }
  })
@@ -71,7 +71,7 @@ export default function GeneralLedgerPage() {
  }
 
  const formatCurrency = (amount: number) => {
- return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(amount || 0)
+ return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR" }).format(amount || 0)
  }
 
  return (
@@ -79,7 +79,7 @@ export default function GeneralLedgerPage() {
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
  <div>
  <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-700 to-slate-900 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent flex items-center gap-2">
- <BookOpen className="w-8 h-8 text-foreground " />
+ <BookOpen className="w-8 h-8 text-foreground" />
  General Ledger
  </h1>
  <p className="text-muted-foreground mt-1">View all double-entry journal records automatically posted by the system.</p>
@@ -144,10 +144,10 @@ export default function GeneralLedgerPage() {
  {item.account_id}
  </td>
  <td className="p-3 text-right text-emerald-600 dark:text-emerald-400 font-medium">
- {Number(item.debit) > 0 ? formatCurrency(Number(item.debit)) : "-"}
+ {Number(item.debit) > 0 ? formatCurrency(Number(item.debit)) :"-"}
  </td>
  <td className="p-3 text-right text-rose-600 dark:text-rose-400 font-medium">
- {Number(item.credit) > 0 ? formatCurrency(Number(item.credit)) : "-"}
+ {Number(item.credit) > 0 ? formatCurrency(Number(item.credit)) :"-"}
  </td>
  </tr>
  ))

@@ -52,7 +52,7 @@ export default function SalesOrdersPage() {
  switch (status) {
  case 'PENDING': return <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300">Pending</Badge>
  case 'CONFIRMED': return <Badge className="bg-indigo-500 hover:bg-indigo-600">Confirmed</Badge>
- case 'DELIVERED': return <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">Delivered</Badge>
+ case 'DELIVERED': return <Badge className="">Delivered</Badge>
  case 'INVOICED': return <Badge variant="outline" className="border-emerald-500 text-emerald-600">Invoiced</Badge>
  case 'CANCELLED': return <Badge variant="destructive">Cancelled</Badge>
  default: return <Badge variant="outline">{status}</Badge>
@@ -210,7 +210,7 @@ export default function SalesOrdersPage() {
  <h1 className="text-3xl font-bold tracking-tight">Sales Orders</h1>
  <p className="text-muted-foreground mt-1">Manage confirmed orders and process fulfillments.</p>
  </div>
- <Button className="shadow-sm "><Plus className="w-4 h-4 mr-2" /> New Order</Button>
+ <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New Order</Button>
  </div>
 
  <Card className="shadow-sm">

@@ -1,18 +1,18 @@
 "use client"
-import { api } from "@/lib/api"
+import { api } from"@/lib/api"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Plus } from "lucide-react"
+import { useState, useEffect } from"react"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Label } from"@/components/ui/label"
+import { Plus } from"lucide-react"
 
 export default function WarehousesPage() {
  const [warehouses, setWarehouses] = useState<any[]>([])
  const [loading, setLoading] = useState(true)
  const [showForm, setShowForm] = useState(false)
- const [formData, setFormData] = useState({ name: "", code: "", address: "" })
+ const [formData, setFormData] = useState({ name:"", code:"", address:"" })
 
  const fetchWarehouses = async () => {
  try {
@@ -38,7 +38,7 @@ export default function WarehousesPage() {
  const res = await api.post("/inventory/warehouses", formData)
  if (res.status === 200 || res.status === 201) {
  setShowForm(false)
- setFormData({ name: "", code: "", address: "" })
+ setFormData({ name:"", code:"", address:"" })
  fetchWarehouses()
  }
  } catch (e) {

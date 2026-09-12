@@ -1,12 +1,12 @@
 "use client"
-import { useState, useEffect } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, Plus, Search, ChevronRight } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from"react"
+import { TimberAPI } from"@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
+import { Button } from"@/components/ui/button"
+import { Input } from"@/components/ui/input"
+import { Badge } from"@/components/ui/badge"
+import { Loader2, Plus, Search, ChevronRight, Package } from"lucide-react"
+import { useRouter } from"next/navigation"
 
 export default function RawLogsPage() {
  const router = useRouter()
@@ -58,7 +58,7 @@ export default function RawLogsPage() {
  <h1 className="text-3xl font-bold tracking-tight">Raw Logs (DUKB)</h1>
  <p className="text-muted-foreground mt-1">Master registry of individual raw timber logs.</p>
  </div>
- <Button onClick={() => router.push('/inventory/logs/create')} className="bg-emerald-600 hover:bg-emerald-700">
+ <Button onClick={() => router.push('/inventory/logs/create')} className="">
  <Plus className="w-4 h-4 mr-2" /> Register Raw Log
  </Button>
  </div>
@@ -90,7 +90,18 @@ export default function RawLogsPage() {
  </tr>
  </thead>
  <tbody>
- {filtered.length === 0 ? <tr><td colSpan={8} className="text-center p-8 text-muted-foreground">No logs found</td></tr> : 
+ {filtered.length === 0 ? <tr>
+   <td colSpan={8} className="p-16 text-center">
+     <div className="flex flex-col items-center justify-center">
+       <Package className="w-10 h-10 text-muted-foreground mb-4 opacity-40" />
+       <h3 className="text-base font-semibold text-foreground mb-1">No raw logs yet</h3>
+       <p className="text-[13.5px] text-muted-foreground max-w-sm mb-6">There are no raw timber logs matching the current warehouse or filter.</p>
+       <Button onClick={(e) => { e.stopPropagation(); router.push('/inventory/logs/create'); }} className="h-10 px-6">
+         <Plus className="w-4 h-4 mr-2" /> Register Raw Log
+       </Button>
+     </div>
+   </td>
+ </tr> : 
  filtered.map(log => (
  <tr key={log.id} className="border-b last:border-0 hover:bg-muted/20 cursor-pointer" onClick={() => router.push(`/inventory/logs/${log.id}`)}>
  <td className="p-4 px-6 font-medium text-emerald-700">{log.logNumber}</td>
