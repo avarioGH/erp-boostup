@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from"react"
 import { api } from"@/lib/api"
 import { Card, CardContent } from"@/components/ui/card"
@@ -20,9 +20,9 @@ export default function MovementsPage() {
  }, [])
 
  const getBadgeType = (type: string, refType: string) => {
- if (refType === 'SAWN_OUTPUT') return <Badge className="bg-emerald-500">PRODUCTION</Badge>
- if (refType === 'TRANSFER') return <Badge className="bg-blue-500">TRANSFER</Badge>
- if (refType === 'ADJUSTMENT') return <Badge className="bg-amber-500">ADJUSTMENT</Badge>
+ if (refType === 'PRODUCTION_OUTPUT') return <Badge className="bg-emerald-500">PRODUCTION</Badge>
+ if (refType.startsWith('TRANSFER')) return <Badge className="bg-blue-500">TRANSFER</Badge>
+ if (refType.startsWith('ADJUSTMENT')) return <Badge className="bg-amber-500">ADJUSTMENT</Badge>
  return <Badge variant="outline">{type}</Badge>
  }
 
@@ -83,4 +83,5 @@ export default function MovementsPage() {
  </div>
  )
 }
+
 

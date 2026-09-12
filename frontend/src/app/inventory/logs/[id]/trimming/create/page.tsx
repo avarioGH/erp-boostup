@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from"react"
+import { useState, useEffect, use } from"react"
 import { TimberAPI, InventoryAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
 import { Button } from"@/components/ui/button"
@@ -9,9 +9,10 @@ import { Loader2, ArrowLeft, Save, Calculator, AlertCircle } from"lucide-react"
 import { useRouter } from"next/navigation"
 import { useToast } from"@/hooks/use-toast"
 
-export default function CreateTrimmedLogPage({ params }: { params: { id: string } }) {
+export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id: string }> }) {
  const router = useRouter()
  const { toast } = useToast()
+ const { id } = use(params)
  const [warehouses, setWarehouses] = useState<any[]>([])
  const [trimInfo, setTrimInfo] = useState<any>(null)
  const [loading, setLoading] = useState(true)
@@ -27,12 +28,12 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  useEffect(() => {
  Promise.all([
  InventoryAPI.getWarehouses(),
- TimberAPI.getRawLogTrimming(params.id)
+ TimberAPI.getRawLogTrimming(id)
  ]).then(([wRes, tRes]) => {
  setWarehouses(Array.isArray(wRes) ? wRes : [])
  setTrimInfo(tRes)
  }).catch(console.error).finally(() => setLoading(false))
- }, [params.id])
+ }, [id])
 
  useEffect(() => {
  const d1 = parseFloat(form.diameter1) || 0;
@@ -70,7 +71,7 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  e.preventDefault()
  setSubmitting(true)
  try {
- await TimberAPI.createTrimmedLog(params.id, {
+ await TimberAPI.createTrimmedLog(id, {
  ...form,
  length: parseFloat(form.length),
  diameter1: parseFloat(form.diameter1), diameter2: parseFloat(form.diameter2),
@@ -79,7 +80,7 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  trimmingLength: form.trimmingLength ? parseFloat(form.trimmingLength) : null
  })
  toast({ title:"Success", description:"Trimmed log added successfully." })
- router.push(`/inventory/logs/${params.id}`)
+ router.push(`/inventory/logs/${id}`)
  } catch (err: any) {
  toast({ title:"Error", description: err.response?.data?.message ||"Failed to create.", variant:"destructive" })
  } finally {
@@ -97,7 +98,7 @@ export default function CreateTrimmedLogPage({ params }: { params: { id: string 
  return (
  <div className="space-y-6 pb-10">
  <div className="flex items-center gap-4 border-b pb-4">
- <Button variant="outline" size="icon" onClick={() => router.push(`/inventory/logs/${params.id}`)}><ArrowLeft className="w-4 h-4" /></Button>
+ <Button variant="outline" size="icon" onClick={() => router.push(`/inventory/logs/${id}`)}><ArrowLeft className="w-4 h-4" /></Button>
  <div>
  <h1 className="text-[28px] font-bold tracking-tight text-foreground">Add Trimming Child</h1>
  <p className="text-muted-foreground mt-1">Parent: <span className="font-bold text-primary">{trimInfo.parent.logNumber}</span></p>

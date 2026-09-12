@@ -1,27 +1,29 @@
 "use client"
 import { useState, useEffect } from"react"
-import { TimberAPI } from"@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
-import { Button } from"@/components/ui/button"
-import { Badge } from"@/components/ui/badge"
-import { Loader2, ArrowLeft, Ruler, Box, Waypoints, CheckCircle2, Factory, Plus } from"lucide-react"
-import { useRouter } from"next/navigation"
+import { use } from "react"
+import { TimberAPI } from "@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, ArrowLeft, Ruler, Box, Waypoints, CheckCircle2, Factory, Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
 
-export default function RawLogDetailPage({ params }: { params: { id: string } }) {
- const router = useRouter()
- const [data, setData] = useState<any>(null)
- const [trimming, setTrimming] = useState<any>(null)
- const [loading, setLoading] = useState(true)
+export default function RawLogDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const router = useRouter()
+  const { id } = use(params)
+  const [data, setData] = useState<any>(null)
+  const [trimming, setTrimming] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
- useEffect(() => {
- Promise.all([
- TimberAPI.getRawLog(params.id),
- TimberAPI.getRawLogTrimming(params.id).catch(() => null)
- ]).then(([logData, trimData]) => {
- setData(logData)
- setTrimming(trimData)
- }).catch(console.error).finally(() => setLoading(false))
- }, [params.id])
+  useEffect(() => {
+    Promise.all([
+      TimberAPI.getRawLog(id),
+      TimberAPI.getRawLogTrimming(id).catch(() => null)
+    ]).then(([logData, trimData]) => {
+      setData(logData)
+      setTrimming(trimData)
+    }).catch(console.error).finally(() => setLoading(false))
+  }, [id])
 
  if (loading) return <div className="flex justify-center p-24"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
  if (!data) return <div className="p-24 text-center">Log not found.</div>
@@ -90,7 +92,7 @@ export default function RawLogDetailPage({ params }: { params: { id: string } })
  <Card className="shadow-sm">
  <CardHeader className="border-b pb-4 flex flex-row items-center justify-between">
  <CardTitle className="text-[16px] font-semibold flex items-center gap-2"><Factory className="w-4 h-4" /> Trimming Children</CardTitle>
- <Button size="sm" onClick={() => router.push(`/inventory/logs/${params.id}/trimming/create`)}><Plus className="w-4 h-4 mr-2"/> Add Trimming</Button>
+   <Button size="sm" onClick={() => router.push(`/inventory/logs//trimming/create`)}><Plus className="w-4 h-4 mr-2"/> Add Trimming</Button>
  </CardHeader>
  <CardContent className="pt-6">
  {!trimming || trimming.children.length === 0 ? (

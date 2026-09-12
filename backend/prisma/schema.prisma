@@ -2826,7 +2826,7 @@ model TimberStockMovement {
   timberStock   TimberStock @relation(fields: [timberStockId], references: [id])
 
   type          String // IN, OUT, ADJ
-  referenceType String // SAWN_OUTPUT, TRANSFER, ADJUSTMENT
+  referenceType String // PRODUCTION_OUTPUT, TRANSFER_IN, TRANSFER_OUT, ADJUSTMENT_IN, ADJUSTMENT_OUT, etc.
   referenceId   String // e.g. SawnTimberOutput.id
 
   quantityPcs Int
@@ -3078,4 +3078,5 @@ model SawmillOutputItem {
   stockMovementId    String?              // Ledger IN
   reversalMovementId String?              // Ledger OUT (if cancelled)
 }
+
 

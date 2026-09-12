@@ -228,3 +228,13 @@ export const SawmillProductionAPI: any = {
   getAvailableInputLogs: async () => (await api.get('/production/sawmill/input-logs/available')).data,
   getBundle: async (id: string) => (await api.get(`/production/sawmill/bundles/${id}`)).data,
 };
+export const ProductionReportAPI: any = {
+  getSummary: async (params?: any) => (await api.get('/production/reports/summary', { params })).data,
+  getRendement: async (params?: any) => (await api.get('/production/reports/rendement', { params })).data,
+  getProducts: async (params?: any) => (await api.get('/production/reports/products', { params })).data,
+  getShifts: async (params?: any) => (await api.get('/production/reports/shifts', { params })).data,
+  getChamber: async (params?: any) => (await api.get('/production/reports/chamber', { params })).data,
+  getDaily: async (params?: any) => (await api.get('/production/reports/daily', { params })).data,
+  getReconciliation: async (params?: any) => (await api.get('/production/reports/reconciliation', { params })).data,
+  getDataQuality: async (params?: any) => (await api.get('/production/reports/data-quality', { params })).data,
+};

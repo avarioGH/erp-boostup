@@ -20,6 +20,8 @@ import { ReportController } from './report.controller';
 import { TimberCalculationService } from './timber-calculation.service';
 import { SawmillProductionController } from './sawmill-production.controller';
 import { SawmillProductionService } from './sawmill-production.service';
+import { ProductionReportController } from './production-reports/production-report.controller';
+import { ProductionReportService } from './production-reports/production-report.service';
 
 @Module({
   controllers: [
@@ -31,7 +33,8 @@ import { SawmillProductionService } from './sawmill-production.service';
     TimberLedgerController,
     ImportController,
     ReportController,
-    SawmillProductionController
+    SawmillProductionController,
+    ProductionReportController
   ],
   providers: [
     InventoryService, 
@@ -45,7 +48,8 @@ import { SawmillProductionService } from './sawmill-production.service';
     ImportService,
     ReportService,
     TimberCalculationService,
-    SawmillProductionService
+    SawmillProductionService,
+    ProductionReportService
   ],
   exports: [
     InventoryService, 

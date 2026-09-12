@@ -98,6 +98,15 @@ const items: MenuItem[] = [
  { title: "Quality Control", url: "/manufacturing/quality" }
  ]
  },
+ { 
+ title: "Production", 
+ url: "/production/reports", 
+ icon: Factory,
+ id: "production",
+ subItems: [
+ { title: "Production Reports", url: "/production/reports" }
+ ]
+ },
 
  { 
  title: "Penjualan (Sales B2B)", 
