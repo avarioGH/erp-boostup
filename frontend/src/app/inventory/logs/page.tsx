@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from "react"
 import { TimberAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,17 +16,25 @@ export default function RawLogsPage() {
 
  useEffect(() => { fetchLogs() }, [])
 
- const fetchLogs = async () => {
- setLoading(true)
- try {
- const res = await TimberAPI.getRawLogs()
- setData(res.items || [])
- } catch (e) {
- console.error(e)
- } finally {
- setLoading(false)
- }
- }
+  const fetchLogs = async () => {
+    setLoading(true)
+    try {
+      let locationId = undefined;
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('active_warehouse');
+        if (stored && stored !== 'null' && stored !== 'undefined') {
+          const wh = JSON.parse(stored);
+          if (wh?.id) locationId = wh.id;
+        }
+      }
+      const res = await TimberAPI.getRawLogs({ locationId })
+      setData(res.items || [])
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }
 
  const filtered = data.filter(item => 
  item.logNumber?.toLowerCase().includes(search.toLowerCase()) || 
