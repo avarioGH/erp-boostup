@@ -1,4 +1,4 @@
-ï»¿"use client"
+"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI, InventoryAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
@@ -121,9 +121,9 @@ export default function CreateRawLogPage() {
  <Card className="shadow-sm">
  <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Identity</CardTitle></CardHeader>
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
- <div className="space-y-2"><label className="text-sm font-medium text-red-600">Log Number *</label><Input required value={form.logNumber} onChange={e => setForm({...form, logNumber: e.target.value})} placeholder="e.g. 199" /></div>
+ <div className="space-y-2"><label className="text-sm font-medium">Log Number <span className="text-red-500">*</span></label><Input required value={form.logNumber} onChange={e => setForm({...form, logNumber: e.target.value})} placeholder="e.g. 199" /></div>
  <div className="space-y-2"><label className="text-sm font-medium">Barcode (Optional)</label><Input value={form.barcode} onChange={e => setForm({...form, barcode: e.target.value})} placeholder="Auto-generated if empty" /></div>
- <div className="space-y-2"><label className="text-sm font-medium text-red-600">Species *</label><Input required value={form.species} onChange={e => setForm({...form, species: e.target.value})} /></div>
+ <div className="space-y-2"><label className="text-sm font-medium">Species <span className="text-red-500">*</span></label><Input required value={form.species} onChange={e => setForm({...form, species: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">Partai / Batch</label><Input value={form.batch} onChange={e => setForm({...form, batch: e.target.value})} placeholder="e.g. BATCH-01" /></div>
  <div className="space-y-2 md:col-span-2">
  <label className="text-sm font-medium">Location</label>
@@ -138,12 +138,12 @@ export default function CreateRawLogPage() {
  <Card className="shadow-sm">
  <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Measurements</CardTitle></CardHeader>
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
- <div className="space-y-2 md:col-span-4"><label className="text-sm font-medium text-red-600">Original Length (meters) *</label><Input required type="number" step="0.01" value={form.originalLength} onChange={e => setForm({...form, originalLength: e.target.value})} /></div>
- <div className="space-y-2"><label className="text-sm font-medium text-red-600">D1 (cm) *</label><Input required type="number" step="0.01" value={form.diameter1} onChange={e => setForm({...form, diameter1: e.target.value})} /></div>
- <div className="space-y-2"><label className="text-sm font-medium text-red-600">D2 (cm) *</label><Input required type="number" step="0.01" value={form.diameter2} onChange={e => setForm({...form, diameter2: e.target.value})} /></div>
- <div className="space-y-2"><label className="text-sm font-medium text-red-600">D3 (cm) *</label><Input required type="number" step="0.01" value={form.diameter3} onChange={e => setForm({...form, diameter3: e.target.value})} /></div>
- <div className="space-y-2"><label className="text-sm font-medium text-red-600">D4 (cm) *</label><Input required type="number" step="0.01" value={form.diameter4} onChange={e => setForm({...form, diameter4: e.target.value})} /></div>
- <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Gerowong Ã˜ (cm)</label><Input type="number" step="0.01" value={form.gerowong} onChange={e => setForm({...form, gerowong: e.target.value})} /></div>
+ <div className="space-y-2 md:col-span-4"><label className="text-sm font-medium">Original Length (meters) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.originalLength} onChange={e => setForm({...form, originalLength: e.target.value})} /></div>
+ <div className="space-y-2"><label className="text-sm font-medium">D1 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter1} onChange={e => setForm({...form, diameter1: e.target.value})} /></div>
+ <div className="space-y-2"><label className="text-sm font-medium">D2 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter2} onChange={e => setForm({...form, diameter2: e.target.value})} /></div>
+ <div className="space-y-2"><label className="text-sm font-medium">D3 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter3} onChange={e => setForm({...form, diameter3: e.target.value})} /></div>
+ <div className="space-y-2"><label className="text-sm font-medium">D4 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter4} onChange={e => setForm({...form, diameter4: e.target.value})} /></div>
+ <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Gerowong Ø (cm)</label><Input type="number" step="0.01" value={form.gerowong} onChange={e => setForm({...form, gerowong: e.target.value})} /></div>
  <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Trimming Length (meters)</label><Input type="number" step="0.01" value={form.trimmingLength} onChange={e => setForm({...form, trimmingLength: e.target.value})} /></div>
  </CardContent>
  </Card>
@@ -175,12 +175,12 @@ export default function CreateRawLogPage() {
  <div className="flex justify-between"><span>- Trimming:</span><span>{preview.trimming}</span></div>
  </div>
  )}
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Avg Ã˜</span><span className="font-medium">{preview.avg} cm</span></div>
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Rounded Ã˜</span><span className="font-bold text-lg">{preview.rnd} cm</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Avg Ø</span><span className="font-medium">{preview.avg} cm</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Rounded Ø</span><span className="font-bold text-lg">{preview.rnd} cm</span></div>
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Class</span><span className="font-medium bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-xs">{preview.diaClass}</span></div>
  <hr className="border-emerald-100" />
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Gross Volume</span><span className="font-medium">{preview.gross} mÂ³</span></div>
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground text-red-500">Net Volume</span><span className="font-bold text-xl text-primary">{preview.net > 0 ? preview.net : 0} mÂ³</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Gross Volume</span><span className="font-medium">{preview.gross} m³</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm font-semibold text-emerald-700">Net Volume</span><span className="font-bold text-xl text-primary">{preview.net > 0 ? preview.net : 0} m³</span></div>
  </CardContent>
  </Card>
  
@@ -192,6 +192,7 @@ export default function CreateRawLogPage() {
  </div>
  )
 }
+
 
 
 

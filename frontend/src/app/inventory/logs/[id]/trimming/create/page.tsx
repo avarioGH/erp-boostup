@@ -117,14 +117,14 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Measurements</CardTitle></CardHeader>
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
  <div className="space-y-2 md:col-span-4">
- <label className="text-sm font-medium text-red-600">Trimmed Length (meters) *</label>
+ <label className="text-sm font-medium">Trimmed Length (meters) <span className="text-red-500">*</span></label>
  <Input required type="number" step="0.01" value={form.length} onChange={e => setForm({...form, length: e.target.value})} className={isExceeding ?"border-red-500" :""} />
  {isExceeding && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Total panjang trimming melebihi panjang log induk.</p>}
  </div>
- <div className="space-y-2"><label className="text-sm font-medium text-red-600">D1 (cm) *</label><Input required type="number" step="0.01" value={form.diameter1} onChange={e => setForm({...form, diameter1: e.target.value})} /></div>
- <div className="space-y-2"><label className="text-sm font-medium text-red-600">D2 (cm) *</label><Input required type="number" step="0.01" value={form.diameter2} onChange={e => setForm({...form, diameter2: e.target.value})} /></div>
- <div className="space-y-2"><label className="text-sm font-medium text-red-600">D3 (cm) *</label><Input required type="number" step="0.01" value={form.diameter3} onChange={e => setForm({...form, diameter3: e.target.value})} /></div>
- <div className="space-y-2"><label className="text-sm font-medium text-red-600">D4 (cm) *</label><Input required type="number" step="0.01" value={form.diameter4} onChange={e => setForm({...form, diameter4: e.target.value})} /></div>
+ <div className="space-y-2"><label className="text-sm font-medium">D1 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter1} onChange={e => setForm({...form, diameter1: e.target.value})} /></div>
+ <div className="space-y-2"><label className="text-sm font-medium">D2 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter2} onChange={e => setForm({...form, diameter2: e.target.value})} /></div>
+ <div className="space-y-2"><label className="text-sm font-medium">D3 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter3} onChange={e => setForm({...form, diameter3: e.target.value})} /></div>
+ <div className="space-y-2"><label className="text-sm font-medium">D4 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter4} onChange={e => setForm({...form, diameter4: e.target.value})} /></div>
  <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Gerowong ? (cm)</label><Input type="number" step="0.01" value={form.gerowong} onChange={e => setForm({...form, gerowong: e.target.value})} /></div>
  <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Trimming Length (meters)</label><Input type="number" step="0.01" value={form.trimmingLength} onChange={e => setForm({...form, trimmingLength: e.target.value})} /></div>
  </CardContent>
@@ -163,3 +163,4 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  </div>
  )
 }
+
