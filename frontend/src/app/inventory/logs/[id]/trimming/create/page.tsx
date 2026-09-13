@@ -152,7 +152,7 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Rounded ?</span><span className="font-bold text-lg">{preview.rnd} cm</span></div>
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Gross Volume</span><span className="font-medium">{preview.gross} m?</span></div>
  <hr className="border-emerald-100" />
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground text-red-500">Net Volume</span><span className="font-bold text-xl text-primary">{preview.net > 0 ? preview.net : 0} m?</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm font-semibold text-emerald-700">Net Volume</span><span className="font-bold text-xl text-primary">{preview.net > 0 ? preview.net : 0} m?</span></div>
  </CardContent>
  </Card>
  <Button type="submit" disabled={submitting || preview.net < 0 || isExceeding || remaining <= 0} className="w-full h-12 text-lg">
@@ -163,4 +163,3 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  </div>
  )
 }
-

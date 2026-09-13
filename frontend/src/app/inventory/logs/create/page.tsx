@@ -1,4 +1,4 @@
-"use client"
+ï»¿"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI, InventoryAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
@@ -143,7 +143,7 @@ export default function CreateRawLogPage() {
  <div className="space-y-2"><label className="text-sm font-medium">D2 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter2} onChange={e => setForm({...form, diameter2: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">D3 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter3} onChange={e => setForm({...form, diameter3: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">D4 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter4} onChange={e => setForm({...form, diameter4: e.target.value})} /></div>
- <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Gerowong Ø (cm)</label><Input type="number" step="0.01" value={form.gerowong} onChange={e => setForm({...form, gerowong: e.target.value})} /></div>
+ <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Gerowong Ã˜ (cm)</label><Input type="number" step="0.01" value={form.gerowong} onChange={e => setForm({...form, gerowong: e.target.value})} /></div>
  <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Trimming Length (meters)</label><Input type="number" step="0.01" value={form.trimmingLength} onChange={e => setForm({...form, trimmingLength: e.target.value})} /></div>
  </CardContent>
  </Card>
@@ -175,12 +175,12 @@ export default function CreateRawLogPage() {
  <div className="flex justify-between"><span>- Trimming:</span><span>{preview.trimming}</span></div>
  </div>
  )}
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Avg Ø</span><span className="font-medium">{preview.avg} cm</span></div>
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Rounded Ø</span><span className="font-bold text-lg">{preview.rnd} cm</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Avg Ã˜</span><span className="font-medium">{preview.avg} cm</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Rounded Ã˜</span><span className="font-bold text-lg">{preview.rnd} cm</span></div>
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Class</span><span className="font-medium bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-xs">{preview.diaClass}</span></div>
  <hr className="border-emerald-100" />
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Gross Volume</span><span className="font-medium">{preview.gross} m³</span></div>
- <div className="flex justify-between items-center"><span className="text-sm font-semibold text-emerald-700">Net Volume</span><span className="font-bold text-xl text-primary">{preview.net > 0 ? preview.net : 0} m³</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Gross Volume</span><span className="font-medium">{preview.gross} mÂ³</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm font-semibold text-emerald-700">Net Volume</span><span className="font-bold text-xl text-primary">{preview.net > 0 ? preview.net : 0} mÂ³</span></div>
  </CardContent>
  </Card>
  
@@ -192,7 +192,6 @@ export default function CreateRawLogPage() {
  </div>
  )
 }
-
 
 
 
