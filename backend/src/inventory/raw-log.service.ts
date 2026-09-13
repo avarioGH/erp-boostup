@@ -126,7 +126,7 @@ export class RawLogService {
         notes: data.notes
       }
     });
-    await this.audit.log({ company_id: 'SYSTEM', action: 'CREATE', entity: 'RAW_LOG', entity_id: created.id, after_data: { logNumber: created.logNumber } });
+    await this.audit.log({ company_id: data.companyId || null, action: 'CREATE', entity: 'RAW_LOG', entity_id: created.id, after_data: { logNumber: created.logNumber } });
     return created;
   }
 
@@ -138,8 +138,9 @@ export class RawLogService {
       where: { id },
       data: { status: 'CANCELLED' }
     });
-    await this.audit.log({ company_id: 'SYSTEM', action: 'CANCEL', entity: 'RAW_LOG', entity_id: id, before_data: { status: log.status }, after_data: { status: 'CANCELLED' } });
+    await this.audit.log({ company_id: data.companyId || null, action: 'CANCEL', entity: 'RAW_LOG', entity_id: id, before_data: { status: log.status }, after_data: { status: 'CANCELLED' } });
     return result;
   }
 }
+
 
