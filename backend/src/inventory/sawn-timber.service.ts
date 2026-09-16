@@ -139,7 +139,7 @@ export class SawnTimberService {
       });
 
       for (const item of items) {
-        const variant = await this.getOrCreateTimberVariant(inputLog.location.company_id, inputLog.species, item.grade || 'A', item.thickness, item.width, item.length);
+        const variant = await this.getOrCreateTimberVariant(inputLog.location!.company_id, inputLog.species, item.grade || 'A', item.thickness, item.width, item.length);
         const volumeM3 = variant.volumePerPiece * item.quantityPcs;
         
         await tx.sawnTimberOutputItem.create({
@@ -246,4 +246,5 @@ export class SawnTimberService {
     return { items, total, skip: Number(skip), take: Number(take) };
   }
 }
+
 

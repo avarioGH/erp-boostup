@@ -166,7 +166,7 @@ export class PlatformService {
       module = "Finance";
       
       const sales = await this.prisma.salesOrder.findMany({
-        where: { company: { connect: { id: companyId } }, status: 'COMPLETED' },
+        where: { company_id: companyId, status: 'COMPLETED' },
       });
       
       const totalSales = sales.reduce((sum, order) => sum + Number(order.total_amount), 0);
@@ -252,5 +252,6 @@ export class PlatformService {
     return logs;
   }
 }
+
 
 
