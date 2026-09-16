@@ -26,7 +26,7 @@ export default function CreateInputLogPage() {
  InventoryAPI.getWarehouses(),
  TimberAPI.getAvailableTrimmedLogs()
  ]).then(([wRes, lRes]) => {
- setWarehouses(Array.isArray(wRes) ? wRes : [])
+ setWarehouses(Array.isArray(wRes) ? wRes : (wRes?.items || wRes?.data || []))
  setAvailableLogs(Array.isArray(lRes) ? lRes : (lRes?.items || lRes?.data || []))
  }).catch(console.error).finally(() => setLoading(false))
  }, [])
@@ -78,7 +78,7 @@ export default function CreateInputLogPage() {
  <div className="space-y-2"><label className="text-sm font-medium">Shift</label><Select value={form.shift} onValueChange={(val) => setForm({...form, shift: val || ''})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">Shift 1</SelectItem><SelectItem value="2">Shift 2</SelectItem><SelectItem value="3">Shift 3</SelectItem></SelectContent></Select></div>
  <div className="space-y-2"><label className="text-sm font-medium">Machine</label><Select value={form.machine} onValueChange={(val) => setForm({...form, machine: val || ''})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">MSAW-1</SelectItem><SelectItem value="2">MSAW-2</SelectItem><SelectItem value="3">MSAW-3</SelectItem></SelectContent></Select></div>
  <div className="space-y-2"><label className="text-sm font-medium">Partai</label><Input value={form.batch} onChange={e => setForm({...form, batch: e.target.value})} /></div>
- <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Location</label><Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val ||""})}><SelectTrigger><SelectValue placeholder="Select Warehouse..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+ <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Location</label><Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val ||""})}><SelectTrigger><SelectValue placeholder="Select Warehouse..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name || w.code || w.id}</SelectItem>)}</SelectContent></Select></div>
  </CardContent>
  </Card>
 
@@ -137,5 +137,8 @@ export default function CreateInputLogPage() {
  </div>
  )
 }
+
+
+
 
 
