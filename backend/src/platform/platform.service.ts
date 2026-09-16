@@ -1,4 +1,4 @@
-import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
+﻿import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -93,7 +93,7 @@ export class PlatformService {
         invoice_prefix: data.invoicePrefix
       },
       create: {
-        company_id: companyId,
+        company: { connect: { id: companyId } },
         currency: data.currency,
         timezone: data.timezone,
         invoice_prefix: data.invoicePrefix
@@ -166,7 +166,7 @@ export class PlatformService {
       module = "Finance";
       
       const sales = await this.prisma.salesOrder.findMany({
-        where: { company_id: companyId, status: 'COMPLETED' },
+        where: { company: { connect: { id: companyId } }, status: 'COMPLETED' },
       });
       
       const totalSales = sales.reduce((sum, order) => sum + Number(order.total_amount), 0);
@@ -197,8 +197,8 @@ export class PlatformService {
     if (user) {
       await this.prisma.aiChatHistory.create({
         data: {
-          company_id: companyId,
-          user_id: user.id,
+          company: { connect: { id: companyId } },
+          user: { connect: { id: user.id } },
           prompt: prompt,
           response: response,
           module: module
@@ -252,4 +252,5 @@ export class PlatformService {
     return logs;
   }
 }
+
 
