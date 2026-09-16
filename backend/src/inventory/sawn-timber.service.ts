@@ -57,15 +57,32 @@ export class SawnTimberService {
     return `${t} \u00d7 ${w} \u00d7 ${l}`;
   }
 
-  async getOrCreateTimberVariant(species: string, grade: string, thickness: number, width: number, length: number) {
+  async getOrCreateTimberVariant(companyId: string, species: string, grade: string, thickness: number, width: number, length: number) {
     const sizeStr = this.normalizeDimensions(thickness, width, length);
     const sku = `${species.toUpperCase()}-${grade.toUpperCase()}-${sizeStr}`;
     const volumePerPiece = (thickness * width * length) / 1000000000;
 
     let variant = await this.prisma.timberVariant.findUnique({ where: { sku } });
     if (!variant) {
-      const product = await this.prisma.product.findFirst({ where: { code: species } });
-      if (!product) throw new BadRequestException(`Master product for species ${species} not found. Please create it first.`);
+      let product = await this.prisma.product.findFirst({ where: { company_id: companyId, code: species } });
+      
+      if (!product) {
+        // Auto create master product
+        let unit = await this.prisma.unit.findFirst({ where: { company_id: companyId, name: 'M3' } });
+        if (!unit) {
+          unit = await this.prisma.unit.create({ data: { company_id: companyId, name: 'M3' } });
+        }
+        product = await this.prisma.product.create({
+          data: {
+            company_id: companyId,
+            unit_id: unit.id,
+            code: species,
+            name: `Kayu ${species}`,
+            purchase_price: 0,
+            selling_price: 0
+          }
+        });
+      }
       
       variant = await this.prisma.timberVariant.create({
         data: {
@@ -89,7 +106,7 @@ export class SawnTimberService {
       
       if (!items || items.length === 0) throw new BadRequestException('Output must contain at least one item');
 
-      const inputLog = await tx.inputLog.findUnique({ where: { id: inputLogId } });
+      const inputLog = await tx.inputLog.findUnique({ where: { id: inputLogId }, include: { location: true } });
       if (!inputLog) throw new NotFoundException('Input log not found');
       if (inputLog.status !== 'AVAILABLE' && inputLog.status !== 'IN_PROCESS') {
          throw new BadRequestException('Input log is not available for production');
@@ -122,7 +139,7 @@ export class SawnTimberService {
       });
 
       for (const item of items) {
-        const variant = await this.getOrCreateTimberVariant(inputLog.species, item.grade || 'A', item.thickness, item.width, item.length);
+        const variant = await this.getOrCreateTimberVariant(inputLog.location.company_id, inputLog.species, item.grade || 'A', item.thickness, item.width, item.length);
         const volumeM3 = variant.volumePerPiece * item.quantityPcs;
         
         await tx.sawnTimberOutputItem.create({
