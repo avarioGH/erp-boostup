@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
@@ -53,7 +53,7 @@ export default function InputLogsPage() {
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Date</th>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Partai</th>
  <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Logs</th>
- <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Total M?</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Total M&sup3;</th>
  <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status</th>
  <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr>
@@ -68,7 +68,7 @@ export default function InputLogsPage() {
  <td className="py-3.5 px-6 text-right text-[13px]">{log.totalQty}</td>
  <td className="py-3.5 px-6 text-right font-bold text-primary text-[13px]">{log.totalVolume}</td>
  <td className="py-3.5 px-6 text-center text-[13px]"><Badge variant={log.status ==="AVAILABLE" ?"default" :"secondary"}>{log.status}</Badge></td>
- <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="ghost" size="sm"><ChevronRight className="w-4 h-4" /></Button></td>
+ <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="outline" size="sm" className="text-xs">View Details</Button></td>
  </tr>
  ))
  }
@@ -81,3 +81,5 @@ export default function InputLogsPage() {
  </div>
  )
 }
+
+

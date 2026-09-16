@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
@@ -51,7 +51,7 @@ export default function TransfersPage() {
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">From Location</th>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">To Location</th>
  <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Qty (PCS)</th>
- <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Total M?</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Total M&sup3;</th>
  <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status</th>
  <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr>
@@ -67,7 +67,7 @@ export default function TransfersPage() {
  <td className="p-4 px-6 text-right font-bold">{t.items?.reduce((s:number, i:any)=>s+i.quantityPcs, 0)}</td>
  <td className="py-3.5 px-6 text-right font-bold text-primary text-[13px]">{t.items?.reduce((s:number, i:any)=>s+i.volumeM3, 0).toFixed(4)}</td>
  <td className="py-3.5 px-6 text-center text-[13px]"><Badge variant={t.status ==="POSTED" ?"default" : (t.status ==="DRAFT" ?"secondary" :"destructive")}>{t.status}</Badge></td>
- <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="ghost" size="sm"><ChevronRight className="w-4 h-4" /></Button></td>
+ <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="outline" size="sm" className="text-xs">View Details</Button></td>
  </tr>
  ))
  }
@@ -80,4 +80,5 @@ export default function TransfersPage() {
  </div>
  )
 }
+
 

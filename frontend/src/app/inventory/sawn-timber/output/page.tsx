@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
@@ -55,7 +55,7 @@ export default function SawnTimberOutputPage() {
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Source Input</th>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Product</th>
  <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Qty (PCS)</th>
- <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Total M?</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Total M&sup3;</th>
  <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status</th>
  <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr>
@@ -71,7 +71,7 @@ export default function SawnTimberOutputPage() {
  <td className="p-4 px-6 text-right font-bold">{out.items?.reduce((s:number, i:any)=>s+i.quantityPcs, 0)}</td>
  <td className="py-3.5 px-6 text-right font-bold text-primary text-[13px]">{out.items?.reduce((s:number, i:any)=>s+i.volumeM3, 0).toFixed(4)}</td>
  <td className="py-3.5 px-6 text-center text-[13px]"><Badge variant={out.status ==="POSTED" ?"default" : (out.status ==="DRAFT" ?"secondary" :"destructive")}>{out.status}</Badge></td>
- <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="ghost" size="sm"><ChevronRight className="w-4 h-4" /></Button></td>
+ <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="outline" size="sm" className="text-xs">View Details</Button></td>
  </tr>
  ))
  }
@@ -84,3 +84,4 @@ export default function SawnTimberOutputPage() {
  </div>
  )
 }
+

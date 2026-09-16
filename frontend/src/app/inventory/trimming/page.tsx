@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
@@ -65,7 +65,7 @@ export default function TrimmingListPage() {
  <td className="py-3.5 px-6 text-right text-[13px]">{log.length} m</td>
  <td className="py-3.5 px-6 text-right font-bold text-primary text-[13px]">{log.netVolume}</td>
  <td className="py-3.5 px-6 text-center text-[13px]"><Badge variant={log.status ==="AVAILABLE" ?"default" :"secondary"} className={log.status ==="AVAILABLE" ?"bg-emerald-500" :""}>{log.status}</Badge></td>
- <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="ghost" size="sm"><ChevronRight className="w-4 h-4" /></Button></td>
+ <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="outline" size="sm" className="text-xs">View Details</Button></td>
  </tr>
  ))
  }
@@ -78,3 +78,4 @@ export default function TrimmingListPage() {
  </div>
  )
 }
+

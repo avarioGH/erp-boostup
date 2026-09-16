@@ -118,7 +118,7 @@ export default function RawLogsPage() {
  <td className="py-3.5 px-6 text-right text-[13px]">{log.averageDiameter} cm</td>
  <td className="py-3.5 px-6 text-right font-bold text-primary text-[13px]">{log.netVolume}</td>
  <td className="py-3.5 px-6 text-center text-[13px]">{getStatusBadge(log.status)}</td>
- <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="ghost" size="sm"><ChevronRight className="w-4 h-4" /></Button></td>
+ <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="outline" size="sm" className="text-xs">View Details</Button></td>
  </tr>
  ))
  }
@@ -131,4 +131,5 @@ export default function RawLogsPage() {
  </div>
  )
 }
+
 
