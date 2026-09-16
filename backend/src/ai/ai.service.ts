@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinanceService } from '../finance/finance.service';
 import OpenAI from 'openai';
@@ -106,6 +106,7 @@ export class AiService {
 
   // Helper untuk memanggil API dengan fallback model
   private async executeWithFallback(messages: any[], useTools: boolean = false): Promise<any> {
+    let errors = [];
     for (const modelName of this.fallbackModels) {
       try {
         const payload: any = {
@@ -114,17 +115,17 @@ export class AiService {
         };
         if (useTools) {
           payload.tools = this.getTools() as any;
-          payload.tool_choice = 'auto';
+          payload.tool_choice = "auto";
         }
 
         const result = await this.openai.chat.completions.create(payload);
         return result.choices[0].message;
       } catch (error: any) {
+        errors.push(`${modelName}: ${error.message}`);
         this.logger.warn(`Model ${modelName} failed: ${error.message}. Trying next fallback model...`);
-        // Lanjutkan ke loop berikutnya jika error
       }
     }
-    throw new Error('Semua model fallback (A, B, C, dst) gagal merespons.');
+    throw new Error("Semua model gagal: " + errors.join(" | "));
   }
 
   async handleChat(user: any, prompt: string, chatHistory: any[]) {
@@ -205,8 +206,8 @@ export class AiService {
 
       await this.prisma.aiChatHistory.create({
         data: {
-          company_id: user.company_id,
-          user_id: user.id,
+          company: { connect: { id: user.company_id || user.companyId } },
+          user: { connect: { id: user.userId || user.id } },
           prompt: prompt,
           response: finalResponse,
           module: 'General'
@@ -217,7 +218,7 @@ export class AiService {
 
     } catch (error: any) {
       this.logger.error(`AI Chat Error: ${error.message}`);
-      return { response: 'Maaf, sistem AI sedang sibuk atau semua jalur model (fallback) sedang offline.' };
+      return { response: `Maaf, terjadi error: ${error.message}` };
     }
   }
 
@@ -370,3 +371,5 @@ export class AiService {
     });
   }
 }
+
+
