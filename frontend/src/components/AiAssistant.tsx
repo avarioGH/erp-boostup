@@ -43,7 +43,7 @@ export default function AiAssistant() {
  if (data.response) {
  setMessages(prev => [...prev, { role: 'model', text: data.response, action: data.action, actionState: data.action ? 'PENDING' : undefined }]);
  } else {
- setMessages(prev => [...prev, { role: 'model', text: 'Maaf, terjadi kesalahan pada server.' }]);
+ setMessages(prev => [...prev, { role: 'model', text: data.message || ('HTTP ' + res.status + ' ' + res.statusText) || 'Maaf, terjadi kesalahan pada server.' }]);
  }
  } catch {
  setMessages(prev => [...prev, { role: 'model', text: 'Koneksi terputus. Gagal menghubungi AI.' }]);
@@ -183,4 +183,6 @@ export default function AiAssistant() {
  </div>
  );
 }
+
+
 
