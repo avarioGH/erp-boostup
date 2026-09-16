@@ -12,7 +12,8 @@ export default function RawLogsPage() {
  const router = useRouter()
  const [data, setData] = useState<any[]>([])
  const [loading, setLoading] = useState(true)
- const [search, setSearch] = useState("")
+ const [search, setSearch] = useState("");
+ const [dateFilter, setDateFilter] = useState("");
 
  useEffect(() => { fetchLogs() }, [])
 
@@ -36,11 +37,14 @@ export default function RawLogsPage() {
  }
  }
 
- const filtered = data.filter(item => 
- item.logNumber?.toLowerCase().includes(search.toLowerCase()) || 
+ const filtered = data.filter(item => {
+ const matchSearch = item.logNumber?.toLowerCase().includes(search.toLowerCase()) || 
  item.barcode?.toLowerCase().includes(search.toLowerCase()) ||
- item.batch?.toLowerCase().includes(search.toLowerCase())
- )
+ item.batch?.toLowerCase().includes(search.toLowerCase());
+ const itemDate = item.receivingDate || item.createdAt || item.created_at;
+ const matchDate = dateFilter && itemDate ? new Date(itemDate).toISOString().split('T')[0] === dateFilter : true;
+ return matchSearch && matchDate;
+})
 
  const getStatusBadge = (s: string) => {
  switch (s) {
@@ -71,6 +75,7 @@ export default function RawLogsPage() {
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input type="search" placeholder="Search log no, barcode..." className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
  </div>
+ <Input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="w-full sm:w-[150px]" />
  </div>
  </CardHeader>
  <CardContent className="p-0">
@@ -79,19 +84,20 @@ export default function RawLogsPage() {
  <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
  <tr>
- <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Log No</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Date</th>
+<th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Log No</th>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Species</th>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Partai</th>
  <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Length</th>
- <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Ã˜ Avg</th>
- <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Net MÂ³</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">&Oslash; Avg</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Net M&sup3;</th>
  <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status</th>
  <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr>
  </thead>
  <tbody>
  {filtered.length === 0 ? <tr>
- <td colSpan={8} className="p-16 text-center">
+ <td colSpan={9} className="p-16 text-center">
  <div className="flex flex-col items-center justify-center">
  <Package className="w-10 h-10 text-muted-foreground mb-4 opacity-40" />
  <h3 className="text-base font-semibold text-foreground mb-1">No raw logs yet</h3>
@@ -104,6 +110,7 @@ export default function RawLogsPage() {
  </tr> : 
  filtered.map(log => (
  <tr key={log.id} className="border-b last:border-0 hover:bg-muted/60 cursor-pointer transition-colors" onClick={() => router.push(`/inventory/logs/${log.id}`)}>
+ <td className="py-3.5 px-6 text-[13px] text-muted-foreground">{new Date(log.receivingDate || log.createdAt || Date.now()).toLocaleDateString('id-ID')}</td>
  <td className="py-3.5 px-6 font-semibold text-primary text-[13px]">{log.logNumber}</td>
  <td className="py-3.5 px-6 text-[13px]">{log.species}</td>
  <td className="py-3.5 px-6 text-[13px]">{log.batch || '-'}</td>

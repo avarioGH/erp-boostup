@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, Bot, Minimize2, Check, X, RotateCcw } from 'lucide-react';
 
@@ -33,7 +33,7 @@ export default function AiAssistant() {
  setInput('');
  setIsLoading(true);
  try {
- const token = localStorage.getItem('token');
+ const token = localStorage.getItem('erp_token');
  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8237'}/api/ai/chat`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -59,7 +59,7 @@ export default function AiAssistant() {
  }
  setIsLoading(true);
  try {
- const token = localStorage.getItem('token');
+ const token = localStorage.getItem('erp_token');
  const endpoint = type === 'execute' ? 'execute' : 'undo';
  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8237'}/api/ai/${endpoint}`, {
  method: 'POST',
@@ -183,3 +183,4 @@ export default function AiAssistant() {
  </div>
  );
 }
+
