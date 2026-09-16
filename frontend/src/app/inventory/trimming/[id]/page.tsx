@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, ArrowLeft, Ruler, Box, Waypoints, CheckCircle2, Factory } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
+import Link from "next/link"
 
 export default function TrimmedLogDetailPage() {
   const router = useRouter()
