@@ -10,9 +10,17 @@ export class AiService {
   // Fallback models from Juan Router based on user request
   private readonly fallbackModels = [
     'agnes-2.5-flash',
-    'mistral-large',
+    'agnes-3.0-flash',
+    'diffusiongemma-26b-a4b-it',
+    'dots-3-note-preview',
     'gemma-4-31b-it',
-    'nemotron-3.5-lightning'
+    'gpt-oss:120b',
+    'laguna-s-2.1',
+    'laguna-xs-2.1',
+    'mistral-large',
+    'muse-glimmer',
+    'nemotron-3.5-lightning',
+    'qwen3-8b'
   ];
 
   constructor(private prisma: PrismaService, private financeService: FinanceService) {
