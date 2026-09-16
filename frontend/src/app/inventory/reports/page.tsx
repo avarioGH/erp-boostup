@@ -32,16 +32,16 @@ export default function ReportsIndex() {
  <div className="space-y-8">
  {reports.map(group => (
  <div key={group.group}>
- <h2 className="text-xl font-semibold mb-4 text-gray-700">{group.group}</h2>
+ <h2 className="text-xl font-semibold mb-4 text-foreground/80">{group.group}</h2>
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
  {group.items.map(item => (
  <Link key={item.path} href={item.path}>
  <Card className="hover:bg-muted/30 transition-colors cursor-pointer h-full">
  <CardHeader className="pb-2">
- <CardTitle className="text-lg text-blue-700">{item.title}</CardTitle>
+ <CardTitle className="text-lg text-primary">{item.title}</CardTitle>
  </CardHeader>
  <CardContent>
- <p className="text-sm text-gray-600">{item.desc}</p>
+ <p className="text-sm text-muted-foreground">{item.desc}</p>
  </CardContent>
  </Card>
  </Link>
@@ -53,4 +53,7 @@ export default function ReportsIndex() {
  </div>
  );
 }
+
+
+
 
