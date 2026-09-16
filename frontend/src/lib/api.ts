@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.erp.boostup.id';
 
@@ -172,6 +172,8 @@ export default api;
 
 export const TimberAPI: any = {
   getDashboardSummary: async () => (await api.get('/inventory/reports/summary')).data,
+    getStockAging: async () => (await api.get('/inventory/reports/stock-aging')).data,
+    getTraceability: async (search: string) => (await api.get('/inventory/reports/traceability', { params: { search } })).data,
   getStockSummary: async (params?: any) => (await api.get('/inventory/reports/stock-summary', { params })).data,
   getRawLogs: async (params?: any) => (await api.get('/inventory/logs', { params })).data,
   getRawLog: async (id: string) => (await api.get('/inventory/logs/' + id)).data,
@@ -238,3 +240,4 @@ export const ProductionReportAPI: any = {
   getReconciliation: async (params?: any) => (await api.get('/production/reports/reconciliation', { params })).data,
   getDataQuality: async (params?: any) => (await api.get('/production/reports/data-quality', { params })).data,
 };
+

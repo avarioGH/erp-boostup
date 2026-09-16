@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const reports = [
@@ -10,14 +10,14 @@ const reports = [
  { title: 'Low / Zero Stock', path: '/inventory/reports/low-stock', desc: 'SKUs requiring replenishment' }
  ]},
  { group: 'Movements & Production', items: [
- { title: 'Movements Ledger', path: '/inventory/reports/movements', desc: 'Complete log of IN, OUT, and ADJ transactions' },
- { title: 'Production Output', path: '/inventory/reports/production-output', desc: 'Finished Sawn Timber generated' },
+ { title: 'Movements Ledger', path: '/inventory/movements', desc: 'Complete log of IN, OUT, and ADJ transactions' },
+ { title: 'Production Output', path: '/production/sawmill/bundles', desc: 'Finished Sawn Timber generated' },
  { title: 'Production Yield', path: '/inventory/reports/yield', desc: 'Efficiency report (% M3 Output vs Input)' }
  ]},
  { group: 'Raw Material', items: [
- { title: 'Raw Logs', path: '/inventory/reports/raw-logs', desc: 'Unprocessed timber logs inventory' },
- { title: 'Trimming', path: '/inventory/reports/trimming', desc: 'Trimming logs yield and conversion' },
- { title: 'Input / WIP', path: '/inventory/reports/input-logs', desc: 'Input logs staged for production' }
+ { title: 'Raw Logs', path: '/inventory/logs', desc: 'Unprocessed timber logs inventory' },
+ { title: 'Trimming', path: '/inventory/trimming', desc: 'Trimming logs yield and conversion' },
+ { title: 'Input / WIP', path: '/inventory/input-logs', desc: 'Input logs staged for production' }
  ]},
  { group: 'Audit & Traceability', items: [
  { title: 'Traceability', path: '/inventory/reports/traceability', desc: 'Forward & backward trace of log history' },
@@ -53,3 +53,4 @@ export default function ReportsIndex() {
  </div>
  );
 }
+
