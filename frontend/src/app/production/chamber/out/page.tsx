@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI, InventoryAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
@@ -66,8 +66,8 @@ export default function ChamberOutPage() {
  }
  }
 
- const normalWarehouses = warehouses.filter(w => !w.code.startsWith('CH-'))
- const chambers = warehouses.filter(w => w.code.startsWith('CH-'))
+ const normalWarehouses = warehouses.filter(w => !(w.code || "").startsWith('CH-'))
+ const chambers = warehouses.filter(w => (w.code || "").startsWith('CH-'))
 
  return (
  <div className="space-y-6 max-w-2xl mx-auto animate-in fade-in duration-300">
@@ -90,14 +90,14 @@ export default function ChamberOutPage() {
  <label className="text-sm font-medium">Kiln Chamber (From)</label>
  <Select value={form.fromLocationId} onValueChange={(v) => setForm({...form, fromLocationId: v || ''})}>
  <SelectTrigger><SelectValue placeholder="Select Chamber" /></SelectTrigger>
- <SelectContent>{chambers.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
+ <SelectContent>{chambers.map(w => <SelectItem key={w.id} value={w.id}>{w.name || w.code || w.id}</SelectItem>)}</SelectContent>
  </Select>
  </div>
  <div className="space-y-2">
  <label className="text-sm font-medium">Destination Yard (To)</label>
  <Select value={form.toLocationId} onValueChange={(v) => setForm({...form, toLocationId: v || ''})}>
  <SelectTrigger><SelectValue placeholder="Select Destination" /></SelectTrigger>
- <SelectContent>{normalWarehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
+ <SelectContent>{normalWarehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name || w.code || w.id}</SelectItem>)}</SelectContent>
  </Select>
  </div>
  </div>
@@ -137,7 +137,7 @@ export default function ChamberOutPage() {
  </form>
  </Card>
  <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-4 rounded-lg flex items-start gap-3 mt-6">
- <div className="text-blue-500 mt-0.5">ℹ️</div>
+ <div className="text-blue-500 mt-0.5">â„¹ï¸</div>
  <div>
  <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200">Traceability Notice</h4>
  <p className="text-sm text-blue-800 dark:text-blue-300 mt-1">
@@ -148,3 +148,4 @@ export default function ChamberOutPage() {
  </div>
  )
 }
+
