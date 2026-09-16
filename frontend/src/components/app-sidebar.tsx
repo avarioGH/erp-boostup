@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -104,7 +104,6 @@ const items: MenuItem[] = [
  icon: Factory,
  id: "production",
  subItems: [
- { title: "Production Reports", url: "/production/reports" }
  ]
  },
 
@@ -329,6 +328,7 @@ export function AppSidebar() {
  </Sidebar>
  )
 }
+
 
 
 

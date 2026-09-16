@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI, InventoryAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
@@ -22,13 +22,21 @@ export default function CreateInputLogPage() {
  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
  useEffect(() => {
- Promise.all([
- InventoryAPI.getWarehouses(),
- TimberAPI.getAvailableTrimmedLogs()
- ]).then(([wRes, lRes]) => {
- setWarehouses(Array.isArray(wRes) ? wRes : (wRes?.items || wRes?.data || []))
- setAvailableLogs(Array.isArray(lRes) ? lRes : (lRes?.items || lRes?.data || []))
- }).catch(console.error).finally(() => setLoading(false))
+    Promise.allSettled([
+      InventoryAPI.getWarehouses(),
+      TimberAPI.getAvailableTrimmedLogs()
+    ]).then(([wRes, lRes]) => {
+      if (wRes.status === 'fulfilled') {
+        const wData = wRes.value;
+        setWarehouses(Array.isArray(wData) ? wData : (wData?.items || wData?.data || []))
+      }
+      if (lRes.status === 'fulfilled') {
+        const lData = lRes.value;
+        setAvailableLogs(Array.isArray(lData) ? lData : (lData?.items || lData?.data || []))
+      } else {
+        console.error('Failed to load available trimmed logs:', lRes.reason)
+      }
+    }).finally(() => setLoading(false))
  }, [])
 
  const handleSelect = (id: string, checked: boolean) => {
