@@ -1,24 +1,41 @@
 "use client"
-import { useState, useEffect } from"react"
-import { TimberAPI } from"@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
-import { Button } from"@/components/ui/button"
-import { Badge } from"@/components/ui/badge"
-import { Loader2, ArrowLeft, Ruler, Box, Waypoints, CheckCircle2, Factory } from"lucide-react"
-import { useRouter } from"next/navigation"
-import Link from"next/link"
+import { useState, useEffect } from "react"
+import { TimberAPI } from "@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, ArrowLeft, Ruler, Box, Waypoints, CheckCircle2, Factory } from "lucide-react"
+import { useRouter, useParams } from "next/navigation"
 
-export default function TrimmedLogDetailPage({ params }: { params: { id: string } }) {
- const router = useRouter()
- const [data, setData] = useState<any>(null)
- const [loading, setLoading] = useState(true)
+export default function TrimmedLogDetailPage() {
+  const router = useRouter()
+  const params = useParams()
+  const id = params?.id as string
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
- useEffect(() => {
- TimberAPI.getTrimmedLog(params.id).then(setData).catch(console.error).finally(() => setLoading(false))
- }, [params.id])
+  useEffect(() => {
+    if (!id || id === 'undefined' || id.length !== 24) {
+      setError('ID kayu tidak valid')
+      setLoading(false)
+      return
+    }
+    TimberAPI.getTrimmedLog(id)
+      .then(setData)
+      .catch((e: any) => setError(e?.response?.data?.message || 'Gagal memuat data'))
+      .finally(() => setLoading(false))
+  }, [id])
 
- if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
- if (!data) return <div className="p-8 md:p-24 text-center">Trimmed log not found.</div>
+
+  if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
+  if (error || !data) return (
+    <div className="p-8 md:p-24 text-center space-y-4">
+      <p className="text-red-500 font-semibold">{error || 'Trimmed log not found.'}</p>
+      <Button variant="outline" onClick={() => router.back()}><ArrowLeft className="w-4 h-4 mr-2" />Go Back</Button>
+    </div>
+  )
+
 
  return (
  <div className="space-y-6 pb-10">
