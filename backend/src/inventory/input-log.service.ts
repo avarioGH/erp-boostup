@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../core/audit.service';
 
@@ -57,7 +57,7 @@ export class InputLogService {
 
   async getAvailableTrimmedLogs() {
     return this.prisma.trimmedLog.findMany({
-      where: { status: 'AVAILABLE', inputLogId: null },
+      where: { status: 'AVAILABLE' },
       include: { rawLog: { select: { logNumber: true } }, location: true },
       orderBy: { createdAt: 'desc' }
     });
@@ -82,7 +82,7 @@ export class InputLogService {
       }
 
       for (const t of trimmedLogs) {
-        if (t.status !== 'AVAILABLE' || t.inputLogId) {
+        if (t.status !== 'AVAILABLE') {
           throw new BadRequestException(`Trimmed log ${t.trimNumber} is no longer available`);
         }
       }
@@ -184,3 +184,5 @@ export class InputLogService {
     });
   }
 }
+
+
