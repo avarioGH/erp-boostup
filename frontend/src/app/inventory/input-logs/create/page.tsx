@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI, InventoryAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
@@ -103,7 +103,7 @@ export default function CreateInputLogPage() {
  <th className="p-3 text-left">Trim Code</th>
  <th className="p-3 text-left">Parent</th>
  <th className="p-3 text-right">Length</th>
- <th className="p-3 text-right">Net MÂ³</th>
+ <th className="p-3 text-right">Net MÃ‚Â³</th>
  </tr>
  </thead>
  <tbody>
@@ -131,9 +131,9 @@ export default function CreateInputLogPage() {
  <CardContent className="pt-6 space-y-4">
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Selected Logs</span><span className="font-bold text-lg">{selectedIds.length} PCS</span></div>
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Total Length</span><span className="font-medium">{totalLength.toFixed(2)} m</span></div>
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Total Gross</span><span className="font-medium">{totalGross.toFixed(4)} mÂ³</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Total Gross</span><span className="font-medium">{totalGross.toFixed(4)} mÃ‚Â³</span></div>
  <hr className="border-border" />
- <div className="flex justify-between items-center"><span className="text-sm font-bold text-foreground">Total Net MÂ³</span><span className="font-bold text-2xl text-primary">{totalNet.toFixed(4)}</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm font-bold text-foreground">Total Net MÃ‚Â³</span><span className="font-bold text-2xl text-primary">{totalNet.toFixed(4)}</span></div>
  <Button type="submit" disabled={submitting || selectedIds.length === 0} className="w-full mt-6 bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg">
  {submitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Save className="w-5 h-5 mr-2" />} Create Input Log
  </Button>
@@ -145,6 +145,7 @@ export default function CreateInputLogPage() {
  </div>
  )
 }
+
 
 
 
