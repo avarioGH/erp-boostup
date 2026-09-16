@@ -128,17 +128,37 @@ export class InventoryService {
   async deleteWarehouse(companyId: string, id: string) {
     const existing = await this.prisma.warehouse.findFirst({ where: { id, company_id: companyId } });
     if (!existing) throw new NotFoundException('Warehouse not found');
+
+    const rawLogs = await this.prisma.rawLog.count({ where: { locationId: id } });
+    if (rawLogs > 0) throw new BadRequestException('Gudang tidak dapat dihapus karena masih berisi data Raw Log.');
+
+    const trimLogs = await this.prisma.trimmedLog.count({ where: { locationId: id } });
+    if (trimLogs > 0) throw new BadRequestException('Gudang tidak dapat dihapus karena masih berisi data Trimmed Log.');
+
+    const inputLogs = await this.prisma.inputLog.count({ where: { locationId: id } });
+    if (inputLogs > 0) throw new BadRequestException('Gudang tidak dapat dihapus karena masih berisi data Input Log.');
+
+    const sawnOut = await this.prisma.sawnTimberOutput.count({ where: { locationId: id } });
+    if (sawnOut > 0) throw new BadRequestException('Gudang tidak dapat dihapus karena masih berisi Sawn Timber Output.');
+
+    const txs = await this.prisma.inventoryTransaction.count({ where: { OR: [{warehouse_id: id}, {target_warehouse_id: id}] } });
+    if (txs > 0) throw new BadRequestException('Gudang tidak dapat dihapus karena sudah memiliki riwayat Transaksi Inventori.');
+
+    const movs = await this.prisma.stockMovement.count({ where: { warehouse_id: id } });
+    if (movs > 0) throw new BadRequestException('Gudang tidak dapat dihapus karena sudah memiliki riwayat Pergerakan Stok.');
+
+    
+
+    const timberStock = await this.prisma.timberStock.count({ where: { locationId: id } });
+
     return this.prisma.$transaction(async (tx) => {
-      // Delete access records first due to foreign key constraints
-      await tx.userWarehouseAccess.deleteMany({
-        where: { warehouse_id: id }
-      });
-      // Delete warehouse stocks
-      await tx.warehouseStock.deleteMany({
-        where: { warehouse_id: id }
-      });
-      return tx.warehouse.delete({
-        where: { id }
+      await tx.userWarehouseAccess.deleteMany({ where: { warehouse_id: id } });
+      await tx.warehouseStock.deleteMany({ where: { warehouse_id: id } });
+      if (timberStock > 0) {
+        await tx.timberStock.deleteMany({ where: { locationId: id } });
+      }
+      return tx.warehouse.delete({ where: { id } }).catch(e => {
+        throw new BadRequestException('Gagal menghapus gudang karena masih ada data yang terikat.');
       });
     });
   }

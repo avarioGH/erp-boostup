@@ -106,9 +106,7 @@ export default function WarehouseSettings() {
  setIsDeleteOpen(false)
  setSelectedWh(null)
  fetchWarehouses()
- } catch (e) {
- alert("Gagal menghapus gudang")
- }
+ } catch (e: any) { alert(e.response?.data?.message || e.message || "Gagal menghapus gudang") }
  }
 
  const filteredWarehouses = warehouses.filter(wh => 
