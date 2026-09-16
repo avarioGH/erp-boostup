@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from "react"
 import { TimberAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -48,7 +48,7 @@ export default function TrimmedLogDetailPage() {
  <h1 className="text-3xl font-bold tracking-tight text-emerald-800">{data.trimNumber}</h1>
  <Badge variant={data.status ==="AVAILABLE" ?"default" :"secondary"} className={data.status ==="AVAILABLE" ?"bg-emerald-500" :""}>{data.status}</Badge>
  </div>
- <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2"><Factory className="w-4 h-4" /> Trimmed Timber Log ? {data.species}</p>
+ <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2"><Factory className="w-4 h-4" /> Trimmed Timber Log &bull; {data.species}</p>
  </div>
  </div>
  <div className="flex items-center gap-2">
@@ -63,8 +63,8 @@ export default function TrimmedLogDetailPage() {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4">
  <div><p className="text-muted-foreground">Length</p><p className="font-bold">{data.length} m</p></div>
  <div><p className="text-muted-foreground">Parent Class</p><p className="font-bold">{data.rawLog?.diameterClass}</p></div>
- <div><p className="text-muted-foreground">Avg ?</p><p className="font-bold">{data.averageDiameter} cm</p></div>
- <div><p className="text-muted-foreground">Rounded ?</p><p className="font-bold text-lg text-primary">{data.roundedDiameter} cm</p></div>
+ <div><p className="text-muted-foreground">Avg &Oslash;</p><p className="font-bold">{data.averageDiameter} cm</p></div>
+ <div><p className="text-muted-foreground">Rounded &Oslash;</p><p className="font-bold text-lg text-primary">{data.roundedDiameter} cm</p></div>
  </div>
  <hr />
  <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-center text-xs">
@@ -79,11 +79,11 @@ export default function TrimmedLogDetailPage() {
  <Card className="shadow-sm border-indigo-100">
  <CardHeader className="border-b bg-indigo-50/50 pb-4"><CardTitle className="text-lg flex items-center gap-2 text-indigo-800"><Box className="w-4 h-4" /> Volume Calculation</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
- <div className="flex justify-between items-center"><span className="text-muted-foreground">Gross Volume</span><span className="font-medium">{data.grossVolume} m?</span></div>
- <div className="flex justify-between items-center"><span className="text-muted-foreground text-red-500">Gerowong Volume</span><span>- {data.hollowVolume || 0} m?</span></div>
- <div className="flex justify-between items-center"><span className="text-muted-foreground text-amber-500">Trimming Volume</span><span>- {data.trimmingVolume || 0} m?</span></div>
+ <div className="flex justify-between items-center"><span className="text-muted-foreground">Gross Volume</span><span className="font-medium">{data.grossVolume} m&sup3;</span></div>
+ <div className="flex justify-between items-center"><span className="text-muted-foreground text-red-500">Gerowong Volume</span><span>- {data.hollowVolume || 0} m&sup3;</span></div>
+ <div className="flex justify-between items-center"><span className="text-muted-foreground text-amber-500">Trimming Volume</span><span>- {data.trimmingVolume || 0} m&sup3;</span></div>
  <hr className="border-indigo-100" />
- <div className="flex justify-between items-center"><span className="font-bold text-indigo-900">Net Volume</span><span className="font-bold text-2xl text-primary">{data.netVolume} m?</span></div>
+ <div className="flex justify-between items-center"><span className="font-bold text-indigo-900">Net Volume</span><span className="font-bold text-2xl text-primary">{data.netVolume} m&sup3;</span></div>
  </CardContent>
  </Card>
 
@@ -122,3 +122,4 @@ export default function TrimmedLogDetailPage() {
  </div>
  )
 }
+
