@@ -48,7 +48,7 @@ export default function WarehousesPage() {
 
  return (
  <div className="space-y-6">
- <div className="flex items-center justify-between">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  <div>
  <h1 className="text-[28px] font-bold tracking-tight text-foreground">Warehouses</h1>
  <p className="text-muted-foreground">Manage your storage locations.</p>
@@ -66,7 +66,7 @@ export default function WarehousesPage() {
  <CardTitle>New Warehouse</CardTitle>
  </CardHeader>
  <CardContent className="space-y-4">
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label>Warehouse Name</Label>
  <Input value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} required />
@@ -100,7 +100,7 @@ export default function WarehousesPage() {
  <p className="text-sm text-muted-foreground text-center py-4">No warehouses found.</p>
  ) : (
  <div className="border rounded-md">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead>
  <tr className="border-b bg-muted/50">
  <th className="p-3 text-left font-medium">Code</th>

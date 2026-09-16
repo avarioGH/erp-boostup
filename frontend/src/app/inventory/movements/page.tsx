@@ -27,7 +27,7 @@ export default function MovementsPage() {
  }
 
  return (
- <div className="space-y-6 pb-10 p-8 dark">
+ <div className="space-y-6 pb-10 p-4 md:p-8 dark">
  <div>
  <h1 className="text-3xl font-bold tracking-tight text-white mb-6">Stock Movements Ledger</h1>
  </div>
@@ -38,7 +38,7 @@ export default function MovementsPage() {
  <div className="flex justify-center p-12"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div>
  ) : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="border-b border-border">
  <tr>
  <th className="p-4 px-6 text-left font-bold">Date</th>

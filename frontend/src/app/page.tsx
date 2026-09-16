@@ -196,7 +196,7 @@ export default function OwnerDashboard() {
  </div>
 
  {/* KPI CARDS - ROW 1 */}
- <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
+ <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
  <Card className="border-border shadow-sm bg-card relative overflow-hidden group hover:border-primary/50 transition-colors">
  <div className="absolute top-4 right-4 p-2 bg-primary/10 rounded-lg text-primary">
  <ShoppingCart className="w-5 h-5" />
@@ -382,7 +382,7 @@ export default function OwnerDashboard() {
  </div>
  ) : (
  kpi.topProducts.map((item: any, i: number) => (
- <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors">
+ <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 px-4 py-3 hover:bg-accent/50 transition-colors">
  <div>
  <p className="font-semibold text-[13px] text-foreground">{item.name}</p>
  <p className="text-[11px] font-medium text-muted-foreground mt-0.5">{item.qty} terjual</p>
@@ -413,7 +413,7 @@ export default function OwnerDashboard() {
  ) : (
  <div className="divide-y divide-border/50">
  {lowStocks.map((item, i) => (
- <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors">
+ <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 px-4 py-3 hover:bg-accent/50 transition-colors">
  <div>
  <p className="font-semibold text-[13px] text-foreground">{item.name}</p>
  <div className="flex items-center gap-2 mt-1">
@@ -449,7 +449,7 @@ export default function OwnerDashboard() {
  </div>
  ) : (
  kpi.topCustomers.map((item: any, i: number) => (
- <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors">
+ <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 px-4 py-3 hover:bg-accent/50 transition-colors">
  <div className="flex items-center gap-3">
  <div className="w-8 h-8 rounded-full bg-accent border border-border flex items-center justify-center text-[13px] font-bold text-muted-foreground">
  {item.name.charAt(0)}

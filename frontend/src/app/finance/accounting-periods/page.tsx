@@ -94,7 +94,7 @@ export default function AccountingPeriodsPage() {
  <p>Loading...</p>
  ) : (
  <div className="bg-card rounded shadow p-4 overflow-x-auto">
- <table className="w-full text-left">
+ <table className="min-w-[600px] md:min-w-full w-full text-left">
  <thead>
  <tr className="border-b">
  <th className="py-2 px-2">Period Name</th>

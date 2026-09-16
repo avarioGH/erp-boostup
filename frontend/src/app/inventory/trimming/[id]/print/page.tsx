@@ -17,13 +17,13 @@ export default function PrintTrimmingTally() {
  if (!data) return <div className="p-12 text-center">Loading Print View...</div>
 
  return (
- <div className="p-8 max-w-4xl mx-auto bg-card text-black font-sans print:m-0 print:p-4">
+ <div className="p-4 md:p-8 max-w-4xl mx-auto bg-card text-black font-sans print:m-0 print:p-4">
  <div className="text-center mb-8 border-b-2 border-black pb-4">
  <h1 className="text-2xl font-bold uppercase">Trimming Tally</h1>
  <p className="text-sm">Date: {new Date(data.createdAt).toLocaleDateString()}</p>
  </div>
  
- <div className="grid grid-cols-2 gap-4 mb-6">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
  <div>
  <p><strong>Raw Log Number:</strong> {data.rawLog?.logNumber}</p>
  <p><strong>Species:</strong> {data.rawLog?.species}</p>
@@ -36,7 +36,7 @@ export default function PrintTrimmingTally() {
  </div>
  </div>
 
- <table className="w-full border-collapse border border-black mb-8">
+ <table className="min-w-[600px] md:min-w-full w-full border-collapse border border-black mb-8">
  <thead>
  <tr className="bg-gray-100">
  <th className="border border-black p-2 text-left">Property</th>

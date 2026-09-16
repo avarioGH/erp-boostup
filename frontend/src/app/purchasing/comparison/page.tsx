@@ -57,8 +57,8 @@ export default function SupplierComparisonPage() {
  }
  };
 
- if (loading) return <div className="p-8 text-center text-muted-foreground">Loading comparison data...</div>;
- if (!productId) return <div className="p-8 text-center text-red-500">No Product ID provided.</div>;
+ if (loading) return <div className="p-4 md:p-8 text-center text-muted-foreground">Loading comparison data...</div>;
+ if (!productId) return <div className="p-4 md:p-8 text-center text-red-500">No Product ID provided.</div>;
 
  return (
  <div className="space-y-6 animate-in fade-in pb-10">
@@ -78,7 +78,7 @@ export default function SupplierComparisonPage() {
  {comparisons.length === 0 ? (
  <div className="p-12 text-center text-muted-foreground">SUPPLIER RESPONSE UI NOT AVAILABLE — BACKEND CONTRACT REQUIRED (No vendor data found for this product).</div>
  ) : (
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/10">
  <tr>
  <th className="p-4 text-left font-medium text-muted-foreground border-b">Supplier</th>

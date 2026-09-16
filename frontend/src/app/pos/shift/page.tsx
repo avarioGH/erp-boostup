@@ -161,7 +161,7 @@ export default function PosShiftPage() {
  <div className="h-2 w-full bg-amber-500"></div>
  <form onSubmit={handleCloseShift}>
  <CardHeader className="pb-4 border-b border-border/40">
- <div className="flex items-center justify-between">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  <div>
  <CardTitle className="flex items-center gap-2">
  <StopCircle className="w-5 h-5 text-amber-500" /> Tutup Shift Kasir
@@ -175,7 +175,7 @@ export default function PosShiftPage() {
  </CardHeader>
  <CardContent className="space-y-6">
  
- <div className="grid grid-cols-2 gap-4 bg-muted/40 p-4 rounded-xl border border-border/60">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-muted/40 p-4 rounded-xl border border-border/60">
  <div className="space-y-1">
  <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> Waktu Mulai</div>
  <div className="font-semibold text-foreground dark:text-white">
@@ -218,7 +218,7 @@ export default function PosShiftPage() {
  <div className="h-2 w-full bg-emerald-500"></div>
  <form onSubmit={handleOpenShift}>
  <CardHeader className="pb-4 border-b border-border/40">
- <div className="flex items-center justify-between">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  <div>
  <CardTitle className="flex items-center gap-2">
  <PlayCircle className="w-5 h-5 text-emerald-500" /> Buka Shift Kasir Baru

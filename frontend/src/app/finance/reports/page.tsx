@@ -45,7 +45,7 @@ export default function FinanceReports() {
  <p className="text-sm text-muted-foreground mb-6 line-clamp-2">
  Ringkasan total pendapatan, beban, dan laba bersih perusahaan dalam periode tertentu.
  </p>
- <div className="flex items-center justify-between mt-auto">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 mt-auto">
  <span className="text-xs font-medium bg-muted px-2 py-1 rounded text-muted-foreground flex items-center gap-1">
  <Calendar className="w-3 h-3" /> Bulan Ini
  </span>
@@ -71,7 +71,7 @@ export default function FinanceReports() {
  <p className="text-sm text-muted-foreground mb-6 line-clamp-2">
  Pantau likuiditas dan aktivitas mutasi kas utama serta kas operasional harian Anda.
  </p>
- <div className="flex items-center justify-between mt-auto">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 mt-auto">
  <span className="text-xs font-medium bg-muted px-2 py-1 rounded text-muted-foreground flex items-center gap-1">
  <Calendar className="w-3 h-3" /> Bulan Ini
  </span>
@@ -97,7 +97,7 @@ export default function FinanceReports() {
  <p className="text-sm text-muted-foreground mb-6 line-clamp-2">
  Posisi aktiva (aset), kewajiban (hutang), dan ekuitas (modal) perusahaan Anda.
  </p>
- <div className="flex items-center justify-between mt-auto">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 mt-auto">
  <span className="text-xs font-medium bg-muted px-2 py-1 rounded text-muted-foreground flex items-center gap-1">
  <Calendar className="w-3 h-3" /> Tahun Ini
  </span>

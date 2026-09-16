@@ -44,7 +44,7 @@ export default function ManufacturingOverviewPage() {
 
  {/* KPIs */}
  {!error && (
- <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-4">
  {[
  { label: 'Draft', value: countByStatus('DRAFT'), color: 'text-muted-foreground' },
  { label: 'In Progress', value: countByStatus('IN_PROGRESS'), color: 'text-primary' },
@@ -94,12 +94,12 @@ export default function ManufacturingOverviewPage() {
  </CardHeader>
  <CardContent className="p-0">
  {loading ? (
- <div className="flex p-8 justify-center"><Loader2 className="animate-spin w-6 h-6 text-muted-foreground" /></div>
+ <div className="flex p-4 md:p-8 justify-center"><Loader2 className="animate-spin w-6 h-6 text-muted-foreground" /></div>
  ) : orders.length === 0 ? (
- <div className="text-center p-8 text-muted-foreground">No manufacturing orders yet.</div>
+ <div className="text-center p-4 md:p-8 text-muted-foreground">No manufacturing orders yet.</div>
  ) : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
  <tr>
  <th className="p-3 px-5 text-left font-medium text-muted-foreground">MO Number</th>

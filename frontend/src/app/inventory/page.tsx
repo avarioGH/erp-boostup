@@ -23,8 +23,8 @@ export default function InventoryDashboard() {
  fetchData();
  }, []);
 
- if (loading) return <div className="p-8 text-center">Loading Inventory...</div>;
- if (!data) return <div className="p-8 text-center text-red-500">Failed to load dashboard</div>;
+ if (loading) return <div className="p-4 md:p-8 text-center">Loading Inventory...</div>;
+ if (!data) return <div className="p-4 md:p-8 text-center text-red-500">Failed to load dashboard</div>;
 
  return (
  <div className="p-6 space-y-6">
@@ -83,7 +83,7 @@ export default function InventoryDashboard() {
  <CardTitle>Recent Stock Movements</CardTitle>
  </CardHeader>
  <CardContent>
- <table className="w-full text-sm text-left">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left">
  <thead className="bg-gray-50 border-b">
  <tr>
  <th className="p-3">Date</th>
@@ -106,7 +106,7 @@ export default function InventoryDashboard() {
  </tr>
  ))}
  {(!data.recent_movements || data.recent_movements.length === 0) && (
- <tr><td colSpan={6} className="p-8 text-center text-gray-500">No recent movements.</td></tr>
+ <tr><td colSpan={6} className="p-4 md:p-8 text-center text-gray-500">No recent movements.</td></tr>
  )}
  </tbody>
  </table>

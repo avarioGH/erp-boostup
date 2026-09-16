@@ -163,7 +163,7 @@ export default function LoyaltyPage() {
  {topCustomers.length > 0 ? (
  <div className="space-y-4">
  {topCustomers.map((customer, idx) => (
- <div key={customer.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/40 border border-border/60">
+ <div key={customer.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 p-3 rounded-lg bg-muted/40 border border-border/60">
  <div className="flex items-center gap-3">
  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm text-white ${
  idx === 0 ? 'bg-amber-400' :

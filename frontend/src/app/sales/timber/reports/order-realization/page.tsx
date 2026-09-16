@@ -39,10 +39,10 @@ export default function OrderRealizationReport() {
  <Card className="print:shadow-none print:border-none">
  <CardContent className="pt-6">
  {loading ? (
- <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-muted-foreground" /></div>
+ <div className="flex justify-center p-4 md:p-8"><Loader2 className="animate-spin h-8 w-8 text-muted-foreground" /></div>
  ) : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm border-collapse border border-border">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm border-collapse border border-border">
  <thead>
  <tr className="bg-muted/50">
  <th colSpan={2} className="border border-border p-2 text-center">ORDER INFO</th>
@@ -68,7 +68,7 @@ export default function OrderRealizationReport() {
  <tbody>
  {data.length === 0 ? (
  <tr>
- <td colSpan={11} className="text-center p-8 text-muted-foreground">
+ <td colSpan={11} className="text-center p-4 md:p-8 text-muted-foreground">
  No realization data available.
  </td>
  </tr>

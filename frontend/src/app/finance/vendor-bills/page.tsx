@@ -55,7 +55,7 @@ export default function VendorBillsPage() {
  </CardHeader>
  <CardContent>
  <div className="rounded-md border overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/30 border-b">
  <tr>
  <th className="p-4 text-left font-medium">Nomor Tagihan</th>

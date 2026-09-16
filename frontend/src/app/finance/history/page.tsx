@@ -62,7 +62,7 @@ export default function FinanceHistoryPage() {
  </CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
- <table className="w-full text-sm text-left">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left">
  <thead className="text-xs text-muted-foreground bg-muted/40 uppercase">
  <tr>
  <th className="px-6 py-4 font-semibold">Tanggal</th>

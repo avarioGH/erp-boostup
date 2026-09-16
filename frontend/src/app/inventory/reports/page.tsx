@@ -27,7 +27,7 @@ const reports = [
 
 export default function ReportsIndex() {
  return (
- <div className="p-8 space-y-8">
+ <div className="p-4 md:p-8 space-y-8">
  <h1 className="text-3xl font-bold">Inventory Reports</h1>
  <div className="space-y-8">
  {reports.map(group => (

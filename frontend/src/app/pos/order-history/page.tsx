@@ -113,7 +113,7 @@ export default function PosOrderHistoryPage() {
  </div>
  </div>
  
- <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/3">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 sm:justify-end gap-6 sm:w-1/3">
  <div className="text-left sm:text-right">
  <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Total</div>
  <div className="text-lg font-bold text-blue-600 dark:text-blue-400">

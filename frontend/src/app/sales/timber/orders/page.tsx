@@ -55,10 +55,10 @@ export default function TimberOrdersList() {
  </CardHeader>
  <CardContent>
  {loading ? (
- <div className="flex justify-center p-8"><Loader2 className="animate-spin h-8 w-8 text-muted-foreground" /></div>
+ <div className="flex justify-center p-4 md:p-8"><Loader2 className="animate-spin h-8 w-8 text-muted-foreground" /></div>
  ) : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm border-collapse">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm border-collapse">
  <thead>
  <tr className="border-b text-left bg-muted/30">
  <th className="p-3">Order Number</th>

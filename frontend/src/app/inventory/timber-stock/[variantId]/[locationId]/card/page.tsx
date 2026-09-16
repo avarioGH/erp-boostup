@@ -17,13 +17,13 @@ export default function StockCardPage() {
  });
  }, [variantId, locationId]);
 
- if (loading) return <div className="p-8">Loading stock card...</div>;
- if (!data || !data.stock) return <div className="p-8 text-red-500">Stock card not found</div>;
+ if (loading) return <div className="p-4 md:p-8">Loading stock card...</div>;
+ if (!data || !data.stock) return <div className="p-4 md:p-8 text-red-500">Stock card not found</div>;
 
  const { stock, card } = data;
 
  return (
- <div className="p-8 space-y-6">
+ <div className="p-4 md:p-8 space-y-6">
  <div className="flex justify-between items-start">
  <div>
  <h1 className="text-2xl font-bold mb-2">Stock Card</h1>

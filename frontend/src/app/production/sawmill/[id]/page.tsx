@@ -127,7 +127,7 @@ export default function SawmillRunDetail({ params }: { params: { id: string } })
  <Card>
  <CardHeader><CardTitle>Informasi Umum</CardTitle></CardHeader>
  <CardContent className="space-y-2">
- <div className="grid grid-cols-2 gap-2 text-sm">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
  <Label className="text-muted-foreground">Tanggal</Label>
  <div>{new Date(data.productionDate).toLocaleDateString()}</div>
  <Label className="text-muted-foreground">Shift</Label>

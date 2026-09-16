@@ -14,10 +14,10 @@ export default function ShiftsPage() {
     }).catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-8">Loading...</div>;
+  if (loading) return <div className="p-4 md:p-8">Loading...</div>;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Shifts Performance</h1>
       <div className="border rounded-md">
         <Table>

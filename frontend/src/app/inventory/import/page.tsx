@@ -126,7 +126,7 @@ export default function ImportWizardPage() {
  <Card>
  <CardHeader className="pb-4 border-b border-border/40"><CardTitle>Data Preview (First 100 Rows)</CardTitle></CardHeader>
  <CardContent className="p-0 overflow-x-auto">
- <table className="w-full text-sm text-left">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left">
  <thead className="bg-muted/50"><tr><th className="p-3">Status</th><th className="p-3">Data</th><th className="p-3 text-right">Excel M&sup3;</th><th className="p-3 text-right">Calc M&sup3;</th></tr></thead>
  <tbody>
  {preview.rows.map((r:any, i:number) => (

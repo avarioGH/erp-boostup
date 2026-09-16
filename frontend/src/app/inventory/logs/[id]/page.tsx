@@ -25,12 +25,12 @@ export default function RawLogDetailPage({ params }: { params: Promise<{ id: str
     }).catch(console.error).finally(() => setLoading(false))
   }, [id])
 
- if (loading) return <div className="flex justify-center p-24"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
- if (!data) return <div className="p-24 text-center">Log not found.</div>
+ if (loading) return <div className="flex justify-center p-8 md:p-24"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
+ if (!data) return <div className="p-8 md:p-24 text-center">Log not found.</div>
 
  return (
  <div className="space-y-6 pb-10 animate-in fade-in duration-300">
- <div className="flex items-center justify-between gap-4 border-b pb-4">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 gap-4 border-b pb-4">
  <div className="flex items-center gap-4">
  <Button variant="outline" size="icon" onClick={() => router.push('/inventory/logs')}><ArrowLeft className="w-4 h-4" /></Button>
  <div>
@@ -51,14 +51,14 @@ export default function RawLogDetailPage({ params }: { params: Promise<{ id: str
  <Card className="shadow-sm">
  <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><Ruler className="w-4 h-4" /> Measurements</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
- <div className="grid grid-cols-2 gap-y-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4">
  <div><p className="text-muted-foreground">Original Length</p><p className="font-bold">{data.originalLength} m</p></div>
  <div><p className="text-muted-foreground">Class</p><p className="font-bold">{data.diameterClass}</p></div>
  <div><p className="text-muted-foreground">Avg &Oslash;</p><p className="font-bold">{data.averageDiameter} cm</p></div>
  <div><p className="text-muted-foreground">Rounded &Oslash;</p><p className="font-bold text-lg text-primary">{data.roundedDiameter} cm</p></div>
  </div>
  <hr />
- <div className="grid grid-cols-4 gap-2 text-center text-xs">
+ <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-center text-xs">
  <div className="bg-muted/50 p-2 rounded"><span className="block text-muted-foreground">D1</span><span className="font-medium">{data.diameter1}</span></div>
  <div className="bg-muted/50 p-2 rounded"><span className="block text-muted-foreground">D2</span><span className="font-medium">{data.diameter2}</span></div>
  <div className="bg-muted/50 p-2 rounded"><span className="block text-muted-foreground">D3</span><span className="font-medium">{data.diameter3}</span></div>
@@ -96,7 +96,7 @@ export default function RawLogDetailPage({ params }: { params: Promise<{ id: str
  </CardHeader>
  <CardContent className="pt-6">
  {!trimming || trimming.children.length === 0 ? (
- <div className="text-center p-8 text-muted-foreground bg-muted/20 rounded-lg">No trimming records yet.</div>
+ <div className="text-center p-4 md:p-8 text-muted-foreground bg-muted/20 rounded-lg">No trimming records yet.</div>
  ) : (
  <div className="space-y-6">
  <div className="flex gap-8 text-sm">
@@ -105,7 +105,7 @@ export default function RawLogDetailPage({ params }: { params: Promise<{ id: str
  <div><p className="text-muted-foreground">Remaining</p><p className="font-bold text-lg text-amber-600">{trimming.remaining} m</p></div>
  </div>
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
  <tr>
  <th className="p-3 text-left">Trim Code</th>

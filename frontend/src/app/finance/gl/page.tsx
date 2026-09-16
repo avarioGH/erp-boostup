@@ -128,7 +128,7 @@ export default function GeneralLedgerPage() {
  </div>
  </div>
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead>
  <tr className="border-b bg-muted/10 text-xs">
  <th className="p-3 text-left font-medium text-muted-foreground">Account ID</th>
@@ -177,7 +177,7 @@ export default function GeneralLedgerPage() {
  
  {/* Pagination Controls */}
  {journals.length > itemsPerPage && (
- <div className="flex items-center justify-between mt-6 text-sm text-muted-foreground">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 mt-6 text-sm text-muted-foreground">
  <div>
  Showing {Math.min((currentPage - 1) * itemsPerPage + 1, journals.length)} to {Math.min(currentPage * itemsPerPage, journals.length)} of {journals.length} journals
  </div>

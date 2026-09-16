@@ -96,7 +96,7 @@ export default function TraceabilityPage() {
  </CardTitle>
  </CardHeader>
  <CardContent className="pt-4 text-sm">
- <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-4">
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Bundle</span><strong className="text-[15px]">{result.bundleNumber}</strong></div>
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Volume</span><strong className="text-[15px]">{result.totalM3} M&sup3;</strong></div>
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Created At</span><strong>{new Date(result.createdAt).toLocaleString()}</strong></div>
@@ -119,7 +119,7 @@ export default function TraceabilityPage() {
  </CardTitle>
  </CardHeader>
  <CardContent className="pt-4 text-sm">
- <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-4">
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Input Number</span><strong className="text-[15px]">{parent.inputNumber}</strong></div>
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Machine</span><strong>{parent.machineName}</strong></div>
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Date</span><strong>{new Date(parent.date).toLocaleDateString()}</strong></div>
@@ -136,7 +136,7 @@ export default function TraceabilityPage() {
  </CardTitle>
  </CardHeader>
  <CardContent className="pt-4 text-sm">
- <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-4">
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Trim Code</span><strong className="text-[15px]">{trim.trimNumber}</strong></div>
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Length</span><strong>{trim.length} m</strong></div>
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Gross Vol</span><strong>{trim.grossVolume} M&sup3;</strong></div>
@@ -153,7 +153,7 @@ export default function TraceabilityPage() {
  </CardTitle>
  </CardHeader>
  <CardContent className="pt-4 text-sm">
- <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-4">
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Log Number</span><strong className="text-[15px]">{trim.rawLog.logNumber}</strong></div>
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Species</span><strong>{trim.rawLog.species}</strong></div>
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Supplier</span><strong>{trim.rawLog.supplier?.name}</strong></div>
@@ -174,7 +174,7 @@ export default function TraceabilityPage() {
  </CardTitle>
  </CardHeader>
  <CardContent className="pt-4 text-sm">
- <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-4">
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Log Number</span><strong className="text-[15px]">{raw.logNumber}</strong></div>
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Species</span><strong>{raw.species}</strong></div>
  <div><span className="text-muted-foreground block text-[11px] uppercase tracking-wider mb-1">Supplier</span><strong>{raw.supplier?.name}</strong></div>

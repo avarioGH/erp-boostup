@@ -66,7 +66,7 @@ export default function BOMPage() {
  <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Components</CardTitle></CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/30">
  <tr>
  <th className="p-4 text-left font-medium text-muted-foreground">Component</th>
@@ -76,7 +76,7 @@ export default function BOMPage() {
  </thead>
  <tbody>
  {(selectedDoc.items || []).length === 0 ? (
- <tr><td colSpan={3} className="p-8 text-center text-muted-foreground">No components defined.</td></tr>
+ <tr><td colSpan={3} className="p-4 md:p-8 text-center text-muted-foreground">No components defined.</td></tr>
  ) : selectedDoc.items.map((item: any, i: number) => (
  <tr key={i} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
  <td className="p-4 font-medium">{item.product?.name || item.product_id}</td>
@@ -136,7 +136,7 @@ export default function BOMPage() {
  <CardContent className="p-0">
  {loading ? <div className="flex p-12 justify-center"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div> : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
  <tr>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Code</th>

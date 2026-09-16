@@ -60,7 +60,7 @@ export default function PurchasingOverviewPage() {
  <Button variant="outline" size="sm" className="ml-auto" onClick={() => window.location.reload()}>Retry</Button>
  </CardContent>
  </Card>
- <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
  <Card className="shadow-sm cursor-pointer hover:border-indigo-300 transition-colors" onClick={() => router.push('/purchasing/requests')}>
  <CardContent className="pt-6"><div className="flex gap-3 items-center"><FileText className="h-5 w-5 text-muted-foreground" /><div><p className="font-medium">Purchase Requests</p><p className="text-sm text-muted-foreground">View & manage PRs</p></div></div></CardContent>
  </Card>
@@ -90,7 +90,7 @@ export default function PurchasingOverviewPage() {
  </div>
 
  {/* Quick nav */}
- <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-4">
  <Button variant="outline" className="h-auto flex-col gap-1 py-4" onClick={() => router.push('/purchasing/requests')}>
  <FileText className="h-5 w-5" /><span className="text-xs">Purchase Requests</span>
  </Button>

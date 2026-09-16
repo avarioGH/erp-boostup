@@ -100,7 +100,7 @@ export default function ChamberOperationsPage() {
  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
  <Card className="bg-primary/5 border-primary/20">
  <CardContent className="p-6">
- <div className="flex items-center justify-between space-y-0 pb-2">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 space-y-0 pb-2">
  <p className="text-sm font-medium">Chamber Stock</p>
  <Cuboid className="h-4 w-4 text-muted-foreground" />
  </div>
@@ -110,7 +110,7 @@ export default function ChamberOperationsPage() {
  </Card>
  <Card className="bg-primary/5 border-primary/20">
  <CardContent className="p-6">
- <div className="flex items-center justify-between space-y-0 pb-2">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 space-y-0 pb-2">
  <p className="text-sm font-medium">Chamber Volume</p>
  <Cuboid className="h-4 w-4 text-muted-foreground" />
  </div>
@@ -120,7 +120,7 @@ export default function ChamberOperationsPage() {
  </Card>
  <Card>
  <CardContent className="p-6">
- <div className="flex items-center justify-between space-y-0 pb-2">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 space-y-0 pb-2">
  <p className="text-sm font-medium">In Today</p>
  <ArrowRight className="h-4 w-4 text-emerald-500" />
  </div>
@@ -130,7 +130,7 @@ export default function ChamberOperationsPage() {
  </Card>
  <Card>
  <CardContent className="p-6">
- <div className="flex items-center justify-between space-y-0 pb-2">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 space-y-0 pb-2">
  <p className="text-sm font-medium">Out Today</p>
  <ArrowLeftRight className="h-4 w-4 text-amber-500" />
  </div>
@@ -157,12 +157,12 @@ export default function ChamberOperationsPage() {
  </CardHeader>
  <CardContent className="p-0">
  {loading ? (
- <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+ <div className="flex justify-center p-4 md:p-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
  ) : data.length === 0 ? (
- <div className="text-center p-8 text-muted-foreground">No chamber operations found.</div>
+ <div className="text-center p-4 md:p-8 text-muted-foreground">No chamber operations found.</div>
  ) : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead>
  <tr className="border-b bg-muted/50">
  <th className="p-3 px-4 text-left font-medium">Date</th>

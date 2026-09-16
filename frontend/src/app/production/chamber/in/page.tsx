@@ -85,7 +85,7 @@ export default function ChamberInPage() {
  <CardContent className="space-y-4">
  {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" /> : (
  <>
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <label className="text-sm font-medium">Source Yard (From)</label>
  <Select value={form.fromLocationId} onValueChange={(v) => setForm({...form, fromLocationId: v || ''})}>

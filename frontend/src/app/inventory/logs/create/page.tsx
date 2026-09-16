@@ -111,7 +111,7 @@ export default function CreateRawLogPage() {
   const asteriskClass = "text-[#DC2626] dark:text-[#F87171]"
 
   return (
-    <div className="space-y-6 pb-10 min-h-[calc(100vh-4rem)] bg-[#F4F6F8] dark:bg-[#0F1720] -m-4 sm:-m-6 md:-m-8 p-4 sm:p-6 md:p-8 transition-colors duration-200">
+    <div className="space-y-6 pb-10 min-h-[calc(100vh-4rem)] bg-[#F4F6F8] dark:bg-[#0F1720] -m-4 sm:-m-6 md:-m-8 p-4 sm:p-6 md:p-4 md:p-8 transition-colors duration-200">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" onClick={() => router.push('/inventory/logs')} className="text-[#475569] dark:text-[#CBD5E1] border-[#E2E8F0] dark:border-[#263244] bg-[#FFFFFF] dark:bg-[#151E2B] hover:bg-[#F8FAFC] dark:hover:bg-[#192333] transition-colors">
           <ArrowLeft className="w-4 h-4" />

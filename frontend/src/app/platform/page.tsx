@@ -75,7 +75,7 @@ export default function PlatformDashboard() {
  </div>
 
  <Tabs defaultValue="settings" className="w-full">
- <TabsList className="grid w-full grid-cols-2 md:w-[400px]">
+ <TabsList className="grid w-full grid-cols-1 md:grid-cols-2 md:w-[400px]">
  <TabsTrigger value="settings">General Settings</TabsTrigger>
  <TabsTrigger value="apikeys">API Keys</TabsTrigger>
  </TabsList>
@@ -97,7 +97,7 @@ export default function PlatformDashboard() {
  onChange={e => setSettings({...settings, companyName: e.target.value})} 
  />
  </div>
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="grid gap-2">
  <Label>Currency</Label>
  <Input 
@@ -161,7 +161,7 @@ export default function PlatformDashboard() {
  <p className="text-sm text-muted-foreground">No API keys found.</p>
  ) : (
  <div className="border rounded-md">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead>
  <tr className="border-b bg-muted/50">
  <th className="p-3 text-left font-medium">Name</th>

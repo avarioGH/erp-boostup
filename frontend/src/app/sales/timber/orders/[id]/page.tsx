@@ -37,7 +37,7 @@ export default function TimberOrderDetail({ params }: { params: { id: string } }
  <Badge className="text-sm px-3 py-1">{order.status}</Badge>
  </div>
 
- <div className="grid grid-cols-2 gap-6">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
  <Card>
  <CardHeader><CardTitle className="text-[16px] font-semibold">Customer Info</CardTitle></CardHeader>
  <CardContent className="space-y-2">
@@ -60,7 +60,7 @@ export default function TimberOrderDetail({ params }: { params: { id: string } }
  </CardHeader>
  <CardContent>
  <div className="overflow-x-auto">
- <table className="w-full text-sm border-collapse">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm border-collapse">
  <thead>
  <tr className="border-b text-left bg-muted/30">
  <th className="p-3">Dimensions (T×W×L)</th>

@@ -37,7 +37,7 @@ export default function TimberStockPage() {
  <CardContent className="p-0">
  {loading ? <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div> : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
  <tr>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">SKU</th>
@@ -52,7 +52,7 @@ export default function TimberStockPage() {
  </tr>
  </thead>
  <tbody>
- {filtered.length === 0 ? <tr><td colSpan={9} className="text-center p-8 text-muted-foreground">No stock found</td></tr> :
+ {filtered.length === 0 ? <tr><td colSpan={9} className="text-center p-4 md:p-8 text-muted-foreground">No stock found</td></tr> :
  filtered.map(stock => (
  <tr key={stock.id} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
  <td className="py-3.5 px-6 font-semibold text-primary text-[13px] font-semibold">{stock.timberVariant?.sku}</td>

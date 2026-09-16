@@ -61,8 +61,8 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
  }
  };
 
- if (loading) return <div className="p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
- if (!data) return <div className="p-24 text-center">Transfer not found.</div>;
+ if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+ if (!data) return <div className="p-8 md:p-24 text-center">Transfer not found.</div>;
 
  const isFromChamber = data.fromLocation?.code?.startsWith('CH-');
  const isToChamber = data.toLocation?.code?.startsWith('CH-');
@@ -72,7 +72,7 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
 
  return (
  <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in duration-300 pb-10">
- <div className="flex items-center justify-between border-b pb-4">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 border-b pb-4">
  <div className="flex items-center gap-4">
  <Button variant="outline" size="icon" onClick={() => router.back()}><ArrowLeft className="w-4 h-4" /></Button>
  <div>
@@ -129,7 +129,7 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
  <CardTitle className="text-[16px] font-semibold">Transfer Items</CardTitle>
  </CardHeader>
  <CardContent className="p-0">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead>
  <tr className="border-b bg-muted/30">
  <th className="p-3 px-4 text-left font-medium">Timber Variant</th>
@@ -149,7 +149,7 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
  ))}
  {(!data.items || data.items.length === 0) && (
  <tr>
- <td colSpan={4} className="p-8 text-center text-muted-foreground">No items in this transfer.</td>
+ <td colSpan={4} className="p-4 md:p-8 text-center text-muted-foreground">No items in this transfer.</td>
  </tr>
  )}
  </tbody>

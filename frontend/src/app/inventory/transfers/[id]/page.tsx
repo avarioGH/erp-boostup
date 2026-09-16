@@ -34,12 +34,12 @@ export default function TransferDetailPage({ params }: { params: { id: string } 
  }
  }
 
- if (loading) return <div className="p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
- if (!data) return <div className="p-24 text-center">Transfer not found.</div>
+ if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
+ if (!data) return <div className="p-8 md:p-24 text-center">Transfer not found.</div>
 
  return (
  <div className="space-y-6 pb-10">
- <div className="flex items-center justify-between gap-4 border-b pb-4">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 gap-4 border-b pb-4">
  <div className="flex items-center gap-4">
  <Button variant="outline" size="icon" onClick={() => router.push('/inventory/transfers')}><ArrowLeft className="w-4 h-4" /></Button>
  <div>
@@ -60,7 +60,7 @@ export default function TransferDetailPage({ params }: { params: { id: string } 
  <Card className="shadow-sm">
  <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Transfer Route</CardTitle></CardHeader>
  <CardContent className="pt-6">
- <div className="flex items-center justify-between">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  <div className="text-center p-4 border rounded bg-muted/30 flex-1">
  <MapPin className="w-5 h-5 mx-auto text-muted-foreground mb-2" />
  <p className="text-xs text-muted-foreground uppercase font-bold">From Location</p>
@@ -85,7 +85,7 @@ export default function TransferDetailPage({ params }: { params: { id: string } 
  <CardHeader className="border-b pb-4"><CardTitle className="text-[16px] font-semibold">Items Transferred</CardTitle></CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="p-3 px-6 text-left">SKU</th>

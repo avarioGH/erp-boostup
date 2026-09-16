@@ -88,8 +88,8 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  }
  }
 
- if (loading) return <div className="p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
- if (!trimInfo) return <div className="p-24 text-center">Failed to load parent log.</div>
+ if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
+ if (!trimInfo) return <div className="p-8 md:p-24 text-center">Failed to load parent log.</div>
 
  const remaining = trimInfo.remaining;
  const userLen = parseFloat(form.length) || 0;

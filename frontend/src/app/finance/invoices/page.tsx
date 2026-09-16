@@ -31,14 +31,14 @@ export default function InvoicesPage() {
  } catch (error) { console.error(error); } finally { setLoading(false); }
  };
 
- if (loading) return <div className="flex p-8 justify-center"><Loader2 className="animate-spin w-8 h-8" /></div>;
+ if (loading) return <div className="flex p-4 md:p-8 justify-center"><Loader2 className="animate-spin w-8 h-8" /></div>;
 
  return (
  <div className="p-6 space-y-6">
  <h1 className="text-2xl font-bold">Faktur Penjualan (Invoices)</h1>
  <Card>
  <CardContent className="p-0">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-gray-50 border-b">
  <tr>
  <th className="p-4 text-left">Faktur</th>
@@ -54,7 +54,7 @@ export default function InvoicesPage() {
  </thead>
  <tbody>
  {data.length === 0 ? (
- <tr><td colSpan={8} className="text-center p-8 text-gray-500">Belum ada faktur.</td></tr>
+ <tr><td colSpan={8} className="text-center p-4 md:p-8 text-gray-500">Belum ada faktur.</td></tr>
  ) : data.map((item) => (
  <tr key={item.id} className="border-b">
  <td className="p-4">{item.invoice_number}</td>

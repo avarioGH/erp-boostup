@@ -202,7 +202,7 @@ export default function StockInPage() {
  </div>
 
  <div className="space-y-4 pt-4 border-t border-border">
- <div className="flex items-center justify-between">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  <Label className="text-base font-semibold">Daftar Barang Masuk</Label>
  <Button type="button" variant="outline" size="sm" onClick={addItem} className="gap-1">
  <Plus className="w-4 h-4" /> Tambah Baris

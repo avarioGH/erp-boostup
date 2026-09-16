@@ -120,10 +120,10 @@ export default function ExpensePage() {
  </CardHeader>
  <CardContent>
  {loading ? (
- <div className="flex p-8 justify-center"><Loader2 className="animate-spin w-8 h-8" /></div>
+ <div className="flex p-4 md:p-8 justify-center"><Loader2 className="animate-spin w-8 h-8" /></div>
  ) : (
  <div className="rounded-md border overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/30 border-b">
  <tr>
  <th className="p-4 text-left">Employee</th>

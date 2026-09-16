@@ -62,7 +62,7 @@ export default function AuditPage() {
  { label: 'Indonesian size format parsing', status: 'PASS', detail: '"42,00 x 210,00 x 2.450,00" ? T=42 W=210 L=2450' },
  ]
 
- if (loading) return <div className="p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
+ if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
 
  return (
  <div className="space-y-6 pb-10">
@@ -72,7 +72,7 @@ export default function AuditPage() {
  </div>
 
  {/* Live Counts */}
- <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-5 gap-4">
  {[
  { label: 'Raw Logs', val: stats.rawLogs, icon: '??' },
  { label: 'Trimmed Logs', val: stats.trimmedLogs, icon: '??' },
@@ -102,7 +102,7 @@ export default function AuditPage() {
  </CardHeader>
  <CardContent className="pt-6">
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
  <tr>
  <th className="p-3 px-4 text-left">Dataset</th>
@@ -150,7 +150,7 @@ export default function AuditPage() {
  </CardTitle>
  </CardHeader>
  <CardContent className="p-0">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="p-3 px-6 text-left">Check</th>

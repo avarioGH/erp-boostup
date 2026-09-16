@@ -105,9 +105,9 @@ export default function HrAttendance() {
  </CardHeader>
  <CardContent className="p-0">
  {loading ? (
- <div className="p-8 text-center text-muted-foreground">Memuat data...</div>
+ <div className="p-4 md:p-8 text-center text-muted-foreground">Memuat data...</div>
  ) : attendances.length === 0 ? (
- <div className="p-8 text-center text-muted-foreground">Belum ada data absensi.</div>
+ <div className="p-4 md:p-8 text-center text-muted-foreground">Belum ada data absensi.</div>
  ) : (
  <div className="overflow-x-auto">
  <Table>

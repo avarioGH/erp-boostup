@@ -104,7 +104,7 @@ export default function FinanceDashboard() {
  </div>
 
  {/* KPI CARDS */}
- <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
+ <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
  <Card className="border-none shadow-md shadow-slate-200/50 dark:shadow-none bg-gradient-to-br from-blue-500 to-indigo-600 text-white relative overflow-hidden">
  <div className="absolute top-0 right-0 p-4 opacity-20">
  <DollarSign className="w-16 h-16" />
@@ -220,7 +220,7 @@ export default function FinanceDashboard() {
  <div className="space-y-6 mt-4">
  {transactions && transactions.length > 0 ? (
  transactions.slice(0, 5).map((tx, i) => (
- <div key={i} className="flex items-center justify-between">
+ <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  <div className="flex items-center gap-3">
  <div className={`p-2 rounded-full ${tx.transaction_type === 'Income' ? 'bg-emerald-100 text-primary dark:bg-emerald-900/30 dark:text-primary' : 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400'}`}>
  {tx.transaction_type === 'Income' ? <ArrowDownRight className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}

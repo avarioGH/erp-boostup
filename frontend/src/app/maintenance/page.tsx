@@ -58,7 +58,7 @@ export default function MaintenanceDashboard() {
  </CardHeader>
  <CardContent>
  <div className="overflow-x-auto">
- <table className="w-full text-sm text-left">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left">
  <thead className="bg-gray-50 border-b">
  <tr>
  <th className="px-4 py-2">Work Center ID</th>

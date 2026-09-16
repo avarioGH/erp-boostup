@@ -273,7 +273,7 @@ export default function ProductInventory() {
  />
  </div>
  <div className="space-y-2">
- <div className="flex items-center justify-between">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kategori Produk</Label>
  <Link href="/inventory/categories" className="text-[10px] text-primary dark:text-primary hover:underline flex items-center gap-1 font-medium">
  <Edit className="w-3 h-3" /> Kelola Kategori
@@ -354,7 +354,7 @@ export default function ProductInventory() {
  </div>
  
  <div className="space-y-2">
- <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:bg-muted/30 dark:hover:bg-slate-900/50 transition-colors bg-accent/20">
+ <div className="border-2 border-dashed border-border rounded-xl p-4 md:p-8 text-center hover:bg-muted/30 dark:hover:bg-slate-900/50 transition-colors bg-accent/20">
  <input
  type="file"
  id="image-upload"
@@ -378,7 +378,7 @@ export default function ProductInventory() {
  </div>
  
  {images.length > 0 && (
- <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-4 mt-4">
+ <div className="grid grid-cols-1 md:grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-4 mt-4">
  {images.map((img, idx) => (
  <div key={idx} className="relative group rounded-lg overflow-hidden border border-border aspect-square shadow-sm">
  <img 

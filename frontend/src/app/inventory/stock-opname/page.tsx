@@ -82,7 +82,7 @@ export default function StockOpnamePage() {
  <div className="flex justify-center p-12"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div>
  ) : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border"><tr>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Opname No</th>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Warehouse</th>

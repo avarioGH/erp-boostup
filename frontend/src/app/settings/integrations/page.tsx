@@ -168,7 +168,7 @@ export default function IntegrationsPage() {
 
  {status?.isConnected && (
  <div className="space-y-4">
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="border rounded-lg p-3">
  <p className="text-xs text-muted-foreground">Shop ID Terhubung</p>
  <p className="font-mono font-medium">{status.shopId}</p>

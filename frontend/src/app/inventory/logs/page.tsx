@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
@@ -76,15 +76,15 @@ export default function RawLogsPage() {
  <CardContent className="p-0">
  {loading ? <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div> : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
  <tr>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Log No</th>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Species</th>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Partai</th>
  <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Length</th>
- <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Ø Avg</th>
- <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Net M³</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Ã˜ Avg</th>
+ <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Net MÂ³</th>
  <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status</th>
  <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
  </tr>
@@ -124,3 +124,4 @@ export default function RawLogsPage() {
  </div>
  )
 }
+

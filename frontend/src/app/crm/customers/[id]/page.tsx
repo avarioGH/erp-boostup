@@ -36,20 +36,20 @@ export default function Customer360Page() {
  }, [customerId]);
 
  if (loading) return (
- <div className="p-8 space-y-4 animate-pulse">
+ <div className="p-4 md:p-8 space-y-4 animate-pulse">
  <div className="h-20 bg-muted/50 rounded-lg"></div>
  <div className="grid grid-cols-1 md:grid-cols-4 gap-4"><div className="h-24 bg-muted/50 rounded-lg"></div><div className="h-24 bg-muted/50 rounded-lg"></div><div className="h-24 bg-muted/50 rounded-lg"></div><div className="h-24 bg-muted/50 rounded-lg"></div></div>
  <div className="h-64 bg-muted/50 rounded-lg"></div>
  </div>
  );
  if (error) return (
- <div className="p-8 text-center border border-red-100 bg-red-50 text-red-600 rounded-lg m-6">
+ <div className="p-4 md:p-8 text-center border border-red-100 bg-red-50 text-red-600 rounded-lg m-6">
  <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
  <p className="font-semibold">{error}</p>
  <Button variant="outline" className="mt-4" onClick={() => router.back()}>Go Back</Button>
  </div>
  );
- if (!data?.profile) return <div className="p-8 text-center text-red-500">Customer not found.</div>;
+ if (!data?.profile) return <div className="p-4 md:p-8 text-center text-red-500">Customer not found.</div>;
 
  const { profile, sales, finance, crm, timeline } = data;
 
@@ -103,7 +103,7 @@ export default function Customer360Page() {
  </div>
 
  {/* KPI Cards */}
- <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-4 gap-4">
  <Card className="shadow-sm">
  <CardHeader className="pb-2">
  <CardTitle className="text-sm font-medium text-muted-foreground">Total Invoiced (LTV)</CardTitle>
@@ -166,7 +166,7 @@ export default function Customer360Page() {
  <FileClock className="w-4 h-4 text-purple-600" />}
  </span>
  <div className="p-3 bg-muted/20 border rounded-md">
- <h3 className="text-sm font-semibold text-foreground flex items-center justify-between">
+ <h3 className="text-sm font-semibold text-foreground flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  {event.title}
  <Badge variant="outline" className="text-xs font-normal">{event.type}</Badge>
  </h3>
@@ -194,7 +194,7 @@ export default function Customer360Page() {
  <Link href="/crm/opportunities"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
- <table className="w-full text-sm text-left whitespace-nowrap">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="px-4 py-3 font-medium">Title</th>
@@ -223,7 +223,7 @@ export default function Customer360Page() {
  <CardTitle className="text-[16px] font-semibold">Activities</CardTitle>
  </CardHeader>
  <CardContent className="overflow-x-auto">
- <table className="w-full text-sm text-left whitespace-nowrap">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="px-4 py-3 font-medium">Type</th>
@@ -256,7 +256,7 @@ export default function Customer360Page() {
  <Link href="/sales/quotations"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
- <table className="w-full text-sm text-left whitespace-nowrap">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="px-4 py-3 font-medium">Quotation #</th>
@@ -286,7 +286,7 @@ export default function Customer360Page() {
  <Link href="/sales/orders"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
- <table className="w-full text-sm text-left whitespace-nowrap">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="px-4 py-3 font-medium">Order #</th>
@@ -319,7 +319,7 @@ export default function Customer360Page() {
  <Link href="/sales/deliveries"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
- <table className="w-full text-sm text-left whitespace-nowrap">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="px-4 py-3 font-medium">Delivery #</th>
@@ -350,7 +350,7 @@ export default function Customer360Page() {
  <Link href="/finance/invoices"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
- <table className="w-full text-sm text-left whitespace-nowrap">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="px-4 py-3 font-medium">Invoice #</th>
@@ -382,7 +382,7 @@ export default function Customer360Page() {
  <Link href="/finance/payments"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
- <table className="w-full text-sm text-left whitespace-nowrap">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="px-4 py-3 font-medium">Payment #</th>

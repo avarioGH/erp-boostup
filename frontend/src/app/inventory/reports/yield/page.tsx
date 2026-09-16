@@ -14,10 +14,10 @@ export default function YieldReport() {
  });
  }, []);
 
- if (loading) return <div className="p-8">Loading yield report...</div>;
+ if (loading) return <div className="p-4 md:p-8">Loading yield report...</div>;
 
  return (
- <div className="p-8 space-y-6">
+ <div className="p-4 md:p-8 space-y-6">
  <h1 className="text-2xl font-bold">Production Yield Report</h1>
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">

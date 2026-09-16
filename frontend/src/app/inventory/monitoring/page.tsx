@@ -24,7 +24,7 @@ export default function DailyMonitoringPage() {
  }, [dateStr])
 
  return (
- <div className="space-y-6 pb-10 p-8 dark">
+ <div className="space-y-6 pb-10 p-4 md:p-8 dark">
  <div className="flex justify-between items-end">
  <div>
  <h2 className="text-2xl font-bold tracking-tight text-white">Daily Sawmill Monitoring</h2>

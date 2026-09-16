@@ -136,7 +136,7 @@ export default function PurchaseOrderDetailPage() {
  <CardTitle>Procurement Items & Receiving</CardTitle>
  </CardHeader>
  <CardContent className="p-0 overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/30">
  <tr>
  <th className="p-4 text-left font-medium text-muted-foreground">Product</th>
@@ -182,7 +182,7 @@ export default function PurchaseOrderDetailPage() {
  <CardTitle className="flex items-center gap-2"><CheckCircle2 className="w-5 h-5 text-primary" /> Three-Way Matching Status</CardTitle>
  </CardHeader>
  <CardContent className="p-0 overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/30">
  <tr>
  <th className="p-4 text-left font-medium text-muted-foreground">Product</th>

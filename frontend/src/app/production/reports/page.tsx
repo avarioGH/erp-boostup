@@ -17,10 +17,10 @@ export default function ProductionReportsPage() {
     }).catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-8">Loading summary...</div>;
+  if (loading) return <div className="p-4 md:p-8">Loading summary...</div>;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Production Dashboard</h1>
       </div>

@@ -17,7 +17,7 @@ export default function StockByLocationReport() {
  });
  }, [locationId]);
 
- if (loading) return <div className="p-8">Loading report...</div>;
+ if (loading) return <div className="p-4 md:p-8">Loading report...</div>;
 
  // Group by location
  const grouped = data.reduce((acc, row) => {
@@ -31,7 +31,7 @@ export default function StockByLocationReport() {
  let grandM3 = 0;
 
  return (
- <div className="p-8 space-y-6">
+ <div className="p-4 md:p-8 space-y-6">
  <div className="flex justify-between items-center">
  <h1 className="text-2xl font-bold">Stock By Location</h1>
  <Button variant="outline" onClick={() => window.print()}>Export / Print</Button>

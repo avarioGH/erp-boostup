@@ -63,7 +63,7 @@ export default function AiChatPage() {
  {/* Main Chat Area */}
  <div className="flex-1 flex flex-col h-full bg-[#f8fafc] dark:bg-[#0b1120]">
  {/* Header */}
- <div className="h-16 border-b border-border flex items-center justify-between px-6 bg-card dark:bg-[#0f172a]">
+ <div className="h-16 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 px-6 bg-card dark:bg-[#0f172a]">
  <div className="flex items-center gap-3">
  <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/20">
  <Bot className="w-6 h-6" />

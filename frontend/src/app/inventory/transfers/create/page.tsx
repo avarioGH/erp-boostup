@@ -67,7 +67,7 @@ export default function CreateTransferPage() {
  }
  }
 
- if (loading) return <div className="p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
+ if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
 
  return (
  <div className="space-y-6 pb-10">

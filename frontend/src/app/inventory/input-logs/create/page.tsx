@@ -58,7 +58,7 @@ export default function CreateInputLogPage() {
  }
  }
 
- if (loading) return <div className="p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
+ if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
 
  return (
  <div className="space-y-6 pb-10">
@@ -88,7 +88,7 @@ export default function CreateInputLogPage() {
  <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Select Trimmed Logs</CardTitle></CardHeader>
  <CardContent className="p-0">
  <div className="max-h-[400px] overflow-y-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/50 sticky top-0 border-b">
  <tr>
  <th className="p-3 w-10"></th>
@@ -99,7 +99,7 @@ export default function CreateInputLogPage() {
  </tr>
  </thead>
  <tbody>
- {availableLogs.length === 0 ? <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No available trimmed logs.</td></tr> :
+ {availableLogs.length === 0 ? <tr><td colSpan={5} className="p-4 md:p-8 text-center text-muted-foreground">No available trimmed logs.</td></tr> :
  availableLogs.map(log => (
  <tr key={log.id} className="border-b hover:bg-muted/20">
  <td className="p-3 text-center"><Checkbox checked={selectedIds.includes(log.id)} onCheckedChange={(checked) => handleSelect(log.id, !!checked)} /></td>

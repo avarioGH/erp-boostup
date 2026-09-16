@@ -102,7 +102,7 @@ export default function SalesOrdersPage() {
  </div>
 
  {/* Workflow Ribbon UX */}
- <div className="flex items-center justify-between p-4 bg-muted/30 border rounded-lg overflow-x-auto text-sm font-medium">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 p-4 bg-muted/30 border rounded-lg overflow-x-auto text-sm font-medium">
  <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${details.quotation_id ? 'bg-emerald-100 text-primary' : 'text-muted-foreground'}`}>
  <CheckCircle2 className="w-4 h-4" /> Quotation
  </div>
@@ -130,7 +130,7 @@ export default function SalesOrdersPage() {
  </CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/30">
  <tr>
  <th className="p-4 text-left font-medium text-muted-foreground">Product</th>
@@ -142,7 +142,7 @@ export default function SalesOrdersPage() {
  </thead>
  <tbody>
  {(details.lines || []).length === 0 ? (
- <tr><td colSpan={5} className="text-center p-8 text-muted-foreground">No lines available.</td></tr>
+ <tr><td colSpan={5} className="text-center p-4 md:p-8 text-muted-foreground">No lines available.</td></tr>
  ) : (
  details.lines.map((line: any, i: number) => (
  <tr key={i} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
@@ -239,7 +239,7 @@ export default function SalesOrdersPage() {
  <div className="flex p-12 justify-center"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div>
  ) : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
  <tr>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Order Number</th>

@@ -121,7 +121,7 @@ export default function CustomersPage() {
  </div>
  </div>
  
- <div className="mt-5 pt-4 border-t border-border/60 flex items-center justify-between">
+ <div className="mt-5 pt-4 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  <div className="flex items-center gap-1.5 text-xs font-semibold">
  <Star className={`w-4 h-4 ${
  customer.level === 'Gold' || customer.level === 'Platinum' ? 'text-amber-500 fill-amber-500' :

@@ -88,7 +88,7 @@ export default function PayrollPage() {
 
  return (
  <div className="space-y-6">
- <div className="flex items-center justify-between">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  <div>
  <h1 className="text-[28px] font-bold tracking-tight text-foreground">Payroll</h1>
  <p className="text-muted-foreground">Process employee salaries and generate payslips.</p>
@@ -106,7 +106,7 @@ export default function PayrollPage() {
  <CardTitle>Generate Payslip</CardTitle>
  </CardHeader>
  <CardContent className="space-y-4">
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label>Employee</Label>
  <Select value={employeeId} onValueChange={(val) => setEmployeeId(val ||"")} required>
@@ -125,7 +125,7 @@ export default function PayrollPage() {
  <Label>Basic Salary (IDR)</Label>
  <Input type="number" value={basicSalary} onChange={(e) => setBasicSalary(e.target.value)} required />
  </div>
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label>Total Allowances (+)</Label>
  <Input type="number" value={allowance} onChange={(e) => setAllowance(e.target.value)} />
@@ -155,7 +155,7 @@ export default function PayrollPage() {
  <p className="text-sm text-muted-foreground text-center py-4">No payroll records found.</p>
  ) : (
  <div className="border rounded-md">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead>
  <tr className="border-b bg-muted/50">
  <th className="p-3 text-left font-medium">Period</th>

@@ -102,7 +102,7 @@ export default function MOPage() {
  </CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/30">
  <tr>
  <th className="p-4 text-left font-medium text-muted-foreground">Component</th>
@@ -113,7 +113,7 @@ export default function MOPage() {
  </thead>
  <tbody>
  {(selectedDoc.items || []).length === 0 ? (
- <tr><td colSpan={4} className="p-8 text-center text-muted-foreground">No components.</td></tr>
+ <tr><td colSpan={4} className="p-4 md:p-8 text-center text-muted-foreground">No components.</td></tr>
  ) : selectedDoc.items.map((item: any, i: number) => (
  <tr key={i} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
  <td className="p-4 font-medium">{item.product?.name || item.product_id}</td>
@@ -136,7 +136,7 @@ export default function MOPage() {
  {selectedDoc.product?.name || selectedDoc.product_id || '-'}
  </p>
  </div>
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div><p className="text-sm font-medium text-muted-foreground mb-1">Planned Qty</p><p className="font-bold text-lg">{selectedDoc.planned_qty || selectedDoc.quantity}</p></div>
  <div><p className="text-sm font-medium text-muted-foreground mb-1">Produced</p><p className="font-bold text-lg text-primary">{selectedDoc.produced_qty || 0}</p></div>
  </div>
@@ -174,7 +174,7 @@ export default function MOPage() {
  <CardContent className="p-0">
  {loading ? <div className="flex p-12 justify-center"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div> : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
  <tr>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Order No</th>

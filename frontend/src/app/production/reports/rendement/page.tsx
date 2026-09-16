@@ -20,10 +20,10 @@ export default function RendementPage() {
   }), { inputM3: 0, outputM3: 0 });
   const overallRendement = totals.inputM3 > 0 ? ((totals.outputM3 / totals.inputM3) * 100).toFixed(2) : 0;
 
-  if (loading) return <div className="p-8">Loading...</div>;
+  if (loading) return <div className="p-4 md:p-8">Loading...</div>;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 md:p-8 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Rendement Report</h1>
       <div className="border rounded-md">
         <Table>

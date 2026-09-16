@@ -103,7 +103,7 @@ export default function EmployeesPage() {
 
  return (
  <div className="space-y-6">
- <div className="flex items-center justify-between">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  <div>
  <h1 className="text-[28px] font-bold tracking-tight text-foreground">Employees</h1>
  <p className="text-muted-foreground">Manage your workforce and biometrics.</p>
@@ -121,7 +121,7 @@ export default function EmployeesPage() {
  <CardTitle>New Employee</CardTitle>
  </CardHeader>
  <CardContent className="space-y-4">
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label>First Name</Label>
  <Input required value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} />
@@ -135,7 +135,7 @@ export default function EmployeesPage() {
  <Label>Email</Label>
  <Input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
  </div>
- <div className="grid grid-cols-2 gap-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label>Position</Label>
  <Input required value={formData.position} onChange={(e) => setFormData({...formData, position: e.target.value})} />
@@ -152,7 +152,7 @@ export default function EmployeesPage() {
  )}
 
  {loading ? (
- <div className="p-8 flex justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>
+ <div className="p-4 md:p-8 flex justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>
  ) : (
  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
  {employees.map((emp) => (

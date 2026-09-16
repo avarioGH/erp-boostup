@@ -90,7 +90,7 @@ export default function AuditLogPage() {
  </div>
  ) : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm text-left">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left">
  <thead className="text-xs text-muted-foreground uppercase bg-muted/30/50 border-b border-border/60">
  <tr>
  <th className="px-6 py-4 font-semibold">Waktu & Tanggal</th>

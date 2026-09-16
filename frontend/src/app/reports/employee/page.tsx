@@ -157,7 +157,7 @@ export default function EmployeeReportPage() {
  </div>
  <div className="w-full md:w-1/2 space-y-2">
  {deptData.map((entry, index) => (
- <div key={index} className="flex items-center justify-between text-sm">
+ <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 text-sm">
  <div className="flex items-center gap-2">
  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }}></div>
  <span className="text-muted-foreground font-medium">{entry.name}</span>

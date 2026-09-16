@@ -162,7 +162,7 @@ export default function AIInventoryAnalysisPage() {
  ))}
  </div>
  ) : (
- <div className="p-8 text-center text-muted-foreground">Stok aman, tidak ada peringatan kritis.</div>
+ <div className="p-4 md:p-8 text-center text-muted-foreground">Stok aman, tidak ada peringatan kritis.</div>
  )}
  </CardContent>
  </Card>
@@ -192,7 +192,7 @@ export default function AIInventoryAnalysisPage() {
  ))}
  </div>
  ) : (
- <div className="p-8 text-center text-muted-foreground">Gudang Anda bersih dari dead stock! 🚀</div>
+ <div className="p-4 md:p-8 text-center text-muted-foreground">Gudang Anda bersih dari dead stock! 🚀</div>
  )}
  </CardContent>
  </Card>

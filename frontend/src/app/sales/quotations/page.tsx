@@ -123,7 +123,7 @@ export default function QuotationsPage() {
  </CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/30">
  <tr>
  <th className="p-4 text-left font-medium text-muted-foreground">Product</th>
@@ -134,7 +134,7 @@ export default function QuotationsPage() {
  </thead>
  <tbody>
  {(details.lines || []).length === 0 ? (
- <tr><td colSpan={4} className="text-center p-8 text-muted-foreground">No lines available.</td></tr>
+ <tr><td colSpan={4} className="text-center p-4 md:p-8 text-muted-foreground">No lines available.</td></tr>
  ) : (
  details.lines.map((line: any, i: number) => (
  <tr key={i} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
@@ -235,7 +235,7 @@ export default function QuotationsPage() {
  <div className="flex p-12 justify-center"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div>
  ) : (
  <div className="overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
  <tr>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Number</th>

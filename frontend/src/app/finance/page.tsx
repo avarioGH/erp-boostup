@@ -141,7 +141,7 @@ export default function FinanceDashboard() {
  </div>
 
  {/* KPI CARDS */}
- <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
+ <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
  <Card className="border-border shadow-sm bg-card relative overflow-hidden group hover:border-info/50 transition-colors">
  <div className="absolute top-4 right-4 p-2 bg-info/10 rounded-lg text-info">
  <DollarSign className="w-5 h-5" />
@@ -268,7 +268,7 @@ export default function FinanceDashboard() {
  transactions.slice(0, 7).map((tx, i) => {
  const isIncome = tx.transaction_type === 'Income' || tx.transaction_type === 'Cash In';
  return (
- <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors">
+ <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 px-4 py-3 hover:bg-accent/50 transition-colors">
  <div className="flex items-center gap-3">
  <div className={`p-1.5 rounded-md ${isIncome ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
  {isIncome ? <ArrowDownRight className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}

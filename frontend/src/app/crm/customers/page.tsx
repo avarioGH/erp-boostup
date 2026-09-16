@@ -141,7 +141,7 @@ export default function CustomersPage() {
  ) : (
  <>
  <div className="border rounded-md overflow-x-auto">
- <table className="w-full text-sm">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead>
  <tr className="border-b bg-muted/50">
  <th className="p-3 px-4 text-left font-medium text-muted-foreground">Code</th>

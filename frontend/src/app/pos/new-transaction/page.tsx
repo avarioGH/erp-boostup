@@ -174,7 +174,7 @@ export default function PosTransaction() {
  </div>
  </div>
  )}
- <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-4">
  {filteredProducts.map(p => (
  <Card 
  key={p.id} 
@@ -186,7 +186,7 @@ export default function PosTransaction() {
  </div>
  <CardContent className="p-3">
  <h3 className="font-semibold text-sm text-foreground line-clamp-2 leading-tight">{p.name}</h3>
- <div className="flex items-center justify-between mt-2">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 mt-2">
  <p className="font-bold text-primary text-sm">{formatIDR(p.price)}</p>
  <Badge variant="outline" className={`text-[10px] px-1.5 ${p.stock > 0 ? 'border-success/30 bg-success/10 text-success' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}>
  Stok: {p.stock}
@@ -202,7 +202,7 @@ export default function PosTransaction() {
  {/* RIGHT PANE - CART */}
  <Card className="w-full lg:w-[400px] flex flex-col border-border bg-card shadow-lg overflow-hidden shrink-0">
  <CardHeader className="border-b border-border py-4 bg-accent/30">
- <div className="flex items-center justify-between">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  <CardTitle className="text-[16px] font-semibold flex items-center gap-2">
  <ShoppingCart className="w-5 h-5 text-primary" /> Keranjang
  </CardTitle>
@@ -307,7 +307,7 @@ export default function PosTransaction() {
  <h2 className="text-3xl font-bold text-primary">{formatIDR(total)}</h2>
  </div>
 
- <div className="grid grid-cols-2 gap-3">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  <Button 
  variant="outline" 
  className={`h-16 flex flex-col gap-1 border-2 ${paymentMethod === 'CASH' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}
