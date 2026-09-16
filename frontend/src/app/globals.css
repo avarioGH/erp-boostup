@@ -104,7 +104,9 @@
   --sidebar-accent-foreground: #F8FAFC;
   --sidebar-border: #1E293B;
   --sidebar-ring: #3B82F6;
-}
+    --sidebar-active: rgba(59, 130, 246, 0.15);
+    --sidebar-active-foreground: #3B82F6;
+  }
 
 @theme inline {
   --color-background: var(--background);
@@ -184,3 +186,7 @@
     @apply tracking-tight;
   }
 }
+
+
+
+
