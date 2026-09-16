@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinanceService } from '../finance/finance.service';
 import OpenAI from 'openai';
@@ -41,6 +41,17 @@ export class AiService {
           name: 'get_financial_summary',
           description: 'Get the summary of cash and bank account balances for the company.',
           parameters: { type: 'object', properties: {} }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'get_timber_logs_summary',
+          description: 'Get a summary of timber and logs inventory including raw logs, trimmed logs, and sawn timber stock.',
+          parameters: {
+            type: 'object',
+            properties: {}
+          }
         }
       },
       {
@@ -161,7 +172,9 @@ export class AiService {
           const args = JSON.parse(toolCall.function.arguments);
           let apiResponse: any;
 
-          if (toolCall.function.name === 'get_financial_summary') {
+          if (toolCall.function.name === 'get_timber_logs_summary') {
+            apiResponse = await this.getTimberLogsSummary(user.company_id);
+          } else if (toolCall.function.name === 'get_financial_summary') {
             apiResponse = await this.getFinancialSummary(user.company_id);
           } else if (toolCall.function.name === 'get_inventory_status') {
             apiResponse = await this.getInventoryStatus(user.company_id, args.limit as number);
@@ -228,6 +241,31 @@ export class AiService {
     return {
       accounts: accounts.map(a => ({ name: a.name, balance: Number(a.current_balance) })),
       total: accounts.reduce((sum, a) => sum + Number(a.current_balance), 0)
+    };
+  }
+
+  private async getTimberLogsSummary(companyId: string) {
+    const rawLogs = await this.prisma.rawLog.count({ where: { status: 'AVAILABLE' } });
+    const trimmedLogs = await this.prisma.trimmedLog.count({ where: { status: 'AVAILABLE' } });
+    const inputLogs = await this.prisma.inputLog.count({ where: { status: { in: ['AVAILABLE', 'IN_PROCESS'] } } });
+    const timberStocks = await this.prisma.timberStock.findMany({ include: { timberVariant: true } });
+    
+    let currentStockM3 = 0;
+    let currentStockPcs = 0;
+    for (const stock of timberStocks) {
+      currentStockPcs += stock.currentPcs;
+      currentStockM3 += stock.currentVolumeM3;
+    }
+
+    return {
+      raw_logs_available: rawLogs,
+      trimmed_logs_available: trimmedLogs,
+      input_logs_in_production: inputLogs,
+      sawn_timber_stock: {
+        total_pcs: currentStockPcs,
+        total_m3: currentStockM3,
+        variants_count: timberStocks.length
+      }
     };
   }
 
@@ -371,5 +409,6 @@ export class AiService {
     });
   }
 }
+
 
 
