@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TimberCalculationService } from './timber-calculation.service';
 import { AuditService } from '../core/audit.service';
@@ -122,7 +122,7 @@ export class RawLogService {
         barcode: data.barcode || `LOG-${Date.now()}`,
         batch: data.batch,
         receivingDate: data.receivingDate ? new Date(data.receivingDate) : new Date(),
-        locationId: data.locationId,
+        locationId: data.locationId || null,
         notes: data.notes
       }
     });
@@ -142,6 +142,7 @@ export class RawLogService {
     return result;
   }
 }
+
 
 
 
