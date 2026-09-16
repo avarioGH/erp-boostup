@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from "react"
 import { TimberAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,11 +55,11 @@ export default function AuditPage() {
     { label: 'TimberStock is derived cache only', status: 'PASS', detail: 'No direct mutation endpoints' },
     { label: 'Transfer atomicity', status: 'PASS', detail: 'OUT + IN created in single $transaction' },
     { label: 'Negative stock prevention', status: 'PASS', detail: 'Balance check inside transaction before OUT' },
-    { label: 'Double-post prevention', status: 'PASS', detail: 'Status check inside transaction (DRAFT -> POSTED)' },
+    { label: 'Double-post prevention', status: 'PASS', detail: 'Status check inside transaction (DRAFT → POSTED)' },
     { label: 'Import dry-run', status: 'PASS', detail: 'Preview endpoint does not mutate DB' },
     { label: 'Reversal on cancellation', status: 'PASS', detail: 'REVERSAL movements created, records preserved' },
     { label: 'Opening balance via Ledger', status: 'PASS', detail: 'OPENING_BALANCE movement type available' },
-    { label: 'Indonesian size format parsing', status: 'PASS', detail: '"42,00 x 210,00 x 2.450,00" -> T=42 W=210 L=2450' },
+    { label: 'Indonesian size format parsing', status: 'PASS', detail: '"42,00 x 210,00 x 2.450,00" → T=42 W=210 L=2450' },
   ]
 
   if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
@@ -94,9 +94,9 @@ export default function AuditPage() {
       </div>
 
       {/* Excel Reconciliation Summary */}
-      <Card className="shadow-sm border-emerald-200 bg-emerald-50/20">
-        <CardHeader className="border-b border-emerald-100 pb-4">
-          <CardTitle className="text-lg flex items-center gap-2 text-emerald-800">
+      <Card className="shadow-sm border-emerald-200 dark:border-emerald-800 bg-emerald-50/20 dark:bg-emerald-950/20">
+        <CardHeader className="border-b border-emerald-100 dark:border-emerald-900 pb-4">
+          <CardTitle className="text-lg flex items-center gap-2 text-emerald-800 dark:text-emerald-400">
             <ShieldCheck className="w-5 h-5" /> Excel Reconciliation Results (Verified)
           </CardTitle>
         </CardHeader>
@@ -115,20 +115,20 @@ export default function AuditPage() {
               </thead>
               <tbody>
                 {[
-                  { dataset: 'Raw Log (DUKB) -> 13. PROD SWM', excel: 200, match: 200, rounding: 0, mismatch: 0, verdict: 'PASS' },
-                  { dataset: 'Trimming Log -> 13. PROD SWM', excel: 84, match: 84, rounding: 0, mismatch: 0, verdict: 'PASS' },
-                  { dataset: 'Sawn Output M3 -> 1. Oktober 2025', excel: 1208, match: 1208, rounding: 0, mismatch: 0, verdict: 'PASS' },
-                  { dataset: 'Stock M3 Formula -> 13. PROD SWM', excel: 85, match: 85, rounding: 0, mismatch: 0, verdict: 'PASS' },
+                  { dataset: 'Raw Log (DUKB) → 13. PROD SWM', excel: 200, match: 200, rounding: 0, mismatch: 0, verdict: 'PASS' },
+                  { dataset: 'Trimming Log → 13. PROD SWM', excel: 84, match: 84, rounding: 0, mismatch: 0, verdict: 'PASS' },
+                  { dataset: 'Sawn Output M3 → 1. Oktober 2025', excel: 1208, match: 1208, rounding: 0, mismatch: 0, verdict: 'PASS' },
+                  { dataset: 'Stock M3 Formula → 13. PROD SWM', excel: 85, match: 85, rounding: 0, mismatch: 0, verdict: 'PASS' },
                 ].map(r => (
                   <tr key={r.dataset} className="border-b hover:bg-muted/60 transition-colors">
                     <td className="p-3 px-4 font-medium">{r.dataset}</td>
                     <td className="p-3 px-4 text-right">{r.excel.toLocaleString()}</td>
-                    <td className="p-3 px-4 text-right text-primary font-bold">{r.match}</td>
-                    <td className="p-3 px-4 text-right text-amber-600">{r.rounding}</td>
-                    <td className="p-3 px-4 text-right text-red-600">{r.mismatch}</td>
+                    <td className="p-3 px-4 text-right text-primary font-bold">{r.match.toLocaleString()}</td>
+                    <td className="p-3 px-4 text-right text-amber-600 dark:text-amber-500">{r.rounding}</td>
+                    <td className="p-3 px-4 text-right text-red-600 dark:text-red-400">{r.mismatch}</td>
                     <td className="p-3 px-4 text-center">
-                      <Badge className={r.verdict === 'PASS' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}>
-                        {r.verdict === 'PASS' ? '✓ PASS' : '❌ FAIL'}
+                      <Badge className={r.verdict === 'PASS' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400'}>
+                        {r.verdict === 'PASS' ? 'âœ“ PASS' : 'âŒ FAIL'}
                       </Badge>
                     </td>
                   </tr>
@@ -137,7 +137,7 @@ export default function AuditPage() {
             </table>
           </div>
             <div className="mt-4 p-4 bg-card rounded border text-sm text-muted-foreground">
-              <strong>Total Sawn Output:</strong> Excel M3 = 339.1845 | ERP M3 = 339.1840 | diff = 0.0005 (floating-point accumulation across 1,208 rows &rarr; ROUNDING_DIFFERENCE, not a business error)
+              <strong>Total Sawn Output:</strong> <span className="ml-1">Excel M3 = 339.1845 | ERP M3 = 339.1840 | diff = 0.0005 (floating-point accumulation across 1,208 rows → ROUNDING_DIFFERENCE, not a business error)</span>
             </div>
         </CardContent>
       </Card>
@@ -177,3 +177,7 @@ export default function AuditPage() {
     </div>
   )
 }
+
+
+
+
