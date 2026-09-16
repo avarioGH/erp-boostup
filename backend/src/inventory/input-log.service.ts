@@ -1,4 +1,4 @@
-﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../core/audit.service';
 
@@ -23,7 +23,13 @@ export class InputLogService {
     }
     if (species) where.species = species;
     if (locationId) where.locationId = locationId;
-    if (status) where.status = status;
+    if (status) {
+      if (status.includes(',')) {
+        where.status = { in: status.split(',') };
+      } else {
+        where.status = status;
+      }
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.inputLog.findMany({

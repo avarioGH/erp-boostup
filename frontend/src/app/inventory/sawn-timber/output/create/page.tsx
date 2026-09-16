@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI, InventoryAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
@@ -24,7 +24,7 @@ export default function CreateOutputPage() {
  useEffect(() => {
  Promise.all([
  InventoryAPI.getWarehouses(),
- TimberAPI.getInputLogs({ status:"IN_PROCESS" }).catch(() => ({ items: [] }))
+ TimberAPI.getInputLogs({ status:"AVAILABLE,IN_PROCESS" }).catch(() => ({ items: [] }))
  ]).then(([wRes, lRes]) => {
  setWarehouses(Array.isArray(wRes) ? wRes : [])
  setInputLogs(Array.isArray(lRes?.items) ? lRes.items : [])
@@ -86,7 +86,7 @@ export default function CreateOutputPage() {
  <div className="space-y-2 md:col-span-2">
  <label className="text-sm font-medium">Source Input Log *</label>
  <Select value={form.inputLogId} onValueChange={(val) => setForm({...form, inputLogId: val ||""})}>
- <SelectTrigger><SelectValue placeholder="Select IN_PROCESS Input Log..."/></SelectTrigger>
+ <SelectTrigger><SelectValue placeholder="Select Input Log (Available/In-Process)..."/></SelectTrigger>
  <SelectContent>
  {inputLogs.map(l => <SelectItem key={l.id} value={l.id}>{l.inputNumber} ({l.species})</SelectItem>)}
  </SelectContent>
@@ -151,3 +151,5 @@ export default function CreateOutputPage() {
  </div>
  )
 }
+
+
