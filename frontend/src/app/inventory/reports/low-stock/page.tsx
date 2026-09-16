@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useEffect, useState } from 'react';
 import { TimberAPI } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,7 +57,7 @@ export default function LowStockReport() {
                     <td className="p-3">{row.product}</td>
                     <td className="p-3">{row.size}</td>
                     <td className="p-3 text-muted-foreground">{row.location}</td>
-                    <td className={p-3 text-right font-bold }>{row.qty}</td>
+                    <td className="p-3 text-right font-bold">{row.qty}</td>
                   </tr>
                 ))}
               </tbody>

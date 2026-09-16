@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from "react"
 import { TimberAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -136,9 +136,9 @@ export default function AuditPage() {
               </tbody>
             </table>
           </div>
-          <div className="mt-4 p-4 bg-card rounded border text-sm text-muted-foreground">
-            <strong>Total Sawn Output:</strong> Excel M3 = 339.1845 | ERP M3 = 339.1840 | diff = 0.0005 (floating-point accumulation across 1,208 rows -> ROUNDING_DIFFERENCE, not a business error)
-          </div>
+            <div className="mt-4 p-4 bg-card rounded border text-sm text-muted-foreground">
+              <strong>Total Sawn Output:</strong> Excel M3 = 339.1845 | ERP M3 = 339.1840 | diff = 0.0005 (floating-point accumulation across 1,208 rows &rarr; ROUNDING_DIFFERENCE, not a business error)
+            </div>
         </CardContent>
       </Card>
 
