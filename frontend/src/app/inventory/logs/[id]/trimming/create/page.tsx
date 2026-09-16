@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect, use } from"react"
 import { TimberAPI, InventoryAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
@@ -125,7 +125,7 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  <div className="space-y-2"><label className="text-sm font-medium">D2 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter2} onChange={e => setForm({...form, diameter2: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">D3 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter3} onChange={e => setForm({...form, diameter3: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">D4 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter4} onChange={e => setForm({...form, diameter4: e.target.value})} /></div>
- <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Gerowong ? (cm)</label><Input type="number" step="0.01" value={form.gerowong} onChange={e => setForm({...form, gerowong: e.target.value})} /></div>
+ <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Gerowong &Oslash; (cm)</label><Input type="number" step="0.01" value={form.gerowong} onChange={e => setForm({...form, gerowong: e.target.value})} /></div>
  <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Trimming Length (meters)</label><Input type="number" step="0.01" value={form.trimmingLength} onChange={e => setForm({...form, trimmingLength: e.target.value})} /></div>
  </CardContent>
  </Card>
@@ -143,16 +143,16 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  </Card>
  </div>
  <div className="space-y-6">
- <Card className="shadow-sm border-emerald-200 bg-emerald-50/30">
- <CardHeader className="border-b border-emerald-100 pb-4">
- <CardTitle className="text-lg flex items-center gap-2 text-emerald-800"><Calculator className="w-5 h-5" /> Live Preview</CardTitle>
+ <Card className="shadow-sm border-border bg-muted/10">
+ <CardHeader className="border-b border-border pb-4">
+ <CardTitle className="text-lg flex items-center gap-2 text-foreground"><Calculator className="w-5 h-5" /> Live Preview</CardTitle>
  </CardHeader>
  <CardContent className="pt-6 space-y-4">
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Avg ?</span><span className="font-medium">{preview.avg} cm</span></div>
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Rounded ?</span><span className="font-bold text-lg">{preview.rnd} cm</span></div>
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Gross Volume</span><span className="font-medium">{preview.gross} m?</span></div>
- <hr className="border-emerald-100" />
- <div className="flex justify-between items-center"><span className="text-sm font-semibold text-emerald-700">Net Volume</span><span className="font-bold text-xl text-primary">{preview.net > 0 ? preview.net : 0} m?</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Avg &Oslash;</span><span className="font-medium">{preview.avg} cm</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Rounded &Oslash;</span><span className="font-bold text-lg">{preview.rnd} cm</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Gross Volume</span><span className="font-medium">{preview.gross} m&sup3;</span></div>
+ <hr className="border-border" />
+ <div className="flex justify-between items-center"><span className="text-sm font-semibold text-foreground">Net Volume</span><span className="font-bold text-xl text-primary">{preview.net > 0 ? preview.net : 0} m&sup3;</span></div>
  </CardContent>
  </Card>
  <Button type="submit" disabled={submitting || preview.net < 0 || isExceeding || remaining <= 0} className="w-full h-12 text-lg">
@@ -163,3 +163,4 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  </div>
  )
 }
+
