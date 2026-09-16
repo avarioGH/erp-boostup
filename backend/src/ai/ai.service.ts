@@ -1,4 +1,4 @@
-﻿import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinanceService } from '../finance/finance.service';
 import OpenAI from 'openai';
@@ -106,7 +106,7 @@ export class AiService {
 
   // Helper untuk memanggil API dengan fallback model
   private async executeWithFallback(messages: any[], useTools: boolean = false): Promise<any> {
-    let errors = [];
+    let errors: string[] = [];
     for (const modelName of this.fallbackModels) {
       try {
         const payload: any = {
