@@ -1,4 +1,4 @@
-import { AuditService } from '../core/audit.service';
+﻿import { AuditService } from '../core/audit.service';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TimberCalculationService } from './timber-calculation.service';
@@ -153,4 +153,5 @@ export class TrimmedLogService {
     return result;
   }
 }
+
 
