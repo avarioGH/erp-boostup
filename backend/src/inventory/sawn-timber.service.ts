@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InventoryLedgerService } from './inventory-ledger.service';
 import { AuditService } from '../core/audit.service';
@@ -39,6 +39,7 @@ export class SawnTimberService {
   }
 
   async getOutput(id: string) {
+    if (!id || id === 'undefined' || id.length !== 24) throw new NotFoundException('Output not found');
     const output = await this.prisma.sawnTimberOutput.findUnique({
       where: { id },
       include: { 
@@ -228,3 +229,4 @@ export class SawnTimberService {
     return { items, total, skip: Number(skip), take: Number(take) };
   }
 }
+

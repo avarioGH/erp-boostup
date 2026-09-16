@@ -50,6 +50,7 @@ export class RawLogService {
   }
 
   async getRawLog(id: string) {
+    if (!id || id === 'undefined' || id.length !== 24) throw new NotFoundException('Raw log not found');
     const log = await this.prisma.rawLog.findUnique({
       where: { id },
       include: {
@@ -142,6 +143,7 @@ export class RawLogService {
     return result;
   }
 }
+
 
 
 

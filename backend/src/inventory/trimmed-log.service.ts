@@ -40,6 +40,7 @@ export class TrimmedLogService {
   }
 
   async getTrimmedLog(id: string) {
+    if (!id || id === 'undefined' || id.length !== 24) throw new NotFoundException('Trimmed log not found');
     const log = await this.prisma.trimmedLog.findUnique({
       where: { id },
       include: { location: true, rawLog: true, inputLog: true }
@@ -153,5 +154,6 @@ export class TrimmedLogService {
     return result;
   }
 }
+
 
 
