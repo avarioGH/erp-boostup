@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from"react"
+import { useState, useEffect, use } from "react"
 import { TimberAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
 import { Button } from"@/components/ui/button"
@@ -9,7 +9,8 @@ import { useRouter } from"next/navigation"
 import { useToast } from"@/hooks/use-toast"
 import Link from"next/link"
 
-export default function SawnTimberOutputDetailPage({ params }: { params: { id: string } }) {
+export default function SawnTimberOutputDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
  const router = useRouter()
  const { toast } = useToast()
  const [data, setData] = useState<any>(null)
@@ -17,15 +18,15 @@ export default function SawnTimberOutputDetailPage({ params }: { params: { id: s
  const [actionLoading, setActionLoading] = useState(false)
 
  const loadData = () => {
- TimberAPI.getSawnOutput(params.id).then(setData).catch(console.error).finally(() => setLoading(false))
+ TimberAPI.getSawnOutput(id).then(setData).catch(console.error).finally(() => setLoading(false))
  }
- useEffect(() => { loadData() }, [params.id])
+ useEffect(() => { loadData() }, [id])
 
  const handleAction = async (action:"post" |"cancel") => {
  setActionLoading(true)
  try {
- if (action ==="post") await TimberAPI.postSawnOutput(params.id)
- else await TimberAPI.cancelSawnOutput(params.id)
+ if (action ==="post") await TimberAPI.postSawnOutput(id)
+ else await TimberAPI.cancelSawnOutput(id)
  toast({ title:"Success", description: `Output ${action ==="post" ?"posted" :"cancelled"} successfully.` })
  loadData()
  } catch (err: any) {

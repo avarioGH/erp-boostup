@@ -1,4 +1,5 @@
 "use client"
+import { use } from "react"
 import { useState, useEffect } from"react"
 import { TimberAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
@@ -8,7 +9,8 @@ import { Loader2, ArrowLeft, ArrowRightLeft, FileCheck, XCircle, MapPin } from"l
 import { useRouter } from"next/navigation"
 import { useToast } from"@/hooks/use-toast"
 
-export default function TransferDetailPage({ params }: { params: { id: string } }) {
+export default function TransferDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
  const router = useRouter()
  const { toast } = useToast()
  const [data, setData] = useState<any>(null)
@@ -16,15 +18,15 @@ export default function TransferDetailPage({ params }: { params: { id: string } 
  const [actionLoading, setActionLoading] = useState(false)
 
  const loadData = () => {
- TimberAPI.getTransfer(params.id).then(setData).catch(console.error).finally(() => setLoading(false))
+ TimberAPI.getTransfer(id).then(setData).catch(console.error).finally(() => setLoading(false))
  }
- useEffect(() => { loadData() }, [params.id])
+ useEffect(() => { loadData() }, [id])
 
  const handleAction = async (action:"post" |"cancel") => {
  setActionLoading(true)
  try {
- if (action ==="post") await TimberAPI.postTransfer(params.id)
- else await TimberAPI.cancelTransfer(params.id)
+ if (action ==="post") await TimberAPI.postTransfer(id)
+ else await TimberAPI.cancelTransfer(id)
  toast({ title:"Success", description: `Transfer ${action ==="post" ?"posted" :"cancelled"} successfully.` })
  loadData()
  } catch (err: any) {

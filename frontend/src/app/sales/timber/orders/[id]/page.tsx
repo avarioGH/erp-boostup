@@ -1,23 +1,25 @@
-﻿"use client";
+"use client";
+import { use } from "react"
 import React, { useEffect, useState } from"react";
 import { Card, CardHeader, CardTitle, CardContent } from"@/components/ui/card";
 import { Badge } from"@/components/ui/badge";
 import api from"@/lib/api";
 import { Loader2 } from"lucide-react";
 
-export default function TimberOrderDetail({ params }: { params: { id: string } }) {
+export default function TimberOrderDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
  const [order, setOrder] = useState<any>(null);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState("");
 
  useEffect(() => {
  fetchOrder();
- }, [params.id]);
+ }, [id]);
 
  const fetchOrder = async () => {
  try {
  setLoading(true);
- const res = await api.get(`/sales/timber-orders/${params.id}`);
+ const res = await api.get(`/sales/timber-orders/${id}`);
  setOrder(res.data.data);
  } catch (err: any) {
  setError(err.response?.data?.message ||"Failed to load order");

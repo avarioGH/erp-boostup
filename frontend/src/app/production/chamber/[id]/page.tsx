@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react"
 import { useState, useEffect } from"react";
 import { InventoryAPI } from"@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card";
@@ -10,7 +11,8 @@ import { useToast } from"@/hooks/use-toast";
 import { format } from"date-fns";
 import { Badge } from"@/components/ui/badge";
 
-export default function ChamberDetailPage({ params }: { params: { id: string } }) {
+export default function ChamberDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
  const router = useRouter();
  const { toast } = useToast();
  const [data, setData] = useState<any>(null);
@@ -19,12 +21,12 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
 
  useEffect(() => {
  fetchData();
- }, [params.id]);
+ }, [id]);
 
  const fetchData = async () => {
  setLoading(true);
  try {
- const res = await InventoryAPI.getTransfer(params.id);
+ const res = await InventoryAPI.getTransfer(id);
  setData(res);
  } catch (error: any) {
  toast({ title:"Error", description: error.message, variant:"destructive" });
@@ -37,7 +39,7 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
  if (!window.confirm("This action will move stock between the selected locations. Continue?")) return;
  setProcessing(true);
  try {
- await InventoryAPI.postTransfer(params.id);
+ await InventoryAPI.postTransfer(id);
  toast({ title:"Success", description:"Transfer posted successfully." });
  fetchData();
  } catch (error: any) {
@@ -51,7 +53,7 @@ export default function ChamberDetailPage({ params }: { params: { id: string } }
  if (!window.confirm("This action will reverse the stock movement. Continue?")) return;
  setProcessing(true);
  try {
- await InventoryAPI.cancelTransfer(params.id);
+ await InventoryAPI.cancelTransfer(id);
  toast({ title:"Success", description:"Transfer cancelled successfully." });
  fetchData();
  } catch (error: any) {

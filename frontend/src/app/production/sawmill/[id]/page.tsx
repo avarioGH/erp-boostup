@@ -1,27 +1,28 @@
 'use client';
-import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from"@/components/ui/table";
-import { Button } from"@/components/ui/button";
-import { Badge } from"@/components/ui/badge";
-import { useEffect, useState } from"react";
-import { SawmillProductionAPI, InventoryAPI } from"@/lib/api";
-import { ArrowLeft, CheckCircle, XCircle } from"lucide-react";
-import { useRouter } from"next/navigation";
-import { Label } from"@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useEffect, useState, use } from "react";
+import { SawmillProductionAPI, InventoryAPI } from "@/lib/api";
+import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Label } from "@/components/ui/label";
 
-export default function SawmillRunDetail({ params }: { params: { id: string } }) {
- const [data, setData] = useState<any>(null);
- const [warehouses, setWarehouses] = useState<any[]>([]);
- const [loading, setLoading] = useState(true);
- const [posting, setPosting] = useState(false);
- 
- const [locationId, setLocationId] = useState("");
- const router = useRouter();
+export default function SawmillRunDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const [data, setData] = useState<any>(null);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [posting, setPosting] = useState(false);
+  
+  const [locationId, setLocationId] = useState("");
+  const router = useRouter();
 
  const loadData = async () => {
  try {
  const [resRun, resWh] = await Promise.all([
- SawmillProductionAPI.getRun(params.id),
+ SawmillProductionAPI.getRun(id),
  InventoryAPI.getWarehouses()
  ]);
  setData(resRun);
@@ -35,7 +36,7 @@ export default function SawmillRunDetail({ params }: { params: { id: string } })
 
  useEffect(() => {
  loadData();
- }, [params.id]);
+ }, [id]);
 
  const handlePost = async () => {
  if (!locationId) return alert('Pilih Location ID / Warehouse terlebih dahulu!');
@@ -51,7 +52,7 @@ export default function SawmillRunDetail({ params }: { params: { id: string } })
  if (!confirm(msg)) return;
  setPosting(true);
  try {
- await SawmillProductionAPI.postRun(params.id, { locationId });
+ await SawmillProductionAPI.postRun(id, { locationId });
  alert('Berhasil di-POST');
  loadData();
  } catch (err: any) {
@@ -67,7 +68,7 @@ export default function SawmillRunDetail({ params }: { params: { id: string } })
  
  setPosting(true);
  try {
- await SawmillProductionAPI.cancelRun(params.id, { locationId });
+ await SawmillProductionAPI.cancelRun(id, { locationId });
  alert('Berhasil di-CANCEL');
  loadData();
  } catch (err: any) {

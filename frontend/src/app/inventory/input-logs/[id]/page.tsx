@@ -1,24 +1,39 @@
 "use client"
-import { useState, useEffect } from"react"
-import { TimberAPI } from"@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
-import { Button } from"@/components/ui/button"
-import { Badge } from"@/components/ui/badge"
-import { Loader2, ArrowLeft, Box, Waypoints, CheckCircle2, Factory, Calendar } from"lucide-react"
-import { useRouter } from"next/navigation"
-import Link from"next/link"
+import { useState, useEffect, use } from "react"
+import { TimberAPI } from "@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, ArrowLeft, Box, Waypoints, CheckCircle2, Factory, Calendar, Package } from "lucide-react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 
-export default function InputLogDetailPage({ params }: { params: { id: string } }) {
- const router = useRouter()
- const [data, setData] = useState<any>(null)
- const [loading, setLoading] = useState(true)
+export default function InputLogDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const router = useRouter()
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
- useEffect(() => {
- TimberAPI.getInputLog(params.id).then(setData).catch(console.error).finally(() => setLoading(false))
- }, [params.id])
+  useEffect(() => {
+    if (!id) return
+    setLoading(true)
+    TimberAPI.getInputLog(id)
+      .then(setData)
+      .catch((err: any) => setError(err?.response?.data?.message || "Gagal memuat data input log"))
+      .finally(() => setLoading(false))
+  }, [id])
 
- if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
- if (!data) return <div className="p-8 md:p-24 text-center">Input log not found.</div>
+  if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
+  if (error || !data) return (
+    <div className="p-8 md:p-24 flex flex-col items-center justify-center gap-4 text-center">
+      <Package className="w-10 h-10 text-muted-foreground opacity-40" />
+      <p className="text-base font-semibold text-foreground">{error || "Input log tidak ditemukan."}</p>
+      <Button variant="outline" onClick={() => router.push("/inventory/input-logs")}>
+        <ArrowLeft className="w-4 h-4 mr-2" /> Kembali ke Daftar
+      </Button>
+    </div>
+  )
 
  return (
  <div className="space-y-6 pb-10">
