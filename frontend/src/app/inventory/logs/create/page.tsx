@@ -176,7 +176,7 @@ export default function MassCreateRawLogPage() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Species *</label>
-            <Select value={masterForm.species} onValueChange={v => setMasterForm({...masterForm, species: v})}>
+            <Select value={masterForm.species} onValueChange={v => setMasterForm({...masterForm, species: v || ''})}>
               <SelectTrigger><SelectValue/></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Ulin Lokal">Ulin Lokal</SelectItem>
@@ -189,7 +189,7 @@ export default function MassCreateRawLogPage() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Warehouse *</label>
-            <Select value={masterForm.locationId} onValueChange={v => setMasterForm({...masterForm, locationId: v})}>
+            <Select value={masterForm.locationId} onValueChange={v => setMasterForm({...masterForm, locationId: v || ''})}>
               <SelectTrigger>
                 {masterForm.locationId ? warehouses.find(w => w.id === masterForm.locationId)?.name : <SelectValue placeholder="Pilih Warehouse..."/>}
               </SelectTrigger>

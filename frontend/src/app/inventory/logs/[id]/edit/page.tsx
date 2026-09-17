@@ -131,7 +131,7 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Species *</label>
-                <Select value={form.species} onValueChange={v => setForm({...form, species: v})}>
+                <Select value={form.species} onValueChange={v => setForm({...form, species: v || ''})}>
                   <SelectTrigger><SelectValue/></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Ulin Lokal">Ulin Lokal</SelectItem>
@@ -148,7 +148,7 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Warehouse</label>
-                <Select value={form.locationId} onValueChange={v => setForm({...form, locationId: v})}>
+                <Select value={form.locationId} onValueChange={v => setForm({...form, locationId: v || ''})}>
                   <SelectTrigger>
                     {form.locationId ? warehouses.find(w => w.id === form.locationId)?.name : <SelectValue placeholder="Pilih Warehouse..."/>}
                   </SelectTrigger>
