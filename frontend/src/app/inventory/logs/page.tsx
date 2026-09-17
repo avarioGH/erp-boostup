@@ -1,15 +1,18 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
 import { Button } from"@/components/ui/button"
 import { Input } from"@/components/ui/input"
 import { Badge } from"@/components/ui/badge"
-import { Loader2, Plus, Search, ChevronRight, Package } from"lucide-react"
+import { Loader2, Plus, Search, ChevronRight, Package, MoreHorizontal, Pencil, Trash, Eye } from"lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useToast } from "@/hooks/use-toast"
 import { useRouter } from"next/navigation"
 
 export default function RawLogsPage() {
  const router = useRouter()
+ const { toast } = useToast()
  const [data, setData] = useState<any[]>([])
  const [loading, setLoading] = useState(true)
  const [search, setSearch] = useState("");
@@ -36,6 +39,19 @@ export default function RawLogsPage() {
  setLoading(false)
  }
  }
+
+ 
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this log?')) return;
+    try {
+      await TimberAPI.deleteLog(id);
+      toast({ title: 'Success', description: 'Log deleted.' });
+      fetchLogs();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to delete log', variant: 'destructive' });
+    }
+  }
 
  const filtered = data.filter(item => {
  const matchSearch = item.logNumber?.toLowerCase().includes(search.toLowerCase()) || 
@@ -118,7 +134,26 @@ export default function RawLogsPage() {
  <td className="py-3.5 px-6 text-right text-[13px]">{log.averageDiameter} cm</td>
  <td className="py-3.5 px-6 text-right font-bold text-primary text-[13px]">{log.netVolume}</td>
  <td className="py-3.5 px-6 text-center text-[13px]">{getStatusBadge(log.status)}</td>
- <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="outline" size="sm" className="text-xs">View Details</Button></td>
+ <td className="py-3.5 px-6 text-center text-[13px]" onClick={e => e.stopPropagation()}>
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end">
+      <DropdownMenuItem onClick={() => router.push(`/inventory/logs/${log.id}`)}>
+        <Eye className="w-4 h-4 mr-2" /> View Details
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={() => router.push(`/inventory/logs/${log.id}/edit`)}>
+        <Pencil className="w-4 h-4 mr-2" /> Edit Log
+      </DropdownMenuItem>
+      {log.status === 'AVAILABLE' && (
+        <DropdownMenuItem onClick={(e) => handleDelete(e, log.id)} className="text-destructive">
+          <Trash className="w-4 h-4 mr-2" /> Delete Log
+        </DropdownMenuItem>
+      )}
+    </DropdownMenuContent>
+  </DropdownMenu>
+</td>
  </tr>
  ))
  }

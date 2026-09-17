@@ -90,7 +90,7 @@ export default function CreateOutputPage() {
  <div className="space-y-2 md:col-span-2">
  <label className="text-sm font-medium">Source Input Log *</label>
  <Select value={form.inputLogId} onValueChange={(val) => setForm({...form, inputLogId: val ||""})}>
- <SelectTrigger><SelectValue placeholder="Select Input Log (Available/In-Process)..."/></SelectTrigger>
+ <SelectTrigger>{form.inputLogId ? inputLogs.find(l => l.id === form.inputLogId)?.inputNumber + " (" + inputLogs.find(l => l.id === form.inputLogId)?.species + ")" : <SelectValue placeholder="Select Input Log (Available/In-Process)..."/>}</SelectTrigger>
  <SelectContent>
  {inputLogs.map(l => <SelectItem key={l.id} value={l.id}>{l.inputNumber} ({l.species})</SelectItem>)}
  </SelectContent>
@@ -98,7 +98,7 @@ export default function CreateOutputPage() {
  </div>
  <div className="space-y-2"><label className="text-sm font-medium">Date *</label><Input required type="date" value={form.date} onChange={e => setForm({...form, date: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">Shift</label><Select value={form.shift} onValueChange={(val) => setForm({...form, shift: val ||"1"})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">Shift 1</SelectItem><SelectItem value="2">Shift 2</SelectItem><SelectItem value="3">Shift 3</SelectItem></SelectContent></Select></div>
- <div className="space-y-2"><label className="text-sm font-medium">Warehouse *</label><Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val ||""})}><SelectTrigger><SelectValue placeholder="Select Warehouse..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
+ <div className="space-y-2"><label className="text-sm font-medium">Warehouse *</label><Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val ||""})}><SelectTrigger>{form.locationId ? warehouses.find(w => w.id === form.locationId)?.name : <SelectValue placeholder="Select Warehouse..."/>}</SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent></Select></div>
  <div className="space-y-2"><label className="text-sm font-medium">Partai</label><Input value={form.batch} onChange={e => setForm({...form, batch: e.target.value})} /></div>
  </CardContent>
  </Card>
