@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI, InventoryAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
@@ -41,29 +41,33 @@ export default function CreateOutputPage() {
  }, [item])
 
  const handleSubmit = async (e: any) => {
- e.preventDefault()
- if (!form.inputLogId) { toast({ title:"Error", description:"Source Input Log is required", variant:"destructive" }); return; }
- setSubmitting(true)
- try {
- const payload = {
- ...form,
- outputDate: form.date,
- items: [{
- grade: item.grade,
- thickness: parseFloat(item.thickness),
- width: parseFloat(item.width),
- length: parseFloat(item.length),
- quantityPcs: parseInt(item.quantityPcs)
- }]
- }
- await TimberAPI.createSawnOutput(payload)
- toast({ title:"Success", description:"Output created successfully. (DRAFT)" })
- router.push('/inventory/sawn-timber/output')
- } catch (err: any) {
- toast({ title:"Error", description: err.response?.data?.message ||"Failed to create.", variant:"destructive" })
- } finally {
- setSubmitting(false)
- }
+  e.preventDefault()
+  if (!form.inputLogId) { toast({ title:"Validasi Gagal", description:"Source Input Log harus dipilih", variant:"destructive" }); return; }
+  if (!form.locationId) { toast({ title:"Validasi Gagal", description:"Warehouse harus dipilih", variant:"destructive" }); return; }
+  if (!form.date) { toast({ title:"Validasi Gagal", description:"Tanggal harus diisi", variant:"destructive" }); return; }
+  if (!item.thickness || !item.width || !item.length) { toast({ title:"Validasi Gagal", description:"Dimensi (thickness, width, length) harus diisi", variant:"destructive" }); return; }
+  if (!item.quantityPcs || parseInt(item.quantityPcs) <= 0) { toast({ title:"Validasi Gagal", description:"Quantity harus lebih dari 0", variant:"destructive" }); return; }
+  setSubmitting(true)
+  try {
+  const payload = {
+  ...form,
+  outputDate: form.date,
+  items: [{
+  grade: item.grade,
+  thickness: parseFloat(item.thickness),
+  width: parseFloat(item.width),
+  length: parseFloat(item.length),
+  quantityPcs: parseInt(item.quantityPcs)
+  }]
+  }
+  await TimberAPI.createSawnOutput(payload)
+  toast({ title:"Berhasil", description:"Output berhasil dibuat (status: DRAFT)" })
+  router.push('/inventory/sawn-timber/output')
+  } catch (err: any) {
+  toast({ title:"Error", description: err.response?.data?.message ||"Gagal menyimpan output.", variant:"destructive" })
+  } finally {
+  setSubmitting(false)
+  }
  }
 
  if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
