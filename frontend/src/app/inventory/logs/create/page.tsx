@@ -34,7 +34,7 @@ export default function MassCreateRawLogPage() {
 
   useEffect(() => {
     InventoryAPI.getWarehouses()
-      .then(res => setWarehouses(Array.isArray(res) ? res : []))
+      .then((res: any) => setWarehouses(Array.isArray(res) ? res : []))
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
