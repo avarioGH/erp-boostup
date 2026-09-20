@@ -136,8 +136,8 @@ export default function RawLogsPage() {
  <td className="py-3.5 px-6 text-center text-[13px]">{getStatusBadge(log.status)}</td>
  <td className="py-3.5 px-6 text-center text-[13px]" onClick={e => e.stopPropagation()}>
   <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+    <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">
+      <MoreHorizontal className="h-4 w-4" />
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
       <DropdownMenuItem onClick={() => router.push(`/inventory/logs/${log.id}`)}>
