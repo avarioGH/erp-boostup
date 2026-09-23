@@ -1,3 +1,4 @@
+import { MasterDataModule } from './inventory/master-data/master-data.module';
 import { ApprovalModule } from './approval/approval.module';
 import { EcommerceModule } from './ecommerce/ecommerce.module';
 import { MrpModule } from './mrp/mrp.module';
@@ -55,7 +56,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     IntegrationsModule,
     TripayModule,
     CrmModule,
-    PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule,  MrpModule
+    PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule,  MrpModule, MasterDataModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -57,6 +57,14 @@ const items: MenuItem[] = [
  subItems: [
  { title: "Dashboard", url: "/inventory/dashboard" },
  
+ { title: "Master Data", url: "#", type: "label" },
+ { title: "Species", url: "/inventory/master-data/species" },
+ { title: "Grade", url: "/inventory/master-data/grade" },
+ { title: "Source", url: "/inventory/master-data/source" },
+ { title: "Location", url: "/inventory/master-data/location" },
+ { title: "Vehicle", url: "/inventory/master-data/vehicle" },
+ { title: "Driver", url: "/inventory/master-data/driver" },
+
  { title: "Log Kayu", url: "#", type: "label" },
  { title: "Log Datang (DUKB)", url: "/inventory/logs" },
  { title: "Log Trimming", url: "/inventory/trimming" },

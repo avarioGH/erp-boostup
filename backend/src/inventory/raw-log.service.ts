@@ -1,4 +1,4 @@
-﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TimberCalculationService } from './timber-calculation.service';
 import { AuditService } from '../core/audit.service';
@@ -142,10 +142,127 @@ export class RawLogService {
     await this.audit.log({ company_id: '000000000000000000000000', action: 'CANCEL', entity: 'RAW_LOG', entity_id: id, before_data: { status: log.status }, after_data: { status: 'CANCELLED' } });
     return result;
   }
+
+  async createBulkRawLogs(dataArray: any[]) {
+    return this.prisma.$transaction(async (tx) => {
+      const createdLogs: any[] = [];
+      for (const data of dataArray) {
+        if (!data.logNumber) throw new BadRequestException('Log Number is required');
+        
+        const existingLog = await tx.rawLog.findUnique({ where: { logNumber: data.logNumber } });
+        if (existingLog) throw new BadRequestException(`Log Number ${data.logNumber} already exists.`);
+
+        if (data.barcode) {
+          const existingBarcode = await tx.rawLog.findUnique({ where: { barcode: data.barcode } });
+          if (existingBarcode) throw new BadRequestException(`Barcode ${data.barcode} already exists.`);
+        }
+
+        if (Number(data.originalLength) <= 0) throw new BadRequestException('Length must be greater than 0.');
+
+        
+        const d1 = Number(data.diameter1) || 0;
+        const d2 = Number(data.diameter2) || 0;
+        const d3 = Number(data.diameter3) || 0;
+        const d4 = Number(data.diameter4) || 0;
+        const g = Number(data.gerowong) || 0;
+
+        const avgDia = this.calcService.calculateAverageDiameter(d1, d2, d3, d4);
+        const rndDia = this.calcService.calculateRoundedDiameter(avgDia);
+        const diaClass = this.calcService.classifyDiameter(rndDia);
+
+        const grossVol = this.calcService.calculateRawLogGrossVolume(rndDia, Number(data.originalLength));
+        let hollowVol = 0;
+        if (g > 0) {
+          hollowVol = this.calcService.calculateGerowongVolume(g, Number(data.originalLength), 0);
+        }
+        const netVol = this.calcService.calculateRawLogNetVolume(grossVol, hollowVol, 0);
+
+        const log = await tx.rawLog.create({
+          data: {
+            logNumber: data.logNumber,
+            species: data.species,
+            originalLength: Number(data.originalLength),
+            diameter1: d1,
+            diameter2: d2,
+            diameter3: d3,
+            diameter4: d4,
+            averageDiameter: avgDia,
+            roundedDiameter: rndDia,
+            diameterClass: diaClass,
+            grossVolume: grossVol,
+            gerowong: g || null,
+            hollowVolume: hollowVol || null,
+            netVolume: netVol,
+            batch: data.batch,
+            locationId: data.locationId || null,
+            receivingDate: data.receivingDate ? new Date(data.receivingDate) : new Date(),
+            barcode: data.barcode || null,
+            status: 'AVAILABLE'
+          }
+        });
+        createdLogs.push(log);
+      }
+      return createdLogs;
+    });
+  }
+
+  async updateRawLog(id: string, data: any) {
+    if (!id || id.length !== 24) throw new BadRequestException('Invalid ID');
+    const existingLog = await this.prisma.rawLog.findUnique({ where: { id } });
+    if (!existingLog) throw new NotFoundException('Raw Log not found');
+
+    const d1 = Number(data.diameter1) || existingLog.diameter1;
+    const d2 = Number(data.diameter2) || existingLog.diameter2;
+    const d3 = Number(data.diameter3) || existingLog.diameter3;
+    const d4 = Number(data.diameter4) || existingLog.diameter4;
+    const g = data.gerowong !== undefined ? Number(data.gerowong) : (existingLog.gerowong || 0);
+    const length = Number(data.originalLength) || existingLog.originalLength;
+
+    const avgDia = this.calcService.calculateAverageDiameter(d1, d2, d3, d4);
+    const rndDia = this.calcService.calculateRoundedDiameter(avgDia);
+    const diaClass = this.calcService.classifyDiameter(rndDia);
+
+    const grossVol = this.calcService.calculateRawLogGrossVolume(rndDia, length);
+    let hollowVol = 0;
+    if (g > 0) {
+      hollowVol = this.calcService.calculateGerowongVolume(g, length, 0);
+    }
+    const netVol = this.calcService.calculateRawLogNetVolume(grossVol, hollowVol, 0);
+
+    return this.prisma.rawLog.update({
+      where: { id },
+      data: {
+        logNumber: data.logNumber || existingLog.logNumber,
+        species: data.species || existingLog.species,
+        originalLength: length,
+        diameter1: d1,
+        diameter2: d2,
+        diameter3: d3,
+        diameter4: d4,
+        averageDiameter: avgDia,
+        roundedDiameter: rndDia,
+        diameterClass: diaClass,
+        grossVolume: grossVol,
+        gerowong: g || null,
+        hollowVolume: hollowVol || null,
+        netVolume: netVol,
+        batch: data.batch || existingLog.batch,
+        locationId: data.locationId !== undefined ? data.locationId : existingLog.locationId,
+      }
+    });
+  }
+
+  async deleteRawLog(id: string) {
+    if (!id || id.length !== 24) throw new BadRequestException('Invalid ID');
+    const existingLog = await this.prisma.rawLog.findUnique({ where: { id } });
+    if (!existingLog) throw new NotFoundException('Raw Log not found');
+    
+    // Check if it's already used
+    if (existingLog.status !== 'AVAILABLE') {
+      throw new BadRequestException('Cannot delete log that is not AVAILABLE (may have been trimmed or used).');
+    }
+
+    return this.prisma.rawLog.delete({ where: { id } });
+  }
+
 }
-
-
-
-
-
-

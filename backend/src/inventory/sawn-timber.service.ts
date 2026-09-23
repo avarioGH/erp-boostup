@@ -1,4 +1,4 @@
-﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InventoryLedgerService } from './inventory-ledger.service';
 import { AuditService } from '../core/audit.service';
@@ -105,12 +105,22 @@ export class SawnTimberService {
       const { inputLogId, outputDate, shift, operatorName, machine, locationId, batch, notes, items } = data;
       
       if (!items || items.length === 0) throw new BadRequestException('Output must contain at least one item');
+      if (!inputLogId || !/^[a-f\d]{24}$/i.test(inputLogId)) throw new BadRequestException('Invalid input log ID');
+      if (!locationId || !/^[a-f\d]{24}$/i.test(locationId)) throw new BadRequestException('Warehouse (locationId) is required');
 
       const inputLog = await tx.inputLog.findUnique({ where: { id: inputLogId }, include: { location: true } });
       if (!inputLog) throw new NotFoundException('Input log not found');
       if (inputLog.status !== 'AVAILABLE' && inputLog.status !== 'IN_PROCESS') {
          throw new BadRequestException('Input log is not available for production');
       }
+
+      // Resolve company_id: from inputLog.location or from the provided warehouse
+      let companyId = inputLog.location?.company_id;
+      if (!companyId) {
+        const warehouse = await tx.warehouse.findUnique({ where: { id: locationId } });
+        companyId = warehouse?.company_id;
+      }
+      if (!companyId) throw new BadRequestException('Cannot determine company from warehouse');
 
       const dateObj = outputDate ? new Date(outputDate) : new Date();
       const YY = String(dateObj.getFullYear()).slice(2);
@@ -139,7 +149,7 @@ export class SawnTimberService {
       });
 
       for (const item of items) {
-        const variant = await this.getOrCreateTimberVariant(inputLog.location!.company_id, inputLog.species, item.grade || 'A', item.thickness, item.width, item.length);
+        const variant = await this.getOrCreateTimberVariant(companyId, inputLog.species, item.grade || 'A', item.thickness, item.width, item.length);
         const volumeM3 = variant.volumePerPiece * item.quantityPcs;
         
         await tx.sawnTimberOutputItem.create({

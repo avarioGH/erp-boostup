@@ -1,4 +1,4 @@
-﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../core/audit.service';
 
@@ -43,7 +43,7 @@ export class InputLogService {
   }
 
   async getInputLog(id: string) {
-    if (!id || id === 'undefined' || id.length !== 24) throw new NotFoundException('Input log not found');
+    if (!id || id === 'undefined' || !/^[a-f\d]{24}$/i.test(id)) throw new NotFoundException('Input log not found');
     const log = await this.prisma.inputLog.findUnique({
       where: { id },
       include: { 

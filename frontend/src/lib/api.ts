@@ -249,3 +249,36 @@ export const ProductionReportAPI: any = {
   getReconciliation: async (params?: any) => (await api.get('/production/reports/reconciliation', { params })).data,
   getDataQuality: async (params?: any) => (await api.get('/production/reports/data-quality', { params })).data,
 };
+
+export const MasterDataAPI: any = {
+  getSpecies: async () => (await api.get('/master-data/species')).data,
+  createSpecies: async (data: any) => (await api.post('/master-data/species', data)).data,
+  updateSpecies: async (id: string, data: any) => (await api.put('/master-data/species/' + id, data)).data,
+  deleteSpecies: async (id: string) => (await api.delete('/master-data/species/' + id)).data,
+
+  getGrades: async () => (await api.get('/master-data/grades')).data,
+  createGrade: async (data: any) => (await api.post('/master-data/grades', data)).data,
+  updateGrade: async (id: string, data: any) => (await api.put('/master-data/grades/' + id, data)).data,
+  deleteGrade: async (id: string) => (await api.delete('/master-data/grades/' + id)).data,
+
+  getSources: async () => (await api.get('/master-data/sources')).data,
+  createSource: async (data: any) => (await api.post('/master-data/sources', data)).data,
+  updateSource: async (id: string, data: any) => (await api.put('/master-data/sources/' + id, data)).data,
+  deleteSource: async (id: string) => (await api.delete('/master-data/sources/' + id)).data,
+
+  getLocations: async () => (await api.get('/master-data/locations')).data,
+  createLocation: async (data: any) => (await api.post('/master-data/locations', data)).data,
+  updateLocation: async (id: string, data: any) => (await api.put('/master-data/locations/' + id, data)).data,
+  deleteLocation: async (id: string) => (await api.delete('/master-data/locations/' + id)).data,
+
+  getVehicles: async () => (await api.get('/master-data/vehicles')).data,
+  createVehicle: async (data: any) => (await api.post('/master-data/vehicles', data)).data,
+  updateVehicle: async (id: string, data: any) => (await api.put('/master-data/vehicles/' + id, data)).data,
+  deleteVehicle: async (id: string) => (await api.delete('/master-data/vehicles/' + id)).data,
+
+  getDrivers: async () => (await api.get('/master-data/drivers')).data,
+  createDriver: async (data: any) => (await api.post('/master-data/drivers', data)).data,
+  updateDriver: async (id: string, data: any) => (await api.put('/master-data/drivers/' + id, data)).data,
+  deleteDriver: async (id: string) => (await api.delete('/master-data/drivers/' + id)).data,
+};
+

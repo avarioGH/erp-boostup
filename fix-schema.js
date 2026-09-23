@@ -1,37 +1,26 @@
-const fs = require("fs");
-let schema = fs.readFileSync("backend/prisma/schema.prisma", "utf8");
+const fs = require('fs');
+let content = fs.readFileSync('backend/prisma/schema.prisma', 'utf-8');
 
-const newInputLog = `model InputLog {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  inputNumber     String   @unique
-  date            DateTime @default(now())
-  shift           String?
-  machine         String?
-  bundleRef       String?
-  batch           String?
-  species         String
-  totalQty        Int
-  totalLength     Float?
-  totalGross      Float?
-  totalGerowong   Float?
-  totalTrimming   Float?
-  totalVolume     Float    
-  
-  locationId      String?  @db.ObjectId
-  location        Warehouse? @relation(fields: [locationId], references: [id])
-  status          String   @default("AVAILABLE") 
-  notes           String?
-  
-  items           InputLogItem[]
-  trimmedLogs     TrimmedLog[] 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}`;
+const trimmedLogRegex = /model TrimmedLog \{[\s\S]*?\}/;
+content = content.replace(trimmedLogRegex, (match) => {
+  if (match.includes('speciesId')) return match;
+  return match.replace('species         String', `species         String\n  speciesId     String?                  @db.ObjectId\n  timberSpecies TimberSpecies?           @relation(fields: [speciesId], references: [id])\n  sourceId      String?                  @db.ObjectId\n  timberSource  TimberSource?            @relation(fields: [sourceId], references: [id])`);
+});
 
-schema = schema.replace(/model InputLog \{[\s\S]*?updatedAt\s+DateTime @updatedAt\n\s*\}/, newInputLog);
+const inputLogRegex = /model InputLog \{[\s\S]*?\}/;
+content = content.replace(inputLogRegex, (match) => {
+  if (match.includes('speciesId')) return match;
+  return match.replace('species       String', `species       String\n  speciesId    String?                  @db.ObjectId\n  timberSpecies TimberSpecies?          @relation(fields: [speciesId], references: [id])\n  sourceId     String?                  @db.ObjectId\n  timberSource TimberSource?            @relation(fields: [sourceId], references: [id])`);
+});
 
-const newTrimRel = `inputLog        InputLog? @relation(fields: [inputLogId], references: [id])
-  inputLogItem    InputLogItem?`;
-schema = schema.replace(/inputLog\s+InputLog\?\s+@relation\(fields: \[inputLogId\], references: \[id\]\)/, newTrimRel);
+const timberStockRegex = /model TimberStock \{[\s\S]*?\}/;
+content = content.replace(timberStockRegex, (match) => {
+  if (match.includes('subLocationId')) return match;
+  return match.replace('location        Warehouse     @relation(fields: [locationId], references: [id])', `location        Warehouse     @relation(fields: [locationId], references: [id])\n  subLocationId   String?       @db.ObjectId\n  subLocation     Location?     @relation(fields: [subLocationId], references: [id])`);
+});
 
-fs.writeFileSync("backend/prisma/schema.prisma", schema, "utf8");
+// Update Location model relation to match 'subLocationId'
+content = content.replace('timberStocks TimberStock[]', 'timberStocks TimberStock[]');
+
+fs.writeFileSync('backend/prisma/schema.prisma', content);
+console.log('Fixed');
