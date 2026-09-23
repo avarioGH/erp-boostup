@@ -144,14 +144,45 @@ export class ProductionService {
       if (!process) throw new BadRequestException('Process not found');
       if (process.status !== 'CONFIRMED') throw new BadRequestException('Process must be in CONFIRMED status');
 
-      // Reverse inputs
+      // Determine defaultWarehouseId from inputs
       let defaultWarehouseId: string | null = null;
       for (const input of process.inputs) {
         const stock = await tx.timberStock.findUnique({
           where: { id: input.timberStockId }
         });
+        if (stock && !defaultWarehouseId) {
+          defaultWarehouseId = stock.locationId;
+          break;
+        }
+      }
+
+      // Cancellation Safety: Check if outputs have been consumed
+      for (const output of process.outputs) {
+        if (output.outputType === 'PRODUCT') {
+          const targetWarehouseId = output.warehouseId || defaultWarehouseId;
+          if (!targetWarehouseId) throw new BadRequestException('Warehouse ID is required for outputs');
+          if (!output.variantId) throw new BadRequestException('Variant ID is required for product outputs');
+
+          const stock = await tx.timberStock.findFirst({
+            where: {
+              locationId: targetWarehouseId,
+              timberVariantId: output.variantId
+            }
+          });
+
+          const currentPcs = stock ? stock.currentPcs : 0;
+          if (currentPcs < output.quantityPCS) {
+            throw new BadRequestException(`Cannot cancel this production. Output has already been consumed. Variant ID: ${output.variantId}, Produced: ${output.quantityPCS}, Remaining: ${currentPcs}`);
+          }
+        }
+      }
+
+      // Reverse inputs
+      for (const input of process.inputs) {
+        const stock = await tx.timberStock.findUnique({
+          where: { id: input.timberStockId }
+        });
         if (!stock) throw new BadRequestException(`Timber stock ${input.timberStockId} not found`);
-        if (!defaultWarehouseId) defaultWarehouseId = stock.locationId;
 
         await this.inventoryLedgerService.createMovement(
           tx,

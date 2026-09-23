@@ -39,10 +39,6 @@ export class InventoryLedgerService {
       stock = await tx.timberStock.create({
         data: { locationId, timberVariantId, currentPcs: 0, currentVolumeM3: 0 }
       });
-    } else {
-      if (type === 'OUT' && stock.currentPcs < quantityPcs) {
-        throw new BadRequestException(`Insufficient stock for variant ${timberVariantId}. Have ${stock.currentPcs}, need ${quantityPcs}`);
-      }
     }
 
     // 2. Create immutable movement
@@ -73,10 +69,23 @@ export class InventoryLedgerService {
       updateData.currentVolumeM3 = { increment: volumeM3 };
     }
 
-    await tx.timberStock.update({
-      where: { id: stock.id },
+    let whereCondition: any = { id: stock.id };
+    if (type === 'OUT') {
+      whereCondition.currentPcs = { gte: quantityPcs };
+    }
+
+    const updateResult = await tx.timberStock.updateMany({
+      where: whereCondition,
       data: updateData
     });
+
+    if (updateResult.count === 0) {
+      if (type === 'OUT') {
+        throw new BadRequestException(`Insufficient stock or concurrent modification for variant ${timberVariantId}. Required: ${quantityPcs}`);
+      } else {
+        throw new BadRequestException('Failed to update stock due to concurrent modification');
+      }
+    }
 
     return movement;
   }

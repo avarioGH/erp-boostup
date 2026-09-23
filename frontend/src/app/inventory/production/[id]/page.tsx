@@ -4,10 +4,11 @@ import { ProductionAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, ArrowLeft, CheckCircle } from "lucide-react"
+import { Loader2, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function ProductionDetailPage() {
   const router = useRouter()
@@ -18,6 +19,7 @@ export default function ProductionDetailPage() {
   const [loading, setLoading] = useState(true)
   const [confirming, setConfirming] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const fetchProcess = () => {
     setLoading(true)
@@ -36,13 +38,20 @@ export default function ProductionDetailPage() {
 
   const handleConfirm = async () => {
     setConfirming(true)
+    setErrorMsg(null)
     try {
       await ProductionAPI.confirmProcess(params.id as string)
       toast({ title: "Berhasil", description: "Production Process berhasil dikonfirmasi" })
       setShowConfirmModal(false)
       fetchProcess()
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || "Gagal mengkonfirmasi process", variant: "destructive" })
+      const msg = err.response?.data?.message || "Gagal mengkonfirmasi process"
+      const lowerMsg = msg.toLowerCase()
+      if (lowerMsg.includes("consumed") || lowerMsg.includes("insufficient")) {
+        setErrorMsg(msg)
+      } else {
+        toast({ title: "Error", description: msg, variant: "destructive" })
+      }
     } finally {
       setConfirming(false)
     }
@@ -154,7 +163,10 @@ export default function ProductionDetailPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+      <Dialog open={showConfirmModal} onOpenChange={(open) => {
+        setShowConfirmModal(open)
+        if (!open) setErrorMsg(null)
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Production</DialogTitle>
@@ -165,8 +177,20 @@ export default function ProductionDetailPage() {
               Inputs will be deducted from TimberStock, and Outputs will be added as new items. This action cannot be undone easily.
             </DialogDescription>
           </DialogHeader>
+
+          {errorMsg && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Validation Error</AlertTitle>
+              <AlertDescription className="whitespace-pre-wrap">{errorMsg}</AlertDescription>
+            </Alert>
+          )}
+
           <DialogFooter className="mt-4 gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => {
+              setShowConfirmModal(false)
+              setErrorMsg(null)
+            }}>Cancel</Button>
             <Button onClick={handleConfirm} disabled={confirming} className="bg-emerald-600 hover:bg-emerald-700">
               {confirming ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : null}
               Confirm & Mutate Stock
