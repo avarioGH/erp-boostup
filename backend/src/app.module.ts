@@ -41,6 +41,7 @@ import { OpnameModule } from './inventory/opname/opname.module';
 
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
+import { ReportsModule as InventoryReportsModule } from './inventory/reports/reports.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     HealthModule,
     CoreModule,
     ReportsModule,
+    InventoryReportsModule,
     EventEmitterModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),

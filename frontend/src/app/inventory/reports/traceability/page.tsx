@@ -1,71 +1,104 @@
-﻿'use client';
-import { useState } from 'react';
-import { TimberAPI } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Search, Network } from 'lucide-react';
-import Link from 'next/link';
+"use client"
+import { useState, useEffect } from "react"
+import { ReportsAPI } from "@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Loader2, AlertCircle } from "lucide-react"
 
-export default function TraceabilityReport() {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
+export default function TraceabilityDashboard() {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!search) return;
-    setLoading(true);
-    try {
-      const res = await TimberAPI.getTraceability(search);
-      setData(res);
-    } catch (err) {
-      console.error(err);
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    ReportsAPI.getTraceability().then((res: any) => {
+      setData(res || {})
+    }).catch(console.error).finally(() => setLoading(false))
+  }, [])
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href="/inventory/reports"><Button variant="outline" size="icon"><ArrowLeft className="w-4 h-4"/></Button></Link>
-        <h1 className="text-3xl font-bold flex items-center gap-2"><Network className="text-blue-500 w-8 h-8"/> Traceability</h1>
+    <div className="space-y-6 pb-10 p-4 md:p-8 dark">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-white mb-6">Operational Dashboard</h1>
       </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Log Traceability Search</CardTitle>
-          <CardDescription>Search by Raw Log No, Trim Code, Input No, or Sawn Bundle No to see its history.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSearch} className="flex gap-2 max-w-lg">
-            <Input placeholder="Enter tracking code..." value={search} onChange={e => setSearch(e.target.value)} required />
-            <Button type="submit" disabled={loading}><Search className="w-4 h-4 mr-2"/> Trace</Button>
-          </form>
-        </CardContent>
-      </Card>
 
-      {loading && <div className="p-4 text-center">Tracing...</div>}
+      <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 p-4 rounded-md flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+        <div>
+          <h4 className="font-semibold mb-1">Important Note</h4>
+          <p className="text-sm opacity-90">Stock is aggregated by Warehouse + Variant. Individual piece-level provenance is not available (Fungible Stock).</p>
+        </div>
+      </div>
 
-      {data === null && !loading && search && (
-        <Card className="border-red-200 bg-red-50 dark:bg-red-950/10"><CardContent className="p-6 text-red-600">No records found for that code.</CardContent></Card>
-      )}
+      {loading ? (
+        <div className="flex justify-center p-12"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-[#0f172a] border-border text-white">
+            <CardHeader>
+              <CardTitle>Production Yield Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Output:</span>
+                  <span className="font-medium">{data?.production?.totalOutput || 0} pcs</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Input Vol:</span>
+                  <span className="font-medium">{data?.production?.totalInputVol || 0} m³</span>
+                </div>
+                <div className="flex justify-between border-t border-border/50 pt-2 mt-2">
+                  <span className="text-muted-foreground">Avg Yield:</span>
+                  <span className="font-bold text-primary">{data?.production?.avgYield || 0}%</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-      {data && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Trace Result: <span className="text-blue-600">{data.type}</span></CardTitle>
-          </CardHeader>
-          <CardContent>
-            <pre className="bg-muted p-4 rounded-md text-sm overflow-x-auto">
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
+          <Card className="bg-[#0f172a] border-border text-white">
+            <CardHeader>
+              <CardTitle>Purchase Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Orders:</span>
+                  <span className="font-medium">{data?.purchases?.totalOrders || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Items Received:</span>
+                  <span className="font-medium">{data?.purchases?.itemsReceived || 0} pcs</span>
+                </div>
+                <div className="flex justify-between border-t border-border/50 pt-2 mt-2">
+                  <span className="text-muted-foreground">Pending Receipts:</span>
+                  <span className="font-bold text-amber-500">{data?.purchases?.pendingReceipts || 0} pcs</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#0f172a] border-border text-white">
+            <CardHeader>
+              <CardTitle>Shipment Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total Shipments:</span>
+                  <span className="font-medium">{data?.shipments?.totalShipments || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Items Shipped:</span>
+                  <span className="font-medium">{data?.shipments?.itemsShipped || 0} pcs</span>
+                </div>
+                <div className="flex justify-between border-t border-border/50 pt-2 mt-2">
+                  <span className="text-muted-foreground">Pending Deliveries:</span>
+                  <span className="font-bold text-amber-500">{data?.shipments?.pendingDeliveries || 0} pcs</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
-  );
+  )
 }
-

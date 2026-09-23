@@ -87,9 +87,9 @@ const items: MenuItem[] = [
  { title: "Location Management", url: "/inventory/warehouses" },
  
  { title: "Report & Traceability", url: "#", type: "label" },
- { title: "Inventory Reports", url: "/inventory/reports" },
- { title: "Stock Card", url: "/inventory/timber-stock" },
- { title: "Log Traceability", url: "/inventory/traceability" },
+ { title: "Stock Movement Explorer", url: "/inventory/reports/movements" },
+ { title: "Stock Card", url: "/inventory/reports/stock-card" },
+ { title: "Operational Dashboard", url: "/inventory/reports/traceability" },
  
  { title: "Data & Audit", url: "#", type: "label" },
  { title: "Data Import (Excel)", url: "/inventory/import" },

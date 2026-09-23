@@ -2873,6 +2873,9 @@ model TimberStockMovement {
 
   date      DateTime @default(now())
   createdAt DateTime @default(now())
+
+  @@index([timberStockId, date])
+  @@index([referenceType, referenceId])
 }
 
 // ==================================================

@@ -314,3 +314,9 @@ export const OpnameAPI: any = {
   confirm: async (id: string) => (await api.post(`/inventory/opname/${id}/confirm`)).data,
   reconcile: async () => (await api.post('/inventory/opname/reconcile')).data,
 };
+
+export const ReportsAPI: any = {
+  getMovements: async (params?: any) => (await api.get('/inventory/reports/movements', { params })).data,
+  getStockCard: async (params?: any) => (await api.get('/inventory/reports/stock-card', { params })).data,
+  getTraceability: async (params?: any) => (await api.get('/inventory/reports/traceability', { params })).data,
+};
