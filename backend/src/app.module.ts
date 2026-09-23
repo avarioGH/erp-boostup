@@ -38,6 +38,7 @@ import { ProductionModule } from './inventory/production/production.module';
 import { PurchaseModule } from './inventory/purchase/purchase.module';
 import { ShipmentModule } from './inventory/shipment/shipment.module';
 import { OpnameModule } from './inventory/opname/opname.module';
+import { DashboardModule } from './inventory/dashboard/dashboard.module';
 
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
@@ -53,6 +54,7 @@ import { ReportsModule as InventoryReportsModule } from './inventory/reports/rep
     CoreModule,
     ReportsModule,
     InventoryReportsModule,
+    DashboardModule,
     EventEmitterModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),

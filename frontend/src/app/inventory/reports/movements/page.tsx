@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { ReportsAPI, InventoryAPI } from "@/lib/api"
+import { ReportsAPI, InventoryAPI, ExportAPI } from "@/lib/api"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Search } from "lucide-react"
@@ -46,7 +46,7 @@ export default function StockMovementExplorer() {
         <h1 className="text-3xl font-bold tracking-tight text-white mb-6">Stock Movement Explorer</h1>
       </div>
 
-      <div className="flex gap-4 mb-4">
+      <div className="flex gap-4 mb-4 items-center">
         <select 
           className="bg-[#0f172a] text-white border border-border p-2 rounded"
           value={filters.warehouseId}
@@ -76,6 +76,16 @@ export default function StockMovementExplorer() {
           <option value="OUT">OUT</option>
           <option value="ADJ">ADJ</option>
         </select>
+
+        <button 
+          onClick={() => {
+            const query = new URLSearchParams(filters as any).toString();
+            window.open(ExportAPI.exportMovements(query), '_blank');
+          }}
+          className="ml-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+        >
+          Export XLSX
+        </button>
       </div>
 
       <Card className="shadow-sm bg-[#0f172a] border-border text-white">

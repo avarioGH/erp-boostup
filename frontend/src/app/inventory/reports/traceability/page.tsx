@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { ReportsAPI } from "@/lib/api"
+import { ReportsAPI, ExportAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2, AlertCircle } from "lucide-react"
 
@@ -16,8 +16,16 @@ export default function TraceabilityDashboard() {
 
   return (
     <div className="space-y-6 pb-10 p-4 md:p-8 dark">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-6">Operational Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-white">Operational Dashboard</h1>
+        <button 
+          onClick={() => {
+            window.open(ExportAPI.exportTraceability(''), '_blank');
+          }}
+          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+        >
+          Export XLSX
+        </button>
       </div>
 
       <div className="bg-amber-500/10 border border-amber-500/20 text-amber-500 p-4 rounded-md flex items-start gap-3">

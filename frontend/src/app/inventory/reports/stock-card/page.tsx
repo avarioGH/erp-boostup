@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { ReportsAPI, InventoryAPI } from "@/lib/api"
+import { ReportsAPI, InventoryAPI, ExportAPI } from "@/lib/api"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Loader2 } from "lucide-react"
@@ -67,6 +67,17 @@ export default function StockCardPage() {
           className="px-4 py-2 bg-primary text-primary-foreground rounded disabled:opacity-50"
         >
           Fetch Stock Card
+        </button>
+
+        <button 
+          onClick={() => {
+            const query = new URLSearchParams(filters as any).toString();
+            window.open(ExportAPI.exportStockCard(query), '_blank');
+          }}
+          disabled={!filters.warehouseId || !filters.variant}
+          className="ml-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded disabled:opacity-50"
+        >
+          Export XLSX
         </button>
       </div>
 

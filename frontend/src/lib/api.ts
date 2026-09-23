@@ -33,6 +33,13 @@ export default api;
 export const DashboardAPI: any = {
   getKPIs: async (timeRange: string = 'thisMonth', warehouseId: string = 'all') =>
     (await api.get('/analytics/dashboard', { params: { timeRange, warehouseId } })).data,
+  getSummary: async () => (await api.get('/dashboard/summary')).data,
+};
+
+export const ExportAPI: any = {
+  exportMovements: (query: string) => `${api.defaults.baseURL}/export/movements?${query}`,
+  exportStockCard: (query: string) => `${api.defaults.baseURL}/export/stock-card?${query}`,
+  exportTraceability: (query: string) => `${api.defaults.baseURL}/export/traceability?${query}`,
 };
 
 export const InventoryAPI: any = {

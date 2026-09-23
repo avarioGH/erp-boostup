@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import * as exceljs from 'exceljs';
 
 @Injectable()
 export class ReportsService {
@@ -230,5 +231,134 @@ export class ReportsService {
         shipments: { pcs: totalShipmentPcs, m3: totalShipmentM3 },
         opnames: { variancePcs: totalOpnameVariancePcs, varianceM3: totalOpnameVarianceM3 }
     };
+  }
+
+  async exportMovements(filters: any): Promise<exceljs.Workbook> {
+    const { data } = await this.getMovements({ ...filters, page: 1, limit: 1000000 });
+    const wb = new exceljs.Workbook();
+    const ws = wb.addWorksheet('Movements');
+    ws.columns = [
+      { header: 'Date', key: 'date', width: 20 },
+      { header: 'Type', key: 'type', width: 10 },
+      { header: 'Reference', key: 'reference', width: 25 },
+      { header: 'Pcs', key: 'pcs', width: 10 },
+      { header: 'M3', key: 'm3', width: 10 },
+    ];
+    data.forEach(m => {
+      ws.addRow({
+        date: m.date,
+        type: m.type,
+        reference: m.referenceType + ' ' + m.referenceId,
+        pcs: m.quantityPcs,
+        m3: m.volumeM3,
+      });
+    });
+    return wb;
+  }
+
+  async exportStockCard(warehouseId: string, variantId: string, dateFrom: string, dateTo: string): Promise<exceljs.Workbook> {
+    const data = await this.getStockCard(warehouseId, variantId, dateFrom, dateTo);
+    const wb = new exceljs.Workbook();
+    const ws = wb.addWorksheet('Stock Card');
+    
+    ws.addRow(['Opening Balance Pcs', data.openingBalancePcs, 'Opening Balance M3', data.openingBalanceM3]);
+    ws.addRow([]);
+    
+    ws.columns = [
+      { header: 'Date', key: 'date', width: 20 },
+      { header: 'Type', key: 'type', width: 10 },
+      { header: 'Reference', key: 'reference', width: 25 },
+      { header: 'In/Out/Adj Pcs', key: 'pcs', width: 15 },
+      { header: 'In/Out/Adj M3', key: 'm3', width: 15 },
+      { header: 'Balance Pcs', key: 'balPcs', width: 15 },
+      { header: 'Balance M3', key: 'balM3', width: 15 },
+    ];
+    
+    data.movements.forEach(m => {
+      ws.addRow({
+        date: m.date,
+        type: m.type,
+        reference: m.referenceType,
+        pcs: m.quantityPcs,
+        m3: m.volumeM3,
+        balPcs: (m as any).runningBalancePcs,
+        balM3: (m as any).runningBalanceM3,
+      });
+    });
+    return wb;
+  }
+
+  async exportProduction(dateFrom?: string, dateTo?: string): Promise<exceljs.Workbook> {
+    const data = await this.getProductionYield(dateFrom, dateTo);
+    const wb = new exceljs.Workbook();
+    const ws = wb.addWorksheet('Production');
+    ws.columns = [
+      { header: 'Process Type', key: 'processType', width: 20 },
+      { header: 'Input M3', key: 'inputM3', width: 15 },
+      { header: 'Output M3', key: 'outputM3', width: 15 },
+      { header: 'Waste M3', key: 'wasteM3', width: 15 },
+      { header: 'Yield %', key: 'yield', width: 15 },
+    ];
+    data.forEach(d => ws.addRow(d));
+    return wb;
+  }
+
+  async exportPurchase(dateFrom?: string, dateTo?: string): Promise<exceljs.Workbook> {
+    const where: any = { status: 'CONFIRMED' };
+    if (dateFrom || dateTo) {
+      where.purchaseDate = {};
+      if (dateFrom) where.purchaseDate.gte = new Date(dateFrom);
+      if (dateTo) where.purchaseDate.lte = new Date(dateTo);
+    }
+    const purchases = await this.prisma.timberPurchase.findMany({ where });
+    const wb = new exceljs.Workbook();
+    const ws = wb.addWorksheet('Purchase');
+    ws.columns = [
+      { header: 'Purchase No', key: 'purchaseNumber', width: 20 },
+      { header: 'Date', key: 'purchaseDate', width: 20 },
+      { header: 'Pcs', key: 'totalPcs', width: 10 },
+      { header: 'M3', key: 'totalVolumeM3', width: 10 },
+    ];
+    purchases.forEach(p => ws.addRow(p));
+    return wb;
+  }
+
+  async exportShipment(dateFrom?: string, dateTo?: string): Promise<exceljs.Workbook> {
+    const where: any = { status: 'CONFIRMED' };
+    if (dateFrom || dateTo) {
+      where.shipmentDate = {};
+      if (dateFrom) where.shipmentDate.gte = new Date(dateFrom);
+      if (dateTo) where.shipmentDate.lte = new Date(dateTo);
+    }
+    const shipments = await this.prisma.timberShipment.findMany({ where });
+    const wb = new exceljs.Workbook();
+    const ws = wb.addWorksheet('Shipment');
+    ws.columns = [
+      { header: 'Shipment No', key: 'shipmentNumber', width: 20 },
+      { header: 'Date', key: 'shipmentDate', width: 20 },
+      { header: 'Pcs', key: 'totalPcs', width: 10 },
+      { header: 'M3', key: 'totalVolumeM3', width: 10 },
+    ];
+    shipments.forEach(s => ws.addRow(s));
+    return wb;
+  }
+
+  async exportOpname(dateFrom?: string, dateTo?: string): Promise<exceljs.Workbook> {
+    const where: any = { status: 'CONFIRMED' };
+    if (dateFrom || dateTo) {
+      where.opnameDate = {};
+      if (dateFrom) where.opnameDate.gte = new Date(dateFrom);
+      if (dateTo) where.opnameDate.lte = new Date(dateTo);
+    }
+    const opnames = await this.prisma.timberStockOpname.findMany({ where });
+    const wb = new exceljs.Workbook();
+    const ws = wb.addWorksheet('Opname');
+    ws.columns = [
+      { header: 'Opname No', key: 'opnameNumber', width: 20 },
+      { header: 'Date', key: 'opnameDate', width: 20 },
+      { header: 'Notes', key: 'notes', width: 30 },
+    ];
+    opnames.forEach(o => ws.addRow(o));
+    return wb;
   }
 }
