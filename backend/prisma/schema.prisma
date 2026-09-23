@@ -100,6 +100,11 @@ model Company {
   EcommerceCart        EcommerceCart[]
   InventoryCostLayer   InventoryCostLayer[]
   CostLayerConsumption CostLayerConsumption[]
+  timberSpecies TimberSpecies[]
+  timberGrades TimberGrade[]
+  timberSources TimberSource[]
+  vehicles Vehicle[]
+  drivers Driver[]
 }
 
 model CompanySetting {
@@ -284,6 +289,7 @@ model Warehouse {
   InventoryCostLayer InventoryCostLayer[]
 
   @@unique([company_id, code])
+  locations Location[]
 }
 
 model UserWarehouseAccess {
@@ -2611,6 +2617,10 @@ model RawLog {
   sequence       Int? // Urut
   code           String? // Kode
   species        String // Jenis Kayu
+  speciesId      String?                  @db.ObjectId
+  timberSpecies  TimberSpecies?           @relation(fields: [speciesId], references: [id])
+  sourceId       String?                  @db.ObjectId
+  timberSource   TimberSource?            @relation(fields: [sourceId], references: [id])
   quantity       Int     @default(1)
   originalLength Float // Pjng (meters)
 
@@ -2655,6 +2665,10 @@ model TrimmedLog {
   rawLog     RawLog @relation(fields: [rawLogId], references: [id])
 
   species         String
+  speciesId     String?                  @db.ObjectId
+  timberSpecies TimberSpecies?           @relation(fields: [speciesId], references: [id])
+  sourceId      String?                  @db.ObjectId
+  timberSource  TimberSource?            @relation(fields: [sourceId], references: [id])
   length          Float
   diameter1       Float
   diameter2       Float
@@ -2699,6 +2713,10 @@ model InputLog {
   bundleRef     String?
   batch         String?
   species       String
+  speciesId    String?                  @db.ObjectId
+  timberSpecies TimberSpecies?          @relation(fields: [speciesId], references: [id])
+  sourceId     String?                  @db.ObjectId
+  timberSource TimberSource?            @relation(fields: [sourceId], references: [id])
   totalQty      Int
   totalLength   Float?
   totalGross    Float?
@@ -2731,6 +2749,10 @@ model TimberVariant {
   width           Int // mm
   length          Int // mm
   species         String
+  speciesId       String?                  @db.ObjectId
+  timberSpecies   TimberSpecies?           @relation(fields: [speciesId], references: [id])
+  gradeId         String?                  @db.ObjectId
+  timberGrade     TimberGrade?             @relation(fields: [gradeId], references: [id])
   sku             String                   @unique
   barcode         String?                  @unique
   volumePerPiece  Float // Calculated as T*W*L/1B
@@ -2803,6 +2825,8 @@ model TimberStock {
   id              String        @id @default(auto()) @map("_id") @db.ObjectId
   locationId      String        @db.ObjectId
   location        Warehouse     @relation(fields: [locationId], references: [id])
+  subLocationId   String?       @db.ObjectId
+  subLocation     Location?     @relation(fields: [subLocationId], references: [id])
   timberVariantId String        @db.ObjectId
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
 
@@ -3080,3 +3104,99 @@ model SawmillOutputItem {
 }
 
 
+
+
+// =======================
+// TIMBER MASTER DATA (PHASE 16)
+// =======================
+
+model TimberSpecies {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id  String   @db.ObjectId
+  company     Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  code        String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rawLogs      RawLog[]
+  trimmedLogs  TrimmedLog[]
+  inputLogs    InputLog[]
+  variants     TimberVariant[]
+}
+
+model TimberGrade {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id  String   @db.ObjectId
+  company     Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  code        String
+  name        String
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  variants    TimberVariant[]
+}
+
+model TimberSource {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id  String   @db.ObjectId
+  company     Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  code        String
+  name        String
+  type        String // SUPPLIER, EXTERNAL, INTERNAL, OTHER
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rawLogs     RawLog[]
+  trimmedLogs TrimmedLog[]
+  inputLogs   InputLog[]
+}
+
+model Location {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  warehouseId String   @db.ObjectId
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  code        String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  timberStocks TimberStock[]
+}
+
+model Vehicle {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id  String   @db.ObjectId
+  company     Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  code        String
+  plateNumber String
+  name        String?
+  vehicleType String // TRUCK, FUSO, PICKUP, OTHER
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Driver {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id    String   @db.ObjectId
+  company       Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  code          String?
+  name          String
+  phone         String?
+  licenseNumber String?
+  description   String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
