@@ -105,6 +105,7 @@ model Company {
   timberSources TimberSource[]
   vehicles Vehicle[]
   drivers Driver[]
+  productionProcesses ProductionProcess[]
 }
 
 model CompanySetting {
@@ -290,6 +291,7 @@ model Warehouse {
 
   @@unique([company_id, code])
   locations Location[]
+  productionOutputs ProductionProcessOutput[]
 }
 
 model UserWarehouseAccess {
@@ -2766,6 +2768,8 @@ model TimberVariant {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  productionInputs ProductionProcessInput[]
+  productionOutputs ProductionProcessOutput[]
 }
 
 model InputLogItem {
@@ -2842,6 +2846,7 @@ model TimberStock {
   updatedAt DateTime @updatedAt
 
   @@unique([locationId, timberVariantId])
+  productionInputs ProductionProcessInput[]
 }
 
 model TimberStockMovement {
@@ -3199,4 +3204,62 @@ model Driver {
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+
+// ==================================================
+// PHASE 18: TIMBER PRODUCTION PROCESS ENGINE
+// ==================================================
+
+model ProductionProcess {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id  String   @db.ObjectId
+  company     Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  processNo   String   @unique
+  processType String   // GESEK, PLAT, MASAK, etc.
+  processDate DateTime @default(now())
+  status      String   @default("DRAFT") // DRAFT, CONFIRMED, CANCELLED
+  notes       String?
+  createdBy   String?
+  
+  inputVolumeM3   Float @default(0)
+  outputVolumeM3  Float @default(0)
+  wasteVolumeM3   Float @default(0)
+  yieldPercentage Float @default(0)
+
+  inputs  ProductionProcessInput[]
+  outputs ProductionProcessOutput[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductionProcessInput {
+  id                  String            @id @default(auto()) @map("_id") @db.ObjectId
+  productionProcessId String            @db.ObjectId
+  productionProcess   ProductionProcess @relation(fields: [productionProcessId], references: [id], onDelete: Cascade)
+  
+  timberStockId String      @db.ObjectId
+  timberStock   TimberStock @relation(fields: [timberStockId], references: [id])
+  variantId     String      @db.ObjectId
+  variant       TimberVariant @relation(fields: [variantId], references: [id])
+  
+  quantityPCS Int
+  volumeM3    Float
+}
+
+model ProductionProcessOutput {
+  id                  String            @id @default(auto()) @map("_id") @db.ObjectId
+  productionProcessId String            @db.ObjectId
+  productionProcess   ProductionProcess @relation(fields: [productionProcessId], references: [id], onDelete: Cascade)
+  
+  variantId   String?       @db.ObjectId
+  variant     TimberVariant? @relation(fields: [variantId], references: [id]) // Optional because WASTE might not have a variant
+  
+  outputType  String // PRODUCT, WASTE, BYPRODUCT
+  quantityPCS Int    @default(0)
+  volumeM3    Float
+
+  warehouseId String? @db.ObjectId
+  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id]) // Target warehouse for this output
 }

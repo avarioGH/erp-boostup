@@ -250,6 +250,13 @@ export const ProductionReportAPI: any = {
   getDataQuality: async (params?: any) => (await api.get('/production/reports/data-quality', { params })).data,
 };
 
+export const ProductionAPI: any = {
+  getProcesses: async (params?: any) => (await api.get('/inventory/production', { params })).data,
+  getProcess: async (id: string) => (await api.get('/inventory/production/' + id)).data,
+  createProcess: async (data: any) => (await api.post('/inventory/production', data)).data,
+  confirmProcess: async (id: string) => (await api.post('/inventory/production/' + id + '/confirm')).data,
+};
+
 export const MasterDataAPI: any = {
   getSpecies: async () => (await api.get('/master-data/species')).data,
   createSpecies: async (data: any) => (await api.post('/master-data/species', data)).data,

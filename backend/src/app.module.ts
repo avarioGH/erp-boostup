@@ -34,6 +34,7 @@ import { ShopeeModule } from './integrations/shopee/shopee.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { AiModule } from './ai/ai.module';
+import { ProductionModule } from './inventory/production/production.module';
 
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
@@ -56,7 +57,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     IntegrationsModule,
     TripayModule,
     CrmModule,
-    PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule,  MrpModule, MasterDataModule
+    PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule,  MrpModule, MasterDataModule, ProductionModule
   ],
   controllers: [AppController],
   providers: [AppService],

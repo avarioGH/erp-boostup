@@ -108,10 +108,12 @@ const items: MenuItem[] = [
  },
  { 
  title: "Production", 
- url: "/production/reports", 
+ url: "/inventory/production", 
  icon: Factory,
  id: "production",
  subItems: [
+ { title: "Production List", url: "/inventory/production" },
+ { title: "New Production", url: "/inventory/production/create" },
  ]
  },
 
