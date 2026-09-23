@@ -1,34 +1,37 @@
 "use client"
-import { useState, useEffect } from"react"
-import { TimberAPI, InventoryAPI } from"@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
-import { Button } from"@/components/ui/button"
-import { Input } from"@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
-import { Loader2, ArrowLeft, Save, Calculator } from"lucide-react"
-import { useRouter } from"next/navigation"
-import { useToast } from"@/hooks/use-toast"
+import { useState, useEffect } from "react"
+import { TimberAPI, InventoryAPI, MasterDataAPI } from "@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Loader2, ArrowLeft, Save, Calculator } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
 export default function CreateOutputPage() {
  const router = useRouter()
  const { toast } = useToast()
  const [warehouses, setWarehouses] = useState<any[]>([])
  const [inputLogs, setInputLogs] = useState<any[]>([])
+ const [grades, setGrades] = useState<any[]>([])
  const [loading, setLoading] = useState(true)
  const [submitting, setSubmitting] = useState(false)
 
- const [form, setForm] = useState({ date:"", shift:"1", locationId:"", inputLogId:"", batch:"", notes:"" })
- const [item, setItem] = useState({ grade:"A", thickness:"", width:"", length:"", quantityPcs:"" })
+ const [form, setForm] = useState({ date: "", shift: "1", locationId: "", inputLogId: "", batch: "", notes: "" })
+ const [item, setItem] = useState({ gradeId: "", grade: "A", thickness: "", width: "", length: "", quantityPcs: "" })
  const [preview, setPreview] = useState(0)
 
  useEffect(() => {
- Promise.all([
- InventoryAPI.getWarehouses(),
- TimberAPI.getInputLogs({ status:"AVAILABLE,IN_PROCESS" }).catch(() => ({ items: [] }))
- ]).then(([wRes, lRes]) => {
- setWarehouses(Array.isArray(wRes) ? wRes : [])
- setInputLogs(Array.isArray(lRes?.items) ? lRes.items : [])
- }).catch(console.error).finally(() => setLoading(false))
+  Promise.all([
+  InventoryAPI.getWarehouses(),
+  TimberAPI.getInputLogs({ status:"AVAILABLE,IN_PROCESS" }).catch(() => ({ items: [] })),
+  MasterDataAPI.getGrades().catch(() => [])
+  ]).then(([wRes, lRes, gRes]: any) => {
+  setWarehouses(Array.isArray(wRes) ? wRes : [])
+  setInputLogs(Array.isArray(lRes?.items) ? lRes.items : [])
+  setGrades(Array.isArray(gRes) ? gRes : [])
+  }).catch(console.error).finally(() => setLoading(false))
  }, [])
 
  useEffect(() => {
@@ -53,6 +56,7 @@ export default function CreateOutputPage() {
   ...form,
   outputDate: form.date,
   items: [{
+  gradeId: item.gradeId,
   grade: item.grade,
   thickness: parseFloat(item.thickness),
   width: parseFloat(item.width),
@@ -109,7 +113,25 @@ export default function CreateOutputPage() {
  <div className="space-y-2"><label className="text-sm font-medium">Thickness (mm) *</label><Input required type="number" min="1" value={item.thickness} onChange={e => setItem({...item, thickness: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">Width (mm) *</label><Input required type="number" min="1" value={item.width} onChange={e => setItem({...item, width: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">Length (mm) *</label><Input required type="number" min="1" value={item.length} onChange={e => setItem({...item, length: e.target.value})} /></div>
- <div className="space-y-2"><label className="text-sm font-medium">Grade</label><Select value={item.grade} onValueChange={(val) => setItem({...item, grade: val ||"A"})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="A">Grade A</SelectItem><SelectItem value="B">Grade B</SelectItem><SelectItem value="C">Grade C</SelectItem></SelectContent></Select></div>
+ <div className="space-y-2">
+  <label className="text-sm font-medium">Grade</label>
+  <Select 
+    value={item.gradeId} 
+    onValueChange={(val) => {
+      const selected = grades.find((g: any) => g.id === val)
+      setItem({...item, gradeId: val || "", grade: selected?.name || ""})
+    }}
+  >
+    <SelectTrigger>
+      {item.gradeId ? grades.find((g: any) => g.id === item.gradeId)?.name : <SelectValue placeholder="Pilih Grade..." />}
+    </SelectTrigger>
+    <SelectContent>
+      {grades.map((g: any) => (
+        <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+ </div>
  <div className="space-y-2 md:col-span-4"><label className="text-sm font-medium">Quantity (PCS) *</label><Input required type="number" min="1" value={item.quantityPcs} onChange={e => setItem({...item, quantityPcs: e.target.value})} /></div>
  </CardContent>
  </Card>

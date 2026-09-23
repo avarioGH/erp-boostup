@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
-import { TimberAPI, InventoryAPI } from "@/lib/api"
+import { TimberAPI, InventoryAPI, MasterDataAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,11 +14,13 @@ export default function MassCreateRawLogPage() {
   const { toast } = useToast()
   
   const [warehouses, setWarehouses] = useState<any[]>([])
+  const [speciesList, setSpeciesList] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
   const [masterForm, setMasterForm] = useState({
-    species: "Ulin Lokal",
+    speciesId: "",
+    species: "",
     batch: "",
     locationId: "",
     receivingDate: new Date().toISOString().substring(0,10),
@@ -33,8 +35,14 @@ export default function MassCreateRawLogPage() {
   const tableRef = useRef<HTMLTableElement>(null);
 
   useEffect(() => {
-    InventoryAPI.getWarehouses()
-      .then((res: any) => setWarehouses(Array.isArray(res) ? res : []))
+    Promise.all([
+      InventoryAPI.getWarehouses(),
+      MasterDataAPI.getSpecies()
+    ])
+      .then(([wRes, sRes]: any) => {
+        setWarehouses(Array.isArray(wRes) ? wRes : [])
+        setSpeciesList(Array.isArray(sRes) ? sRes : [])
+      })
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
@@ -115,6 +123,9 @@ export default function MassCreateRawLogPage() {
     if (!masterForm.batch) {
       return toast({ title: "Validasi Gagal", description: "Partai harus diisi", variant: "destructive" })
     }
+    if (!masterForm.speciesId) {
+      return toast({ title: "Validasi Gagal", description: "Species harus dipilih", variant: "destructive" })
+    }
 
     // Filter out completely empty rows
     const validRows = rows.filter(r => r.logNumber && r.length && r.d1)
@@ -128,6 +139,7 @@ export default function MassCreateRawLogPage() {
       const payloadItems = validRows.map(r => ({
         logNumber: r.logNumber,
         species: masterForm.species,
+        speciesId: masterForm.speciesId,
         batch: masterForm.batch,
         locationId: masterForm.locationId,
         receivingDate: masterForm.receivingDate,
@@ -176,14 +188,20 @@ export default function MassCreateRawLogPage() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Species *</label>
-            <Select value={masterForm.species} onValueChange={v => setMasterForm({...masterForm, species: v || ''})}>
-              <SelectTrigger><SelectValue/></SelectTrigger>
+            <Select 
+              value={masterForm.speciesId} 
+              onValueChange={v => {
+                const selected = speciesList.find(s => s.id === v)
+                setMasterForm({...masterForm, speciesId: v || '', species: selected?.name || ''})
+              }}
+            >
+              <SelectTrigger>
+                {masterForm.speciesId ? speciesList.find(s => s.id === masterForm.speciesId)?.name : <SelectValue placeholder="Pilih Species..."/>}
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Ulin Lokal">Ulin Lokal</SelectItem>
-                <SelectItem value="Ulin Impor">Ulin Impor</SelectItem>
-                <SelectItem value="Meranti">Meranti</SelectItem>
-                <SelectItem value="Bengkirai">Bengkirai</SelectItem>
-                <SelectItem value="Kapur">Kapur</SelectItem>
+                {speciesList.map(s => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -280,4 +298,4 @@ export default function MassCreateRawLogPage() {
       </div>
     </div>
   )
-}
+}

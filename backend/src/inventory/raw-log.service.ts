@@ -77,6 +77,14 @@ export class RawLogService {
       throw new BadRequestException('All diameters must be greater than 0.');
     }
 
+    let speciesStr = data.species;
+    if (data.speciesId) {
+      const speciesObj = await this.prisma.timberSpecies.findUnique({ where: { id: data.speciesId } });
+      if (speciesObj) {
+        speciesStr = speciesObj.code;
+      }
+    }
+
     // Calculations
     const avgDia = this.calcService.calculateAverageDiameter(
       Number(data.diameter1), Number(data.diameter2), Number(data.diameter3), Number(data.diameter4)
@@ -104,7 +112,9 @@ export class RawLogService {
         logNumber: data.logNumber,
         sequence: data.sequence ? Number(data.sequence) : null,
         code: data.code,
-        species: data.species,
+        species: speciesStr,
+        speciesId: data.speciesId || null,
+        sourceId: data.sourceId || null,
         quantity: 1,
         originalLength: Number(data.originalLength),
         diameter1: Number(data.diameter1),
@@ -211,6 +221,14 @@ export class RawLogService {
     const existingLog = await this.prisma.rawLog.findUnique({ where: { id } });
     if (!existingLog) throw new NotFoundException('Raw Log not found');
 
+    let speciesStr = data.species || existingLog.species;
+    if (data.speciesId) {
+      const speciesObj = await this.prisma.timberSpecies.findUnique({ where: { id: data.speciesId } });
+      if (speciesObj) {
+        speciesStr = speciesObj.code;
+      }
+    }
+
     const d1 = Number(data.diameter1) || existingLog.diameter1;
     const d2 = Number(data.diameter2) || existingLog.diameter2;
     const d3 = Number(data.diameter3) || existingLog.diameter3;
@@ -233,7 +251,9 @@ export class RawLogService {
       where: { id },
       data: {
         logNumber: data.logNumber || existingLog.logNumber,
-        species: data.species || existingLog.species,
+        species: speciesStr,
+        speciesId: data.speciesId !== undefined ? data.speciesId : (existingLog as any).speciesId,
+        sourceId: data.sourceId !== undefined ? data.sourceId : (existingLog as any).sourceId,
         originalLength: length,
         diameter1: d1,
         diameter2: d2,

@@ -57,14 +57,26 @@ export class SawnTimberService {
     return `${t} \u00d7 ${w} \u00d7 ${l}`;
   }
 
-  async getOrCreateTimberVariant(companyId: string, species: string, grade: string, thickness: number, width: number, length: number) {
+  async getOrCreateTimberVariant(companyId: string, species: string, grade: string, thickness: number, width: number, length: number, speciesId?: string, gradeId?: string) {
+    let actualSpecies = species;
+    let actualGrade = grade;
+
+    if (speciesId) {
+      const sp = await this.prisma.timberSpecies.findUnique({ where: { id: speciesId } });
+      if (sp) actualSpecies = sp.code;
+    }
+    if (gradeId) {
+      const gr = await this.prisma.timberGrade.findUnique({ where: { id: gradeId } });
+      if (gr) actualGrade = gr.code;
+    }
+
     const sizeStr = this.normalizeDimensions(thickness, width, length);
-    const sku = `${species.toUpperCase()}-${grade.toUpperCase()}-${sizeStr}`;
+    const sku = `${actualSpecies.toUpperCase()}-${actualGrade.toUpperCase()}-${sizeStr}`;
     const volumePerPiece = (thickness * width * length) / 1000000000;
 
     let variant = await this.prisma.timberVariant.findUnique({ where: { sku } });
     if (!variant) {
-      let product = await this.prisma.product.findFirst({ where: { company_id: companyId, code: species } });
+      let product = await this.prisma.product.findFirst({ where: { company_id: companyId, code: actualSpecies } });
       
       if (!product) {
         // Auto create master product
@@ -76,8 +88,8 @@ export class SawnTimberService {
           data: {
             company_id: companyId,
             unit_id: unit.id,
-            code: species,
-            name: `Kayu ${species}`,
+            code: actualSpecies,
+            name: `Kayu ${actualSpecies}`,
             purchase_price: 0,
             selling_price: 0
           }
@@ -87,8 +99,10 @@ export class SawnTimberService {
       variant = await this.prisma.timberVariant.create({
         data: {
           productId: product.id,
-          species,
-          grade,
+          species: actualSpecies,
+          grade: actualGrade,
+          speciesId: speciesId || null,
+          gradeId: gradeId || null,
           thickness,
           width,
           length,
@@ -149,14 +163,14 @@ export class SawnTimberService {
       });
 
       for (const item of items) {
-        const variant = await this.getOrCreateTimberVariant(companyId, inputLog.species, item.grade || 'A', item.thickness, item.width, item.length);
+        const variant = await this.getOrCreateTimberVariant(companyId, inputLog.species, item.grade || 'A', item.thickness, item.width, item.length, (inputLog as any).speciesId, item.gradeId);
         const volumeM3 = variant.volumePerPiece * item.quantityPcs;
         
         await tx.sawnTimberOutputItem.create({
           data: {
             outputId: output.id,
             timberVariantId: variant.id,
-            grade: item.grade || 'A',
+            grade: variant.grade,
             quantityPcs: item.quantityPcs,
             thicknessMm: item.thickness,
             widthMm: item.width,
