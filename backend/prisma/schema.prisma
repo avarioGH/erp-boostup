@@ -108,6 +108,7 @@ model Company {
   productionProcesses ProductionProcess[]
   timberPurchases TimberPurchase[]
   timberShipments TimberShipment[]
+  timberStockOpnames TimberStockOpname[]
 }
 
 model CompanySetting {
@@ -296,6 +297,7 @@ model Warehouse {
   productionOutputs ProductionProcessOutput[]
   timberPurchases TimberPurchase[]
   timberShipments TimberShipment[]
+  timberStockOpnames TimberStockOpname[]
 }
 
 model UserWarehouseAccess {
@@ -2777,6 +2779,7 @@ model TimberVariant {
   productionOutputs ProductionProcessOutput[]
   timberPurchaseItems TimberPurchaseItem[]
   timberShipmentItems TimberShipmentItem[]
+  timberStockOpnameItems TimberStockOpnameItem[]
 }
 
 model InputLogItem {
@@ -3357,4 +3360,51 @@ model TimberShipmentItem {
   
   quantityPcs      Int
   volumeM3         Float
+}
+
+
+// ==================================================
+// PHASE 21: TIMBER STOCK OPNAME
+// ==================================================
+
+model TimberStockOpname {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id      String   @db.ObjectId
+  company         Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  opnameNumber    String   @unique
+  opnameDate      DateTime @default(now())
+  
+  warehouseId     String   @db.ObjectId
+  warehouse       Warehouse @relation(fields: [warehouseId], references: [id])
+  
+  status          String   @default("DRAFT") // DRAFT, COUNTING, CONFIRMED, CANCELLED
+  notes           String?
+  createdBy       String?
+  confirmedBy     String?
+  confirmedAt     DateTime?
+
+  items           TimberStockOpnameItem[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model TimberStockOpnameItem {
+  id                  String            @id @default(auto()) @map("_id") @db.ObjectId
+  stockOpnameId       String            @db.ObjectId
+  stockOpname         TimberStockOpname @relation(fields: [stockOpnameId], references: [id], onDelete: Cascade)
+  
+  timberVariantId     String            @db.ObjectId
+  timberVariant       TimberVariant     @relation(fields: [timberVariantId], references: [id])
+  
+  systemQuantityPcs   Int
+  systemVolumeM3      Float
+  
+  physicalQuantityPcs Int
+  physicalVolumeM3    Float
+  
+  varianceQuantityPcs Int
+  varianceVolumeM3    Float
+  
+  notes               String?
 }

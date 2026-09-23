@@ -305,3 +305,12 @@ export const ShipmentAPI: any = {
   confirmShipment: async (id: string) => (await api.post('/inventory/shipments/' + id + '/confirm')).data,
   cancelShipment: async (id: string) => (await api.post('/inventory/shipments/' + id + '/cancel')).data,
 };
+
+export const OpnameAPI: any = {
+  list: async () => (await api.get('/inventory/opname')).data,
+  createDraft: async (warehouseId: string) => (await api.post('/inventory/opname', { warehouseId })).data,
+  getById: async (id: string) => (await api.get('/inventory/opname/' + id)).data,
+  updateCounts: async (id: string, updates: any[]) => (await api.post(`/inventory/opname/${id}/counts`, { updates })).data,
+  confirm: async (id: string) => (await api.post(`/inventory/opname/${id}/confirm`)).data,
+  reconcile: async () => (await api.post('/inventory/opname/reconcile')).data,
+};

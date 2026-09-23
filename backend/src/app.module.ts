@@ -37,6 +37,7 @@ import { AiModule } from './ai/ai.module';
 import { ProductionModule } from './inventory/production/production.module';
 import { PurchaseModule } from './inventory/purchase/purchase.module';
 import { ShipmentModule } from './inventory/shipment/shipment.module';
+import { OpnameModule } from './inventory/opname/opname.module';
 
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
@@ -59,7 +60,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     IntegrationsModule,
     TripayModule,
     CrmModule,
-    PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule,  MrpModule, MasterDataModule, ProductionModule, PurchaseModule, ShipmentModule
+    PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule,  MrpModule, MasterDataModule, ProductionModule, PurchaseModule, ShipmentModule, OpnameModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -93,7 +93,8 @@ const items: MenuItem[] = [
  
  { title: "Data & Audit", url: "#", type: "label" },
  { title: "Data Import (Excel)", url: "/inventory/import" },
- { title: "Audit Log", url: "/inventory/audit" }
+ { title: "Audit Log", url: "/inventory/audit" },
+ { title: "Stock Opname & Audit", url: "/inventory/stock-opname" }
  ]
  },
 
