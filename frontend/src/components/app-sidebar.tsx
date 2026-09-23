@@ -56,6 +56,10 @@ const items: MenuItem[] = [
  id: "inventory",
  subItems: [
  { title: "Dashboard", url: "/inventory/dashboard" },
+
+ { title: "Purchase & Shipment", url: "#", type: "label" },
+ { title: "Purchase (Timber)", url: "/inventory/purchase" },
+ { title: "Shipment (Delivery)", url: "/inventory/shipment" },
  
  { title: "Master Data", url: "#", type: "label" },
  { title: "Species", url: "/inventory/master-data/species" },

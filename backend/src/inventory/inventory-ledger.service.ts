@@ -1,9 +1,9 @@
-﻿import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
 export type MovementType = 'IN' | 'OUT' | 'ADJ';
-export type ReferenceType = 'OPENING_BALANCE' | 'PRODUCTION_PROCESS_INPUT' | 'PRODUCTION_PROCESS_OUTPUT' | 'PRODUCTION_PROCESS_REVERSAL' | 'PRODUCTION_OUTPUT' | 'ADJUSTMENT_IN' | 'ADJUSTMENT_OUT' | 'TRANSFER_IN' | 'TRANSFER_OUT' | 'REVERSAL' | 'SALES_DELIVERY';
+export type ReferenceType = 'OPENING_BALANCE' | 'PRODUCTION_PROCESS_INPUT' | 'PRODUCTION_PROCESS_OUTPUT' | 'PRODUCTION_PROCESS_REVERSAL' | 'PRODUCTION_OUTPUT' | 'ADJUSTMENT_IN' | 'ADJUSTMENT_OUT' | 'TRANSFER_IN' | 'TRANSFER_OUT' | 'REVERSAL' | 'SALES_DELIVERY' | 'TIMBER_PURCHASE' | 'TIMBER_PURCHASE_REVERSAL' | 'TIMBER_SHIPMENT' | 'TIMBER_SHIPMENT_REVERSAL';
 
 @Injectable()
 export class InventoryLedgerService {

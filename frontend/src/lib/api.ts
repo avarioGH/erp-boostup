@@ -289,3 +289,19 @@ export const MasterDataAPI: any = {
   deleteDriver: async (id: string) => (await api.delete('/master-data/drivers/' + id)).data,
 };
 
+
+export const PurchaseAPI: any = {
+  getPurchases: async (params?: any) => (await api.get('/inventory/purchases', { params })).data,
+  getPurchase: async (id: string) => (await api.get('/inventory/purchases/' + id)).data,
+  createPurchase: async (data: any) => (await api.post('/inventory/purchases', data)).data,
+  confirmPurchase: async (id: string) => (await api.post('/inventory/purchases/' + id + '/confirm')).data,
+  cancelPurchase: async (id: string) => (await api.post('/inventory/purchases/' + id + '/cancel')).data,
+};
+
+export const ShipmentAPI: any = {
+  getShipments: async (params?: any) => (await api.get('/inventory/shipments', { params })).data,
+  getShipment: async (id: string) => (await api.get('/inventory/shipments/' + id)).data,
+  createShipment: async (data: any) => (await api.post('/inventory/shipments', data)).data,
+  confirmShipment: async (id: string) => (await api.post('/inventory/shipments/' + id + '/confirm')).data,
+  cancelShipment: async (id: string) => (await api.post('/inventory/shipments/' + id + '/cancel')).data,
+};

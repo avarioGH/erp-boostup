@@ -106,6 +106,8 @@ model Company {
   vehicles Vehicle[]
   drivers Driver[]
   productionProcesses ProductionProcess[]
+  timberPurchases TimberPurchase[]
+  timberShipments TimberShipment[]
 }
 
 model CompanySetting {
@@ -292,6 +294,8 @@ model Warehouse {
   @@unique([company_id, code])
   locations Location[]
   productionOutputs ProductionProcessOutput[]
+  timberPurchases TimberPurchase[]
+  timberShipments TimberShipment[]
 }
 
 model UserWarehouseAccess {
@@ -1591,6 +1595,7 @@ model Customer {
   CrmActivity CrmActivity[]
 
   @@unique([company_id, code])
+  timberShipments TimberShipment[]
 }
 
 model Voucher {
@@ -2770,6 +2775,8 @@ model TimberVariant {
   updatedAt DateTime @updatedAt
   productionInputs ProductionProcessInput[]
   productionOutputs ProductionProcessOutput[]
+  timberPurchaseItems TimberPurchaseItem[]
+  timberShipmentItems TimberShipmentItem[]
 }
 
 model InputLogItem {
@@ -3162,6 +3169,7 @@ model TimberSource {
   rawLogs     RawLog[]
   trimmedLogs TrimmedLog[]
   inputLogs   InputLog[]
+  timberPurchases TimberPurchase[]
 }
 
 model Location {
@@ -3190,6 +3198,7 @@ model Vehicle {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  timberShipments TimberShipment[]
 }
 
 model Driver {
@@ -3204,6 +3213,7 @@ model Driver {
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  timberShipments TimberShipment[]
 }
 
 
@@ -3262,4 +3272,89 @@ model ProductionProcessOutput {
 
   warehouseId String? @db.ObjectId
   warehouse   Warehouse? @relation(fields: [warehouseId], references: [id]) // Target warehouse for this output
+}
+
+
+// ==================================================
+// PHASE 20: TIMBER PURCHASE & SHIPMENT
+// ==================================================
+
+model TimberPurchase {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id      String   @db.ObjectId
+  company         Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  purchaseNumber  String   @unique
+  purchaseDate    DateTime @default(now())
+  
+  sourceId        String   @db.ObjectId
+  source          TimberSource @relation(fields: [sourceId], references: [id])
+  
+  warehouseId     String   @db.ObjectId
+  warehouse       Warehouse @relation(fields: [warehouseId], references: [id])
+  
+  status          String   @default("DRAFT") // DRAFT, CONFIRMED, CANCELLED
+  totalPcs        Int      @default(0)
+  totalVolumeM3   Float    @default(0)
+  notes           String?
+  createdBy       String?
+
+  items           TimberPurchaseItem[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model TimberPurchaseItem {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  timberPurchaseId String         @db.ObjectId
+  timberPurchase   TimberPurchase @relation(fields: [timberPurchaseId], references: [id], onDelete: Cascade)
+  
+  timberVariantId  String         @db.ObjectId
+  timberVariant    TimberVariant  @relation(fields: [timberVariantId], references: [id])
+  
+  quantityPcs      Int
+  volumeM3         Float
+}
+
+model TimberShipment {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id       String   @db.ObjectId
+  company          Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shipmentNumber   String   @unique
+  shipmentDate     DateTime @default(now())
+  
+  warehouseId      String   @db.ObjectId
+  warehouse        Warehouse @relation(fields: [warehouseId], references: [id])
+  
+  vehicleId        String?  @db.ObjectId
+  vehicle          Vehicle? @relation(fields: [vehicleId], references: [id])
+  
+  driverId         String?  @db.ObjectId
+  driver           Driver?  @relation(fields: [driverId], references: [id])
+  
+  customerId       String?  @db.ObjectId
+  customer         Customer? @relation(fields: [customerId], references: [id])
+  
+  status           String   @default("DRAFT") // DRAFT, CONFIRMED, CANCELLED
+  totalPcs         Int      @default(0)
+  totalVolumeM3    Float    @default(0)
+  notes            String?
+  createdBy        String?
+
+  items            TimberShipmentItem[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model TimberShipmentItem {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  timberShipmentId String         @db.ObjectId
+  timberShipment   TimberShipment @relation(fields: [timberShipmentId], references: [id], onDelete: Cascade)
+  
+  timberVariantId  String         @db.ObjectId
+  timberVariant    TimberVariant  @relation(fields: [timberVariantId], references: [id])
+  
+  quantityPcs      Int
+  volumeM3         Float
 }
