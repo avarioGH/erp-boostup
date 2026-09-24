@@ -17,6 +17,19 @@ export default function MassCreateRawLogPage() {
   const [speciesList, setSpeciesList] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [lengthUnit, setLengthUnit] = useState<'m' | 'cm' | 'mm'>('m')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('erp_length_unit_pref')
+    if (saved === 'm' || saved === 'cm' || saved === 'mm') {
+      setLengthUnit(saved)
+    }
+  }, [])
+
+  const handleUnitChange = (unit: 'm' | 'cm' | 'mm') => {
+    setLengthUnit(unit)
+    localStorage.setItem('erp_length_unit_pref', unit)
+  }
 
   const [masterForm, setMasterForm] = useState({
     speciesId: "",
@@ -90,7 +103,10 @@ export default function MassCreateRawLogPage() {
 
   // Live Calculations
   const calculateRow = (row: any) => {
-      const l = parseFloat(row.length) || 0
+      let lRaw = parseFloat(row.length) || 0
+      let l = lRaw
+      if (lengthUnit === 'cm') l = lRaw / 100
+      if (lengthUnit === 'mm') l = lRaw / 1000
       const d1 = parseFloat(row.d1) || 0
       const d2 = parseFloat(row.d2) || 0
       const d3 = parseFloat(row.d3) || 0
@@ -134,7 +150,7 @@ export default function MassCreateRawLogPage() {
     const validRows = rows.filter(r => r.logNumber && r.length && (r.d1 || r.avgDia))
     
     if (validRows.length === 0) {
-      return toast({ title: "Validasi Gagal", description: "Minimal isi 1 baris log dengan lengkap (Log No, Length, D1 atau ÃƒËœ Avg)", variant: "destructive" })
+      return toast({ title: "Validasi Gagal", description: "Minimal isi 1 baris log dengan lengkap (Log No, Length, D1 atau ÃƒÆ’Ã‹Å“ Avg)", variant: "destructive" })
     }
 
     setSubmitting(true)
@@ -146,7 +162,7 @@ export default function MassCreateRawLogPage() {
         batch: masterForm.batch,
         locationId: masterForm.locationId,
         receivingDate: masterForm.receivingDate,
-        originalLength: parseFloat(r.length),
+        originalLength: lengthUnit === 'cm' ? (parseFloat(r.length) / 100) : lengthUnit === 'mm' ? (parseFloat(r.length) / 1000) : parseFloat(r.length),
         diameter1: parseFloat(r.d1) || parseFloat(r.avgDia) || 0,
         diameter2: parseFloat(r.d2) || parseFloat(r.avgDia) || 0,
         diameter3: parseFloat(r.d3) || parseFloat(r.avgDia) || 0,
@@ -245,7 +261,20 @@ export default function MassCreateRawLogPage() {
               <tr>
                 <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[50px]">#</th>
                 <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[150px]">Log No</th>
-                <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[100px]">Length (m)</th>
+                <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[120px]">
+                  <div className="flex items-center gap-1">
+                    Length
+                    <select
+                      className="bg-transparent border border-muted-foreground/30 rounded text-xs p-0.5 outline-none cursor-pointer text-foreground"
+                      value={lengthUnit}
+                      onChange={(e) => handleUnitChange(e.target.value as any)}
+                    >
+                      <option value="m">(m)</option>
+                      <option value="cm">(cm)</option>
+                      <option value="mm">(mm)</option>
+                    </select>
+                  </div>
+                </th>
                 <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[80px]">D1 (cm)</th>
                 <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[80px]">D2 (cm)</th>
                 <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[80px]">D3 (cm)</th>
