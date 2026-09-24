@@ -56,23 +56,23 @@ export function AppHeader() {
  }
 
  return (
- <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border/60 bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/70 px-6 z-10 transition-colors">
- <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
- <Separator orientation="vertical" className="mx-1 h-5 bg-border" />
+ <header className="flex h-16 shrink-0 items-center gap-4 border-b border-sidebar-border bg-sidebar px-6 z-10 transition-colors text-sidebar-foreground shadow-sm">
+ <SidebarTrigger className="-ml-1 text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent" />
+ <Separator orientation="vertical" className="mx-1 h-5 bg-sidebar-border" />
  
  {/* WAREHOUSE SELECTOR */}
  <DropdownMenu>
- <DropdownMenuTrigger className="flex items-center gap-2.5 px-3 py-1.5 border border-border rounded-md hover:bg-accent hover:text-accent-foreground transition-all ml-1 outline-none focus-visible:ring-2 focus-visible:ring-ring">
+ <DropdownMenuTrigger className="flex items-center gap-2 md:gap-2.5 px-2 md:px-3 py-1.5 border border-sidebar-border bg-sidebar-accent/30 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all ml-1 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring text-sidebar-foreground">
  <div className="bg-primary/10 text-primary p-1 rounded-md">
  <MapPin className="w-3.5 h-3.5" />
  </div>
- <div className="flex flex-col items-start">
- <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Lokasi Gudang</span>
- <span className="text-[13px] font-semibold text-foreground leading-none truncate max-w-[140px]">
+ <div className="hidden md:flex flex-col items-start">
+ <span className="text-[9px] font-bold text-sidebar-foreground/70 uppercase tracking-widest leading-none mb-1">Lokasi Gudang</span>
+ <span className="text-[13px] font-semibold text-sidebar-foreground leading-none truncate max-w-[140px]">
  {activeWarehouse?.name || "Pusat (Semua)"}
  </span>
  </div>
- <ChevronDown className="w-4 h-4 text-muted-foreground ml-1" />
+ <ChevronDown className="w-4 h-4 text-sidebar-foreground/70 ml-1 hidden md:block" />
  </DropdownMenuTrigger>
  <DropdownMenuContent align="start" className="w-64 p-1">
  <div className="px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Pilih Lokasi Kerja</div>
@@ -119,34 +119,37 @@ export function AppHeader() {
  </DropdownMenu>
 
  <div className="flex flex-1 items-center gap-4 px-2 lg:px-6">
- <div className="flex h-9 w-full max-w-lg items-center gap-2.5 rounded-md border border-input bg-background px-3 text-muted-foreground focus-within:border-ring focus-within:ring-1 focus-within:ring-ring transition-all shadow-sm">
+ <div className="hidden md:flex h-9 w-full max-w-lg items-center gap-2.5 rounded-md border border-sidebar-border bg-sidebar-accent/50 px-3 text-sidebar-foreground focus-within:border-sidebar-primary focus-within:ring-1 focus-within:ring-sidebar-primary transition-all shadow-sm">
  <Search className="h-[15px] w-[15px] opacity-70" />
  <input 
  type="text" 
  placeholder="Cari menu, pelanggan, atau transaksi... (Ctrl+K)" 
- className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground/70"
+ className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-sidebar-foreground/50 text-sidebar-foreground"
  />
  <div className="hidden sm:flex items-center gap-1 opacity-60">
  <Command className="h-3 w-3" />
  <span className="text-[10px] font-medium tracking-widest">K</span>
  </div>
  </div>
+ <button className="md:hidden relative text-sidebar-foreground/80 hover:text-sidebar-accent-foreground transition-colors h-9 w-9 flex items-center justify-center rounded-md hover:bg-sidebar-accent ml-auto">
+   <Search className="h-4 w-4" />
+ </button>
  </div>
- <div className="flex items-center gap-3 md:gap-4 shrink-0">
+ <div className="flex items-center gap-1 md:gap-4 shrink-0">
  <ThemeToggle />
- <button className="relative text-muted-foreground hover:text-foreground transition-colors h-9 w-9 flex items-center justify-center rounded-md hover:bg-accent">
+ <button className="relative text-sidebar-foreground/80 hover:text-sidebar-accent-foreground transition-colors h-9 w-9 flex items-center justify-center rounded-md hover:bg-sidebar-accent">
  <Bell className="h-4 w-4" />
  <span className="absolute top-2 right-2.5 h-1.5 w-1.5 rounded-full bg-destructive border-[1.5px] border-background"></span>
  </button>
- <Separator orientation="vertical" className="hidden md:block h-5 bg-border mx-1" />
- <div className="flex items-center gap-3 cursor-pointer group hover:bg-accent py-1 px-2 rounded-md transition-colors">
+ <Separator orientation="vertical" className="hidden md:block h-5 bg-sidebar-border mx-1" />
+ <div className="flex items-center gap-3 cursor-pointer group hover:bg-sidebar-accent py-1 px-2 rounded-md transition-colors">
  <Avatar className="h-8 w-8 border border-border shadow-sm">
  <AvatarImage src="https://github.com/shadcn.png" />
  <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">US</AvatarFallback>
  </Avatar>
  <div className="hidden md:flex flex-col items-start justify-center">
- <span className="text-[13px] font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">{user?.name || "Administrator"}</span>
- <span className="text-[11px] text-muted-foreground font-medium leading-tight">{user?.role || "Owner"}</span>
+ <span className="text-[13px] font-semibold text-sidebar-foreground group-hover:text-sidebar-primary transition-colors leading-tight">{user?.name || "Administrator"}</span>
+ <span className="text-[11px] text-sidebar-foreground/70 font-medium leading-tight">{user?.role || "Owner"}</span>
  </div>
  </div>
  </div>

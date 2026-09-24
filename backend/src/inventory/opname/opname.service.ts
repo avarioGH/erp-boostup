@@ -28,6 +28,7 @@ export class OpnameService {
         items: {
           create: stocks.map(stock => ({
             timberVariantId: stock.timberVariantId,
+              batch: stock.batch,
             systemQuantityPcs: stock.currentPcs,
             systemVolumeM3: stock.currentVolumeM3,
             physicalQuantityPcs: 0,
@@ -93,8 +94,9 @@ export class OpnameService {
             'STOCK_OPNAME_ADJUSTMENT',
             opname.id,
             q,
-            v
-            );
+            v,
+              item.batch
+              );
         }
       }
       return tx.timberStockOpname.update({

@@ -94,6 +94,7 @@ const items: MenuItem[] = [
  { title: "Data & Audit", url: "#", type: "label" },
  { title: "Data Import (Excel)", url: "/inventory/import" },
  { title: "Audit Log", url: "/inventory/audit" },
+        { title: "Reservation Reconciliation", url: "/inventory/reconciliation/reservations" },
  { title: "Stock Opname & Audit", url: "/inventory/stock-opname" }
  ]
  },
@@ -228,9 +229,9 @@ export function AppSidebar() {
  }
 
  return (
- <Sidebar className="border-r border-border bg-sidebar h-full">
+ <Sidebar className="border-r border-sidebar-border bg-sidebar h-full">
  <SidebarHeader className="p-4 flex flex-row items-center gap-3 border-b border-sidebar-border/50">
- <div className="h-9 w-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground shadow-sm">
+ <div className="h-9 w-9 bg-primary rounded-xl flex items-center justify-center text-sidebar-primary-foreground shadow-sm">
  <Hexagon className="h-5 w-5" />
  </div>
  <span className="font-bold text-lg tracking-tight text-sidebar-foreground">ERP Boostup</span>
@@ -238,7 +239,7 @@ export function AppSidebar() {
  
  <SidebarContent className="px-3 py-4 custom-scrollbar">
  <SidebarGroup>
- <SidebarGroupLabel className="text-[11px] font-[650] tracking-widest text-[#8A94A6] uppercase mb-4 px-2 mt-2">Core Modules</SidebarGroupLabel>
+ <SidebarGroupLabel className="text-[11px] font-[650] tracking-widest text-sidebar-foreground/50 uppercase mb-4 px-2 mt-2">Core Modules</SidebarGroupLabel>
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
  {items.filter(item => {
@@ -250,15 +251,15 @@ export function AppSidebar() {
  <SidebarMenuItem key={item.title}>
  <SidebarMenuButton
  isActive={active}
- className={`font-medium transition-colors duration-200 rounded-lg px-3 py-2.5 h-auto ${active ? 'bg-primary/10 text-primary dark:bg-primary/15' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
+ className={`font-medium transition-colors duration-200 rounded-lg px-3 py-2.5 h-auto ${active ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'}`}
  render={
  <Link href={item.url} className="flex items-center justify-between w-full">
  <div className="flex items-center gap-3">
- <item.icon className={`h-[18px] w-[18px] ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+ <item.icon className={`h-[18px] w-[18px] ${active ? 'text-sidebar-primary' : 'text-sidebar-foreground/70'}`} />
  <span className="text-[14px] leading-none">{item.title}</span>
  </div>
  {item.badge && (
- <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
+ <span className="px-2 py-0.5 rounded-full bg-sidebar-primary text-sidebar-primary-foreground text-[10px] font-bold uppercase tracking-wider">
  {item.badge}
  </span>
  )}
@@ -266,11 +267,11 @@ export function AppSidebar() {
  }
  />
  {item.subItems && (
- <SidebarMenuSub className="border-l border-border ml-[1.1rem] mt-1.5 mb-3 pl-3">
+ <SidebarMenuSub className="border-l border-sidebar-border ml-[1.1rem] mt-1.5 mb-3 pl-3">
  {item.subItems.map((subItem) => {
  if (subItem.type === 'label') {
  return (
- <div key={subItem.title} className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mt-4 mb-1.5 px-2">
+ <div key={subItem.title} className="text-[10px] font-bold text-sidebar-foreground/70/70 uppercase tracking-widest mt-4 mb-1.5 px-2">
  {subItem.title}
  </div>
  )
@@ -281,7 +282,7 @@ export function AppSidebar() {
  <Link href={subItem.url} className="w-full">
  <SidebarMenuSubButton 
  isActive={subActive}
- className={`text-[13px] py-1.5 h-auto transition-colors rounded-md ${subActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'}`}
+ className={`text-[13px] py-1.5 h-auto transition-colors rounded-md ${subActive ? 'text-sidebar-primary-foreground font-bold' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'}`}
  >
  <span className="w-full flex justify-between items-center">
  {subItem.title}
@@ -306,7 +307,7 @@ export function AppSidebar() {
  </SidebarGroup>
  
  <SidebarGroup className="mt-6 mb-4">
- <SidebarGroupLabel className="text-[11px] font-[650] tracking-widest text-[#8A94A6] uppercase mb-4 px-2 mt-2">Settings</SidebarGroupLabel>
+ <SidebarGroupLabel className="text-[11px] font-[650] tracking-widest text-sidebar-foreground/50 uppercase mb-4 px-2 mt-2">Settings</SidebarGroupLabel>
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
  {settings.filter(item => {
@@ -318,10 +319,10 @@ export function AppSidebar() {
  <SidebarMenuItem key={item.title}>
  <SidebarMenuButton
  isActive={active}
- className={`font-medium transition-colors duration-200 rounded-lg px-3 py-2.5 h-auto ${active ? 'bg-primary/10 text-primary dark:bg-primary/15' : 'text-muted-foreground hover:text-foreground hover:bg-accent'}`}
+ className={`font-medium transition-colors duration-200 rounded-lg px-3 py-2.5 h-auto ${active ? 'bg-sidebar-primary text-sidebar-primary-foreground' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'}`}
  render={
  <Link href={item.url} className="flex items-center gap-3 w-full">
- <item.icon className={`h-[18px] w-[18px] ${active ? 'text-primary' : 'text-muted-foreground'}`} />
+ <item.icon className={`h-[18px] w-[18px] ${active ? 'text-sidebar-primary' : 'text-sidebar-foreground/70'}`} />
  <span className="text-[14px] leading-none">{item.title}</span>
  </Link>
  }
@@ -334,8 +335,8 @@ export function AppSidebar() {
  </SidebarGroup>
  </SidebarContent>
  
- <SidebarFooter className="border-t border-border p-4 bg-sidebar">
- <a href="/login" className="flex items-center gap-3 text-muted-foreground hover:text-destructive font-medium transition-colors w-full rounded-lg hover:bg-destructive/10 px-3 py-2" onClick={() => localStorage.removeItem("erp_token")}>
+ <SidebarFooter className="border-t border-sidebar-border p-4 bg-sidebar">
+ <a href="/login" className="flex items-center gap-3 text-sidebar-foreground/70 hover:text-destructive font-medium transition-colors w-full rounded-lg hover:bg-destructive/10 px-3 py-2" onClick={() => localStorage.removeItem("erp_token")}>
  <LogOut className="h-[18px] w-[18px]" />
  <span className="text-[14px]">Sign Out</span>
  </a>

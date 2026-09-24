@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { PurchaseAPI } from "@/lib/api";
@@ -109,6 +109,58 @@ export default function PurchaseDetailPage({ params }: { params: { id: string } 
           </Table>
         </CardContent>
       </Card>
+
+      {/* PHASE 26.1: PURCHASE LOGS SECTION */}
+      <Card>
+        <CardHeader className="flex flex-row justify-between items-center">
+          <CardTitle>Purchase Logs (Raw Logs)</CardTitle>
+          <Button onClick={() => router.push(`/inventory/purchase/${params.id}/logs/create`)} size="sm">
+            Add Purchase Log
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Log Number</TableHead>
+                <TableHead>Species</TableHead>
+                <TableHead>Length</TableHead>
+                <TableHead>Diameter (1/2/3/4)</TableHead>
+                <TableHead>Volume</TableHead>
+                <TableHead>Receiving Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(purchase.logItems || []).map((log: any, i: number) => (
+                <TableRow key={i}>
+                  <TableCell className="font-medium">{log.logNumber}</TableCell>
+                  <TableCell>{log.species}</TableCell>
+                  <TableCell>{log.purchaseLength}</TableCell>
+                  <TableCell>{log.purchaseDiameter1}/{log.purchaseDiameter2}/{log.purchaseDiameter3}/{log.purchaseDiameter4}</TableCell>
+                  <TableCell>{log.purchaseVolume}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={log.status === "RECEIVED" ? "default" : "secondary"}>
+                      {log.status === "RECEIVED" ? "Received" : "Not Received"}
+                      </Badge>
+                      {log.status !== "RECEIVED" && (
+                        <Button variant="outline" size="sm" onClick={() => router.push(`/inventory/logs/receive?purchaseId=${params.id}&itemId=${log.id}`)}>
+                          Receive
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {(!purchase.logItems || purchase.logItems.length === 0) && (
+                <TableRow><TableCell colSpan={6} className="text-center text-gray-500">No purchase logs recorded.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
+
+

@@ -105,8 +105,9 @@ export class StockAdjustmentService {
             'ADJUSTMENT_IN',
             adjustment.id,
             item.differencePcs,
-            item.differenceM3
-          );
+            item.differenceM3,
+              item.batch
+            );
         } else if (item.differencePcs < 0) {
           await this.ledgerService.createMovement(
             tx as any,
@@ -116,8 +117,9 @@ export class StockAdjustmentService {
             'ADJUSTMENT_OUT',
             adjustment.id,
             Math.abs(item.differencePcs),
-            Math.abs(item.differenceM3)
-          );
+            Math.abs(item.differenceM3),
+              item.batch
+            );
         }
       }
 

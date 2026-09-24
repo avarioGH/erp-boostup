@@ -1,41 +1,27 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log('--- DISTINCT SPECIES ---');
-  const rawLogs = await prisma.rawLog.groupBy({ by: ['species'], _count: { id: true } });
-  const trimmedLogs = await prisma.trimmedLog.groupBy({ by: ['species'], _count: { id: true } });
-  const inputLogs = await prisma.inputLog.groupBy({ by: ['species'], _count: { id: true } });
-  const variants = await prisma.timberVariant.groupBy({ by: ['species'], _count: { id: true } });
-
-  console.log('RawLogs:', JSON.stringify(rawLogs, null, 2));
-  console.log('TrimmedLogs:', JSON.stringify(trimmedLogs, null, 2));
-  console.log('InputLogs:', JSON.stringify(inputLogs, null, 2));
-  console.log('Variants:', JSON.stringify(variants, null, 2));
-
-  console.log('--- DISTINCT GRADES ---');
-  const variantGrades = await prisma.timberVariant.groupBy({ by: ['grade'], _count: { id: true } });
-  console.log('Variant Grades:', JSON.stringify(variantGrades, null, 2));
-
-  console.log('--- DISTINCT SOURCES ---');
-  // Wait, does RawLog have 'source' or 'origin'?
-  // Let's check existing rawLogs to see if there is any 'supplier' or 'code' field used for source
-  const rawLogSample = await prisma.rawLog.findMany({ take: 5, select: { code: true, species: true } });
-  console.log('RawLog Sample:', JSON.stringify(rawLogSample, null, 2));
-
-  console.log('--- DUPLICATE VARIANTS ---');
-  const allVariants = await prisma.timberVariant.findMany();
-  const dupMap = {};
-  for (const v of allVariants) {
-    const key = `${v.species}/${v.grade}/${v.thickness}/${v.width}/${v.length}`;
-    if (!dupMap[key]) dupMap[key] = [];
-    dupMap[key].push(v);
-  }
-  for (const key in dupMap) {
-    if (dupMap[key].length > 1) {
-      console.log(`Duplicate found for ${key}:`, dupMap[key].map(d => d.sku));
+async function runAudit() {
+  let negativeStock = await prisma.timberStock.count({ where: { currentPcs: { lt: 0 } } });
+  let negativeM3 = await prisma.timberStock.count({ where: { currentVolumeM3: { lt: 0 } } });
+  
+  // Ledger mismatch check (sampled)
+  const stocks = await prisma.timberStock.findMany({ include: { movements: true } });
+  let mismatches = 0;
+  for (const s of stocks) {
+    let ledgerPcs = 0;
+    for (const m of s.movements) {
+      if (m.type === 'IN') ledgerPcs += m.quantityPcs;
+      else if (m.type === 'OUT') ledgerPcs -= m.quantityPcs;
     }
+    if (ledgerPcs !== s.currentPcs) mismatches++;
   }
+
+  console.log(`Negative Stock (PCS): ${negativeStock}`);
+  console.log(`Negative Stock (M3): ${negativeM3}`);
+  console.log(`Ledger Mismatches: ${mismatches}`);
+  
+  process.exit(0);
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+runAudit();

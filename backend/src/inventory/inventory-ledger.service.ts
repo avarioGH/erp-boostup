@@ -21,23 +21,47 @@ export class InventoryLedgerService {
     referenceType: ReferenceType,
     referenceId: string,
     quantityPcs: number,
-    volumeM3: number
+    volumeM3: number,
+    batch: string = 'UNKNOWN'
   ) {
     if (quantityPcs <= 0 || volumeM3 <= 0) {
       throw new BadRequestException('Quantity and volume must be positive');
     }
 
-    // 1. Get or create stock with row-level locking equivalent (Pessimistic update check later)
+    // Determine if this is a stock-decreasing movement
+    const isDecreasing = type === 'OUT' || (type === 'ADJ' && (referenceType === 'ADJUSTMENT_OUT' || referenceType === 'REVERSAL'));
+    
+    // RESERVATION GUARD (Centralized)
+    if (isDecreasing) {
+      const stocks = await tx.timberStock.findMany({
+        where: { locationId, timberVariantId }
+      });
+      const currentPhysical = stocks.reduce((sum: number, s: any) => sum + s.currentPcs, 0);
+      
+      const reservations = await (tx as any).timberStockReservation.findMany({
+        where: { locationId, timberVariantId }
+      });
+      const totalReserved = reservations.reduce((sum: number, r: any) => sum + (r.reservedPcs || 0), 0);
+      
+      const available = currentPhysical - totalReserved;
+      if (quantityPcs > available) {
+        throw new BadRequestException(
+          `Physical stock cannot be reduced below reserved quantity. Physical: ${currentPhysical}, Reserved: ${totalReserved}, Requested reduction: ${quantityPcs}`
+        );
+      }
+    }
+
+    // 1. Get or create stock with row-level locking equivalent
     let stock = await tx.timberStock.findUnique({
-      where: { locationId_timberVariantId: { locationId, timberVariantId } }
+      where: { locationId_timberVariantId_batch: { locationId, timberVariantId, batch } }
     });
 
     if (!stock) {
-      if (type === 'OUT') {
+      if (isDecreasing) {
         throw new BadRequestException('Insufficient stock (No stock record exists)');
       }
       stock = await tx.timberStock.create({
-        data: { locationId, timberVariantId, currentPcs: 0, currentVolumeM3: 0 }
+        data: { locationId, timberVariantId, batch, currentPcs: 0, currentVolumeM3: 0 }
       });
     }
 
@@ -45,6 +69,7 @@ export class InventoryLedgerService {
     const movement = await tx.timberStockMovement.create({
       data: {
         timberStockId: stock.id,
+        batch,
         type,
         referenceType,
         referenceId,
@@ -55,22 +80,20 @@ export class InventoryLedgerService {
 
     // 3. Increment/Decrement Cache Atomically
     const updateData: any = {};
-    if (type === 'IN') {
-      updateData.stockInPcs = { increment: quantityPcs };
+    if (type === 'IN' || (type === 'ADJ' && !isDecreasing)) {
+      if (type === 'IN') updateData.stockInPcs = { increment: quantityPcs };
+      if (type === 'ADJ') updateData.adjustmentPcs = { increment: quantityPcs };
       updateData.currentPcs = { increment: quantityPcs };
       updateData.currentVolumeM3 = { increment: volumeM3 };
-    } else if (type === 'OUT') {
-      updateData.stockOutPcs = { increment: quantityPcs };
+    } else if (isDecreasing) {
+      if (type === 'OUT') updateData.stockOutPcs = { increment: quantityPcs };
+      if (type === 'ADJ') updateData.adjustmentPcs = { decrement: quantityPcs }; // Net negative adjustment
       updateData.currentPcs = { decrement: quantityPcs };
       updateData.currentVolumeM3 = { decrement: volumeM3 };
-    } else if (type === 'ADJ') {
-      updateData.adjustmentPcs = { increment: quantityPcs }; // Could be neg/pos depending on how we want to track
-      updateData.currentPcs = { increment: quantityPcs };
-      updateData.currentVolumeM3 = { increment: volumeM3 };
     }
 
     let whereCondition: any = { id: stock.id };
-    if (type === 'OUT') {
+    if (isDecreasing) {
       whereCondition.currentPcs = { gte: quantityPcs };
     }
 
@@ -80,7 +103,7 @@ export class InventoryLedgerService {
     });
 
     if (updateResult.count === 0) {
-      if (type === 'OUT') {
+      if (isDecreasing) {
         throw new BadRequestException(`Insufficient stock or concurrent modification for variant ${timberVariantId}. Required: ${quantityPcs}`);
       } else {
         throw new BadRequestException('Failed to update stock due to concurrent modification');

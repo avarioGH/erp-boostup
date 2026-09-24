@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.erp.boostup.id';
 
@@ -298,11 +298,12 @@ export const MasterDataAPI: any = {
 
 
 export const PurchaseAPI: any = {
-  getPurchases: async (params?: any) => (await api.get('/inventory/purchases', { params })).data,
-  getPurchase: async (id: string) => (await api.get('/inventory/purchases/' + id)).data,
-  createPurchase: async (data: any) => (await api.post('/inventory/purchases', data)).data,
-  confirmPurchase: async (id: string) => (await api.post('/inventory/purchases/' + id + '/confirm')).data,
-  cancelPurchase: async (id: string) => (await api.post('/inventory/purchases/' + id + '/cancel')).data,
+  getPurchases: async (params?: any) => (await api.get('/inventory/timber-purchase', { params })).data,
+  getPurchase: async (id: string) => (await api.get('/inventory/timber-purchase/' + id)).data,
+  createPurchase: async (data: any) => (await api.post('/inventory/timber-purchase', data)).data,
+  confirmPurchase: async (id: string) => (await api.post('/inventory/timber-purchase/' + id + '/confirm')).data,
+  cancelPurchase: async (id: string) => (await api.post('/inventory/timber-purchase/' + id + '/cancel')).data,
+  addPurchaseLogItem: async (id: string, data: any) => (await api.post('/inventory/timber-purchase/' + id + '/log-items', data)).data,
 };
 
 export const ShipmentAPI: any = {
@@ -327,3 +328,4 @@ export const ReportsAPI: any = {
   getStockCard: async (params?: any) => (await api.get('/inventory/reports/stock-card', { params })).data,
   getTraceability: async (params?: any) => (await api.get('/inventory/reports/traceability', { params })).data,
 };
+

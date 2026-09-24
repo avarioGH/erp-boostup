@@ -166,7 +166,7 @@ export default function MassCreateRawLogPage() {
   const totalNet = rows.reduce((acc, row) => acc + calculateRow(row).net, 0)
 
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-8 px-4 md:px-6 box-border">
       <div className="flex items-center gap-4 border-b pb-4">
         <Button variant="outline" size="icon" onClick={() => router.push('/inventory/logs')}>
           <ArrowLeft className="w-4 h-4" />
@@ -177,9 +177,9 @@ export default function MassCreateRawLogPage() {
         </div>
       </div>
 
-      <Card className="shadow-sm border-border">
-        <CardHeader className="bg-muted/10 border-b pb-4">
-          <CardTitle className="text-[16px] font-semibold">1. Master Data (Berlaku untuk semua baris)</CardTitle>
+      <Card className="bg-card rounded-xl border border-border shadow-sm">
+        <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10">
+          <CardTitle className="text-base font-bold">1. Master Data (Berlaku untuk semua baris)</CardTitle>
         </CardHeader>
         <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="space-y-2">
@@ -225,10 +225,10 @@ export default function MassCreateRawLogPage() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm border-border">
-        <CardHeader className="bg-muted/10 border-b pb-4 flex flex-row items-center justify-between">
+      <Card className="bg-card rounded-xl border border-border shadow-sm">
+        <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-[16px] font-semibold">2. Log Input Data</CardTitle>
+            <CardTitle className="text-base font-bold">2. Log Input Data</CardTitle>
             <CardDescription className="mt-1">Gunakan tombol TAB untuk pindah kolom, dan ENTER untuk baris baru.</CardDescription>
           </div>
           <div className="text-right">
@@ -238,20 +238,20 @@ export default function MassCreateRawLogPage() {
         </CardHeader>
         <CardContent className="pt-0 p-0 overflow-x-auto">
           <table className="min-w-full text-sm" ref={tableRef}>
-            <thead className="bg-muted border-b">
+            <thead className="bg-muted/30 border-b border-border">
               <tr>
-                <th className="p-3 text-left font-semibold text-[#526174] w-[50px]">#</th>
-                <th className="p-3 text-left font-semibold text-[#526174] w-[150px]">Log No</th>
-                <th className="p-3 text-left font-semibold text-[#526174] w-[100px]">Length (m)</th>
-                <th className="p-3 text-left font-semibold text-[#526174] w-[80px]">D1 (cm)</th>
-                <th className="p-3 text-left font-semibold text-[#526174] w-[80px]">D2 (cm)</th>
-                <th className="p-3 text-left font-semibold text-[#526174] w-[80px]">D3 (cm)</th>
-                <th className="p-3 text-left font-semibold text-[#526174] w-[80px]">D4 (cm)</th>
-                <th className="p-3 text-left font-semibold text-[#526174] w-[100px]">Gerowong</th>
-                <th className="p-3 text-right font-semibold text-[#526174] bg-muted/50">&Oslash; Avg</th>
-                <th className="p-3 text-right font-semibold text-[#526174] bg-muted/50">Gross</th>
-                <th className="p-3 text-right font-semibold text-[#526174] bg-muted/50">Net M&sup3;</th>
-                <th className="p-3 text-center font-semibold text-[#526174] w-[50px]"></th>
+                <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[50px]">#</th>
+                <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[150px]">Log No</th>
+                <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[100px]">Length (m)</th>
+                <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[80px]">D1 (cm)</th>
+                <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[80px]">D2 (cm)</th>
+                <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[80px]">D3 (cm)</th>
+                <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[80px]">D4 (cm)</th>
+                <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[100px]">Gerowong</th>
+                <th className="p-3 text-right font-semibold text-muted-foreground font-semibold bg-muted/50">&Oslash; Avg</th>
+                <th className="p-3 text-right font-semibold text-muted-foreground font-semibold bg-muted/50">Gross</th>
+                <th className="p-3 text-right font-semibold text-muted-foreground font-semibold bg-muted/50">Net M&sup3;</th>
+                <th className="p-3 text-center font-semibold text-muted-foreground font-semibold w-[50px]"></th>
               </tr>
             </thead>
             <tbody>
@@ -289,9 +289,9 @@ export default function MassCreateRawLogPage() {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-4">
-        <Button variant="outline" className="w-32" onClick={() => router.push('/inventory/logs')}>Batal</Button>
-        <Button onClick={handleSubmit} disabled={submitting} className="w-48">
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 md:gap-4 mt-8">
+        <Button variant="outline" className="w-full sm:w-32" onClick={() => router.push('/inventory/logs')}>Batal</Button>
+        <Button onClick={handleSubmit} disabled={submitting} className="w-full sm:w-48 shadow-sm font-semibold">
           {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
           Simpan Semua Data
         </Button>

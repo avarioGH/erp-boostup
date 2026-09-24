@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TimberCalculationService } from './timber-calculation.service';
 import { AuditService } from '../core/audit.service';
@@ -62,7 +62,15 @@ export class RawLogService {
     return log;
   }
 
-  async createRawLog(data: any) {
+    async createRawLog(data: any) {
+    // Identity Spoofing Protection
+    if (data.purchaseLogItemId) {
+      const pItem = await this.prisma.timberPurchaseLogItem.findUnique({ where: { id: data.purchaseLogItemId } });
+      if (!pItem) throw new NotFoundException('Purchase Log Item not found');
+      if (pItem.status === 'RECEIVED') throw new BadRequestException('Purchase Log Item already received');
+      data.logNumber = pItem.logNumber;
+      data.species = pItem.species;
+    }
     // Validate uniqueness
     const existingLog = await this.prisma.rawLog.findUnique({ where: { logNumber: data.logNumber } });
     if (existingLog) throw new BadRequestException(`Log Number ${data.logNumber} already exists.`);
@@ -107,7 +115,7 @@ export class RawLogService {
     const netVol = this.calcService.calculateRawLogNetVolume(grossVol, gerowongVol, trimmingVol);
     if (netVol < 0) throw new BadRequestException('Calculated net volume cannot be negative.');
 
-    const created = await this.prisma.rawLog.create({
+        const created = await this.prisma.rawLog.create({
       data: {
         logNumber: data.logNumber,
         sequence: data.sequence ? Number(data.sequence) : null,
@@ -137,7 +145,15 @@ export class RawLogService {
         notes: data.notes
       }
     });
-    await this.audit.log({ company_id: data.companyId || '000000000000000000000000', action: 'CREATE', entity: 'RAW_LOG', entity_id: created.id, after_data: { logNumber: created.logNumber } });
+        await this.audit.log({ company_id: data.companyId || '000000000000000000000000', action: 'CREATE', entity: 'RAW_LOG', entity_id: created.id, after_data: { logNumber: created.logNumber } });
+    
+    if (data.purchaseLogItemId) {
+      await this.prisma.timberPurchaseLogItem.update({
+        where: { id: data.purchaseLogItemId },
+        data: { status: 'RECEIVED' }
+      });
+    }
+    
     return created;
   }
 
@@ -156,8 +172,15 @@ export class RawLogService {
   async createBulkRawLogs(dataArray: any[]) {
     return this.prisma.$transaction(async (tx) => {
       const createdLogs: any[] = [];
-      for (const data of dataArray) {
-        if (!data.logNumber) throw new BadRequestException('Log Number is required');
+              for (const data of dataArray) {
+          if (data.purchaseLogItemId) {
+            const pItem = await tx.timberPurchaseLogItem.findUnique({ where: { id: data.purchaseLogItemId } });
+            if (!pItem) throw new NotFoundException('Purchase Log Item not found');
+            if (pItem.status === 'RECEIVED') throw new BadRequestException('Purchase Log Item already received');
+            data.logNumber = pItem.logNumber;
+            data.species = pItem.species;
+          }
+          if (!data.logNumber) throw new BadRequestException('Log Number is required');
         
         const existingLog = await tx.rawLog.findUnique({ where: { logNumber: data.logNumber } });
         if (existingLog) throw new BadRequestException(`Log Number ${data.logNumber} already exists.`);
@@ -210,15 +233,39 @@ export class RawLogService {
             status: 'AVAILABLE'
           }
         });
-        createdLogs.push(log);
-      }
+                  if (data.purchaseLogItemId) {
+            await tx.timberPurchaseLogItem.update({
+              where: { id: data.purchaseLogItemId },
+              data: { status: 'RECEIVED' }
+            });
+          }
+          createdLogs.push(log);
+        }
       return createdLogs;
     });
   }
 
-  async updateRawLog(id: string, data: any) {
+    async updateRawLog(id: string, data: any) {
     if (!id || id.length !== 24) throw new BadRequestException('Invalid ID');
+    
     const existingLog = await this.prisma.rawLog.findUnique({ where: { id } });
+    if (!existingLog) throw new NotFoundException('Raw Log not found');
+
+    // Identity Spoofing Protection for Update
+    if (existingLog.purchaseLogItemId) {
+      const pItem = await this.prisma.timberPurchaseLogItem.findUnique({ where: { id: existingLog.purchaseLogItemId } });
+      if (pItem) {
+        data.logNumber = pItem.logNumber;
+        data.species = pItem.species;
+      }
+    } else if (data.purchaseLogItemId) {
+      // Trying to attach to a purchase log item on update?
+      const pItem = await this.prisma.timberPurchaseLogItem.findUnique({ where: { id: data.purchaseLogItemId } });
+      if (pItem) {
+        data.logNumber = pItem.logNumber;
+        data.species = pItem.species;
+      }
+    }
     if (!existingLog) throw new NotFoundException('Raw Log not found');
 
     let speciesStr = data.species || existingLog.species;
@@ -286,3 +333,9 @@ export class RawLogService {
   }
 
 }
+
+
+
+
+
+

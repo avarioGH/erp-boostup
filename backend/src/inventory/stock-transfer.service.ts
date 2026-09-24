@@ -129,8 +129,9 @@ export class StockTransferService {
           'TRANSFER_OUT',
           transfer.id,
           item.quantityPcs,
-          item.volumeM3
-        );
+          item.volumeM3,
+            item.batch
+          );
         // 2. IN to destination
         await this.ledgerService.createMovement(
           tx as any,
@@ -140,8 +141,9 @@ export class StockTransferService {
           'TRANSFER_IN',
           transfer.id,
           item.quantityPcs,
-          item.volumeM3
-        );
+          item.volumeM3,
+            item.batch
+          );
       }
 
       await tx.auditLog.create({ data: { action: 'POST', entity: 'STOCK_TRANSFER', entity_id: id, before_data: { status: 'DRAFT' }, after_data: { status: 'POSTED' } } });

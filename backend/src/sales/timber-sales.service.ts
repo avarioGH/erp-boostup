@@ -1,6 +1,6 @@
-﻿import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service";
-import { InventoryLedgerService } from "../inventory/inventory-ledger.service";
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { InventoryLedgerService } from '../inventory/inventory-ledger.service';
 
 @Injectable()
 export class TimberSalesService {
@@ -11,7 +11,7 @@ export class TimberSalesService {
 
   async createOrder(dto: any) {
     const orderCount = await this.prisma.timberSalesOrder.count();
-    const orderNumber = `TSO-${String(orderCount + 1).padStart(5, "0")}`;
+    const orderNumber = `TSO-${String(orderCount + 1).padStart(5, '0')}`;
     return this.prisma.timberSalesOrder.create({
       data: {
         orderNumber,
@@ -20,10 +20,11 @@ export class TimberSalesService {
         targetDate: dto.targetDate ? new Date(dto.targetDate) : null,
         partai: dto.partai || null,
         notes: dto.notes || null,
-        status: "DRAFT",
+        status: 'DRAFT',
         items: {
           create: (dto.items || []).map((item: any) => ({
             timberVariantId: item.timberVariantId || null,
+            fulfillmentLocationId: item.fulfillmentLocationId || null,
             thicknessMm: item.thicknessMm,
             widthMm: item.widthMm,
             lengthMm: item.lengthMm,
@@ -46,8 +47,8 @@ export class TimberSalesService {
     const [data, total] = await Promise.all([
       this.prisma.timberSalesOrder.findMany({
         where, skip, take: limit,
-        include: { customer: true, _count: { select: { items: true, deliveries: true } } },
-        orderBy: { createdAt: "desc" },
+        include: { customer: true, _count: { select: { items: true, deliveries: true, shipments: true } } },
+        orderBy: { createdAt: 'desc' },
       }),
       this.prisma.timberSalesOrder.count({ where }),
     ]);
@@ -59,113 +60,172 @@ export class TimberSalesService {
       where: { id },
       include: {
         customer: true,
-        items: { include: { timberVariant: true } },
+        items: { include: { timberVariant: true, fulfillmentLocation: true } },
         deliveries: { include: { items: { include: { timberVariant: true, location: true } } } },
+        shipments: { include: { items: { include: { timberVariant: true } } } },
       },
     });
-    if (!order) throw new NotFoundException(`Order ${id} not found`);
+    if (!order) throw new NotFoundException('Order ' + id + ' not found');
     return order;
   }
 
   async confirmOrder(id: string) {
-    const order = await this.prisma.timberSalesOrder.findUnique({ where: { id } });
-    if (!order) throw new NotFoundException();
-    if (order.status !== "DRAFT") throw new BadRequestException("Only DRAFT orders can be confirmed");
-    return this.prisma.timberSalesOrder.update({ where: { id }, data: { status: "CONFIRMED" } });
+    return this.prisma.$transaction(async (tx: any) => {
+      const order = await tx.timberSalesOrder.findUnique({ 
+        where: { id },
+        include: { items: true, customer: true }
+      });
+      if (!order) throw new NotFoundException('Sales order not found');
+      if (order.status !== 'DRAFT') throw new BadRequestException('Only DRAFT orders can be confirmed');
+
+      for (const item of order.items) {
+        if (!item.fulfillmentLocationId) {
+          throw new BadRequestException('Order item is missing fulfillmentLocationId');
+        }
+
+        const remainingQty = item.orderQty - item.realizedQty;
+        const remainingM3 = item.orderM3 - item.realizedM3;
+
+        if (remainingQty <= 0) continue;
+
+        const stocks = await tx.timberStock.findMany({
+          where: {
+            locationId: item.fulfillmentLocationId,
+            timberVariantId: item.timberVariantId
+          }
+        });
+
+        const physicalPcs = stocks.reduce((sum: number, s: any) => sum + s.currentPcs, 0);
+
+        const resQuery = {
+          company_id: order.customer.company_id,
+          locationId: item.fulfillmentLocationId,
+          timberVariantId: item.timberVariantId
+        };
+        
+        let reservation = await tx.timberStockReservation.findUnique({
+          where: { company_id_locationId_timberVariantId: resQuery }
+        });
+
+        if (!reservation) {
+          try {
+            reservation = await tx.timberStockReservation.create({
+              data: { ...resQuery, reservedPcs: 0, reservedM3: 0 }
+            });
+          } catch (e: any) {
+            // Prisma P2002 Unique Constraint Violation means another tx created it
+            if (e.code === 'P2002') {
+              reservation = await tx.timberStockReservation.findUnique({
+                where: { company_id_locationId_timberVariantId: resQuery }
+              });
+              if (!reservation) throw new BadRequestException('Failed to initialize reservation row');
+            } else {
+              throw e;
+            }
+          }
+        }
+
+        const available = physicalPcs - reservation.reservedPcs;
+
+        if (available < remainingQty) {
+          throw new BadRequestException(
+            'Insufficient available stock for variant ' + item.timberVariantId + '. Physical: ' + physicalPcs + ', Reserved: ' + reservation.reservedPcs + ', Available: ' + available + ', Requested: ' + remainingQty
+          );
+        }
+
+        const result = await tx.timberStockReservation.updateMany({
+          where: { 
+            id: reservation.id,
+            reservedPcs: reservation.reservedPcs // OCC check
+          },
+          data: {
+            reservedPcs: { increment: remainingQty },
+            reservedM3: { increment: remainingM3 }
+          }
+        });
+
+        if (result.count === 0) {
+          throw new BadRequestException(
+            'Sales order reservation conflict for variant ' + item.timberVariantId + '. Please retry.'
+          );
+        }
+      }
+
+      return tx.timberSalesOrder.update({ where: { id }, data: { status: 'CONFIRMED' } });
+    });
   }
 
   async cancelOrder(id: string) {
-    const order = await this.prisma.timberSalesOrder.findUnique({ where: { id } });
-    if (!order) throw new NotFoundException();
-    if (!["DRAFT", "CONFIRMED"].includes(order.status))
-      throw new BadRequestException("Only DRAFT or CONFIRMED orders can be cancelled");
-    return this.prisma.timberSalesOrder.update({ where: { id }, data: { status: "CANCELLED" } });
+    return this.prisma.$transaction(async (tx: any) => {
+      const order = await tx.timberSalesOrder.findUnique({ 
+        where: { id },
+        include: { items: true, customer: true }
+      });
+      if (!order) throw new NotFoundException();
+      if (!['DRAFT', 'CONFIRMED'].includes(order.status))
+        throw new BadRequestException('Only DRAFT or CONFIRMED orders can be cancelled');
+
+      if (order.status === 'CONFIRMED') {
+        for (const item of order.items) {
+          if (!item.fulfillmentLocationId) continue;
+          
+          const remainingQty = item.orderQty - item.realizedQty;
+          const remainingM3 = item.orderM3 - item.realizedM3;
+          
+          if (remainingQty <= 0) continue;
+
+          const resQuery = {
+            company_id: order.customer.company_id,
+            locationId: item.fulfillmentLocationId,
+            timberVariantId: item.timberVariantId
+          };
+
+          const reservation = await tx.timberStockReservation.findUnique({
+            where: { company_id_locationId_timberVariantId: resQuery }
+          });
+
+          if (reservation) {
+            // Prevent negative reservation
+            const decPcs = Math.min(reservation.reservedPcs, remainingQty);
+            const decM3 = Math.min(reservation.reservedM3, remainingM3);
+            
+            if (decPcs > 0) {
+              const result = await tx.timberStockReservation.updateMany({
+                where: { 
+                  id: reservation.id,
+                  reservedPcs: reservation.reservedPcs
+                },
+                data: {
+                  reservedPcs: { decrement: decPcs },
+                  reservedM3: { decrement: decM3 }
+                }
+              });
+
+              if (result.count === 0) {
+                throw new BadRequestException('Sales order cancel conflict. Please retry.');
+              }
+            }
+          }
+        }
+      }
+
+      return tx.timberSalesOrder.update({ where: { id }, data: { status: 'CANCELLED' } });
+    });
   }
 
   async createDelivery(salesOrderId: string, dto: any) {
-    const order = await this.prisma.timberSalesOrder.findUnique({ where: { id: salesOrderId } });
-    if (!order) throw new NotFoundException();
-    if (!["CONFIRMED", "PARTIALLY_FULFILLED"].includes(order.status))
-      throw new BadRequestException("Order must be CONFIRMED or PARTIALLY_FULFILLED to create delivery");
-    const deliveryCount = await this.prisma.timberDeliveryNote.count();
-    const deliveryNumber = `TDN-${String(deliveryCount + 1).padStart(5, "0")}`;
-    return this.prisma.timberDeliveryNote.create({
-      data: {
-        deliveryNumber,
-        salesOrderId,
-        deliveryDate: new Date(dto.deliveryDate),
-        driverName: dto.driverName || null,
-        vehicleNumber: dto.vehicleNumber || null,
-        notes: dto.notes || null,
-        status: "DRAFT",
-        items: {
-          create: (dto.items || []).map((item: any) => ({
-            salesOrderItemId: item.salesOrderItemId,
-            locationId: item.locationId,
-            timberVariantId: item.timberVariantId,
-            deliveredQty: item.deliveredQty,
-            deliveredM3: parseFloat(((item.thicknessMm * item.widthMm * item.lengthMm * item.deliveredQty) / 1e9).toFixed(4)),
-          })),
-        },
-      },
-      include: { items: true },
-    });
+    throw new BadRequestException('Timber Delivery Note fulfillment is deprecated. Create a Timber Shipment instead.');
   }
 
   async postDelivery(deliveryId: string) {
-    const delivery = await this.prisma.timberDeliveryNote.findUnique({
-      where: { id: deliveryId },
-      include: { items: { include: { timberVariant: true, salesOrderItem: true } } },
-    });
-    if (!delivery) throw new NotFoundException();
-    if (delivery.status !== "DRAFT") throw new BadRequestException("Only DRAFT deliveries can be posted");
-
-    await this.prisma.$transaction(async (tx) => {
-      // Create OUT movements for each item via InventoryLedgerService
-      for (const item of delivery.items) {
-        const movement = await this.ledger.createMovement(
-          tx,
-          item.locationId,
-          item.timberVariantId,
-          "OUT",
-          "SALES_DELIVERY",
-          deliveryId,
-          item.deliveredQty,
-          item.deliveredM3
-        );
-        // Link movement back to delivery item
-        await tx.timberDeliveryNoteItem.update({
-          where: { id: item.id },
-          data: { stockMovementId: movement.id },
-        });
-        // Update realization cache on sales order item
-        await tx.timberSalesOrderItem.update({
-          where: { id: item.salesOrderItemId },
-          data: {
-            realizedQty: { increment: item.deliveredQty },
-            realizedM3: { increment: item.deliveredM3 },
-          },
-        });
-      }
-      // Update delivery status
-      await tx.timberDeliveryNote.update({ where: { id: deliveryId }, data: { status: "POSTED" } });
-
-      // Recompute order fulfillment status
-      const updatedItems = await tx.timberSalesOrderItem.findMany({ where: { salesOrderId: delivery.salesOrderId } });
-      const allFulfilled = updatedItems.every((i) => i.realizedQty >= i.orderQty);
-      const anyFulfilled = updatedItems.some((i) => i.realizedQty > 0);
-      const newStatus = allFulfilled ? "FULFILLED" : anyFulfilled ? "PARTIALLY_FULFILLED" : "CONFIRMED";
-      await tx.timberSalesOrder.update({ where: { id: delivery.salesOrderId }, data: { status: newStatus } });
-    });
-
-    return this.prisma.timberDeliveryNote.findUnique({ where: { id: deliveryId }, include: { items: true } });
+    throw new BadRequestException('Timber Delivery Note fulfillment is deprecated. Create a Timber Shipment instead.');
   }
 
   async cancelDelivery(deliveryId: string) {
     const delivery = await this.prisma.timberDeliveryNote.findUnique({ where: { id: deliveryId } });
     if (!delivery) throw new NotFoundException();
-    if (delivery.status !== "DRAFT") throw new BadRequestException("Only DRAFT deliveries can be cancelled");
-    return this.prisma.timberDeliveryNote.update({ where: { id: deliveryId }, data: { status: "CANCELLED" } });
+    if (delivery.status !== 'DRAFT') throw new BadRequestException('Only DRAFT deliveries can be cancelled');
+    return this.prisma.timberDeliveryNote.update({ where: { id: deliveryId }, data: { status: 'CANCELLED' } });
   }
 
   async getOrderRealization(salesOrderId: string) {

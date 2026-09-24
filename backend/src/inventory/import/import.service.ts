@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryLedgerService } from '../inventory-ledger.service';
 import { SawnTimberService } from '../sawn-timber.service';
@@ -168,10 +168,12 @@ export class ImportService {
               if (!dims || dims.some(isNaN) || qty <= 0) { skippedRows++; continue; }
               const [t, w, l] = dims;
               
-              const grade = 'A';
-              const species = 'MERANTI';
-              
-              const sku = `${species}-A-${t} x ${w} x ${l}`;
+                            let tGrade = await tx.timberGrade.findFirst({ where: { company_id: dummyCompany.id, code: 'A' } });
+              if (!tGrade) {
+                tGrade = await tx.timberGrade.create({ data: { company_id: dummyCompany.id, code: 'A', name: 'Grade A' } });
+              }
+              const grade = tGrade.code;
+              const species = 'MERANTI'; const sku = `${species}-${grade}-${t} x ${w} x ${l}`;
               let variant = await tx.timberVariant.findUnique({ where: { sku } });
               if (!variant) {
                 let masterProd = await tx.product.findFirst({ where: { code: species }});
@@ -190,9 +192,9 @@ export class ImportService {
                     }
                   });
                 }
-                variant = await tx.timberVariant.create({
-                  data: { productId: masterProd.id, sku, species, grade, thickness: t, width: w, length: l, volumePerPiece: (t*w*l)/1000000000 }
-                });
+                                  variant = await tx.timberVariant.create({
+                    data: { productId: masterProd.id, sku, species, grade, gradeId: tGrade.id, thickness: t, width: w, length: l, volumePerPiece: (t*w*l)/1000000000 }
+                  });
               }
 
               const volM3 = variant.volumePerPiece * qty;
@@ -252,5 +254,8 @@ export class ImportService {
     }
   }
 }
+
+
+
 
 

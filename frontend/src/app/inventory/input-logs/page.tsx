@@ -24,51 +24,57 @@ export default function InputLogsPage() {
  )
 
  return (
- <div className="space-y-6 pb-10">
- <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+ <div className="space-y-4 md:space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-8 px-4 md:px-6 box-border">
+ <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
  <div>
- <h1 className="text-[28px] font-bold tracking-tight text-foreground">Input Logs (WIP)</h1>
- <p className="text-muted-foreground mt-1">Material allocated for sawmill production.</p>
+ <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary w-6 h-6"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><polyline points="14 2 14 8 20 8"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/></svg> Input Log (Produksi)</h1>
+ <p className="text-sm text-muted-foreground max-w-2xl">Material kayu yang disiapkan dan dialokasikan untuk proses produksi Sawmill.</p>
  </div>
- <Button onClick={() => router.push('/inventory/input-logs/create')} className="">
+ <Button onClick={() => router.push('/inventory/input-logs/create')} className="w-full sm:w-auto shadow-sm font-semibold tracking-wide">
  <Plus className="w-4 h-4 mr-2" /> Create Input Log
  </Button>
  </div>
 
- <Card className="shadow-sm">
- <CardHeader className="pb-4 flex flex-row items-center justify-between border-b border-border/40">
- <CardTitle className="text-[16px] font-semibold">Input Log Inventory</CardTitle>
+ <Card className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+ <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+ <CardTitle className="text-base font-bold">Data Input Log</CardTitle>
  <div className="relative w-full sm:w-64">
+<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground opacity-70" />
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
- <Input type="search" placeholder="Search number..." className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
+ <Input type="search" placeholder="Search number..." className="pl-9 bg-background" value={search} onChange={(e) => setSearch(e.target.value)} />
  </div>
  </CardHeader>
  <CardContent className="p-0">
- {loading ? <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div> : (
- <div className="overflow-x-auto">
+ {loading ? <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div> : filtered.length === 0 ? (
+ <div className="flex flex-col items-center justify-center p-8 sm:p-16 text-center">
+ <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-muted-foreground mb-4 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+ <h3 className="text-base font-semibold text-foreground mb-1">No records found</h3>
+ <p className="text-[13.5px] text-muted-foreground max-w-sm mb-6">Belum ada Input Log.</p>
+ </div>
+ ) : (
+ <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none">
  <table className="min-w-[600px] md:min-w-full w-full text-sm">
- <thead className="bg-muted border-y border-border">
+ <thead className="bg-muted/30 border-b border-border">
  <tr>
- <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Input Number</th>
- <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Date</th>
- <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Partai</th>
- <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Logs</th>
- <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Total M&sup3;</th>
- <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Status</th>
- <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
+ <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Input Number</th>
+ <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Date</th>
+ <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Partai</th>
+ <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Logs</th>
+ <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Total M&sup3;</th>
+ <th className="p-4 px-6 text-center font-semibold text-muted-foreground h-11">Status</th>
+ <th className="p-4 px-6 text-center font-semibold text-muted-foreground h-11">Action</th>
  </tr>
  </thead>
  <tbody>
- {filtered.length === 0 ? <tr><td colSpan={7} className="p-14 text-center"><div className="flex flex-col items-center"><svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-muted-foreground mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg><p className="text-sm font-semibold text-foreground mb-1">No records found</p><p className="text-xs text-muted-foreground">Try adjusting your search or filters.</p></div></td></tr> :
- filtered.map(log => (
+ {filtered.map(log => (
  <tr key={log.id} className="border-b last:border-0 hover:bg-muted/60 cursor-pointer transition-colors" onClick={() => router.push(`/inventory/input-logs/${log.id}`)}>
- <td className="py-3.5 px-6 font-semibold text-primary text-[13px]">{log.inputNumber}</td>
- <td className="py-3.5 px-6 text-[13px]">{new Date(log.date).toLocaleDateString("id-ID")}</td>
- <td className="py-3.5 px-6 text-[13px]">{log.batch ||"-"}</td>
- <td className="py-3.5 px-6 text-right text-[13px]">{log.totalQty}</td>
- <td className="py-3.5 px-6 text-right font-bold text-primary text-[13px]">{log.totalVolume}</td>
- <td className="py-3.5 px-6 text-center text-[13px]"><Badge variant={log.status ==="AVAILABLE" ?"default" :"secondary"}>{log.status}</Badge></td>
- <td className="py-3.5 px-6 text-center text-[13px]"><Button variant="outline" size="sm" className="text-xs">View Details</Button></td>
+ <td className="py-3 px-6 font-semibold text-foreground/90">{log.inputNumber}</td>
+ <td className="py-3 px-6 text-[13px]">{new Date(log.date).toLocaleDateString("id-ID")}</td>
+ <td className="py-3 px-6 text-[13px]">{log.batch ||"-"}</td>
+ <td className="py-3 px-6 text-right text-[13px]">{log.totalQty}</td>
+ <td className="py-3 px-6 text-right font-bold text-foreground/90">{log.totalVolume}</td>
+ <td className="py-3 px-6 text-center text-[13px]">{log.status === "AVAILABLE" || log.status === "CONFIRMED" ? <span className="inline-flex items-center rounded-sm bg-success/15 px-2 py-0.5 text-[11px] font-bold text-success-foreground uppercase tracking-wider">{log.status}</span> : <span className="inline-flex items-center rounded-sm bg-secondary/80 text-secondary-foreground px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider">{log.status}</span>}</td>
+ <td className="py-3 px-6 text-center text-[13px]"><Button variant="outline" size="sm" className="text-xs">View Details</Button></td>
  </tr>
  ))
  }

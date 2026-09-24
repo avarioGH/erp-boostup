@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Put, Get, UseGuards, Request } from '@nestjs/common';
+﻿import { Controller, Post, Body, Param, Put, Get, UseGuards, Request } from '@nestjs/common';
 import { PurchaseService } from './purchase.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/permissions.guard';
@@ -37,5 +37,17 @@ export class PurchaseController {
   @Permissions('inventory.read')
   findOne(@Param('id') id: string, @Request() req) {
     return this.purchaseService.findOne(id, req.user.companyId);
+  }
+
+  @Post(':id/log-items')
+  @Permissions('inventory.create')
+  addLogItem(@Param('id') id: string, @Body() data: any, @Request() req) {
+    return this.purchaseService.addLogItem(id, req.user.companyId, data);
+  }
+
+  @Put(':id/log-items/:itemId')
+  @Permissions('inventory.create')
+  updateLogItem(@Param('id') id: string, @Param('itemId') itemId: string, @Body() data: any, @Request() req) {
+    return this.purchaseService.updateLogItem(id, itemId, req.user.companyId, data);
   }
 }

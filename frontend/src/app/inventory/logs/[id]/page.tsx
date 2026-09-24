@@ -29,13 +29,13 @@ export default function RawLogDetailPage({ params }: { params: Promise<{ id: str
  if (!data) return <div className="p-8 md:p-24 text-center">Log not found.</div>
 
  return (
- <div className="space-y-6 pb-10 animate-in fade-in duration-300">
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 gap-4 border-b pb-4">
+ <div className="space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-8 px-4 md:px-6 box-border">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
  <div className="flex items-center gap-4">
  <Button variant="outline" size="icon" onClick={() => router.push('/inventory/logs')}><ArrowLeft className="w-4 h-4" /></Button>
  <div>
  <div className="flex items-center gap-3">
- <h1 className="text-3xl font-bold tracking-tight text-emerald-800">{data.logNumber}</h1>
+ <h1 className="text-2xl font-bold tracking-tight text-foreground">{data.logNumber}</h1>
  <Badge variant={data.status ==="AVAILABLE" ?"default" :"secondary"} className={data.status ==="AVAILABLE" ?"bg-emerald-500" :""}>{data.status}</Badge>
  </div>
  <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2"><Box className="w-4 h-4" /> Raw Timber Log &bull; {data.species}</p>
@@ -48,8 +48,8 @@ export default function RawLogDetailPage({ params }: { params: Promise<{ id: str
  </div>
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
- <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><Ruler className="w-4 h-4" /> Measurements</CardTitle></CardHeader>
+ <Card className="bg-card rounded-xl border border-border shadow-sm">
+ <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><Ruler className="w-4 h-4" /> Measurements</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4">
  <div><p className="text-muted-foreground">Original Length</p><p className="font-bold">{data.originalLength} m</p></div>
@@ -67,30 +67,30 @@ export default function RawLogDetailPage({ params }: { params: Promise<{ id: str
  </CardContent>
  </Card>
 
- <Card className="shadow-sm border-border">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-lg flex items-center gap-2 text-foreground"><Box className="w-4 h-4" /> Volume Calculation</CardTitle></CardHeader>
+ <Card className="bg-card rounded-xl border border-border shadow-sm">
+ <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10"><CardTitle className="text-lg flex items-center gap-2 text-foreground"><Box className="w-4 h-4" /> Volume Calculation</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
  <div className="flex justify-between items-center"><span className="text-muted-foreground">Gross Volume</span><span className="font-medium">{data.grossVolume} m&sup3;</span></div>
  <div className="flex justify-between items-center"><span className="text-muted-foreground text-red-500">Gerowong Volume</span><span>- {data.hollowVolume || 0} m&sup3;</span></div>
- <div className="flex justify-between items-center"><span className="text-muted-foreground text-amber-500">Trimming Volume</span><span>- {data.trimmingVolume || 0} m&sup3;</span></div>
+ <div className="flex justify-between items-center"><span className="text-muted-foreground text-warning">Trimming Volume</span><span>- {data.trimmingVolume || 0} m&sup3;</span></div>
  <hr className="border-border" />
  <div className="flex justify-between items-center"><span className="font-bold text-foreground">Net Volume</span><span className="font-bold text-2xl text-primary">{data.netVolume} m&sup3;</span></div>
  </CardContent>
  </Card>
 
- <Card className="shadow-sm">
- <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Identity & Location</CardTitle></CardHeader>
+ <Card className="bg-card rounded-xl border border-border shadow-sm">
+ <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Identity & Location</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
  <div><p className="text-muted-foreground mb-1">Barcode / System ID</p><p className="font-mono bg-muted p-1.5 rounded text-xs">{data.barcode}</p></div>
  <div><p className="text-muted-foreground mb-1">Partai</p><p className="font-medium">{data.batch ||"-"}</p></div>
- <div><p className="text-muted-foreground mb-1">Location</p><p className="font-medium text-blue-700">{data.location?.name ||"-"}</p></div>
+ <div><p className="text-muted-foreground mb-1">Location</p><p className="font-medium text-primary/90">{data.location?.name ||"-"}</p></div>
  <div><p className="text-muted-foreground mb-1">Receiving Date</p><p className="font-medium">{new Date(data.receivingDate).toLocaleDateString("id-ID")}</p></div>
  </CardContent>
  </Card>
  </div>
 
- <Card className="shadow-sm">
- <CardHeader className="border-b pb-4 flex flex-row items-center justify-between">
+ <Card className="bg-card rounded-xl border border-border shadow-sm">
+ <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
  <CardTitle className="text-[16px] font-semibold flex items-center gap-2"><Factory className="w-4 h-4" /> Trimming Children</CardTitle>
    <Button size="sm" onClick={() => router.push(`/inventory/logs/${id}/trimming/create`)}><Plus className="w-4 h-4 mr-2"/> Add Trimming</Button>
  </CardHeader>

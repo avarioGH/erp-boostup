@@ -57,7 +57,10 @@ export class SawnTimberService {
     return `${t} \u00d7 ${w} \u00d7 ${l}`;
   }
 
-  async getOrCreateTimberVariant(companyId: string, species: string, grade: string, thickness: number, width: number, length: number, speciesId?: string, gradeId?: string) {
+    async getOrCreateTimberVariant(companyId: string, species: string, grade: string, thickness: number, width: number, length: number, speciesId?: string, gradeId?: string) {
+    if (!gradeId) {
+      throw new BadRequestException('gradeId is strictly required to create or get a TimberVariant');
+    }
     let actualSpecies = species;
     let actualGrade = grade;
 
@@ -66,8 +69,10 @@ export class SawnTimberService {
       if (sp) actualSpecies = sp.code;
     }
     if (gradeId) {
-      const gr = await this.prisma.timberGrade.findUnique({ where: { id: gradeId } });
-      if (gr) actualGrade = gr.code;
+                    const gr = await this.prisma.timberGrade.findFirst({ where: { id: gradeId, company_id: companyId } });
+        if (!gr) throw new BadRequestException('TimberGrade not found or does not belong to this company');
+        if (!gr.isActive) throw new BadRequestException('Cannot use inactive TimberGrade for new production');
+      actualGrade = gr.code;
     }
 
     const sizeStr = this.normalizeDimensions(thickness, width, length);
@@ -162,8 +167,12 @@ export class SawnTimberService {
         }
       });
 
-      for (const item of items) {
-        const variant = await this.getOrCreateTimberVariant(companyId, inputLog.species, item.grade || 'A', item.thickness, item.width, item.length, (inputLog as any).speciesId, item.gradeId);
+              for (const item of items) {
+          if (!item.gradeId) {
+            throw new BadRequestException('Grade ID is required for all output items');
+          }
+          // The grade string will be authoritatively determined inside getOrCreateTimberVariant using gradeId
+          const variant = await this.getOrCreateTimberVariant(companyId, inputLog.species, item.grade || '', item.thickness, item.width, item.length, (inputLog as any).speciesId, item.gradeId);
         const volumeM3 = variant.volumePerPiece * item.quantityPcs;
         
         await tx.sawnTimberOutputItem.create({
@@ -209,7 +218,8 @@ export class SawnTimberService {
           'PRODUCTION_OUTPUT',
           output.id,
           item.quantityPcs,
-          item.volumeM3
+          item.volumeM3,
+          output.batch || 'UNKNOWN'
         );
       }
 
@@ -229,15 +239,16 @@ export class SawnTimberService {
       if (output.status === 'POSTED') {
         for (const item of output.items) {
           await this.ledgerService.createMovement(
-            tx as any,
-            output.locationId,
-            item.timberVariantId,
-            'OUT',
-            'REVERSAL',
-            output.id,
-            item.quantityPcs,
-            item.volumeM3
-          );
+          tx as any,
+          output.locationId,
+          item.timberVariantId,
+          'IN',
+          'PRODUCTION_OUTPUT',
+          output.id,
+          item.quantityPcs,
+          item.volumeM3,
+          output.batch || 'UNKNOWN'
+        );
         }
       }
 
@@ -270,5 +281,10 @@ export class SawnTimberService {
     return { items, total, skip: Number(skip), take: Number(take) };
   }
 }
+
+
+
+
+
 
 

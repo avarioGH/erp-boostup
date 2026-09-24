@@ -10,6 +10,7 @@ export class PurchaseService {
   ) {}
 
   async create(companyId: string, data: any) {
+    const { logItems = [] } = data;
     const { purchaseNumber, purchaseDate, sourceId, warehouseId, notes, items } = data;
 
     // Validate if purchaseNumber exists
@@ -40,10 +41,23 @@ export class PurchaseService {
         totalPcs,
         totalVolumeM3,
         items: {
-          create: items.map(item => ({
+          create: items.map((item: any) => ({
             timberVariantId: item.timberVariantId,
             quantityPcs: item.quantityPcs,
             volumeM3: item.volumeM3
+          }))
+        },
+        logItems: {
+          create: logItems.map((li: any) => ({
+            logNumber: li.logNumber,
+            species: li.species,
+            speciesId: li.speciesId,
+            purchaseLength: li.purchaseLength,
+            purchaseDiameter1: li.purchaseDiameter1,
+            purchaseDiameter2: li.purchaseDiameter2,
+            purchaseDiameter3: li.purchaseDiameter3,
+            purchaseDiameter4: li.purchaseDiameter4,
+            purchaseVolume: li.purchaseVolume,
           }))
         }
       },
@@ -120,9 +134,10 @@ export class PurchaseService {
         // Pre-flight check: we need enough stock to reverse
         const stock = await tx.timberStock.findUnique({
           where: {
-            locationId_timberVariantId: {
+            locationId_timberVariantId_batch: {
               locationId: purchase.warehouseId,
-              timberVariantId: item.timberVariantId
+              timberVariantId: item.timberVariantId,
+                batch: 'UNKNOWN'
             }
           }
         });
@@ -153,11 +168,7 @@ export class PurchaseService {
       include: {
         source: true,
         warehouse: true,
-        items: {
-          include: {
-            timberVariant: true
-          }
-        }
+        items: { include: { timberVariant: true } }, logItems: true
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -169,11 +180,7 @@ export class PurchaseService {
       include: {
         source: true,
         warehouse: true,
-        items: {
-          include: {
-            timberVariant: true
-          }
-        }
+        items: { include: { timberVariant: true } }, logItems: true
       }
     });
 
@@ -183,4 +190,54 @@ export class PurchaseService {
 
     return purchase;
   }
+
+  // ==========================================
+  // PHASE 26.1: PURCHASE LOG ITEMS
+  // ==========================================
+  async addLogItem(purchaseId: string, companyId: string, data: any) {
+    const purchase = await this.prisma.timberPurchase.findFirst({
+      where: { id: purchaseId, company_id: companyId }
+    });
+    if (!purchase) throw new NotFoundException('Purchase not found');
+    
+    return this.prisma.timberPurchaseLogItem.create({
+      data: {
+        timberPurchaseId: purchaseId,
+        logNumber: data.logNumber,
+        species: data.species,
+        speciesId: data.speciesId,
+        purchaseLength: data.purchaseLength,
+        purchaseDiameter1: data.purchaseDiameter1,
+        purchaseDiameter2: data.purchaseDiameter2,
+        purchaseDiameter3: data.purchaseDiameter3,
+        purchaseDiameter4: data.purchaseDiameter4,
+        purchaseVolume: data.purchaseVolume,
+      }
+    });
+  }
+
+  async updateLogItem(purchaseId: string, itemId: string, companyId: string, data: any) {
+    const item = await this.prisma.timberPurchaseLogItem.findUnique({
+      where: { id: itemId }
+    });
+    if (!item || item.timberPurchaseId !== purchaseId) throw new NotFoundException('Log Item not found');
+    if (item.status === 'RECEIVED') throw new BadRequestException('Cannot edit received log item');
+
+    return this.prisma.timberPurchaseLogItem.update({
+      where: { id: itemId },
+      data: {
+        logNumber: data.logNumber,
+        species: data.species,
+        speciesId: data.speciesId,
+        purchaseLength: data.purchaseLength,
+        purchaseDiameter1: data.purchaseDiameter1,
+        purchaseDiameter2: data.purchaseDiameter2,
+        purchaseDiameter3: data.purchaseDiameter3,
+        purchaseDiameter4: data.purchaseDiameter4,
+        purchaseVolume: data.purchaseVolume,
+      }
+    });
+  }
+
 }
+

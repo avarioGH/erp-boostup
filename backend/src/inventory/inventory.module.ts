@@ -22,6 +22,8 @@ import { SawmillProductionController } from './sawmill-production.controller';
 import { SawmillProductionService } from './sawmill-production.service';
 import { ProductionReportController } from './production-reports/production-report.controller';
 import { ProductionReportService } from './production-reports/production-report.service';
+import { ReservationReconciliationService } from './reconciliation/reservation-reconciliation.service';
+import { ReservationReconciliationController } from './reconciliation/reservation-reconciliation.controller';
 
 @Module({
   controllers: [
@@ -34,7 +36,8 @@ import { ProductionReportService } from './production-reports/production-report.
     ImportController,
     ReportController,
     SawmillProductionController,
-    ProductionReportController
+    ProductionReportController,
+    ReservationReconciliationController
   ],
   providers: [
     InventoryService, 
@@ -49,7 +52,8 @@ import { ProductionReportService } from './production-reports/production-report.
     ReportService,
     TimberCalculationService,
     SawmillProductionService,
-    ProductionReportService
+    ProductionReportService,
+    ReservationReconciliationService
   ],
   exports: [
     InventoryService, 
@@ -63,7 +67,8 @@ import { ProductionReportService } from './production-reports/production-report.
     ImportService,
     ReportService,
     TimberCalculationService,
-    SawmillProductionService
+    SawmillProductionService,
+    ReservationReconciliationService
   ]
 })
 export class InventoryModule {}
