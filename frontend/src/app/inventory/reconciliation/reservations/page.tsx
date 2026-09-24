@@ -83,12 +83,12 @@ export default function ReservationReconciliationPage() {
   };
 
   const getStatusColor = (flag: string) => {
-    if (flag === 'HEALTHY' || flag === 'MATCH') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-    if (flag === 'NEGATIVE_AVAILABLE') return 'bg-red-100 text-red-800 border-red-200';
-    if (flag === 'OVER_RESERVED' || flag === 'UNDER_RESERVED' || flag === 'RESERVATION_DRIFT') return 'bg-orange-100 text-orange-800 border-orange-200';
-    if (flag === 'LEGACY_OPEN_ORDER_NO_WAREHOUSE' || flag === 'LEGACY_UNRESERVED') return 'bg-blue-100 text-blue-800 border-blue-200';
-    if (flag === 'ORPHAN_RESERVATION') return 'bg-purple-100 text-purple-800 border-purple-200';
-    return 'bg-slate-100 text-slate-800 border-slate-200';
+    if (flag === 'HEALTHY' || flag === 'MATCH') return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800';
+    if (flag === 'NEGATIVE_AVAILABLE') return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 border-red-200 dark:border-red-800';
+    if (flag === 'OVER_RESERVED' || flag === 'UNDER_RESERVED' || flag === 'RESERVATION_DRIFT') return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-400 border-orange-200 dark:border-orange-800';
+    if (flag === 'LEGACY_OPEN_ORDER_NO_WAREHOUSE' || flag === 'LEGACY_UNRESERVED') return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+    if (flag === 'ORPHAN_RESERVATION') return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 border-purple-200 dark:border-purple-800';
+    return 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700';
   };
 
   const getStatusIcon = (flag: string) => {
@@ -115,7 +115,7 @@ export default function ReservationReconciliationPage() {
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">Read-only audit tool for detecting reservation drift and concurrency anomalies.</p>
         </div>
-        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 px-3 py-1">
+        <Badge variant="outline" className="bg-amber-100/50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/50 px-3 py-1">
           <ShieldAlert className="w-4 h-4 mr-2 inline" /> Read-Only Investigation
         </Badge>
       </div>
@@ -140,22 +140,22 @@ export default function ReservationReconciliationPage() {
             <p className="text-2xl font-bold mt-1">{totalAvailable.toLocaleString()}</p>
           </CardContent>
         </Card>
-        <Card className="bg-emerald-50/50 border-emerald-100">
+        <Card className="bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30">
           <CardContent className="p-4">
-            <p className="text-xs text-emerald-700 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Healthy Rows</p>
-            <p className="text-2xl font-bold mt-1 text-emerald-700">{totalHealthy}</p>
+            <p className="text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Healthy Rows</p>
+            <p className="text-2xl font-bold mt-1 text-emerald-700 dark:text-emerald-400">{totalHealthy}</p>
           </CardContent>
         </Card>
-        <Card className="bg-rose-50/50 border-rose-100">
+        <Card className="bg-rose-50/50 dark:bg-rose-950/20 border-rose-100 dark:border-rose-900/30">
           <CardContent className="p-4">
-            <p className="text-xs text-rose-700 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Anomalies</p>
-            <p className="text-2xl font-bold mt-1 text-rose-700">{anomaliesCount}</p>
+            <p className="text-xs text-rose-700 dark:text-rose-400 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Anomalies</p>
+            <p className="text-2xl font-bold mt-1 text-rose-700 dark:text-rose-400">{anomaliesCount}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 items-end bg-slate-50 p-4 rounded-md border">
+      <div className="flex gap-4 items-end bg-muted/50 p-4 rounded-md border">
         <div className="w-[250px]">
           <label className="text-xs font-semibold mb-1 block">Warehouse ID</label>
           <Input placeholder="Filter by Warehouse ID..." value={filterLocation} onChange={e => setFilterLocation(e.target.value)} />
@@ -188,10 +188,10 @@ export default function ReservationReconciliationPage() {
       </div>
 
       {/* Table */}
-      <div className="border rounded-md bg-white overflow-hidden shadow-sm">
+      <div className="border rounded-md bg-card overflow-hidden shadow-sm">
         <ScrollArea className="h-[600px] w-full">
           <Table>
-            <TableHeader className="bg-slate-50 sticky top-0 z-10 shadow-sm">
+            <TableHeader className="bg-muted/50 sticky top-0 z-10 shadow-sm">
               <TableRow>
                 <TableHead>Status</TableHead>
                 <TableHead>Warehouse</TableHead>
@@ -211,7 +211,7 @@ export default function ReservationReconciliationPage() {
                 <TableRow><TableCell colSpan={9} className="text-center py-10 text-muted-foreground">No records found matching filters.</TableCell></TableRow>
               ) : (
                 data.map((row, i) => (
-                  <TableRow key={i} className="hover:bg-slate-50/50">
+                  <TableRow key={i} className="hover:bg-muted/50">
                     <TableCell className="w-[300px]">
                       <div className="flex flex-wrap gap-1">
                         {row.statusFlags.map(f => (
@@ -222,13 +222,13 @@ export default function ReservationReconciliationPage() {
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{row.locationId || <span className="text-slate-400 italic">NULL (Legacy)</span>}</TableCell>
+                    <TableCell className="font-mono text-xs">{row.locationId || <span className="text-muted-foreground italic">NULL (Legacy)</span>}</TableCell>
                     <TableCell className="font-mono text-xs max-w-[150px] truncate" title={row.timberVariantId}>{row.timberVariantId}</TableCell>
                     <TableCell className="text-right font-medium">{row.physicalPcs}</TableCell>
                     <TableCell className="text-right font-medium">{row.actualReservedPcs}</TableCell>
                     <TableCell className="text-right text-muted-foreground">{row.expectedReservedPcs}</TableCell>
                     <TableCell className={`text-right font-bold ${row.availablePcs < 0 ? 'text-red-600' : 'text-emerald-600'}`}>{row.availablePcs}</TableCell>
-                    <TableCell className={`text-right font-mono text-xs ${row.differencePcs !== 0 ? 'text-orange-600 font-bold' : 'text-slate-400'}`}>
+                    <TableCell className={`text-right font-mono text-xs ${row.differencePcs !== 0 ? 'text-orange-600 font-bold' : 'text-muted-foreground'}`}>
                       {row.differencePcs > 0 ? '+' : ''}{row.differencePcs !== 0 ? row.differencePcs : '-'}
                     </TableCell>
                     <TableCell className="text-center">
@@ -245,7 +245,7 @@ export default function ReservationReconciliationPage() {
       {/* Detail Dialog */}
       <Dialog open={!!selectedRow} onOpenChange={(open) => !open && setSelectedRow(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="px-6 py-4 border-b bg-slate-50">
+          <DialogHeader className="px-6 py-4 border-b bg-muted/50">
             <DialogTitle className="flex items-center gap-2">
               <ShieldAlert className="w-5 h-5 text-indigo-600" />
               Reservation Investigation
@@ -275,55 +275,55 @@ export default function ReservationReconciliationPage() {
 
                 {/* Main Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 border rounded bg-white shadow-sm">
+                  <div className="p-4 border rounded bg-card shadow-sm">
                     <p className="text-xs text-muted-foreground mb-1">Physical Stock</p>
-                    <p className="text-2xl font-bold">{detailData.physicalPcs} <span className="text-sm font-normal text-slate-400">PCS</span></p>
+                    <p className="text-2xl font-bold">{detailData.physicalPcs} <span className="text-sm font-normal text-muted-foreground">PCS</span></p>
                   </div>
-                  <div className="p-4 border rounded bg-white shadow-sm border-blue-200">
-                    <p className="text-xs text-blue-700 mb-1">Actual Reserved</p>
-                    <p className="text-2xl font-bold text-blue-700">{detailData.actualReservedPcs} <span className="text-sm font-normal text-blue-400">PCS</span></p>
+                  <div className="p-4 border rounded bg-card shadow-sm border-blue-200 dark:border-blue-900/50">
+                    <p className="text-xs text-blue-700 dark:text-blue-400 mb-1">Actual Reserved</p>
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{detailData.actualReservedPcs} <span className="text-sm font-normal text-blue-500 dark:text-blue-400">PCS</span></p>
                   </div>
-                  <div className="p-4 border rounded bg-white shadow-sm border-purple-200">
-                    <p className="text-xs text-purple-700 mb-1">Expected Reserved</p>
-                    <p className="text-2xl font-bold text-purple-700">{detailData.expectedReservedPcs} <span className="text-sm font-normal text-purple-400">PCS</span></p>
+                  <div className="p-4 border rounded bg-card shadow-sm border-purple-200 dark:border-purple-900/50">
+                    <p className="text-xs text-purple-700 dark:text-purple-400 mb-1">Expected Reserved</p>
+                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{detailData.expectedReservedPcs} <span className="text-sm font-normal text-purple-500 dark:text-purple-400">PCS</span></p>
                   </div>
-                  <div className={`p-4 border rounded bg-white shadow-sm ${detailData.availablePcs < 0 ? 'border-red-300 bg-red-50/50' : 'border-emerald-200'}`}>
-                    <p className={`text-xs mb-1 ${detailData.availablePcs < 0 ? 'text-red-700' : 'text-emerald-700'}`}>Available (Phys - Actual)</p>
-                    <p className={`text-2xl font-bold ${detailData.availablePcs < 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+                  <div className={`p-4 border rounded bg-card shadow-sm ${detailData.availablePcs < 0 ? 'border-red-300 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20' : 'border-emerald-200 dark:border-emerald-900/50'}`}>
+                    <p className={`text-xs mb-1 ${detailData.availablePcs < 0 ? 'text-red-700 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>Available (Phys - Actual)</p>
+                    <p className={`text-2xl font-bold ${detailData.availablePcs < 0 ? 'text-red-700 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                       {detailData.availablePcs} <span className="text-sm font-normal opacity-50">PCS</span>
                     </p>
                   </div>
                 </div>
 
                 {/* Deterministic Explanation */}
-                <div className="bg-slate-50 border rounded p-4 text-sm space-y-2">
-                  <h3 className="font-semibold text-slate-800 flex items-center gap-2"><Info className="w-4 h-4"/> Investigation Notes</h3>
+                <div className="bg-muted/50 border rounded p-4 text-sm space-y-2">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2"><Info className="w-4 h-4"/> Investigation Notes</h3>
                   {detailData.differencePcs > 0 && (
                     <p className="text-orange-700">Actual reservation exceeds expected reservation by <strong>{detailData.differencePcs} PCS</strong>. This indicates an Orphan Reservation or Drift.</p>
                   )}
                   {detailData.differencePcs < 0 && (
-                    <p className="text-rose-700">Actual reservation is lower than expected by <strong>{Math.abs(detailData.differencePcs)} PCS</strong>. This indicates Under-Reservation.</p>
+                    <p className="text-rose-700 dark:text-rose-400">Actual reservation is lower than expected by <strong>{Math.abs(detailData.differencePcs)} PCS</strong>. This indicates Under-Reservation.</p>
                   )}
                   {detailData.availablePcs < 0 && (
-                    <p className="text-red-700">Physical stock is below actual reserved quantity by <strong>{Math.abs(detailData.availablePcs)} PCS</strong>. This suggests stock was destroyed/adjusted without reservation release.</p>
+                    <p className="text-red-700 dark:text-red-400">Physical stock is below actual reserved quantity by <strong>{Math.abs(detailData.availablePcs)} PCS</strong>. This suggests stock was destroyed/adjusted without reservation release.</p>
                   )}
                   {detailData.statusFlags.includes('LEGACY_UNRESERVED') && (
-                    <p className="text-blue-700">Legacy orders exist but are completely unreserved in this warehouse. This represents older demand that predates the reservation system.</p>
+                    <p className="text-blue-700 dark:text-blue-400">Legacy orders exist but are completely unreserved in this warehouse. This represents older demand that predates the reservation system.</p>
                   )}
                   {detailData.statusFlags.includes('LEGACY_OPEN_ORDER_NO_WAREHOUSE') && (
-                    <p className="text-blue-700">Legacy open sales order exists without a fulfillment warehouse. It is excluded from warehouse-specific reservations.</p>
+                    <p className="text-blue-700 dark:text-blue-400">Legacy open sales order exists without a fulfillment warehouse. It is excluded from warehouse-specific reservations.</p>
                   )}
                   {detailData.statusFlags.includes('MATCH') && (
-                    <p className="text-emerald-700">Everything is perfectly balanced. No anomalies detected.</p>
+                    <p className="text-emerald-700 dark:text-emerald-400">Everything is perfectly balanced. No anomalies detected.</p>
                   )}
                 </div>
 
                 {/* Open Orders Table */}
                 <div>
-                  <h3 className="text-lg font-semibold border-b pb-2 mb-3 text-slate-800">Contributing Sales Orders ({detailData.openOrders.length})</h3>
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-3 text-foreground">Contributing Sales Orders ({detailData.openOrders.length})</h3>
                   <div className="border rounded-md overflow-hidden">
                     <Table>
-                      <TableHeader className="bg-slate-50">
+                      <TableHeader className="bg-muted/50">
                         <TableRow>
                           <TableHead>SO Number</TableHead>
                           <TableHead>Status</TableHead>
@@ -351,10 +351,10 @@ export default function ReservationReconciliationPage() {
 
                 {/* Stock Batches Table */}
                 <div>
-                  <h3 className="text-lg font-semibold border-b pb-2 mb-3 text-slate-800">Physical Stock Batches ({detailData.stockBatches.length})</h3>
+                  <h3 className="text-lg font-semibold border-b pb-2 mb-3 text-foreground">Physical Stock Batches ({detailData.stockBatches.length})</h3>
                   <div className="border rounded-md overflow-hidden">
                     <Table>
-                      <TableHeader className="bg-slate-50">
+                      <TableHeader className="bg-muted/50">
                         <TableRow>
                           <TableHead>Batch</TableHead>
                           <TableHead className="text-right">Current PCS</TableHead>
