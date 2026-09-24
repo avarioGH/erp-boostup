@@ -54,7 +54,7 @@ export default function MassCreateRawLogPage() {
   }
 
   const addRow = () => {
-    setRows([...rows, { id: Date.now().toString() + Math.random(), logNumber: "", length: "", d1: "", d2: "", d3: "", d4: "", gerowong: "" }])
+    setRows([...rows, { id: Date.now().toString() + Math.random(), logNumber: "", length: "", d1: "", d2: "", d3: "", d4: "", gerowong: "", avgDia: "" }])
   }
 
   const removeRow = (index: number) => {
@@ -90,31 +90,34 @@ export default function MassCreateRawLogPage() {
 
   // Live Calculations
   const calculateRow = (row: any) => {
-    const l = parseFloat(row.length) || 0
-    const d1 = parseFloat(row.d1) || 0
-    const d2 = parseFloat(row.d2) || 0
-    const d3 = parseFloat(row.d3) || 0
-    const d4 = parseFloat(row.d4) || 0
-    const g = parseFloat(row.gerowong) || 0
+      const l = parseFloat(row.length) || 0
+      const d1 = parseFloat(row.d1) || 0
+      const d2 = parseFloat(row.d2) || 0
+      const d3 = parseFloat(row.d3) || 0
+      const d4 = parseFloat(row.d4) || 0
+      const manualAvg = parseFloat(row.avgDia) || 0
+      const g = parseFloat(row.gerowong) || 0
 
-    const diams = [d1, d2, d3, d4].filter(d => d > 0)
-    const sumDia = diams.reduce((a, b) => a + b, 0)
-    
-    // Exact standard formula based on backend implementation:
-    const avgDiaStrict = (d1 + d2 + d3 + d4) / 4; 
-    const rndDia = Math.round(avgDiaStrict);
-    
-    const grossVol = l > 0 && rndDia > 0 ? (Math.pow(rndDia, 2) * l * 0.7854) / 10000 : 0
-    const gerowongVol = l > 0 && g > 0 ? (Math.pow(g, 2) * l * 0.7854) / 10000 : 0
-    const netVol = grossVol - gerowongVol
+      let avgDiaStrict = 0
+      if (d1 > 0 || d2 > 0 || d3 > 0 || d4 > 0) {
+        avgDiaStrict = (d1 + d2 + d3 + d4) / 4
+      } else {
+        avgDiaStrict = manualAvg
+      }
 
-    return {
-      avg: avgDiaStrict,
-      gross: grossVol,
-      hollow: gerowongVol,
-      net: netVol > 0 ? netVol : 0
+      const rndDia = Math.round(avgDiaStrict)
+      
+      const grossVol = l > 0 && rndDia > 0 ? (Math.pow(rndDia, 2) * l * 0.7854) / 10000 : 0
+      const gerowongVol = l > 0 && g > 0 ? (Math.pow(g, 2) * l * 0.7854) / 10000 : 0
+      const netVol = grossVol - gerowongVol
+
+      return {
+        avg: avgDiaStrict,
+        gross: grossVol,
+        hollow: gerowongVol,
+        net: netVol > 0 ? netVol : 0
+      }
     }
-  }
 
   const handleSubmit = async () => {
     if (!masterForm.locationId) {
@@ -128,10 +131,10 @@ export default function MassCreateRawLogPage() {
     }
 
     // Filter out completely empty rows
-    const validRows = rows.filter(r => r.logNumber && r.length && r.d1)
+    const validRows = rows.filter(r => r.logNumber && r.length && (r.d1 || r.avgDia))
     
     if (validRows.length === 0) {
-      return toast({ title: "Validasi Gagal", description: "Minimal isi 1 baris log dengan lengkap (Log No, Length, D1)", variant: "destructive" })
+      return toast({ title: "Validasi Gagal", description: "Minimal isi 1 baris log dengan lengkap (Log No, Length, D1 atau ÃƒËœ Avg)", variant: "destructive" })
     }
 
     setSubmitting(true)
@@ -144,10 +147,10 @@ export default function MassCreateRawLogPage() {
         locationId: masterForm.locationId,
         receivingDate: masterForm.receivingDate,
         originalLength: parseFloat(r.length),
-        diameter1: parseFloat(r.d1) || 0,
-        diameter2: parseFloat(r.d2) || 0,
-        diameter3: parseFloat(r.d3) || 0,
-        diameter4: parseFloat(r.d4) || 0,
+        diameter1: parseFloat(r.d1) || parseFloat(r.avgDia) || 0,
+        diameter2: parseFloat(r.d2) || parseFloat(r.avgDia) || 0,
+        diameter3: parseFloat(r.d3) || parseFloat(r.avgDia) || 0,
+        diameter4: parseFloat(r.d4) || parseFloat(r.avgDia) || 0,
         gerowong: parseFloat(r.gerowong) || 0,
       }))
 
@@ -248,7 +251,7 @@ export default function MassCreateRawLogPage() {
                 <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[80px]">D3 (cm)</th>
                 <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[80px]">D4 (cm)</th>
                 <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[100px]">Gerowong</th>
-                <th className="p-3 text-right font-semibold text-muted-foreground font-semibold bg-muted/50">&Oslash; Avg</th>
+                <th className="p-3 text-right font-semibold text-muted-foreground font-semibold bg-muted/50 w-[100px]">&Oslash; Avg</th>
                 <th className="p-3 text-right font-semibold text-muted-foreground font-semibold bg-muted/50">Gross</th>
                 <th className="p-3 text-right font-semibold text-muted-foreground font-semibold bg-muted/50">Net M&sup3;</th>
                 <th className="p-3 text-center font-semibold text-muted-foreground font-semibold w-[50px]"></th>
@@ -268,7 +271,7 @@ export default function MassCreateRawLogPage() {
                     <td className="p-2 px-3"><Input type="number" className="h-8 rounded-sm bg-background" value={row.d4} onChange={e => handleRowChange(idx, 'd4', e.target.value)} onKeyDown={e => handleKeyDown(e, idx, 5)} /></td>
                     <td className="p-2 px-3"><Input type="number" className="h-8 rounded-sm bg-background" value={row.gerowong} onChange={e => handleRowChange(idx, 'gerowong', e.target.value)} onKeyDown={e => handleKeyDown(e, idx, 6)} /></td>
                     
-                    <td className="p-2 px-3 text-right font-medium text-muted-foreground bg-muted/10">{calc.avg.toFixed(1)}</td>
+                    <td className="p-2 px-3"><Input type="number" step="0.1" className="h-8 rounded-sm bg-muted/30 text-right font-bold text-foreground" value={row.avgDia !== undefined && row.avgDia !== "" ? row.avgDia : (calc.avg > 0 ? calc.avg.toFixed(1) : "")} onChange={e => handleRowChange(idx, "avgDia", e.target.value)} onKeyDown={e => handleKeyDown(e, idx, 7)} placeholder={calc.avg > 0 ? calc.avg.toFixed(1) : ""} /></td>
                     <td className="p-2 px-3 text-right font-medium text-muted-foreground bg-muted/10">{calc.gross.toFixed(3)}</td>
                     <td className="p-2 px-3 text-right font-bold text-primary bg-muted/10">{calc.net.toFixed(3)}</td>
                     <td className="p-2 px-3 text-center">
