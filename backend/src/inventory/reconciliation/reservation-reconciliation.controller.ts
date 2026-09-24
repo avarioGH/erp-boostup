@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
 import { ReservationReconciliationService } from './reservation-reconciliation.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { Permissions } from '../../auth/permissions.decorator';
@@ -11,23 +11,26 @@ export class ReservationReconciliationController {
   @Get()
   @Permissions('read:inventory')
   async reconcile(
-    @Query('companyId') companyId?: string,
+    @Req() req: any,
     @Query('locationId') locationId?: string,
     @Query('timberVariantId') timberVariantId?: string,
     @Query('status') status?: string
   ) {
+    const companyId = req.user?.company_id || req.user?.companyId;
+    if (!companyId) throw new Error('Company context is missing');
     const results = await this.service.reconcile({ companyId, locationId, timberVariantId, status });
-    // For summary, we can optionally strip heavy arrays to save bandwidth, but returning them is fine for now
     return { data: results, count: results.length };
   }
 
   @Get('detail')
   @Permissions('read:inventory')
   async getDetail(
-    @Query('companyId') companyId: string,
+    @Req() req: any,
     @Query('locationId') locationId: string,
     @Query('timberVariantId') timberVariantId: string
   ) {
+    const companyId = req.user?.company_id || req.user?.companyId;
+    if (!companyId) throw new Error('Company context is missing');
     // locationId can be 'NULL' string in our filter logic for legacy orders, but let's handle the query
     const results = await this.service.reconcile({ 
       companyId, 

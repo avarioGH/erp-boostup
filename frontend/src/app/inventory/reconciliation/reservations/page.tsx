@@ -40,6 +40,7 @@ export default function ReservationReconciliationPage() {
   const [loading, setLoading] = useState(true);
   
   const [filterLocation, setFilterLocation] = useState('');
+  const [filterVariant, setFilterVariant] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   
   const [selectedRow, setSelectedRow] = useState<ReconciliationRow | null>(null);
@@ -51,6 +52,7 @@ export default function ReservationReconciliationPage() {
     try {
       const params = new URLSearchParams();
       if (filterLocation) params.append('locationId', filterLocation);
+      if (filterVariant) params.append('timberVariantId', filterVariant);
       if (filterStatus && filterStatus !== 'ALL') params.append('status', filterStatus);
       
       const res = await api.get('/inventory/reservation-reconciliation?' + params.toString());
@@ -64,14 +66,14 @@ export default function ReservationReconciliationPage() {
 
   useEffect(() => {
     fetchSummary();
-  }, [filterLocation, filterStatus]);
+  }, [filterLocation, filterStatus, filterVariant]);
 
   const openDetail = async (row: ReconciliationRow) => {
     setSelectedRow(row);
     setDetailLoading(true);
     setDetailData(null);
     try {
-      const res = await api.get(`/inventory/reservation-reconciliation/detail?companyId=${row.companyId}&locationId=${row.locationId || 'NULL'}&timberVariantId=${row.timberVariantId}`);
+      const res = await api.get(`/inventory/reservation-reconciliation/detail?locationId=${row.locationId || 'NULL'}&timberVariantId=${row.timberVariantId}`);
       setDetailData(res.data.data);
     } catch (e) {
       console.error(e);
@@ -84,7 +86,7 @@ export default function ReservationReconciliationPage() {
     if (flag === 'HEALTHY' || flag === 'MATCH') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
     if (flag === 'NEGATIVE_AVAILABLE') return 'bg-red-100 text-red-800 border-red-200';
     if (flag === 'OVER_RESERVED' || flag === 'UNDER_RESERVED' || flag === 'RESERVATION_DRIFT') return 'bg-orange-100 text-orange-800 border-orange-200';
-    if (flag === 'LEGACY_OPEN_ORDER_NO_WAREHOUSE') return 'bg-blue-100 text-blue-800 border-blue-200';
+    if (flag === 'LEGACY_OPEN_ORDER_NO_WAREHOUSE' || flag === 'LEGACY_UNRESERVED') return 'bg-blue-100 text-blue-800 border-blue-200';
     if (flag === 'ORPHAN_RESERVATION') return 'bg-purple-100 text-purple-800 border-purple-200';
     return 'bg-slate-100 text-slate-800 border-slate-200';
   };
@@ -92,7 +94,7 @@ export default function ReservationReconciliationPage() {
   const getStatusIcon = (flag: string) => {
     if (flag === 'HEALTHY' || flag === 'MATCH') return <CheckCircle2 className="w-3 h-3 mr-1 inline" />;
     if (flag === 'NEGATIVE_AVAILABLE') return <ShieldAlert className="w-3 h-3 mr-1 inline" />;
-    if (flag === 'LEGACY_OPEN_ORDER_NO_WAREHOUSE') return <Info className="w-3 h-3 mr-1 inline" />;
+    if (flag === 'LEGACY_OPEN_ORDER_NO_WAREHOUSE' || flag === 'LEGACY_UNRESERVED') return <Info className="w-3 h-3 mr-1 inline" />;
     return <AlertTriangle className="w-3 h-3 mr-1 inline" />;
   };
 
@@ -159,6 +161,10 @@ export default function ReservationReconciliationPage() {
           <Input placeholder="Filter by Warehouse ID..." value={filterLocation} onChange={e => setFilterLocation(e.target.value)} />
         </div>
         <div className="w-[250px]">
+          <label className="text-xs font-semibold mb-1 block">Variant / SKU</label>
+          <Input placeholder="Filter by Variant ID..." value={filterVariant} onChange={e => setFilterVariant(e.target.value)} />
+        </div>
+        <div className="w-[250px]">
           <label className="text-xs font-semibold mb-1 block">Status</label>
           <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val || 'ALL')}>
             <SelectTrigger><SelectValue placeholder="All Status" /></SelectTrigger>
@@ -170,6 +176,7 @@ export default function ReservationReconciliationPage() {
               <SelectItem value="NEGATIVE_AVAILABLE">NEGATIVE_AVAILABLE</SelectItem>
               <SelectItem value="RESERVATION_DRIFT">RESERVATION_DRIFT</SelectItem>
               <SelectItem value="LEGACY_OPEN_ORDER_NO_WAREHOUSE">LEGACY_OPEN_ORDER_NO_WAREHOUSE</SelectItem>
+              <SelectItem value="LEGACY_UNRESERVED">LEGACY_UNRESERVED</SelectItem>
               <SelectItem value="ORPHAN_RESERVATION">ORPHAN_RESERVATION</SelectItem>
               <SelectItem value="INVALID_DRAFT_RESERVATION">INVALID_DRAFT_RESERVATION</SelectItem>
             </SelectContent>
@@ -299,6 +306,9 @@ export default function ReservationReconciliationPage() {
                   )}
                   {detailData.availablePcs < 0 && (
                     <p className="text-red-700">Physical stock is below actual reserved quantity by <strong>{Math.abs(detailData.availablePcs)} PCS</strong>. This suggests stock was destroyed/adjusted without reservation release.</p>
+                  )}
+                  {detailData.statusFlags.includes('LEGACY_UNRESERVED') && (
+                    <p className="text-blue-700">Legacy orders exist but are completely unreserved in this warehouse. This represents older demand that predates the reservation system.</p>
                   )}
                   {detailData.statusFlags.includes('LEGACY_OPEN_ORDER_NO_WAREHOUSE') && (
                     <p className="text-blue-700">Legacy open sales order exists without a fulfillment warehouse. It is excluded from warehouse-specific reservations.</p>

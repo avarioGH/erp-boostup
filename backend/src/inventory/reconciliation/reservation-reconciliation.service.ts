@@ -146,6 +146,7 @@ export class ReservationReconciliationService {
       const reservationM3Delta = actualReservedM3 - expectedReservedM3;
 
       const flags: string[] = [];
+      const anomalies: string[] = [];
 
       let hasDraft = false;
       let hasCancelled = false;
@@ -164,35 +165,39 @@ export class ReservationReconciliationService {
 
       if (reservationPcsDelta > 0 || reservationM3Delta > EPSILON) {
         if (expectedReservedPcs === 0 && expectedReservedM3 === 0) {
-          flags.push('ORPHAN_RESERVATION');
+          anomalies.push('ORPHAN_RESERVATION');
         } else {
-          flags.push('OVER_RESERVED');
+          anomalies.push('OVER_RESERVED');
         }
-        flags.push('RESERVATION_DRIFT');
+        anomalies.push('RESERVATION_DRIFT');
       }
 
       if (reservationPcsDelta < 0 || reservationM3Delta < -EPSILON) {
         if (actualReservedPcs === 0 && actualReservedM3 === 0 && expectedReservedPcs > 0) {
-          flags.push('LEGACY_UNRESERVED');
+          anomalies.push('LEGACY_UNRESERVED');
         } else {
-          flags.push('UNDER_RESERVED');
+          anomalies.push('UNDER_RESERVED');
         }
-        flags.push('RESERVATION_DRIFT');
+        anomalies.push('RESERVATION_DRIFT');
       }
 
       if (availablePcs < 0 || availableM3 < -EPSILON) {
-        flags.push('NEGATIVE_AVAILABLE');
+        anomalies.push('NEGATIVE_AVAILABLE');
       }
 
       if (locationId === null && expectedReservedPcs > 0) {
-        flags.push('LEGACY_OPEN_ORDER_NO_WAREHOUSE');
+        anomalies.push('LEGACY_OPEN_ORDER_NO_WAREHOUSE');
       }
 
       if (hasDraft && actualReservedPcs > 0) {
-        flags.push('INVALID_DRAFT_RESERVATION');
+        anomalies.push('INVALID_DRAFT_RESERVATION');
       }
 
-      if (flags.length === 0) flags.push('HEALTHY');
+      flags.push(...anomalies);
+
+      if (anomalies.length === 0) {
+        flags.push('HEALTHY');
+      }
 
       if (filters?.status && !flags.includes(filters.status)) {
         continue;
