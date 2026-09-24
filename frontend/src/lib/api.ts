@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.erp.boostup.id';
 
@@ -33,7 +33,7 @@ export default api;
 export const DashboardAPI: any = {
   getKPIs: async (timeRange: string = 'thisMonth', warehouseId: string = 'all') =>
     (await api.get('/analytics/dashboard', { params: { timeRange, warehouseId } })).data,
-  getSummary: async () => (await api.get('/dashboard/summary')).data,
+  getSummary: async () => (await api.get('/inventory/dashboard/summary')).data,
 };
 
 export const ExportAPI: any = {
@@ -265,35 +265,35 @@ export const ProductionAPI: any = {
 };
 
 export const MasterDataAPI: any = {
-  getSpecies: async () => (await api.get('/master-data/species')).data,
-  createSpecies: async (data: any) => (await api.post('/master-data/species', data)).data,
-  updateSpecies: async (id: string, data: any) => (await api.put('/master-data/species/' + id, data)).data,
-  deleteSpecies: async (id: string) => (await api.delete('/master-data/species/' + id)).data,
+  getSpecies: async () => (await api.get('/inventory/master-data/timber-species')).data,
+  createSpecies: async (data: any) => (await api.post('/inventory/master-data/timber-species', data)).data,
+  updateSpecies: async (id: string, data: any) => (await api.put('/inventory/master-data/timber-species/' + id, data)).data,
+  deleteSpecies: async (id: string) => (await api.delete('/inventory/master-data/timber-species/' + id)).data,
 
-  getGrades: async () => (await api.get('/master-data/grades')).data,
-  createGrade: async (data: any) => (await api.post('/master-data/grades', data)).data,
-  updateGrade: async (id: string, data: any) => (await api.put('/master-data/grades/' + id, data)).data,
-  deleteGrade: async (id: string) => (await api.delete('/master-data/grades/' + id)).data,
+  getGrades: async () => (await api.get('/inventory/master-data/timber-grade')).data,
+  createGrade: async (data: any) => (await api.post('/inventory/master-data/timber-grade', data)).data,
+  updateGrade: async (id: string, data: any) => (await api.put('/inventory/master-data/timber-grade/' + id, data)).data,
+  deleteGrade: async (id: string) => (await api.delete('/inventory/master-data/timber-grade/' + id)).data,
 
-  getSources: async () => (await api.get('/master-data/sources')).data,
-  createSource: async (data: any) => (await api.post('/master-data/sources', data)).data,
-  updateSource: async (id: string, data: any) => (await api.put('/master-data/sources/' + id, data)).data,
-  deleteSource: async (id: string) => (await api.delete('/master-data/sources/' + id)).data,
+  getSources: async () => (await api.get('/inventory/master-data/timber-source')).data,
+  createSource: async (data: any) => (await api.post('/inventory/master-data/timber-source', data)).data,
+  updateSource: async (id: string, data: any) => (await api.put('/inventory/master-data/timber-source/' + id, data)).data,
+  deleteSource: async (id: string) => (await api.delete('/inventory/master-data/timber-source/' + id)).data,
 
-  getLocations: async () => (await api.get('/master-data/locations')).data,
-  createLocation: async (data: any) => (await api.post('/master-data/locations', data)).data,
-  updateLocation: async (id: string, data: any) => (await api.put('/master-data/locations/' + id, data)).data,
-  deleteLocation: async (id: string) => (await api.delete('/master-data/locations/' + id)).data,
+  getLocations: async () => (await api.get('/inventory/master-data/location')).data,
+  createLocation: async (data: any) => (await api.post('/inventory/master-data/location', data)).data,
+  updateLocation: async (id: string, data: any) => (await api.put('/inventory/master-data/location/' + id, data)).data,
+  deleteLocation: async (id: string) => (await api.delete('/inventory/master-data/location/' + id)).data,
 
-  getVehicles: async () => (await api.get('/master-data/vehicles')).data,
-  createVehicle: async (data: any) => (await api.post('/master-data/vehicles', data)).data,
-  updateVehicle: async (id: string, data: any) => (await api.put('/master-data/vehicles/' + id, data)).data,
-  deleteVehicle: async (id: string) => (await api.delete('/master-data/vehicles/' + id)).data,
+  getVehicles: async () => (await api.get('/inventory/master-data/vehicle')).data,
+  createVehicle: async (data: any) => (await api.post('/inventory/master-data/vehicle', data)).data,
+  updateVehicle: async (id: string, data: any) => (await api.put('/inventory/master-data/vehicle/' + id, data)).data,
+  deleteVehicle: async (id: string) => (await api.delete('/inventory/master-data/vehicle/' + id)).data,
 
-  getDrivers: async () => (await api.get('/master-data/drivers')).data,
-  createDriver: async (data: any) => (await api.post('/master-data/drivers', data)).data,
-  updateDriver: async (id: string, data: any) => (await api.put('/master-data/drivers/' + id, data)).data,
-  deleteDriver: async (id: string) => (await api.delete('/master-data/drivers/' + id)).data,
+  getDrivers: async () => (await api.get('/inventory/master-data/driver')).data,
+  createDriver: async (data: any) => (await api.post('/inventory/master-data/driver', data)).data,
+  updateDriver: async (id: string, data: any) => (await api.put('/inventory/master-data/driver/' + id, data)).data,
+  deleteDriver: async (id: string) => (await api.delete('/inventory/master-data/driver/' + id)).data,
 };
 
 
@@ -307,11 +307,11 @@ export const PurchaseAPI: any = {
 };
 
 export const ShipmentAPI: any = {
-  getShipments: async (params?: any) => (await api.get('/inventory/shipments', { params })).data,
-  getShipment: async (id: string) => (await api.get('/inventory/shipments/' + id)).data,
-  createShipment: async (data: any) => (await api.post('/inventory/shipments', data)).data,
-  confirmShipment: async (id: string) => (await api.post('/inventory/shipments/' + id + '/confirm')).data,
-  cancelShipment: async (id: string) => (await api.post('/inventory/shipments/' + id + '/cancel')).data,
+  getShipments: async (params?: any) => (await api.get('/inventory/timber-shipment', { params })).data,
+  getShipment: async (id: string) => (await api.get('/inventory/timber-shipment/' + id)).data,
+  createShipment: async (data: any) => (await api.post('/inventory/timber-shipment', data)).data,
+  confirmShipment: async (id: string) => (await api.post('/inventory/timber-shipment/' + id + '/confirm')).data,
+  cancelShipment: async (id: string) => (await api.post('/inventory/timber-shipment/' + id + '/cancel')).data,
 };
 
 export const OpnameAPI: any = {
