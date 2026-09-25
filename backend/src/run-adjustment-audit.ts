@@ -1,5 +1,4 @@
-﻿import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+﻿import { PrismaService } from './prisma/prisma.service';
 import { AdjustmentAuditService } from './inventory/reconciliation/adjustment-audit.service';
 import * as fs from 'fs';
 
@@ -12,15 +11,18 @@ async function bootstrap() {
   }
 
   console.log('==================================================');
-  console.log('PHASE 45.8A - HISTORICAL ADJUSTMENT CANCELLATION AUDIT');
+  console.log('PHASE 45.8F - STRICT READ-ONLY ADJUSTMENT AUDIT');
   console.log('==================================================');
-  console.log('Initializing Application Context (Read-Only Mode)...');
+  console.log('Initializing Standalone Read-Only Audit Runtime...');
   
-  const app = await NestFactory.createApplicationContext(AppModule, { logger: ['error', 'warn'] });
+  // Directly instantiate Prisma without NestJS Application Context
+  const prisma = new PrismaService();
+  await prisma.$connect();
+  
+  // Directly instantiate the Audit Service
+  const auditService = new AdjustmentAuditService(prisma);
   
   try {
-    const auditService = app.get(AdjustmentAuditService);
-    
     console.log(`Executing forensic audit for Company ID: ${companyId}`);
     console.log('Fetching historical cancellations and movements (Safe Read-Only)...');
     
@@ -46,7 +48,7 @@ async function bootstrap() {
     console.error('CRITICAL ERROR during execution:');
     console.error(err);
   } finally {
-    await app.close();
+    await prisma.$disconnect();
   }
 }
 
