@@ -144,11 +144,12 @@ export class StockAdjustmentService {
               tx as any,
               adjustment.locationId,
               item.timberVariantId,
-              'ADJ', // Technically it's an OUT reversal of an IN adjustment, but keeping it ADJ out is fine, or OUT REVERSAL
-              'REVERSAL',
+              'ADJ', // Technically it's an OUT reversal of an IN adjustment
+              'ADJUSTMENT_OUT',
               adjustment.id,
               item.differencePcs,
-              item.differenceM3
+              item.differenceM3,
+                item.batch
             );
           } else if (item.differencePcs < 0) {
             await this.ledgerService.createMovement(
@@ -156,10 +157,11 @@ export class StockAdjustmentService {
               adjustment.locationId,
               item.timberVariantId,
               'ADJ', // IN reversal of an OUT adjustment
-              'REVERSAL',
+              'ADJUSTMENT_IN',
               adjustment.id,
               Math.abs(item.differencePcs),
-              Math.abs(item.differenceM3)
+              Math.abs(item.differenceM3),
+                item.batch
             );
           }
         }

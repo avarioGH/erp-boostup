@@ -1,3 +1,7 @@
+import { BatchAuditService } from './reconciliation/batch-audit.service';
+import { BatchAuditController } from './reconciliation/batch-audit.controller';
+import { AdjustmentAuditService } from './reconciliation/adjustment-audit.service';
+import { AdjustmentAuditController } from './reconciliation/adjustment-audit.controller';
 import { Module } from '@nestjs/common';
 import { InventoryController } from './inventory.controller';
 import { InventoryService } from './inventory.service';
@@ -27,6 +31,8 @@ import { ReservationReconciliationController } from './reconciliation/reservatio
 
 @Module({
   controllers: [
+    BatchAuditController,
+    AdjustmentAuditController,
     InventoryController, 
     RawLogController, 
     TrimmedLogController,
@@ -40,6 +46,8 @@ import { ReservationReconciliationController } from './reconciliation/reservatio
     ReservationReconciliationController
   ],
   providers: [
+    BatchAuditService,
+    AdjustmentAuditService,
     InventoryService, 
     RawLogService, 
     TrimmedLogService,
@@ -56,6 +64,8 @@ import { ReservationReconciliationController } from './reconciliation/reservatio
     ReservationReconciliationService
   ],
   exports: [
+    BatchAuditService,
+    AdjustmentAuditService,
     InventoryService, 
     RawLogService, 
     TrimmedLogService,
