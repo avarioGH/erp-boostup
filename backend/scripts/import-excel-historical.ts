@@ -4,67 +4,50 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Menjalankan Historical Migration (Phase 53 Approved Blueprint)...');
 
-  // 1. Dapatkan Company Utama
   let company = await prisma.company.findFirst({ where: { name: 'Boostup Kayu' }});
-  if (!company) {
-    company = await prisma.company.findFirst();
-  }
-  if (!company) {
-    console.error('Company tidak ditemukan!');
-    return;
-  }
+  if (!company) company = await prisma.company.findFirst();
+  if (!company) { console.error('Company tidak ditemukan!'); return; }
   const company_id = company.id;
 
-  // 2. Siapkan Master Data Dasar
   let warehouse = await prisma.warehouse.findFirst({ where: { company_id } });
-  if (!warehouse) {
-    warehouse = await prisma.warehouse.create({
-      data: { company_id, code: 'GDNG01', name: 'Gudang Utama' }
-    });
-  }
+  if (!warehouse) warehouse = await prisma.warehouse.create({ data: { company_id, code: 'GDNG01', name: 'Gudang Utama' } });
 
   let supplier = await prisma.timberSource.findFirst({ where: { company_id } });
-  if (!supplier) {
-    supplier = await prisma.timberSource.create({
-      data: { company_id, code: 'SUP01', name: 'Supplier Kalteng', type: 'SUPPLIER' }
-    });
-  }
+  if (!supplier) supplier = await prisma.timberSource.create({ data: { company_id, code: 'SUP01', name: 'Supplier Kalteng', type: 'SUPPLIER' } });
 
   let species = await prisma.timberSpecies.findFirst({ where: { company_id } });
-  if (!species) {
-    species = await prisma.timberSpecies.create({
-      data: { company_id, code: 'MRT', name: 'Meranti' }
-    });
-  }
+  if (!species) species = await prisma.timberSpecies.create({ data: { company_id, code: 'MRT', name: 'Meranti' } });
 
   let grade = await prisma.timberGrade.findFirst({ where: { company_id } });
-  if (!grade) {
-    grade = await prisma.timberGrade.create({
-      data: { company_id, code: 'A', name: 'Grade A' }
-    });
-  }
+  if (!grade) grade = await prisma.timberGrade.create({ data: { company_id, code: 'A', name: 'Grade A' } });
 
-  // Cari atau buat variant
+  let category = await prisma.category.findFirst({ where: { company_id } });
+  if (!category) category = await prisma.category.create({ data: { company_id, code: 'TIMBER', name: 'Timber' } });
+
+  let product = await prisma.product.findFirst({ where: { company_id } });
+  if (!product) product = await prisma.product.create({ data: { company_id, category_id: category.id, code: 'PRD-TIMBER', name: 'Sawn Timber' } });
+
   let variant = await prisma.timberVariant.findFirst({ where: { company_id } });
   if (!variant) {
     variant = await prisma.timberVariant.create({
       data: {
         company_id,
+        productId: product.id,
         speciesId: species.id,
         gradeId: grade.id,
+        species: 'Meranti',
+        grade: 'A',
         thickness: 2,
         width: 20,
         length: 400,
         volumePerPiece: (2 * 20 * 400) / 1000000000,
-        name: 'Meranti Grade A 2x20x400'
+        sku: 'MRT-A-2-20-400'
       }
     });
   }
 
-  console.log('? Master data siap.');
+  console.log('Master data siap.');
 
-  // 3. Masukkan Data Beli Masak (Purchase)
-  console.log('Menginjeksi Data Purchase Historis...');
   const purchase = await prisma.timberPurchase.create({
     data: {
       company_id,
@@ -81,19 +64,15 @@ async function main() {
             timberVariantId: variant.id,
             quantityPcs: 150,
             volumeM3: 150 * variant.volumePerPiece,
-            unitPrice: 1000000,
             batch: 'UNKNOWN',
             notes: 'APM'
           }
         ]
       }
-    },
-    include: { items: true }
+    }
   });
-  console.log(? Berhasil memasukkan dokumen Purchase: );
+  console.log('Berhasil memasukkan dokumen Purchase:', purchase.purchaseNumber);
 
-  // 4. Masukkan Log Purchase
-  console.log('Menginjeksi Data Log Purchase...');
   await prisma.timberPurchaseLogItem.create({
     data: {
       timberPurchaseId: purchase.id,
@@ -105,50 +84,44 @@ async function main() {
       purchaseDiameter2: 42,
       purchaseDiameter3: 40,
       purchaseDiameter4: 42,
-      purchaseVolume: 0.528, // Contoh hitungan M3
+      purchaseVolume: 0.528,
       status: 'RECEIVED'
     }
   });
 
-  console.log('Membangun Stock Movement untuk Sawn Timber Purchase...');
-  // Karena script ini bypass service, kita perlu manual stock movement agar tidak kosong
-  const existingStock = await prisma.timberStock.findFirst({
-    where: { company_id, warehouseId: warehouse.id, timberVariantId: variant.id, batch: 'UNKNOWN' }
+  let existingStock = await prisma.timberStock.findFirst({
+    where: { locationId: warehouse.id, timberVariantId: variant.id, batch: 'UNKNOWN' }
   });
 
   if (!existingStock) {
-    await prisma.timberStock.create({
+    existingStock = await prisma.timberStock.create({
       data: {
-        company_id,
-        warehouseId: warehouse.id,
+        locationId: warehouse.id,
         timberVariantId: variant.id,
         batch: 'UNKNOWN',
         currentPcs: 150,
-        currentM3: 150 * variant.volumePerPiece,
+        currentVolumeM3: 150 * variant.volumePerPiece,
       }
     });
   } else {
-    await prisma.timberStock.update({
+    existingStock = await prisma.timberStock.update({
       where: { id: existingStock.id },
       data: {
         currentPcs: existingStock.currentPcs + 150,
-        currentM3: existingStock.currentM3 + (150 * variant.volumePerPiece)
+        currentVolumeM3: existingStock.currentVolumeM3 + (150 * variant.volumePerPiece)
       }
     });
   }
 
   await prisma.timberStockMovement.create({
     data: {
-      company_id,
-      warehouseId: warehouse.id,
-      timberVariantId: variant.id,
+      timberStockId: existingStock.id,
       batch: 'UNKNOWN',
       referenceType: 'TIMBER_PURCHASE',
       referenceId: purchase.id,
-      movementType: 'IN',
+      type: 'IN',
       quantityPcs: 150,
-      volumeM3: 150 * variant.volumePerPiece,
-      notes: 'Historical Phase 53 Import'
+      volumeM3: 150 * variant.volumePerPiece
     }
   });
 
@@ -158,10 +131,4 @@ async function main() {
   console.log('==============================================');
 }
 
-main()
-  .catch(e => {
-    console.error('Gagal migrasi:', e);
-  })
-  .finally(async () => {
-    await prisma.();
-  });
+main().catch(e => console.error(e)).finally(async () => { await prisma.$disconnect(); });
