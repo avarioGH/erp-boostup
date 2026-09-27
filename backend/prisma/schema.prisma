@@ -110,6 +110,7 @@ model Company {
   timberShipments TimberShipment[]
   timberStockOpnames TimberStockOpname[]
   timberStockReservations TimberStockReservation[]
+  timberVariants TimberVariant[]
 }
 
 model CompanySetting {
@@ -2755,6 +2756,8 @@ model InputLog {
 model TimberVariant {
   sawmillOutputItems SawmillOutputItem[]
   id              String                   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id      String                   @db.ObjectId
+  company         Company                  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   productId       String                   @db.ObjectId
   product         Product                  @relation(fields: [productId], references: [id])
   grade           String
@@ -2785,6 +2788,7 @@ model TimberVariant {
   timberShipmentItems TimberShipmentItem[]
   timberStockOpnameItems TimberStockOpnameItem[]
   timberStockReservations TimberStockReservation[]
+  @@unique([company_id, sku])
 }
 
 model InputLogItem {
@@ -3059,6 +3063,7 @@ model TimberSalesOrderItem {
   updatedAt DateTime @updatedAt
 
   deliveryItems TimberDeliveryNoteItem[]
+  timberShipmentItems TimberShipmentItem[]
 }
 
 model TimberDeliveryNote {
@@ -3358,6 +3363,13 @@ model TimberPurchaseItem {
   
   quantityPcs      Int
   volumeM3         Float
+
+  purchaseThickness Int?
+  purchaseWidth     Int?
+  purchaseLength    Int?
+  unitPrice         Float?
+  batch             String?
+  notes             String?
 }
 
 model TimberPurchaseLogItem {
@@ -3382,6 +3394,7 @@ model TimberPurchaseLogItem {
   
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  notes           String?
 }
 
 model TimberShipment {
@@ -3432,6 +3445,8 @@ model TimberShipmentItem {
   
   quantityPcs      Int
   volumeM3         Float
+  salesOrderItemId String?                @db.ObjectId
+  salesOrderItem   TimberSalesOrderItem?  @relation(fields: [salesOrderItemId], references: [id])
 }
 
 
@@ -3482,3 +3497,4 @@ model TimberStockOpnameItem {
   
   notes               String?
 }
+
