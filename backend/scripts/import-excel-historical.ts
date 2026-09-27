@@ -2,12 +2,23 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Menjalankan Historical Migration (Phase 53 Approved Blueprint)...');
+  console.log('Menjalankan Historical Migration...');
 
-  let company = await prisma.company.findFirst({ where: { name: 'Boostup Kayu' }});
-  if (!company) company = await prisma.company.findFirst();
+  // Cari company yang mengandung kata "kayu" secara case-insensitive
+  let company = await prisma.company.findFirst({ 
+    where: { 
+      name: { contains: 'kayu', mode: 'insensitive' } 
+    }
+  });
+
+  if (!company) { 
+    console.error('Company dengan nama mengandung "kayu" tidak ditemukan! Data mungkin masuk ke tenant yang salah sebelumnya.'); 
+    company = await prisma.company.findFirst();
+  }
+  
   if (!company) { console.error('Company tidak ditemukan!'); return; }
   const company_id = company.id;
+  console.log('Menggunakan Company:', company.name, '(', company_id, ')');
 
   let warehouse = await prisma.warehouse.findFirst({ where: { company_id } });
   if (!warehouse) warehouse = await prisma.warehouse.create({ data: { company_id, code: 'GDNG01', name: 'Gudang Utama' } });
@@ -49,12 +60,14 @@ async function main() {
     });
   }
 
-  console.log('Master data siap.');
+  // Buat random suffix agar purchase number unik
+  const suffix = Math.floor(Math.random() * 10000);
+  const pNumber = `PO-HIST-${suffix}`;
 
   const purchase = await prisma.timberPurchase.create({
     data: {
       company_id,
-      purchaseNumber: 'PO-HIST-001',
+      purchaseNumber: pNumber,
       sourceId: supplier.id,
       warehouseId: warehouse.id,
       status: 'CONFIRMED',
@@ -79,7 +92,7 @@ async function main() {
   await prisma.timberPurchaseLogItem.create({
     data: {
       timberPurchaseId: purchase.id,
-      logNumber: 'LOG-HIST-001',
+      logNumber: `LOG-HIST-${suffix}`,
       species: 'Meranti',
       speciesId: species.id,
       purchaseLength: 400,
@@ -129,7 +142,7 @@ async function main() {
   });
 
   console.log('==============================================');
-  console.log('MIGRATION SEED BERHASIL!');
+  console.log('MIGRATION SEED BERHASIL KE AKUN KAYU!');
   console.log('Silakan refresh UI aplikasi Anda sekarang.');
   console.log('==============================================');
 }
