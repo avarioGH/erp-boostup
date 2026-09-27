@@ -243,6 +243,16 @@ export function AppSidebar() {
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
  {items.filter(item => {
+ const isKayu = user?.name?.toLowerCase().includes('kayu') || user?.company?.name?.toLowerCase().includes('kayu') || user?.email?.toLowerCase().includes('kayu');
+ 
+ if (isKayu) {
+   const allowedForKayu = ['inventory', 'production', 'dashboard', 'settings'];
+   if (item.id && !allowedForKayu.includes(item.id)) return false;
+ } else {
+   const hiddenForIkan = ['inventory', 'production'];
+   if (item.id && hiddenForIkan.includes(item.id)) return false;
+ }
+
  if (!item.id || user?.role === 'Owner') return true;
  return user?.accessible_modules?.includes(item.id);
  }).map((item) => {
@@ -344,6 +354,7 @@ export function AppSidebar() {
  </Sidebar>
  )
 }
+
 
 
 
