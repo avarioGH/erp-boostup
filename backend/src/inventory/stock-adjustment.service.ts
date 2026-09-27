@@ -11,9 +11,9 @@ export class StockAdjustmentService {
     private audit: AuditService
   ) {}
 
-  async listAdjustments(params: { skip?: number; take?: number; search?: string; status?: string }) {
-    const { skip = 0, take = 50, search, status } = params;
-    const where: any = {};
+  async listAdjustments(params: { companyId: string; skip?: number; take?: number; search?: string; status?: string }) {
+    const { skip = 0, take = 50, search, status, companyId } = params;
+    const where: any = { location: { company_id: companyId } };
     if (search) where.adjustmentNumber = { contains: search, mode: 'insensitive' };
     if (status) where.status = status;
 
@@ -28,9 +28,9 @@ export class StockAdjustmentService {
     return { items, total, skip: Number(skip), take: Number(take) };
   }
 
-  async getAdjustment(id: string) {
+  async getAdjustment(id: string, companyId: string) {
     const t = await this.prisma.stockAdjustment.findUnique({
-      where: { id },
+      where: { id, location: { company_id: companyId } },
       include: { location: true, items: { include: { timberVariant: true } } }
     });
     if (!t) throw new NotFoundException('Adjustment not found');
@@ -84,7 +84,7 @@ export class StockAdjustmentService {
     });
   }
 
-  async postAdjustment(id: string) {
+  async postAdjustment(id: string, companyId?: string) {
     return this.prisma.$transaction(async (tx) => {
       const adjustment = await tx.stockAdjustment.findUnique({
         where: { id },
@@ -128,7 +128,7 @@ export class StockAdjustmentService {
     });
   }
 
-  async cancelAdjustment(id: string) {
+  async cancelAdjustment(id: string, companyId?: string) {
     return this.prisma.$transaction(async (tx) => {
       const adjustment = await tx.stockAdjustment.findUnique({
         where: { id },
@@ -144,22 +144,24 @@ export class StockAdjustmentService {
               tx as any,
               adjustment.locationId,
               item.timberVariantId,
-              'ADJ', // Technically it's an OUT reversal of an IN adjustment, but keeping it ADJ out is fine, or OUT REVERSAL
-              'REVERSAL',
+              'ADJ', // Reverting an IN adjustment means we emit an OUT adjustment
+              'ADJUSTMENT_OUT',
               adjustment.id,
               item.differencePcs,
-              item.differenceM3
+              item.differenceM3,
+              item.batch
             );
           } else if (item.differencePcs < 0) {
             await this.ledgerService.createMovement(
               tx as any,
               adjustment.locationId,
               item.timberVariantId,
-              'ADJ', // IN reversal of an OUT adjustment
-              'REVERSAL',
+              'ADJ', // Reverting an OUT adjustment means we emit an IN adjustment
+              'ADJUSTMENT_IN',
               adjustment.id,
               Math.abs(item.differencePcs),
-              Math.abs(item.differenceM3)
+              Math.abs(item.differenceM3),
+              item.batch
             );
           }
         }

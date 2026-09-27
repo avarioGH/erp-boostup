@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard'; // Assuming this exists, I'll check its path later or just use standard path
 
@@ -8,7 +8,8 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('summary')
-  async getSummary() {
-    return this.dashboardService.getSummary();
+  async getSummary(@Request() req: any) {
+    const companyId = req.user?.companyId || req.user?.company_id;
+    return this.dashboardService.getSummary(companyId);
   }
 }

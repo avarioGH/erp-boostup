@@ -1,4 +1,4 @@
-﻿import { Controller, Get, Post, Put, Delete, Body, Param, Query, Patch, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Post, Put, Delete, Body, Param, Query, Patch, UseGuards, Request } from '@nestjs/common';
 import { RawLogService } from './raw-log.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
@@ -11,47 +11,54 @@ export class RawLogController {
 
   @Get()
   @Permissions('read_inventory')
-  async list(@Query() query: any) {
-    return this.rawLogService.listRawLogs(query);
+  async list(@Query() query: any, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.rawLogService.listRawLogs({ ...query, companyId });
   }
 
   @Get(':id')
   @Permissions('read_inventory')
-  async get(@Param('id') id: string) {
-    return this.rawLogService.getRawLog(id);
+  async get(@Param('id') id: string, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.rawLogService.getRawLog(id, companyId);
   }
 
   @Post()
   @Permissions('write_inventory')
-  async create(@Body() data: any) {
-    return this.rawLogService.createRawLog(data);
+  async create(@Body() data: any, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.rawLogService.createRawLog({ ...data, companyId });
   }
 
   @Post(':id/cancel')
   @Permissions('write_inventory')
-  async cancel(@Param('id') id: string) {
-    return this.rawLogService.cancelRawLog(id);
+  async cancel(@Param('id') id: string, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.rawLogService.cancelRawLog(id, companyId);
   }
 
   @Post('bulk')
   @Permissions('write_inventory')
-  async createBulk(@Body() data: any) {
+  async createBulk(@Body() data: any, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
     if (!data || !Array.isArray(data.items)) {
       throw new Error('Invalid payload. Expected { items: [...] }');
     }
-    return this.rawLogService.createBulkRawLogs(data.items);
+    const items = data.items.map((i: any) => ({ ...i, companyId }));
+    return this.rawLogService.createBulkRawLogs(items);
   }
 
   @Put(':id')
   @Permissions('write_inventory')
-  async update(@Param('id') id: string, @Body() data: any) {
-    return this.rawLogService.updateRawLog(id, data);
+  async update(@Param('id') id: string, @Body() data: any, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.rawLogService.updateRawLog(id, { ...data, companyId });
   }
 
   @Delete(':id')
   @Permissions('write_inventory')
-  async delete(@Param('id') id: string) {
-    return this.rawLogService.deleteRawLog(id);
+  async delete(@Param('id') id: string, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.rawLogService.deleteRawLog(id, companyId);
   }
-
 }

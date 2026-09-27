@@ -1,25 +1,40 @@
+const { Client } = require('ssh2');
+
+const config = {
+  host: '194.233.85.181',
+  port: 22,
+  username: 'root',
+  password: 'Avario050306',
+  readyTimeout: 30000
+};
+
+const js = `
 const fs = require('fs');
-let c = fs.readFileSync('backend/prisma/schema.prisma', 'utf8');
+const path = './src/inventory/sawn-timber.service.ts';
+let code = fs.readFileSync(path, 'utf8');
 
-c = c.replace(
-  'criteria        String\n    inspection_type String?',
-  'criteria        String\n    quality_checks QualityCheck[] @relation("QualityPointChecks")\n    inspection_type String?'
-);
+// FIX Phase 47.5.3b regression
+code = code.replace(/where: { sku } }/g, 'where: { company_id_sku: { company_id: companyId, sku } }');
+code = code.replace(/productId: product.id,/g, 'company_id: companyId,\\n          productId: product.id,');
 
-// We also need `asset_masters` or `work_center_id` in AssetMaster?
-// Wait, scheduling.service.ts uses:
-// b.asset.work_center_id
-// We must add work_center_id to AssetMaster
-c = c.replace(
-  'model AssetMaster {\n    id               String      @id @default(auto()) @map("_id") @db.ObjectId',
-  'model AssetMaster {\n    id               String      @id @default(auto()) @map("_id") @db.ObjectId\n    work_center_id String? @db.ObjectId\n    work_center WorkCenter? @relation("WorkCenterAssets", fields: [work_center_id], references: [id])'
-)
+fs.writeFileSync(path, code);
+`;
 
-// And add asset_masters to WorkCenter
-c = c.replace(
-  'shift_end_time String?\n}',
-  'shift_end_time String?\n  asset_masters AssetMaster[] @relation("WorkCenterAssets")\n}'
-)
+const conn = new Client();
+conn.on('ready', () => {
+  const cmd = `
+    cd /root/erp-boostup/backend || exit 1
+    cat << 'EOF' > patch2.js
+${js}
+EOF
+    node patch2.js
+    npx tsc --noEmit
+  `;
 
-fs.writeFileSync('backend/prisma/schema.prisma', c);
-console.log('done2');
+  conn.exec(cmd, (err, stream) => {
+    if (err) throw err;
+    stream.on('data', d => process.stdout.write(d.toString()));
+    stream.stderr.on('data', d => process.stderr.write(d.toString()));
+    stream.on('close', () => conn.end());
+  });
+}).connect(config);

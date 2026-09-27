@@ -9,7 +9,7 @@ export class InputLogService {
     private audit: AuditService
   ) {}
 
-  async listInputLogs(params: {
+  async listInputLogs(params: { companyId: string; 
     skip?: number; take?: number; search?: string;
     species?: string; locationId?: string; status?: string;
   }) {
@@ -42,10 +42,10 @@ export class InputLogService {
     return { items, total, skip: Number(skip), take: Number(take) };
   }
 
-  async getInputLog(id: string) {
+  async getInputLog(id: string, companyId: string) {
     if (!id || id === 'undefined' || !/^[a-f\d]{24}$/i.test(id)) throw new NotFoundException('Input log not found');
     const log = await this.prisma.inputLog.findUnique({
-      where: { id },
+      where: { id, location: { company_id: companyId } },
       include: { 
         location: true, 
         sawnOutputs: { include: { items: true } },
@@ -62,7 +62,7 @@ export class InputLogService {
     return log;
   }
 
-  async getAvailableTrimmedLogs() {
+  async getAvailableTrimmedLogs(companyId?: string) {
     return this.prisma.trimmedLog.findMany({
       where: { status: 'AVAILABLE' },
       include: { rawLog: { select: { logNumber: true } }, location: true },
@@ -100,7 +100,7 @@ export class InputLogService {
       const totalGross = trimmedLogs.reduce((sum, t) => sum + (t.grossVolume || 0), 0);
       const totalGerowong = trimmedLogs.reduce((sum, t) => sum + (t.hollowVolume || 0), 0);
       const totalTrimming = trimmedLogs.reduce((sum, t) => sum + (t.trimmingVolume || 0), 0);
-      const totalVolume = trimmedLogs.reduce((sum, t) => sum + (t.netVolume || 0), 0);
+      const totalVolume = trimmedLogs.reduce((sum, t) => sum + ((t.grossVolume || 0) - (t.hollowVolume || 0)), 0);
       const species = trimmedLogs[0].species; // Take species from first log
 
       // Generate Input Number
@@ -145,7 +145,7 @@ export class InputLogService {
           data: {
             inputLogId: inputLog.id,
             trimmedLogId: t.id,
-            volume: t.netVolume,
+            volume: (t.grossVolume || 0) - (t.hollowVolume || 0),
             quantity: 1
           }
         });
@@ -164,7 +164,7 @@ export class InputLogService {
     });
   }
 
-  async cancelInputLog(id: string) {
+  async cancelInputLog(id: string, companyId?: string) {
     return this.prisma.$transaction(async (tx) => {
       const log = await tx.inputLog.findUnique({
         where: { id },

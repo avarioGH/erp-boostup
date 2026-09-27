@@ -1,4 +1,4 @@
-﻿import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryLedgerService } from '../inventory-ledger.service';
 import { SawnTimberService } from '../sawn-timber.service';
@@ -193,7 +193,7 @@ export class ImportService {
                   });
                 }
                                   variant = await tx.timberVariant.create({
-                    data: { productId: masterProd.id, sku, species, grade, gradeId: tGrade.id, thickness: t, width: w, length: l, volumePerPiece: (t*w*l)/1000000000 }
+                    data: { company_id: dummyCompany.id, productId: masterProd.id, sku, species, grade, gradeId: tGrade.id, thickness: t, width: w, length: l, volumePerPiece: (t*w*l)/1000000000 }
                   });
               }
 
@@ -215,7 +215,8 @@ export class ImportService {
                 'PRODUCTION_OUTPUT',
                 output.id,
                 qty,
-                volM3
+                volM3,
+                output.batch || 'UNKNOWN'
               );
               
               importedRows++;
@@ -254,6 +255,7 @@ export class ImportService {
     }
   }
 }
+
 
 
 

@@ -227,8 +227,7 @@ export class SawmillProductionService {
           'PRODUCTION_OUTPUT',
           run.id,
           item.quantityPcs,
-          item.volumeM3
-        );
+          item.volumeM3, item.partai || 'UNKNOWN');
 
         await tx.sawmillOutputItem.update({
           where: { id: item.id },
@@ -262,8 +261,7 @@ export class SawmillProductionService {
             'REVERSAL',
             run.id, // linked to production run
             item.quantityPcs,
-            item.volumeM3
-          );
+            item.volumeM3, item.partai || 'UNKNOWN');
 
           await tx.sawmillOutputItem.update({
             where: { id: item.id },
@@ -277,4 +275,5 @@ export class SawmillProductionService {
     });
   }
 }
+
 

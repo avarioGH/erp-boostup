@@ -11,7 +11,7 @@ export class TrimmedLogService {
     private audit: AuditService
   ) {}
 
-  async listTrimmedLogs(params: {
+  async listTrimmedLogs(params: { companyId: string; 
     skip?: number; take?: number; search?: string;
     species?: string; locationId?: string; status?: string;
   }) {
@@ -39,17 +39,17 @@ export class TrimmedLogService {
     return { items, total, skip: Number(skip), take: Number(take) };
   }
 
-  async getTrimmedLog(id: string) {
+  async getTrimmedLog(id: string, companyId: string) {
     if (!id || id === 'undefined' || id.length !== 24) throw new NotFoundException('Trimmed log not found');
     const log = await this.prisma.trimmedLog.findUnique({
-      where: { id },
+      where: { id, location: { company_id: companyId } },
       include: { location: true, rawLog: true, inputLog: true }
     });
     if (!log) throw new NotFoundException('Trimmed log not found');
     return log;
   }
 
-  async getChildrenByRawLog(rawLogId: string) {
+  async getChildrenByRawLog(rawLogId: string, companyId?: string) {
     const [children, parent] = await Promise.all([
       this.prisma.trimmedLog.findMany({ where: { rawLogId }, orderBy: { trimNumber: 'asc' } }),
       this.prisma.rawLog.findUnique({ where: { id: rawLogId } })
@@ -146,8 +146,8 @@ export class TrimmedLogService {
     });
   }
 
-  async cancelTrimmedLog(id: string) {
-    const log = await this.getTrimmedLog(id);
+  async cancelTrimmedLog(id: string, companyId?: string) {
+    const log = await this.getTrimmedLog(id, companyId || '');
     if (log.status !== 'AVAILABLE') throw new BadRequestException('Can only cancel AVAILABLE logs');
     const result = await this.prisma.trimmedLog.update({ where: { id }, data: { status: 'CANCELLED' } });
     await this.audit.log({ company_id: 'SYSTEM', action: 'CANCEL', entity: 'TRIMMED_LOG', entity_id: id, before_data: { status: log.status }, after_data: { status: 'CANCELLED' } });

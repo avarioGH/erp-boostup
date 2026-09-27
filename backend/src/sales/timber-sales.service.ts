@@ -39,7 +39,7 @@ export class TimberSalesService {
     });
   }
 
-  async findAllOrders(page = 1, limit = 20, status?: string, customerId?: string) {
+  async findAllOrders(page = 1, limit = 20, status?: string, customerId?: string, companyId?: string) {
     const skip = (page - 1) * limit;
     const where: any = {};
     if (status) where.status = status;
@@ -55,9 +55,9 @@ export class TimberSalesService {
     return { data, total, page, limit };
   }
 
-  async findOneOrder(id: string) {
+  async findOneOrder(id: string, companyId?: string) {
     const order = await this.prisma.timberSalesOrder.findUnique({
-      where: { id },
+      where: { customer: { company_id: companyId }, id },
       include: {
         customer: true,
         items: { include: { timberVariant: true, fulfillmentLocation: true } },
@@ -69,10 +69,10 @@ export class TimberSalesService {
     return order;
   }
 
-  async confirmOrder(id: string) {
+  async confirmOrder(id: string, companyId?: string) {
     return this.prisma.$transaction(async (tx: any) => {
       const order = await tx.timberSalesOrder.findUnique({ 
-        where: { id },
+        where: { id, customer: { company_id: companyId } },
         include: { items: true, customer: true }
       });
       if (!order) throw new NotFoundException('Sales order not found');
@@ -155,7 +155,7 @@ export class TimberSalesService {
     });
   }
 
-  async cancelOrder(id: string) {
+  async cancelOrder(id: string, companyId?: string) {
     return this.prisma.$transaction(async (tx: any) => {
       const order = await tx.timberSalesOrder.findUnique({ 
         where: { id },
@@ -217,18 +217,18 @@ export class TimberSalesService {
     throw new BadRequestException('Timber Delivery Note fulfillment is deprecated. Create a Timber Shipment instead.');
   }
 
-  async postDelivery(deliveryId: string) {
+  async postDelivery(deliveryId: string, companyId?: string) {
     throw new BadRequestException('Timber Delivery Note fulfillment is deprecated. Create a Timber Shipment instead.');
   }
 
-  async cancelDelivery(deliveryId: string) {
+  async cancelDelivery(deliveryId: string, companyId?: string) {
     const delivery = await this.prisma.timberDeliveryNote.findUnique({ where: { id: deliveryId } });
     if (!delivery) throw new NotFoundException();
     if (delivery.status !== 'DRAFT') throw new BadRequestException('Only DRAFT deliveries can be cancelled');
     return this.prisma.timberDeliveryNote.update({ where: { id: deliveryId }, data: { status: 'CANCELLED' } });
   }
 
-  async getOrderRealization(salesOrderId: string) {
+  async getOrderRealization(salesOrderId: string, companyId?: string) {
     const order = await this.findOneOrder(salesOrderId);
     return {
       orderNumber: order.orderNumber,

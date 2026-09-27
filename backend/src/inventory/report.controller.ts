@@ -1,4 +1,4 @@
-﻿import { Controller, Get, Query, Param } from '@nestjs/common';
+import { Controller, Get, Query, Param, Request, BadRequestException } from '@nestjs/common';
 import { ReportService } from './report.service';
 
 @Controller('inventory/reports')
@@ -6,8 +6,8 @@ export class ReportController {
   constructor(private readonly reportService: ReportService) {}
 
   @Get('summary')
-  async getDashboardSummary() {
-    return this.reportService.getDashboardSummary();
+  async getDashboardSummary(@Request() req: any) {
+    return this.reportService.getDashboardSummary(req.user.companyId);
   }
 
   @Get('stock-summary')
@@ -19,27 +19,34 @@ export class ReportController {
     return this.reportService.getStockSummary({ locationId, productId, search });
   }
 
-  @Get('stock-card/:variantId/:locationId')
+  @Get('stock-card')
   async getStockCard(
-    @Param('variantId') variantId: string,
-    @Param('locationId') locationId: string,
+    @Query('variantId') variantId: string,
+    @Query('locationId') locationId: string,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
+    @Query('batch') batch?: string,
+    @Request() req?: any
   ) {
+    if (!variantId || !locationId) {
+      throw new BadRequestException('variantId and locationId are required');
+    }
     const sDate = startDate ? new Date(startDate) : undefined;
     const eDate = endDate ? new Date(endDate) : undefined;
-    return this.reportService.getStockCard(variantId, locationId, sDate, eDate);
+    return this.reportService.getStockCard(req.user.companyId, variantId, locationId, batch, sDate, eDate);
   }
 
   @Get('yield')
   async getYieldReport(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
-    @Query('shift') shift?: string
+    @Query('shift') shift?: string,
+    @Request() req?: any
   ) {
     const sDate = startDate ? new Date(startDate) : undefined;
     const eDate = endDate ? new Date(endDate) : undefined;
-    return this.reportService.getYieldReport({ startDate: sDate, endDate: eDate, shift });
+    const companyId: string = req?.user?.companyId || '';
+    return this.reportService.getYieldReport(companyId, { startDate: sDate, endDate: eDate, shift });
   }
 
   @Get('stock-aging')

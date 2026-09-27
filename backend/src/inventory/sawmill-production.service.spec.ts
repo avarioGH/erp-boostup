@@ -99,7 +99,7 @@ describe('SawmillProductionService', () => {
       await service.postProductionRun('run1', 'loc1');
 
       expect(ledger.createMovement).toHaveBeenCalledWith(
-        prisma, 'loc1', 'v1', 'IN', 'PRODUCTION_OUTPUT', 'run1', 10, 0.006
+        prisma, 'loc1', 'v1', 'IN', 'PRODUCTION_OUTPUT', 'run1', 10, 0.006, 'UNKNOWN'
       );
       expect(prisma.sawmillOutputItem.update).toHaveBeenCalledWith({
         where: { id: 'item1' }, data: { stockMovementId: 'mov1' }
@@ -123,7 +123,7 @@ describe('SawmillProductionService', () => {
       await service.cancelProductionRun('run1', 'loc1');
 
       expect(ledger.createMovement).toHaveBeenCalledWith(
-        prisma, 'loc1', 'v1', 'OUT', 'REVERSAL', 'run1', 10, 0.006
+        prisma, 'loc1', 'v1', 'OUT', 'REVERSAL', 'run1', 10, 0.006, 'UNKNOWN'
       );
       expect(prisma.sawmillOutputItem.update).toHaveBeenCalledWith({
         where: { id: 'item1' }, data: { reversalMovementId: 'mov2' }
@@ -131,3 +131,4 @@ describe('SawmillProductionService', () => {
     });
   });
 });
+

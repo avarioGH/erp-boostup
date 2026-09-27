@@ -106,6 +106,14 @@ export class InventoryService {
     });
   }
 
+  async getVariants(companyId: string) {
+    return this.prisma.timberVariant.findMany({
+      where: { isActive: true },
+      include: { product: true, timberSpecies: true, timberGrade: true },
+      orderBy: { sku: 'asc' }
+    });
+  }
+
   async getWarehouses(companyId: string) {
     return this.prisma.warehouse.findMany({
       where: { company_id: companyId },

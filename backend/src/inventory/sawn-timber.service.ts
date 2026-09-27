@@ -11,7 +11,7 @@ export class SawnTimberService {
     private audit: AuditService
   ) {}
 
-  async listOutputs(params: {
+  async listOutputs(params: { companyId: string; 
     skip?: number; take?: number; search?: string;
     locationId?: string; status?: string;
   }) {
@@ -38,10 +38,10 @@ export class SawnTimberService {
     return { items, total, skip: Number(skip), take: Number(take) };
   }
 
-  async getOutput(id: string) {
+  async getOutput(id: string, companyId: string) {
     if (!id || id === 'undefined' || id.length !== 24) throw new NotFoundException('Output not found');
     const output = await this.prisma.sawnTimberOutput.findUnique({
-      where: { id },
+      where: { id, location: { company_id: companyId } },
       include: { 
         location: true, 
         inputLog: { include: { items: { include: { trimmedLog: { include: { rawLog: true } } } } } },
@@ -103,6 +103,7 @@ export class SawnTimberService {
       
       variant = await this.prisma.timberVariant.create({
         data: {
+          company_id: companyId,
           productId: product.id,
           species: actualSpecies,
           grade: actualGrade,
@@ -198,7 +199,7 @@ export class SawnTimberService {
     });
   }
 
-  async postOutput(id: string) {
+  async postOutput(id: string, companyId?: string) {
     return this.prisma.$transaction(async (tx) => {
       const output = await tx.sawnTimberOutput.findUnique({
         where: { id },
@@ -227,7 +228,7 @@ export class SawnTimberService {
     });
   }
 
-  async cancelOutput(id: string) {
+  async cancelOutput(id: string, companyId?: string) {
     return this.prisma.$transaction(async (tx) => {
       const output = await tx.sawnTimberOutput.findUnique({
         where: { id },
@@ -257,7 +258,7 @@ export class SawnTimberService {
     });
   }
 
-  async listStock(params: {
+  async listStock(params: { companyId: string; 
     skip?: number; take?: number; search?: string; locationId?: string; locationCodePrefix?: string;
   }) {
     const { skip = 0, take = 50, search, locationId, locationCodePrefix } = params;

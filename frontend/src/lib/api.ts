@@ -45,6 +45,7 @@ export const ExportAPI: any = {
 export const InventoryAPI: any = {
   getCategories: async () => (await api.get('/inventory/categories')).data,
   getProducts: async () => (await api.get('/inventory/products')).data,
+    getVariants: async () => (await api.get('/inventory/variants')).data,
   getWarehouses: async () => (await api.get('/inventory/warehouses')).data,
   createProduct: async (data: any) => (await api.post('/inventory/products', data, { headers: { 'Content-Type': 'multipart/form-data' } })).data,
   createWarehouse: async (data: any) => (await api.post('/inventory/warehouses', data)).data,
@@ -52,6 +53,7 @@ export const InventoryAPI: any = {
   deleteWarehouse: async (id: string) => (await api.delete('/inventory/warehouses/' + id)).data,
   getTransactions: async () => (await api.get('/inventory/transactions')).data,
   getStocks: async () => (await api.get('/inventory/stocks')).data,
+    getTimberStocks: async (params?: any) => (await api.get('/inventory/timber-stocks', { params })).data,
   getMovements: async () => (await api.get('/inventory/movements')).data,
 };
 
@@ -60,7 +62,7 @@ export const TimberAPI: any = {
   getDashboardSummary: async () => (await api.get('/inventory/reports/summary').catch(() => ({ data: {} }))).data,
   getStockSummary: async (params?: any) => (await api.get('/inventory/reports/stock-summary', { params }).catch(() => ({ data: [] }))).data,
   getStockAging: async () => (await api.get('/inventory/reports/stock-aging').catch(() => ({ data: [] }))).data,
-  getYieldReport: async (params?: any) => (await api.get('/inventory/reports/yield', { params }).catch(() => ({ data: { rows: [], summary: { totalInputM3: 0, totalOutputM3: 0, overallYield: 0 } } }))).data,
+  getYieldReport: async (queryString?: string) => (await api.get('/inventory/reports/yield' + (queryString ? `?${queryString}` : '')).catch(() => ({ data: { rows: [], summary: { totalInputM3: 0, totalOutputM3: 0, overallYield: 0 } } }))).data,
   getTraceability: async (search: string) => (await api.get('/inventory/reports/traceability', { params: { search } }).catch(() => ({ data: null }))).data,
 
   // --- Raw Logs ---
@@ -329,3 +331,8 @@ export const ReportsAPI: any = {
   getTraceability: async (params?: any) => (await api.get('/inventory/reports/traceability', { params })).data,
 };
 
+
+export const TimberSalesAPI: any = {
+  getOrders: async (params?: any) => (await api.get('/sales/timber/orders', { params })).data,
+  getOrder: async (id: string) => (await api.get('/sales/timber/orders/' + id)).data,
+};

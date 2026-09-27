@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { SawnTimberService } from './sawn-timber.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
@@ -9,39 +9,45 @@ import { Permissions } from '../auth/permissions.decorator';
 export class SawnTimberController {
   constructor(private readonly sawnTimberService: SawnTimberService) {}
 
-  @Get('output')
+  @Get('outputs')
   @Permissions('read_inventory')
-  async listOutputs(@Query() query: any) {
-    return this.sawnTimberService.listOutputs(query);
+  async listOutputs(@Query() query: any, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.sawnTimberService.listOutputs({ ...query, companyId });
   }
 
-  @Get('output/:id')
+  @Get('outputs/:id')
   @Permissions('read_inventory')
-  async getOutput(@Param('id') id: string) {
-    return this.sawnTimberService.getOutput(id);
+  async getOutput(@Param('id') id: string, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.sawnTimberService.getOutput(id, companyId);
   }
 
-  @Post('output')
+  @Post('outputs')
   @Permissions('write_inventory')
-  async createOutput(@Body() data: any) {
-    return this.sawnTimberService.createOutput(data);
+  async createOutput(@Body() data: any, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.sawnTimberService.createOutput({ ...data, companyId });
   }
 
-  @Post('output/:id/post')
+  @Post('outputs/:id/post')
   @Permissions('write_inventory')
-  async postOutput(@Param('id') id: string) {
-    return this.sawnTimberService.postOutput(id);
+  async postOutput(@Param('id') id: string, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.sawnTimberService.postOutput(id, companyId);
   }
 
-  @Post('output/:id/cancel')
+  @Post('outputs/:id/cancel')
   @Permissions('write_inventory')
-  async cancelOutput(@Param('id') id: string) {
-    return this.sawnTimberService.cancelOutput(id);
+  async cancelOutput(@Param('id') id: string, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.sawnTimberService.cancelOutput(id, companyId);
   }
 
   @Get('stock')
   @Permissions('read_inventory')
-  async listStock(@Query() query: any) {
-    return this.sawnTimberService.listStock(query);
+  async listStock(@Query() query: any, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.sawnTimberService.listStock({ ...query, companyId });
   }
 }

@@ -11,7 +11,7 @@ export class RawLogService {
     private audit: AuditService
   ) {}
 
-  async listRawLogs(params: {
+  async listRawLogs(params: { companyId: string; 
     skip?: number;
     take?: number;
     search?: string;
@@ -20,8 +20,8 @@ export class RawLogService {
     locationId?: string;
     status?: string;
   }) {
-    const { skip = 0, take = 50, search, species, diameterClass, locationId, status } = params;
-    const where: any = {};
+    const { skip = 0, take = 50, search, species, diameterClass, locationId, status, companyId } = params;
+    const where: any = { location: { company_id: companyId } };
 
     if (search) {
       where.OR = [
@@ -49,10 +49,10 @@ export class RawLogService {
     return { items, total, skip: Number(skip), take: Number(take) };
   }
 
-  async getRawLog(id: string) {
+  async getRawLog(id: string, companyId: string) {
     if (!id || id === 'undefined' || id.length !== 24) throw new NotFoundException('Raw log not found');
     const log = await this.prisma.rawLog.findUnique({
-      where: { id },
+      where: { id, location: { company_id: companyId } },
       include: {
         location: true,
         trimmedLogs: true
@@ -157,8 +157,8 @@ export class RawLogService {
     return created;
   }
 
-  async cancelRawLog(id: string) {
-    const log = await this.getRawLog(id);
+  async cancelRawLog(id: string, companyId?: string) {
+    const log = await this.getRawLog(id, companyId || '');
     if (log.status !== 'AVAILABLE') throw new BadRequestException(`Cannot cancel log in status ${log.status}`);
     
     const result = await this.prisma.rawLog.update({
@@ -319,7 +319,7 @@ export class RawLogService {
     });
   }
 
-  async deleteRawLog(id: string) {
+  async deleteRawLog(id: string, companyId?: string) {
     if (!id || id.length !== 24) throw new BadRequestException('Invalid ID');
     const existingLog = await this.prisma.rawLog.findUnique({ where: { id } });
     if (!existingLog) throw new NotFoundException('Raw Log not found');

@@ -43,6 +43,12 @@ export class InventoryController {
     return this.inventoryService.getProducts(req.user.company_id);
   }
 
+  @Permissions('inventory.product.view')
+  @Get('variants')
+  async getVariants(@Request() req) {
+    return this.inventoryService.getVariants(req.user.company_id);
+  }
+
   @Permissions('inventory.product.create')
   @Post('products')
   @UseInterceptors(FilesInterceptor('images', 8, {

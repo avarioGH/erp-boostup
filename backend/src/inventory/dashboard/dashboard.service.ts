@@ -1,19 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getSummary() {
+  async getSummary(companyId?: string) {
+    if (!companyId) throw new BadRequestException('Company ID is required');
+
     // Current server time and timezone boundaries
     const now = new Date();
     // Using simple local start/end of day since it runs on the server timezone
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
+    const locationScope = { location: { company_id: companyId } };
+
     // 1. stock: { totalPcs, totalM3 }
     const stockAgg = await this.prisma.timberStock.aggregate({
+      where: locationScope,
       _sum: { currentPcs: true, currentVolumeM3: true },
     });
     const stock = {
@@ -24,6 +29,7 @@ export class DashboardService {
     // 2. warehouseSummary: Array of { warehouseName, pcs, m3 }
     const warehouseData = await this.prisma.timberStock.groupBy({
       by: ['locationId'],
+      where: locationScope,
       _sum: { currentPcs: true, currentVolumeM3: true },
     });
     
@@ -45,6 +51,7 @@ export class DashboardService {
           gte: startOfDay,
           lte: endOfDay,
         },
+        timberStock: locationScope
       },
       select: { type: true, referenceType: true, volumeM3: true },
     });
@@ -74,6 +81,9 @@ export class DashboardService {
 
     // 4. recentMovements: Last 10 from TimberStockMovement
     const recentMovements = await this.prisma.timberStockMovement.findMany({
+      where: {
+        timberStock: locationScope
+      },
       take: 10,
       orderBy: { createdAt: 'desc' },
       include: {
@@ -92,6 +102,7 @@ export class DashboardService {
     // Run a quick DB sum on movements vs stock to check if they match.
     const allMovementsAgg = await this.prisma.timberStockMovement.groupBy({
       by: ['type'],
+      where: { timberStock: locationScope },
       _sum: { quantityPcs: true },
     });
     
@@ -103,6 +114,7 @@ export class DashboardService {
     }
     
     const stockSums = await this.prisma.timberStock.aggregate({
+      where: locationScope,
       _sum: {
         openingPcs: true,
         currentPcs: true,

@@ -35,6 +35,27 @@ type MenuItem = {
 }
 
 const items: MenuItem[] = [
+ { 
+ title: "Inventory (Umum)", 
+ url: "/inventory", 
+ icon: Box,
+ id: "inventory_general",
+ subItems: [
+ { title: "Products", url: "/inventory/products" },
+ { title: "Categories", url: "/inventory/categories" },
+ { title: "Brands", url: "/inventory/brands" },
+ { title: "Units", url: "/inventory/units" },
+ { title: "Suppliers", url: "/inventory/suppliers" },
+ { title: "Warehouses", url: "/inventory/warehouses" },
+ { title: "Stock In", url: "/inventory/stock-in" },
+ { title: "Stock Out", url: "/inventory/stock-out" },
+ { title: "Stock Transfers", url: "/inventory/transfers" },
+ { title: "Adjustments", url: "/inventory/adjustments" },
+ { title: "Stock Opname", url: "/inventory/stock-opname" },
+ { title: "Stock Reports", url: "/inventory/stock" },
+ { title: "Movements", url: "/inventory/movements" }
+ ]
+ },
  { title: "Dashboard", url: "/", icon: LayoutDashboard },
  {
  title: "Pembelian (Purchasing)",
@@ -53,7 +74,7 @@ const items: MenuItem[] = [
  title: "Inventory (Timber & Logs)", 
  url: "/inventory/dashboard", 
  icon: Box,
- id: "inventory",
+ id: "inventory_timber",
  subItems: [
  { title: "Dashboard", url: "/inventory/dashboard" },
 
@@ -243,6 +264,19 @@ export function AppSidebar() {
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
  {items.filter(item => {
+ const username = user?.username?.toLowerCase() || '';
+ 
+ if (username === 'ikan' || username === 'owner_ikan' || user?.company?.name?.toLowerCase().includes('ikan')) {
+   if (item.id === 'inventory_timber' || item.id === 'production' || item.id === 'manufacturing') return false;
+   return true;
+ }
+ 
+ if (username === 'kayu' || username === 'owner_kayu' || user?.company?.name?.toLowerCase().includes('kayu')) {
+   if (item.id === 'inventory_timber' || item.id === 'production') return true;
+   if (!item.id) return true; // Dashboard
+   return false; 
+ }
+
  if (!item.id || user?.role === 'Owner') return true;
  return user?.accessible_modules?.includes(item.id);
  }).map((item) => {
@@ -311,6 +345,11 @@ export function AppSidebar() {
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
  {settings.filter(item => {
+ const username = user?.username?.toLowerCase() || '';
+ if (username === 'kayu' || username === 'owner_kayu' || user?.company?.name?.toLowerCase().includes('kayu')) {
+   return false; // Sembunyikan settings
+ }
+
  if (!item.id || user?.role === 'Owner') return true;
  return user?.accessible_modules?.includes(item.id);
  }).map((item) => {

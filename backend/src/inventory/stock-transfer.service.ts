@@ -11,14 +11,14 @@ export class StockTransferService {
     private audit: AuditService
   ) {}
 
-  async listTransfers(params: { 
+  async listTransfers(params: { companyId: string;  
     skip?: number; take?: number; search?: string; status?: string; 
     fromLocationId?: string; toLocationId?: string;
     startDate?: string; endDate?: string;
     fromLocationCodePrefix?: string; toLocationCodePrefix?: string;
   }) {
-    const { skip = 0, take = 50, search, status, fromLocationId, toLocationId, startDate, endDate, fromLocationCodePrefix, toLocationCodePrefix } = params;
-    const where: any = {};
+    const { skip = 0, take = 50, search, status, fromLocationId, toLocationId, startDate, endDate, fromLocationCodePrefix, toLocationCodePrefix, companyId } = params;
+    const where: any = { fromLocation: { company_id: companyId } };
     if (search) where.transferNumber = { contains: search, mode: 'insensitive' };
     if (status) where.status = status;
     if (fromLocationId) where.fromLocationId = fromLocationId;
@@ -54,9 +54,9 @@ export class StockTransferService {
     return { items, total, skip: Number(skip), take: Number(take) };
   }
 
-  async getTransfer(id: string) {
+  async getTransfer(id: string, companyId: string) {
     const t = await this.prisma.stockTransfer.findUnique({
-      where: { id },
+      where: { id, fromLocation: { company_id: companyId } },
       include: { fromLocation: true, toLocation: true, items: { include: { timberVariant: true } } }
     });
     if (!t) throw new NotFoundException('Transfer not found');
@@ -108,7 +108,7 @@ export class StockTransferService {
     });
   }
 
-  async postTransfer(id: string) {
+  async postTransfer(id: string, companyId?: string) {
     return this.prisma.$transaction(async (tx) => {
       const transfer = await tx.stockTransfer.findUnique({
         where: { id },
@@ -151,7 +151,7 @@ export class StockTransferService {
     });
   }
 
-  async cancelTransfer(id: string) {
+  async cancelTransfer(id: string, companyId?: string) {
     return this.prisma.$transaction(async (tx) => {
       const transfer = await tx.stockTransfer.findUnique({
         where: { id },

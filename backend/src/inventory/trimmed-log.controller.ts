@@ -1,41 +1,46 @@
-﻿import { Controller, Get, Post, Body, Param, Query, Patch, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { TrimmedLogService } from './trimmed-log.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
 
-@Controller('inventory')
+@Controller('inventory/trimmed')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class TrimmedLogController {
   constructor(private readonly trimService: TrimmedLogService) {}
 
-  @Get('trimming')
+  @Get()
   @Permissions('read_inventory')
-  async listAll(@Query() query: any) {
-    return this.trimService.listTrimmedLogs(query);
+  async listAll(@Query() query: any, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.trimService.listTrimmedLogs({ ...query, companyId });
   }
 
-  @Get('logs/:id/trimming')
+  @Get('by-raw/:id')
   @Permissions('read_inventory')
-  async getChildren(@Param('id') rawLogId: string) {
-    return this.trimService.getChildrenByRawLog(rawLogId);
+  async getChildren(@Param('id') rawLogId: string, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.trimService.getChildrenByRawLog(rawLogId, companyId);
   }
 
-  @Post('logs/:id/trimming')
+  @Post('by-raw/:id')
   @Permissions('write_inventory')
-  async createChild(@Param('id') rawLogId: string, @Body() data: any) {
-    return this.trimService.createTrimmedLog(rawLogId, data);
+  async createChild(@Param('id') rawLogId: string, @Body() data: any, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.trimService.createTrimmedLog(rawLogId, { ...data, companyId });
   }
 
-  @Get('trimming/:id')
+  @Get(':id')
   @Permissions('read_inventory')
-  async getChild(@Param('id') id: string) {
-    return this.trimService.getTrimmedLog(id);
+  async getChild(@Param('id') id: string, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.trimService.getTrimmedLog(id, companyId);
   }
 
-  @Post('trimming/:id/cancel')
+  @Post(':id/cancel')
   @Permissions('write_inventory')
-  async cancelChild(@Param('id') id: string) {
-    return this.trimService.cancelTrimmedLog(id);
+  async cancelChild(@Param('id') id: string, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.trimService.cancelTrimmedLog(id, companyId);
   }
 }

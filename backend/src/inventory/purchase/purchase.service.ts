@@ -1,3 +1,4 @@
+import { normalizeBatch } from '../utils/batch.util';
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryLedgerService } from '../inventory-ledger.service';
@@ -21,10 +22,49 @@ export class PurchaseService {
       throw new BadRequestException(`Purchase with number ${purchaseNumber} already exists`);
     }
 
+    // Tenant Isolation: Validate Source
+    const source = await this.prisma.timberSource.findFirst({ where: { id: sourceId, company_id: companyId } });
+    if (!source) throw new BadRequestException('Supplier/Source not found or belongs to another company');
+
+    // Tenant Isolation: Validate Warehouse
+    const warehouse = await this.prisma.warehouse.findFirst({ where: { id: warehouseId, company_id: companyId } });
+    if (!warehouse) throw new BadRequestException('Warehouse not found or belongs to another company');
+
     let totalPcs = 0;
     let totalVolumeM3 = 0;
     
     for (const item of items) {
+      if (!item.batch || item.batch.trim() === '') {
+        throw new BadRequestException('Batch/Partai is required for Sawn Timber Purchase Items');
+      }
+      if (item.quantityPcs <= 0) {
+        throw new BadRequestException('Quantity must be greater than 0');
+      }
+      
+      if (item.purchaseThickness !== undefined && item.purchaseThickness !== null && item.purchaseThickness <= 0) {
+        throw new BadRequestException('Supplier declared thickness must be greater than 0');
+      }
+      if (item.purchaseWidth !== undefined && item.purchaseWidth !== null && item.purchaseWidth <= 0) {
+        throw new BadRequestException('Supplier declared width must be greater than 0');
+      }
+      if (item.purchaseLength !== undefined && item.purchaseLength !== null && item.purchaseLength <= 0) {
+        throw new BadRequestException('Supplier declared length must be greater than 0');
+      }
+      if (item.unitPrice !== undefined && item.unitPrice !== null && item.unitPrice < 0) {
+        throw new BadRequestException('Unit price cannot be negative');
+      }
+
+      // Tenant Isolation: Validate Variant
+      const variant = await this.prisma.timberVariant.findFirst({
+        where: { id: item.timberVariantId, product: { company_id: companyId } }
+      });
+      if (!variant) throw new BadRequestException(`Variant ${item.timberVariantId} not found or belongs to another company`);
+
+      item.batch = normalizeBatch(item.batch); // Batch normalization
+      
+      // Volume Source of Truth Canonicalization
+      item.volumeM3 = variant.volumePerPiece * item.quantityPcs;
+      
       totalPcs += item.quantityPcs;
       totalVolumeM3 += item.volumeM3;
     }
@@ -44,7 +84,13 @@ export class PurchaseService {
           create: items.map((item: any) => ({
             timberVariantId: item.timberVariantId,
             quantityPcs: item.quantityPcs,
-            volumeM3: item.volumeM3
+            volumeM3: item.volumeM3,
+            purchaseThickness: item.purchaseThickness || null,
+            purchaseWidth: item.purchaseWidth || null,
+            purchaseLength: item.purchaseLength || null,
+            unitPrice: item.unitPrice || null,
+            batch: item.batch,
+            notes: item.notes
           }))
         },
         logItems: {
@@ -100,7 +146,8 @@ export class PurchaseService {
           'TIMBER_PURCHASE',
           purchase.id,
           item.quantityPcs,
-          item.volumeM3
+          item.volumeM3,
+          item.batch || 'UNKNOWN'
         );
       }
 
@@ -133,14 +180,14 @@ export class PurchaseService {
       for (const item of purchase.items) {
         // Pre-flight check: we need enough stock to reverse
         const stock = await tx.timberStock.findUnique({
-          where: {
-            locationId_timberVariantId_batch: {
-              locationId: purchase.warehouseId,
-              timberVariantId: item.timberVariantId,
-                batch: 'UNKNOWN'
+            where: {
+              locationId_timberVariantId_batch: {
+                locationId: purchase.warehouseId,
+                timberVariantId: item.timberVariantId,
+                batch: item.batch || 'UNKNOWN'
+              }
             }
-          }
-        });
+          });
 
         if (!stock || stock.currentPcs < item.quantityPcs) {
           throw new BadRequestException(`Insufficient stock to cancel purchase for variant ${item.timberVariantId}`);
@@ -154,7 +201,8 @@ export class PurchaseService {
           'TIMBER_PURCHASE_REVERSAL',
           purchase.id,
           item.quantityPcs,
-          item.volumeM3
+          item.volumeM3,
+          item.batch || 'UNKNOWN'
         );
       }
 

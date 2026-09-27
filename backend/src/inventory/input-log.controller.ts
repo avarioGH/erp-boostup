@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+﻿import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { InputLogService } from './input-log.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
@@ -11,31 +11,36 @@ export class InputLogController {
 
   @Get()
   @Permissions('read_inventory')
-  async listAll(@Query() query: any) {
-    return this.inputLogService.listInputLogs(query);
+  async listAll(@Query() query: any, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.inputLogService.listInputLogs({ ...query, companyId });
   }
 
-  @Get('available-trimmed-logs')
+  @Get('available-trimmed')
   @Permissions('read_inventory')
-  async getAvailableTrimmedLogs() {
-    return this.inputLogService.getAvailableTrimmedLogs();
+  async getAvailableTrimmedLogs(@Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.inputLogService.getAvailableTrimmedLogs(companyId);
   }
 
   @Get(':id')
   @Permissions('read_inventory')
-  async getOne(@Param('id') id: string) {
-    return this.inputLogService.getInputLog(id);
+  async getOne(@Param('id') id: string, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.inputLogService.getInputLog(id, companyId);
   }
 
   @Post()
   @Permissions('write_inventory')
-  async create(@Body() data: any) {
-    return this.inputLogService.createInputLog(data);
+  async create(@Body() data: any, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.inputLogService.createInputLog({ ...data, companyId });
   }
 
   @Post(':id/cancel')
   @Permissions('write_inventory')
-  async cancel(@Param('id') id: string) {
-    return this.inputLogService.cancelInputLog(id);
+  async cancel(@Param('id') id: string, @Request() req: any) {
+    const companyId = req.user.companyId || req.user.company_id;
+    return this.inputLogService.cancelInputLog(id, companyId);
   }
 }

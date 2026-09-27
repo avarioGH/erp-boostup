@@ -54,9 +54,19 @@ export class ShipmentService {
     let totalPcs = 0;
     let totalVolumeM3 = 0;
     
+    // Authoritative M3 calculation based on backend variant
     for (const item of items) {
+      if (item.quantityPcs <= 0) {
+        throw new BadRequestException('Shipment quantity must be > 0');
+      }
+      const variant = await this.prisma.timberVariant.findUnique({ where: { id: item.timberVariantId } });
+      if (!variant) throw new BadRequestException(`Variant not found: ${item.timberVariantId}`);
+      
+      const expectedM3 = item.quantityPcs * (variant.volumePerPiece || 0);
+      item.volumeM3 = expectedM3; // Override client provided value
+      
       totalPcs += item.quantityPcs;
-      totalVolumeM3 += item.volumeM3;
+      totalVolumeM3 += expectedM3;
     }
 
     const shipment = await this.prisma.timberShipment.create({
@@ -111,10 +121,15 @@ export class ShipmentService {
       if (!shipment) throw new NotFoundException('Timber shipment not found');
       if (shipment.status !== 'DRAFT') throw new BadRequestException('Only DRAFT shipment can be confirmed');
 
-      const confirmed = await tx.timberShipment.update({
-        where: { id },
+      // Atomic Status Claim (Idempotency)
+      const claimResult = await tx.timberShipment.updateMany({
+        where: { id, status: 'DRAFT', company_id: companyId },
         data: { status: 'CONFIRMED' }
       });
+
+      if (claimResult.count === 0) {
+        throw new BadRequestException('Shipment is no longer in DRAFT state. Confirmation aborted.');
+      }
 
       for (const item of shipment.items) {
         if (item.salesOrderItemId) {
@@ -186,7 +201,7 @@ export class ShipmentService {
         await this.updateSalesOrderStatus(tx, shipment.salesOrderId);
       }
 
-      return confirmed;
+      return { success: true };
     });
   }
 
@@ -200,10 +215,15 @@ export class ShipmentService {
       if (!shipment) throw new NotFoundException('Timber shipment not found');
       if (shipment.status !== 'CONFIRMED') throw new BadRequestException('Only CONFIRMED shipment can be cancelled');
 
-      const cancelled = await tx.timberShipment.update({
-        where: { id },
+      // Atomic Status Claim
+      const claimResult = await tx.timberShipment.updateMany({
+        where: { id, status: 'CONFIRMED', company_id: companyId },
         data: { status: 'CANCELLED' }
       });
+
+      if (claimResult.count === 0) {
+        throw new BadRequestException('Shipment is no longer in CONFIRMED state. Cancellation aborted.');
+      }
 
       for (const item of shipment.items) {
         await this.inventoryLedgerService.createMovement(
@@ -265,7 +285,7 @@ export class ShipmentService {
         await this.updateSalesOrderStatus(tx, shipment.salesOrderId);
       }
 
-      return cancelled;
+      return { success: true };
     });
   }
 

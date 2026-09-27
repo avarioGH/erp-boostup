@@ -1,3 +1,4 @@
+import { normalizeBatch } from '../utils/batch.util';
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryLedgerService } from '../inventory-ledger.service';
@@ -64,7 +65,8 @@ export class ProductionService {
             outputType: output.outputType,
             quantityPCS: output.quantityPCS,
             volumeM3: output.volumeM3,
-            warehouseId: output.warehouseId
+            warehouseId: output.warehouseId,
+            batch: normalizeBatch(output.batch)
           }))
         }
       },
@@ -102,7 +104,8 @@ export class ProductionService {
           'PRODUCTION_PROCESS_INPUT',
           process.id,
           input.quantityPCS,
-          input.volumeM3
+          input.volumeM3,
+          stock.batch
         );
       }
 
@@ -120,9 +123,10 @@ export class ProductionService {
             'IN',
             'PRODUCTION_PROCESS_OUTPUT',
             process.id,
-            output.quantityPCS,
-            output.volumeM3
-          );
+              output.quantityPCS,
+              output.volumeM3,
+              (output as any).batch || 'UNKNOWN'
+            );
         }
       }
 
@@ -166,7 +170,8 @@ export class ProductionService {
           const stock = await tx.timberStock.findFirst({
             where: {
               locationId: targetWarehouseId,
-              timberVariantId: output.variantId
+              timberVariantId: output.variantId,
+              batch: (output as any).batch || 'UNKNOWN'
             }
           });
 
@@ -192,7 +197,8 @@ export class ProductionService {
           'PRODUCTION_PROCESS_REVERSAL',
           process.id,
           input.quantityPCS,
-          input.volumeM3
+          input.volumeM3,
+          stock.batch
         );
       }
 
@@ -210,9 +216,10 @@ export class ProductionService {
             'OUT',
             'PRODUCTION_PROCESS_REVERSAL',
             process.id,
-            output.quantityPCS,
-            output.volumeM3
-          );
+              output.quantityPCS,
+              output.volumeM3,
+              (output as any).batch || 'UNKNOWN'
+            );
         }
       }
 
@@ -223,3 +230,7 @@ export class ProductionService {
     });
   }
 }
+
+
+
+
