@@ -44,7 +44,13 @@ export class PurchaseService {
           create: items.map((item: any) => ({
             timberVariantId: item.timberVariantId,
             quantityPcs: item.quantityPcs,
-            volumeM3: item.volumeM3
+            volumeM3: item.volumeM3,
+            purchaseThickness: item.purchaseThickness,
+            purchaseWidth: item.purchaseWidth,
+            purchaseLength: item.purchaseLength,
+            unitPrice: item.unitPrice,
+            notes: item.notes,
+            batch: item.batch || 'UNKNOWN'
           }))
         },
         logItems: {
@@ -240,4 +246,5 @@ export class PurchaseService {
   }
 
 }
+
 
