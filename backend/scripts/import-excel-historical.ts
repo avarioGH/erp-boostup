@@ -21,11 +21,14 @@ async function main() {
   let grade = await prisma.timberGrade.findFirst({ where: { company_id } });
   if (!grade) grade = await prisma.timberGrade.create({ data: { company_id, code: 'A', name: 'Grade A' } });
 
-  let category = await prisma.category.findFirst({ where: { company_id } });
-  if (!category) category = await prisma.category.create({ data: { company_id, code: 'TIMBER', name: 'Timber' } });
+  let category = await prisma.category.findFirst({ where: { company_id, name: 'Timber' } });
+  if (!category) category = await prisma.category.create({ data: { company_id, name: 'Timber' } });
+
+  let unit = await prisma.unit.findFirst({ where: { company_id } });
+  if (!unit) unit = await prisma.unit.create({ data: { company_id, code: 'PCS', name: 'Pieces' } });
 
   let product = await prisma.product.findFirst({ where: { company_id } });
-  if (!product) product = await prisma.product.create({ data: { company_id, category_id: category.id, code: 'PRD-TIMBER', name: 'Sawn Timber' } });
+  if (!product) product = await prisma.product.create({ data: { company_id, category_id: category.id, unit_id: unit.id, code: 'PRD-TIMBER', name: 'Sawn Timber', purchase_price: 0, selling_price: 0 } });
 
   let variant = await prisma.timberVariant.findFirst({ where: { company_id } });
   if (!variant) {
