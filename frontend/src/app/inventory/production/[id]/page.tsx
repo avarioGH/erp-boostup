@@ -187,6 +187,7 @@ export default function ProductionDetailPage() {
                     <tr>
                       <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Product Variant</th>
                       <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Output Type</th>
+                      <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Batch / Partai</th>
                       <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Remarks</th>
                       <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Quantity Produced</th>
                     </tr>
@@ -202,6 +203,7 @@ export default function ProductionDetailPage() {
                             <span className="inline-flex items-center rounded-sm bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-600 uppercase tracking-wider">{out.type}</span>
                           )}
                         </td>
+                          <td className="py-3 px-6 text-[13px] text-muted-foreground">{out.batch || 'UNKNOWN'}</td>
                         <td className="py-3 px-6 text-[13px] text-muted-foreground">{out.remarks || '-'}</td>
                         <td className="py-3 px-6 text-right font-bold text-emerald-600">+{out.quantity}</td>
                       </tr>

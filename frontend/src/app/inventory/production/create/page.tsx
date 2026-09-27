@@ -131,7 +131,7 @@ export default function CreateProductionPage() {
                   }}>
                     <SelectTrigger className="bg-background"><SelectValue placeholder="Select Timber Stock..."/></SelectTrigger>
                     <SelectContent>
-                      {stocks.map(s => <SelectItem key={s.id} value={s.id}>{s.bundleNumber || s.id} - {s.timberVariant?.sku || 'Unknown'} (Qty: {s.quantityPcs})</SelectItem>)}
+                      {stocks.map(s => <SelectItem key={s.id} value={s.id}>{s.bundleNumber || 'Unnamed Bundle'} - {s.timberVariant?.sku || 'Unknown'} (Qty: {s.quantityPcs})</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -197,6 +197,12 @@ export default function CreateProductionPage() {
                     const newOutputs = [...outputs]; newOutputs[idx].quantity = e.target.value; setOutputs(newOutputs);
                   }} className="bg-background font-bold text-center text-emerald-600" placeholder="Qty" required />
                 </div>
+                <div className="w-full md:w-32 space-y-1.5">
+                  <label className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Batch / Partai</label>
+                  <Input value={out.batch || ''} onChange={(e) => {
+                    const newOutputs = [...outputs]; newOutputs[idx].batch = e.target.value; setOutputs(newOutputs);
+                  }} className="bg-background" placeholder="P001" />
+                </div>
                 <div className="w-full md:w-48 space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Remarks</label>
                   <Input value={out.remarks} onChange={(e) => {
@@ -242,3 +248,4 @@ export default function CreateProductionPage() {
     </div>
   )
 }
+

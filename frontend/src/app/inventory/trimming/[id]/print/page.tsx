@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useEffect, useState } from "react"
 import { use } from "react"
 import { api } from "@/lib/api"
@@ -49,7 +49,7 @@ export default function PrintTrimmingTally({ params }: { params: Promise<{ id: s
               <tbody>
                 <tr>
                   <td className="py-1 font-semibold w-1/3 align-top">Trim Code</td>
-                  <td className="py-1 align-top">: {data.trimCode || "-"}</td>
+                  <td className="py-1 align-top font-bold">: {data.trimCode || "-"}</td>
                 </tr>
                 <tr>
                   <td className="py-1 font-semibold w-1/3 align-top">Status</td>
@@ -67,15 +67,15 @@ export default function PrintTrimmingTally({ params }: { params: Promise<{ id: s
               <tbody>
                 <tr>
                   <td className="py-1 font-semibold w-1/3 align-top">Raw Log No</td>
-                  <td className="py-1 align-top">: {data.rawLog?.logNumber || "-"}</td>
+                  <td className="py-1 align-top font-bold">: {data.rawLog?.logNumber || "-"}</td>
                 </tr>
                 <tr>
                   <td className="py-1 font-semibold w-1/3 align-top">Species</td>
                   <td className="py-1 align-top">: {data.rawLog?.species || "-"}</td>
                 </tr>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">Source</td>
-                  <td className="py-1 align-top">: {data.rawLog?.source || "-"}</td>
+                  <td className="py-1 font-semibold w-1/3 align-top">Barcode</td>
+                  <td className="py-1 align-top">: {data.barcode || "-"}</td>
                 </tr>
               </tbody>
             </table>
@@ -87,29 +87,52 @@ export default function PrintTrimmingTally({ params }: { params: Promise<{ id: s
           <thead>
             <tr className="bg-gray-100">
               <th className="border border-black p-2 text-left w-1/4">Property</th>
-              <th className="border border-black p-2 text-left">Value</th>
+              <th className="border border-black p-2 text-left">Original (Supplier)</th>
+              <th className="border border-black p-2 text-left">Trimmed (Actual)</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td className="border border-black p-2 font-semibold">Original Length (m)</td>
+              <td className="border border-black p-2 font-semibold bg-gray-50">Length (m)</td>
               <td className="border border-black p-2">{data.rawLog?.originalLength || "-"}</td>
+              <td className="border border-black p-2 font-bold text-blue-800">{data.length || "-"}</td>
             </tr>
             <tr>
-              <td className="border border-black p-2 font-semibold">Trimmed Length (m)</td>
-              <td className="border border-black p-2">{data.length || "-"}</td>
+              <td className="border border-black p-2 font-semibold">D1 (cm)</td>
+              <td className="border border-black p-2">{data.rawLog?.purchaseDiameter1 || "-"}</td>
+              <td className="border border-black p-2 bg-gray-100" rowSpan={4}><span className="text-gray-500 italic">Diameter: {data.diameter || "-"} cm</span></td>
             </tr>
             <tr>
-              <td className="border border-black p-2 font-semibold">Gross Volume (M³)</td>
-              <td className="border border-black p-2">{data.netVolume ? (Number(data.netVolume) * 1.1).toFixed(4) : "-"}</td>
+              <td className="border border-black p-2 font-semibold">D2 (cm)</td>
+              <td className="border border-black p-2">{data.rawLog?.purchaseDiameter2 || "-"}</td>
             </tr>
             <tr>
-              <td className="border border-black p-2 font-semibold">Net Volume (M³)</td>
-              <td className="border border-black p-2 font-bold">{data.netVolume || "-"}</td>
+              <td className="border border-black p-2 font-semibold">D3 (cm)</td>
+              <td className="border border-black p-2">{data.rawLog?.purchaseDiameter3 || "-"}</td>
             </tr>
             <tr>
-              <td className="border border-black p-2 font-semibold">Barcode</td>
-              <td className="border border-black p-2">{data.barcode || "-"}</td>
+              <td className="border border-black p-2 font-semibold">D4 (cm)</td>
+              <td className="border border-black p-2">{data.rawLog?.purchaseDiameter4 || "-"}</td>
+            </tr>
+            <tr className="border-t-2 border-black">
+              <td className="border border-black p-2 font-semibold bg-gray-50">Gross Volume (M3)</td>
+              <td className="border border-black p-2">{data.rawLog?.grossVolume || data.rawLog?.purchaseVolume || "-"}</td>
+              <td className="border border-black p-2 font-bold">{data.grossVolume || "-"}</td>
+            </tr>
+            <tr>
+              <td className="border border-black p-2 font-semibold bg-gray-50">Gerowong / Hollow (M3)</td>
+              <td className="border border-black p-2">{data.rawLog?.gerowong || "-"}</td>
+              <td className="border border-black p-2 text-red-600">{data.hollowVolume ? `- ${data.hollowVolume}` : "-"}</td>
+            </tr>
+            <tr>
+              <td className="border border-black p-2 font-semibold bg-gray-50">Trimming (M3)</td>
+              <td className="border border-black p-2">{data.rawLog?.trimmingVolume || "-"}</td>
+              <td className="border border-black p-2 text-red-600">{data.trimmingVolume ? `- ${data.trimmingVolume}` : "-"}</td>
+            </tr>
+            <tr className="bg-blue-50">
+              <td className="border border-black p-2 font-semibold">Trimmed Net Volume (M3)</td>
+              <td className="border border-black p-2">{data.rawLog?.netVolume || "-"}</td>
+              <td className="border border-black p-2 font-bold text-blue-800">{data.netVolume || "-"}</td>
             </tr>
           </tbody>
         </table>
@@ -131,4 +154,3 @@ export default function PrintTrimmingTally({ params }: { params: Promise<{ id: s
     </>
   )
 }
-

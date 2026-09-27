@@ -46,7 +46,7 @@ export default function CreateInputLogPage() {
  const selectedLogs = availableLogs.filter(l => selectedIds.includes(l.id))
  const totalLength = selectedLogs.reduce((sum, l) => sum + (l.length || 0), 0)
  const totalGross = selectedLogs.reduce((sum, l) => sum + (l.grossVolume || 0), 0)
- const totalNet = selectedLogs.reduce((sum, l) => sum + (l.netVolume || 0), 0)
+ const totalNet = selectedLogs.reduce((sum, l) => sum + ((l.grossVolume || 0) - (l.hollowVolume || 0)), 0)
 
  const handleSubmit = async (e: any) => {
  e.preventDefault()
@@ -86,7 +86,7 @@ export default function CreateInputLogPage() {
  <div className="space-y-2"><label className="text-sm font-medium">Shift</label><Select value={form.shift} onValueChange={(val) => setForm({...form, shift: val || ''})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">Shift 1</SelectItem><SelectItem value="2">Shift 2</SelectItem><SelectItem value="3">Shift 3</SelectItem></SelectContent></Select></div>
  <div className="space-y-2"><label className="text-sm font-medium">Machine</label><Select value={form.machine} onValueChange={(val) => setForm({...form, machine: val || ''})}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">MSAW-1</SelectItem><SelectItem value="2">MSAW-2</SelectItem><SelectItem value="3">MSAW-3</SelectItem></SelectContent></Select></div>
  <div className="space-y-2"><label className="text-sm font-medium">Partai</label><Input value={form.batch} onChange={e => setForm({...form, batch: e.target.value})} /></div>
- <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Location</label><Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val ||""})}><SelectTrigger><SelectValue placeholder="Select Warehouse..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name || w.code || w.id}</SelectItem>)}</SelectContent></Select></div>
+ <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Location</label><Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val ||""})}><SelectTrigger><SelectValue placeholder="Select Warehouse..."/></SelectTrigger><SelectContent>{warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name || w.code || 'Unnamed Entity'}</SelectItem>)}</SelectContent></Select></div>
  </CardContent>
  </Card>
 
@@ -103,18 +103,22 @@ export default function CreateInputLogPage() {
  <th className="p-3 text-left">Trim Code</th>
  <th className="p-3 text-left">Parent</th>
  <th className="p-3 text-right">Length</th>
- <th className="p-3 text-right">Net MÃ‚Â³</th>
+ <th className="p-3 text-right">Gross M³</th>
+ <th className="p-3 text-right">Hollow M³</th>
+ <th className="p-3 text-right">Input Net M³</th>
  </tr>
  </thead>
  <tbody>
- {availableLogs.length === 0 ? <tr><td colSpan={5} className="p-4 md:p-8 text-center text-muted-foreground">No available trimmed logs.</td></tr> :
+ {availableLogs.length === 0 ? <tr><td colSpan={7} className="p-4 md:p-8 text-center text-muted-foreground">No available trimmed logs.</td></tr> :
  availableLogs.map(log => (
  <tr key={log.id} className="border-b hover:bg-muted/20">
  <td className="p-3 text-center"><Checkbox checked={selectedIds.includes(log.id)} onCheckedChange={(checked) => handleSelect(log.id, !!checked)} /></td>
  <td className="p-3 font-medium">{log.trimNumber}</td>
  <td className="p-3 text-muted-foreground">{log.rawLog?.logNumber}</td>
  <td className="p-3 text-right">{log.length} m</td>
- <td className="p-3 text-right font-bold text-primary">{log.netVolume}</td>
+ <td className="p-3 text-right">{(log.grossVolume || 0).toFixed(4)}</td>
+ <td className="p-3 text-right">{(log.hollowVolume || 0).toFixed(4)}</td>
+ <td className="p-3 text-right font-bold text-primary">{((log.grossVolume || 0) - (log.hollowVolume || 0)).toFixed(4)}</td>
  </tr>
  ))
  }

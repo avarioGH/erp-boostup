@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect, use } from "react"
 import { TimberAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -72,7 +72,7 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
         </div>
         
         <div className="flex w-full sm:w-auto items-center gap-2">
-            <Button variant="outline" onClick={() => window.open(`/inventory/production/${id}/print`, "_blank")} className="w-full sm:w-auto shadow-sm font-semibold h-10">
+            <Button variant="outline" onClick={() => window.open(`/inventory/sawn-timber/output/${id}/print`, "_blank")} className="w-full sm:w-auto shadow-sm font-semibold h-10">
               <Printer className="w-4 h-4 mr-2" /> Print Output
             </Button>
             {data.status === "DRAFT" && (

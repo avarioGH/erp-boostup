@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { PurchaseAPI } from "@/lib/api";
@@ -81,29 +81,51 @@ export default function PurchaseDetailPage({ params }: { params: { id: string } 
 
       <Card>
         <CardHeader>
-          <CardTitle>Items</CardTitle>
+          <CardTitle>Sawn Timber Items (Beli Masak)</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>Quantity</TableHead>
+                <TableHead>Product / SKU</TableHead>
+                <TableHead>Supplier Declaration (T×W×L)</TableHead>
+                <TableHead>PCS</TableHead>
+                <TableHead>M&sup3;</TableHead>
                 <TableHead>Unit Price</TableHead>
-                <TableHead>Total</TableHead>
+                <TableHead>Partai</TableHead>
+                <TableHead>Keterangan</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {(purchase.items || []).map((item: any, i: number) => (
                 <TableRow key={i}>
-                  <TableCell>{item.product?.name || item.productId}</TableCell>
-                  <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{item.unitPrice}</TableCell>
-                  <TableCell>{item.quantity * item.unitPrice}</TableCell>
+                  <TableCell>
+                    <div className="font-semibold">{item.timberVariant?.sku || item.timberVariantId}</div>
+                    <div className="text-xs text-muted-foreground">{item.timberVariant?.species} &bull; {item.timberVariant?.grade}</div>
+                  </TableCell>
+                  <TableCell>
+                    {item.purchaseThickness && item.purchaseWidth && item.purchaseLength 
+                      ? <div className="font-medium text-amber-700 dark:text-amber-500">{item.purchaseThickness} &times; {item.purchaseWidth} &times; {item.purchaseLength}</div>
+                      : <div className="text-muted-foreground italic">-</div>}
+                    <div className="text-[10px] text-muted-foreground mt-1">
+                      Canonical: {item.timberVariant?.thickness} &times; {item.timberVariant?.width} &times; {item.timberVariant?.length}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-bold">{item.quantityPcs?.toLocaleString()}</TableCell>
+                  <TableCell className="text-primary font-bold">{item.volumeM3?.toFixed(4)}</TableCell>
+                  <TableCell>{item.unitPrice ? `Rp ${item.unitPrice.toLocaleString()}` : "-"}</TableCell>
+                  <TableCell>
+                    {item.batch && item.batch !== "UNKNOWN" ? (
+                      <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800">{item.batch}</Badge>
+                    ) : (
+                      <Badge variant="secondary">UNKNOWN</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground italic text-sm">{item.notes || "-"}</TableCell>
                 </TableRow>
               ))}
               {(!purchase.items || purchase.items.length === 0) && (
-                <TableRow><TableCell colSpan={4} className="text-center">No items.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-4">No items recorded.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

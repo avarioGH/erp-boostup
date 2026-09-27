@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useEffect, useState } from "react"
 import { use } from "react"
 import { TimberAPI } from "@/lib/api"
@@ -53,11 +53,11 @@ export default function PrintTransferDocument({ params }: { params: Promise<{ id
             <table className="w-full">
               <tbody>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">Transfer Date</td>
+                  <td className="py-1 font-semibold w-[120px] align-top">Transfer Date</td>
                   <td className="py-1 align-top">: {data.transferDate ? new Date(data.transferDate).toLocaleDateString("id-ID") : "-"}</td>
                 </tr>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">Status</td>
+                  <td className="py-1 font-semibold w-[120px] align-top">Status</td>
                   <td className="py-1 align-top">: {data.status || "-"}</td>
                 </tr>
               </tbody>
@@ -67,11 +67,11 @@ export default function PrintTransferDocument({ params }: { params: Promise<{ id
             <table className="w-full">
               <tbody>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">From Location</td>
+                  <td className="py-1 font-semibold w-[120px] align-top">From Location</td>
                   <td className="py-1 align-top font-bold text-gray-800">: {data.fromLocation?.name || "-"}</td>
                 </tr>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">To Location</td>
+                  <td className="py-1 font-semibold w-[120px] align-top">To Location</td>
                   <td className="py-1 align-top font-bold text-gray-800">: {data.toLocation?.name || "-"}</td>
                 </tr>
               </tbody>
@@ -95,8 +95,9 @@ export default function PrintTransferDocument({ params }: { params: Promise<{ id
               <th className="border border-black p-2 text-left">SKU / Variant</th>
               <th className="border border-black p-2 text-center">Species</th>
               <th className="border border-black p-2 text-center">Grade</th>
+              <th className="border border-black p-2 text-left">Batch</th>
               <th className="border border-black p-2 text-right">Qty (PCS)</th>
-              <th className="border border-black p-2 text-right">Volume (M³)</th>
+              <th className="border border-black p-2 text-right">Volume (M3)</th>
             </tr>
           </thead>
           <tbody>
@@ -106,20 +107,21 @@ export default function PrintTransferDocument({ params }: { params: Promise<{ id
                 <td className="border border-black p-2 font-semibold">{item.timberVariant?.sku || "-"}</td>
                 <td className="border border-black p-2 text-center">{item.timberVariant?.species || "-"}</td>
                 <td className="border border-black p-2 text-center">{item.timberVariant?.grade || "-"}</td>
+                <td className="border border-black p-2">{item.batch && item.batch !== "UNKNOWN" ? item.batch : "-"}</td>
                 <td className="border border-black p-2 text-right">{item.quantityPcs}</td>
                 <td className="border border-black p-2 text-right">{item.volumeM3 ? item.volumeM3.toFixed(6) : "0.000000"}</td>
               </tr>
             ))}
             {(!data.items || data.items.length === 0) && (
               <tr>
-                <td colSpan={6} className="border border-black p-4 text-center italic">No items found for this transfer.</td>
+                <td colSpan={7} className="border border-black p-4 text-center italic">No items found for this transfer.</td>
               </tr>
             )}
           </tbody>
           {data.items && data.items.length > 0 && (
             <tfoot>
               <tr className="bg-gray-50 font-bold">
-                <td colSpan={4} className="border border-black p-2 text-right">TOTAL</td>
+                <td colSpan={5} className="border border-black p-2 text-right">TOTAL</td>
                 <td className="border border-black p-2 text-right">{totalPcs}</td>
                 <td className="border border-black p-2 text-right">{totalVolume.toFixed(6)}</td>
               </tr>
@@ -149,4 +151,3 @@ export default function PrintTransferDocument({ params }: { params: Promise<{ id
     </>
   )
 }
-

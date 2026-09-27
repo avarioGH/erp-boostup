@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useEffect, useState } from "react"
 import { use } from "react"
 import { api } from "@/lib/api"
@@ -48,15 +48,15 @@ export default function PrintInputTally({ params }: { params: Promise<{ id: stri
             <table className="w-full">
               <tbody>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">Input Number</td>
-                  <td className="py-1 align-top">: {data.inputNumber || "-"}</td>
+                  <td className="py-1 font-semibold w-[100px] align-top">Input Number</td>
+                  <td className="py-1 align-top font-bold">: {data.inputNumber || "-"}</td>
                 </tr>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">Date</td>
+                  <td className="py-1 font-semibold w-[100px] align-top">Date</td>
                   <td className="py-1 align-top">: {data.date ? new Date(data.date).toLocaleDateString("id-ID") : (data.createdAt ? new Date(data.createdAt).toLocaleDateString("id-ID") : "-")}</td>
                 </tr>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">Shift</td>
+                  <td className="py-1 font-semibold w-[100px] align-top">Shift</td>
                   <td className="py-1 align-top">: {data.shift || "-"}</td>
                 </tr>
               </tbody>
@@ -66,12 +66,12 @@ export default function PrintInputTally({ params }: { params: Promise<{ id: stri
             <table className="w-full">
               <tbody>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">Machine</td>
+                  <td className="py-1 font-semibold w-[100px] align-top">Machine</td>
                   <td className="py-1 align-top">: {data.machine || "-"}</td>
                 </tr>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">Partai</td>
-                  <td className="py-1 align-top">: {data.partai || "-"}</td>
+                  <td className="py-1 font-semibold w-[100px] align-top">Partai</td>
+                  <td className="py-1 align-top font-bold">: {data.partai || "-"}</td>
                 </tr>
               </tbody>
             </table>
@@ -82,33 +82,46 @@ export default function PrintInputTally({ params }: { params: Promise<{ id: stri
         <table className="w-full border-collapse border border-black mb-6 text-[11px]">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-black p-2 text-center w-12">No</th>
+              <th className="border border-black p-2 text-center w-10">No</th>
               <th className="border border-black p-2 text-left">Trim Code</th>
+              <th className="border border-black p-2 text-left">Species</th>
+              <th className="border border-black p-2 text-right">Avg Dia (cm)</th>
               <th className="border border-black p-2 text-right">Length (m)</th>
-              <th className="border border-black p-2 text-right">Net M³</th>
+              <th className="border border-black p-2 text-right">Gross M3</th>
+              <th className="border border-black p-2 text-right">Gerowong M3</th>
+              <th className="border border-black p-2 text-right">Input Net M3</th>
             </tr>
           </thead>
           <tbody>
-            {data.items?.map((item: any, i: number) => (
-              <tr key={item.id || i}>
-                <td className="border border-black p-2 text-center">{i + 1}</td>
-                <td className="border border-black p-2 font-medium">{item.trimmedLog?.trimCode || "-"}</td>
-                <td className="border border-black p-2 text-right">{item.trimmedLog?.length || "-"}</td>
-                <td className="border border-black p-2 text-right">{item.trimmedLog?.netVolume || "-"}</td>
-              </tr>
-            ))}
+            {data.items?.map((item: any, i: number) => {
+              const tLog = item.trimmedLog;
+              return (
+                <tr key={item.id || i}>
+                  <td className="border border-black p-2 text-center">{i + 1}</td>
+                  <td className="border border-black p-2 font-medium">{tLog?.trimCode || "-"}</td>
+                  <td className="border border-black p-2">{tLog?.rawLog?.species || "-"}</td>
+                  <td className="border border-black p-2 text-right">{tLog?.diameter || "-"}</td>
+                  <td className="border border-black p-2 text-right">{tLog?.length || "-"}</td>
+                  <td className="border border-black p-2 text-right">{tLog?.grossVolume?.toFixed(4) || "-"}</td>
+                  <td className="border border-black p-2 text-right">{tLog?.hollowVolume?.toFixed(4) || "-"}</td>
+                  <td className="border border-black p-2 text-right font-bold">{item.volume?.toFixed(4) || "-"}</td>
+                </tr>
+              )
+            })}
             {(!data.items || data.items.length === 0) && (
               <tr>
-                <td colSpan={4} className="border border-black p-4 text-center italic">No logs attached.</td>
+                <td colSpan={8} className="border border-black p-4 text-center italic">No logs attached.</td>
               </tr>
             )}
           </tbody>
           {data.items && data.items.length > 0 && (
             <tfoot>
               <tr className="bg-gray-50 font-bold">
-                <td colSpan={2} className="border border-black p-2 text-right">TOTAL</td>
+                <td colSpan={4} className="border border-black p-2 text-right">TOTAL</td>
                 <td className="border border-black p-2 text-right">{data.totalLength ? Number(data.totalLength).toFixed(2) : "-"}</td>
-                <td className="border border-black p-2 text-right">{data.totalNetVolume ? Number(data.totalNetVolume).toFixed(4) : "-"}</td>
+                <td className="border border-black p-2 text-right">{data.totalGross ? Number(data.totalGross).toFixed(4) : "-"}</td>
+                <td className="border border-black p-2 text-right">{data.totalGerowong ? Number(data.totalGerowong).toFixed(4) : "-"}</td>
+                <td className="border border-black p-2 text-right">{data.totalVolume ? Number(data.totalVolume).toFixed(4) : "-"}</td>
               </tr>
             </tfoot>
           )}
@@ -131,4 +144,3 @@ export default function PrintInputTally({ params }: { params: Promise<{ id: stri
     </>
   )
 }
-

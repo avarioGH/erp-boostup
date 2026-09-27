@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useEffect, useState } from "react"
 import { use } from "react"
 import { ProductionAPI } from "@/lib/api"
@@ -48,12 +48,20 @@ export default function PrintProductionSheet({ params }: { params: Promise<{ id:
             <table className="w-full">
               <tbody>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">Batch Number</td>
-                  <td className="py-1 align-top">: {data.batchNumber || "-"}</td>
+                  <td className="py-1 font-semibold w-[120px] align-top">Production No</td>
+                  <td className="py-1 align-top">: {data.productionNumber || "-"}</td>
                 </tr>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">Date</td>
+                  <td className="py-1 font-semibold w-[120px] align-top">Batch Number</td>
+                  <td className="py-1 align-top font-bold">: {data.batchNumber || "-"}</td>
+                </tr>
+                <tr>
+                  <td className="py-1 font-semibold w-[120px] align-top">Date</td>
                   <td className="py-1 align-top">: {data.productionDate ? new Date(data.productionDate).toLocaleDateString("id-ID") : "-"}</td>
+                </tr>
+                <tr>
+                  <td className="py-1 font-semibold w-[120px] align-top">Shift</td>
+                  <td className="py-1 align-top">: {data.shift || "-"}</td>
                 </tr>
               </tbody>
             </table>
@@ -62,11 +70,11 @@ export default function PrintProductionSheet({ params }: { params: Promise<{ id:
             <table className="w-full">
               <tbody>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">Process</td>
+                  <td className="py-1 font-semibold w-[120px] align-top">Machine / Process</td>
                   <td className="py-1 align-top">: {data.processType || "SAWMILL"}</td>
                 </tr>
                 <tr>
-                  <td className="py-1 font-semibold w-1/3 align-top">Status</td>
+                  <td className="py-1 font-semibold w-[120px] align-top">Status</td>
                   <td className="py-1 align-top">: {data.status || "-"}</td>
                 </tr>
               </tbody>
@@ -103,22 +111,39 @@ export default function PrintProductionSheet({ params }: { params: Promise<{ id:
         <table className="w-full border-collapse border border-black mb-6 text-[11px]">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-black p-2 text-center w-12">No</th>
-              <th className="border border-black p-2 text-left">Variant / SKU</th>
-              <th className="border border-black p-2 text-right">Qty (PCS)</th>
+              <th className="border border-black p-1 text-center w-8">No</th>
+              <th className="border border-black p-1 text-left">SKU</th>
+              <th className="border border-black p-1 text-left">Species</th>
+              <th className="border border-black p-1 text-left">Grade</th>
+              <th className="border border-black p-1 text-center">T</th>
+              <th className="border border-black p-1 text-center">W</th>
+              <th className="border border-black p-1 text-center">L</th>
+              <th className="border border-black p-1 text-left">Partai</th>
+              <th className="border border-black p-1 text-right">PCS</th>
+              <th className="border border-black p-1 text-right">M3</th>
             </tr>
           </thead>
           <tbody>
-            {(data.outputs || []).map((out: any, i: number) => (
-              <tr key={out.id || i}>
-                <td className="border border-black p-2 text-center">{i + 1}</td>
-                <td className="border border-black p-2">{out.timberVariant?.sku || out.timberVariantId || "-"}</td>
-                <td className="border border-black p-2 text-right">{out.quantityPcs || "-"}</td>
-              </tr>
-            ))}
+            {(data.outputs || []).map((out: any, i: number) => {
+              const tv = out.timberVariant;
+              return (
+                <tr key={out.id || i}>
+                  <td className="border border-black p-1 text-center">{i + 1}</td>
+                  <td className="border border-black p-1 font-semibold">{tv?.sku || out.timberVariantId || "-"}</td>
+                  <td className="border border-black p-1">{tv?.species || "-"}</td>
+                  <td className="border border-black p-1">{tv?.grade || "-"}</td>
+                  <td className="border border-black p-1 text-center">{tv?.thickness || "-"}</td>
+                  <td className="border border-black p-1 text-center">{tv?.width || "-"}</td>
+                  <td className="border border-black p-1 text-center">{tv?.length || "-"}</td>
+                  <td className="border border-black p-1">{data.batchNumber || "-"}</td>
+                  <td className="border border-black p-1 text-right font-bold">{out.quantityPcs || "-"}</td>
+                  <td className="border border-black p-1 text-right">{out.volumeM3 ? Number(out.volumeM3).toFixed(4) : "-"}</td>
+                </tr>
+              )
+            })}
             {(!data.outputs || data.outputs.length === 0) && (
               <tr>
-                <td colSpan={3} className="border border-black p-4 text-center italic">No outputs recorded yet.</td>
+                <td colSpan={10} className="border border-black p-4 text-center italic">No outputs recorded yet.</td>
               </tr>
             )}
           </tbody>
@@ -129,15 +154,15 @@ export default function PrintProductionSheet({ params }: { params: Promise<{ id:
           <table className="w-full border-collapse border border-black text-[11px]">
             <tbody>
               <tr>
-                <td className="border border-black p-2 font-bold bg-gray-100">Total Input (M³)</td>
+                <td className="border border-black p-2 font-bold bg-gray-100">Total Input (M3)</td>
                 <td className="border border-black p-2 text-right">{data.totalInputVolume ? Number(data.totalInputVolume).toFixed(4) : "-"}</td>
               </tr>
               <tr>
-                <td className="border border-black p-2 font-bold bg-gray-100">Total Output (M³)</td>
+                <td className="border border-black p-2 font-bold bg-gray-100">Total Output (M3)</td>
                 <td className="border border-black p-2 text-right">{data.totalOutputVolume ? Number(data.totalOutputVolume).toFixed(4) : "-"}</td>
               </tr>
               <tr>
-                <td className="border border-black p-2 font-bold bg-gray-200">Yield</td>
+                <td className="border border-black p-2 font-bold bg-gray-200">Rendement / Yield</td>
                 <td className="border border-black p-2 text-right font-bold">{data.yieldPercentage ? Number(data.yieldPercentage).toFixed(2) + "%" : "-"}</td>
               </tr>
             </tbody>
@@ -161,4 +186,3 @@ export default function PrintProductionSheet({ params }: { params: Promise<{ id:
     </>
   )
 }
-

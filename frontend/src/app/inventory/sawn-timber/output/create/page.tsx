@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from "react"
 import { TimberAPI, InventoryAPI, MasterDataAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -104,7 +104,12 @@ export default function CreateOutputPage() {
             <div className="space-y-2">
               <label className="text-[13px] font-semibold text-foreground/90">Source Input Log <span className="text-destructive">*</span></label>
               <Select value={form.inputLogId} onValueChange={(val) => setForm({...form, inputLogId: val || ""})}>
-                <SelectTrigger className="bg-background h-10"><SelectValue placeholder="Select Input Log..."/></SelectTrigger>
+                <SelectTrigger className="bg-background h-10">
+                  {form.inputLogId ? (() => {
+                    const l = inputLogs.find(x => x.id === form.inputLogId);
+                    return l ? `${l.inputNumber} - ${l.species} (Qty: ${l.totalPcs})` : <SelectValue placeholder="Select Input Log..."/>;
+                  })() : <SelectValue placeholder="Select Input Log..."/>}
+                </SelectTrigger>
                 <SelectContent>
                   {inputLogs.map(l => <SelectItem key={l.id} value={l.id}>{l.inputNumber} - {l.species} (Qty: {l.totalPcs})</SelectItem>)}
                 </SelectContent>
@@ -113,7 +118,9 @@ export default function CreateOutputPage() {
             <div className="space-y-2">
               <label className="text-[13px] font-semibold text-foreground/90">Warehouse Location <span className="text-destructive">*</span></label>
               <Select value={form.locationId} onValueChange={(val) => setForm({...form, locationId: val || ""})}>
-                <SelectTrigger className="bg-background h-10"><SelectValue placeholder="Select Warehouse..."/></SelectTrigger>
+                <SelectTrigger className="bg-background h-10">
+                  {form.locationId ? warehouses.find(w => w.id === form.locationId)?.name || <SelectValue placeholder="Select Warehouse..."/> : <SelectValue placeholder="Select Warehouse..."/>}
+                </SelectTrigger>
                 <SelectContent>
                   {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
                 </SelectContent>
@@ -127,7 +134,9 @@ export default function CreateOutputPage() {
               <div className="space-y-2">
                 <label className="text-[13px] font-semibold text-foreground/90">Shift</label>
                 <Select value={form.shift} onValueChange={(val) => setForm({...form, shift: val || "1"})}>
-                  <SelectTrigger className="bg-background h-10"><SelectValue/></SelectTrigger>
+                  <SelectTrigger className="bg-background h-10">
+                    {form.shift ? `Shift ${form.shift}` : <SelectValue/>}
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">Shift 1</SelectItem>
                     <SelectItem value="2">Shift 2</SelectItem>
@@ -158,7 +167,7 @@ export default function CreateOutputPage() {
                   setItem({...item, gradeId: val || "", grade: selected ? selected.code : ""});
                 }}>
                   <SelectTrigger className="bg-background h-10">
-                    <SelectValue placeholder="Pilih Grade" />
+                    {item.gradeId ? grades.find(g => g.id === item.gradeId)?.name || <SelectValue placeholder="Pilih Grade" /> : <SelectValue placeholder="Pilih Grade" />}
                   </SelectTrigger>
                   <SelectContent>
                     {grades.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}

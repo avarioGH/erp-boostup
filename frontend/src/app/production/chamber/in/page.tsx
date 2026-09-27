@@ -90,14 +90,14 @@ export default function ChamberInPage() {
  <label className="text-sm font-medium">Source Yard (From)</label>
  <Select value={form.fromLocationId} onValueChange={(v) => setForm({...form, fromLocationId: v || ''})}>
  <SelectTrigger><SelectValue placeholder="Select Source" /></SelectTrigger>
- <SelectContent>{normalWarehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name || w.code || w.id}</SelectItem>)}</SelectContent>
+ <SelectContent>{normalWarehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name || w.code || 'Unnamed Entity'}</SelectItem>)}</SelectContent>
  </Select>
  </div>
  <div className="space-y-2">
  <label className="text-sm font-medium">Kiln Chamber (To)</label>
  <Select value={form.toLocationId} onValueChange={(v) => setForm({...form, toLocationId: v || ''})}>
  <SelectTrigger><SelectValue placeholder="Select Chamber" /></SelectTrigger>
- <SelectContent>{chambers.map(w => <SelectItem key={w.id} value={w.id}>{w.name || w.code || w.id}</SelectItem>)}</SelectContent>
+ <SelectContent>{chambers.map(w => <SelectItem key={w.id} value={w.id}>{w.name || w.code || 'Unnamed Entity'}</SelectItem>)}</SelectContent>
  </Select>
  </div>
  </div>
