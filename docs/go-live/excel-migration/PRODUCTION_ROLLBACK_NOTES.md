@@ -1,0 +1,16 @@
+﻿# PRODUCTION ROLLBACK NOTES
+
+## DATABASE RESTORE
+`DATABASE RESTORE NOT VERIFIED`
+
+## APPLICATION-LEVEL ROLLBACK
+- Migration scripts tag every record with `EXCEL_IMPORT:<workbook>:<sheet>:<row>`.
+- Deletion involves a cascaded reverse-sweep:
+  1. Delete Shipment where source = EXCEL_IMPORT...
+  2. Delete SawnTimberOutput where source = EXCEL_IMPORT...
+  3. Delete InputLog...
+  4. Delete TrimmedLog...
+  5. Delete RawLog...
+  6. Rebuild Ledger balances.
+
+WARNING: A full DB snapshot (mongodump) MUST be taken before executing the runbook.
