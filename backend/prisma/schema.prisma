@@ -3394,6 +3394,7 @@ model TimberPurchaseLogItem {
   
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  notes           String?
 }
 
 model TimberShipment {
@@ -3496,3 +3497,4 @@ model TimberStockOpnameItem {
   
   notes               String?
 }
+

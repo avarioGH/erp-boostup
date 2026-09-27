@@ -265,8 +265,8 @@ export default function CreatePurchasePage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Notes</Label>
-                      <Input placeholder="Optional remarks" value={item.notes} onChange={(e) => handleItemChange(index, 'notes', e.target.value)} />
+                      <Label>Keterangan</Label>
+                      <textarea className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" placeholder="Tambahkan keterangan atau catatan..." value={item.notes} onChange={(e) => handleItemChange(index, 'notes', e.target.value)} />
                     </div>
                   </div>
                 </div>
@@ -374,8 +374,8 @@ export default function CreatePurchasePage() {
                       <Input placeholder="Contoh: BATCH-LOG-A" value={log.batch} onChange={(e) => handleLogChange(index, 'batch', e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Notes</Label>
-                      <Input placeholder="Optional remarks" value={log.notes} onChange={(e) => handleLogChange(index, 'notes', e.target.value)} />
+                      <Label>Keterangan</Label>
+                      <textarea className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" placeholder="Tambahkan keterangan atau catatan..." value={log.notes} onChange={(e) => handleLogChange(index, 'notes', e.target.value)} />
                     </div>
                   </div>
                 </div>
