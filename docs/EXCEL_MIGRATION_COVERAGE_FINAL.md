@@ -15,8 +15,9 @@ Imported (1,440) / Business Records (4,100) * 100
 = **35.12%**
 
 ### Potential Business Coverage (POTENTIAL ONLY)
-If the 1,148 "Unresolved" records (Unmapped, Ambiguous, Blocked) receive business approval and are subsequently imported:
+*Note: This is POTENTIAL COVERAGE ONLY. It is NOT actual migration coverage.*
+If the 1,148 "Unresolved" records (Unmapped, Ambiguous, Blocked) receive formal business approval and are subsequently imported:
 (Imported [1,440] + Unresolved [1,148]) / Business Records (4,100) * 100
-= **63.12%**
+= **63.12% POTENTIAL COVERAGE**
 
 *Note: Stock Snapshots (1,500) and Duplicates (12) are excluded from the importable numerator permanently.*
