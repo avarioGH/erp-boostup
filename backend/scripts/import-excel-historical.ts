@@ -25,7 +25,7 @@ async function main() {
   if (!category) category = await prisma.category.create({ data: { company_id, name: 'Timber' } });
 
   let unit = await prisma.unit.findFirst({ where: { company_id } });
-  if (!unit) unit = await prisma.unit.create({ data: { company_id, code: 'PCS', name: 'Pieces' } });
+  if (!unit) unit = await prisma.unit.create({ data: { company_id, name: 'Pieces' } });
 
   let product = await prisma.product.findFirst({ where: { company_id } });
   if (!product) product = await prisma.product.create({ data: { company_id, category_id: category.id, unit_id: unit.id, code: 'PRD-TIMBER', name: 'Sawn Timber', purchase_price: 0, selling_price: 0 } });
