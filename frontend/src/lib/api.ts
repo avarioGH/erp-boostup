@@ -329,3 +329,4 @@ export const ReportsAPI: any = {
   getTraceability: async (params?: any) => (await api.get('/inventory/reports/traceability', { params })).data,
 };
 
+
