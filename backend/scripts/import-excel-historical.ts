@@ -105,6 +105,32 @@ async function main() {
     }
   });
 
+  // Inject Raw Log (DUKB)
+  await prisma.rawLog.create({
+    data: {
+      logNumber: DUKB-HIST-,
+      species: 'Meranti',
+      speciesId: species.id,
+      sourceId: supplier.id,
+      quantity: 1,
+      originalLength: 4,
+      diameter1: 40,
+      diameter2: 42,
+      diameter3: 40,
+      diameter4: 42,
+      averageDiameter: 41,
+      roundedDiameter: 41,
+      grossVolume: 0.528,
+      gerowong: 10,
+      hollowVolume: 0.03,
+      netVolume: 0.498,
+      batch: 'UNKNOWN',
+      status: 'AVAILABLE',
+      notes: 'Historis Phase 53'
+    }
+  });
+  console.log('Berhasil memasukkan dokumen DUKB:', DUKB-HIST-);
+
   let existingStock = await prisma.timberStock.findFirst({
     where: { locationId: warehouse.id, timberVariantId: variant.id, batch: 'UNKNOWN' }
   });
@@ -148,3 +174,4 @@ async function main() {
 }
 
 main().catch(e => console.error(e)).finally(async () => { await prisma.$disconnect(); });
+
