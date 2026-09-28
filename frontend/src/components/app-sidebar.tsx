@@ -248,15 +248,15 @@ export function AppSidebar() {
  const isIkan = userName.includes('ikan') || (!isKayu); // Default to Ikan logic if not explicitly Kayu
  
  if (isKayu) {
-   const allowedForKayu = ['inventory', 'production', 'dashboard', 'settings', 'ai'];
-   if (item.id && !allowedForKayu.includes(item.id)) return false;
- } else {
-   const hiddenForIkan = ['inventory', 'production'];
-   if (item.id && hiddenForIkan.includes(item.id)) return false;
- }
-
- if (!item.id || user?.role === 'Owner') return true;
- return user?.accessible_modules?.includes(item.id);
+      const allowedForKayu = ['inventory', 'production', 'dashboard', 'settings', 'ai'];
+      if (item.id && !allowedForKayu.includes(item.id)) return false;
+      if (!item.id || user?.role === 'Owner') return true;
+      return user?.accessible_modules?.includes(item.id);
+    } else {
+      const hiddenForIkan = ['inventory', 'production'];
+      if (item.id && hiddenForIkan.includes(item.id)) return false;
+      return true; // Bypass accessible modules for Ikan
+    }
  }).map((item) => {
  const active = isActive(item.url)
  return (
