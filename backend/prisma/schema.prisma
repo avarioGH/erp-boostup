@@ -111,6 +111,8 @@ model Company {
   timberStockOpnames TimberStockOpname[]
   timberStockReservations TimberStockReservation[]
   timberVariants TimberVariant[]
+
+  exportShipments ExportShipment[]
 }
 
 model CompanySetting {
@@ -3498,3 +3500,38 @@ model TimberStockOpnameItem {
   notes               String?
 }
 
+
+// ==================================================
+// EXPORT PACKING LIST (FISH & GENERAL)
+// ==================================================
+
+model ExportShipment {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id     String   @db.ObjectId
+  company        Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  containerNo    String
+  sealNo         String
+  vehicleNo      String
+  exportDate     DateTime
+  status         String   @default("DRAFT")
+  
+  items          ExportShipmentItem[]
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ExportShipmentItem {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  exportId       String   @db.ObjectId
+  export         ExportShipment @relation(fields: [exportId], references: [id], onDelete: Cascade)
+  
+  groupName      String   // Supplier / Customer grouping (e.g. "PAK LUCKY")
+  productName    String
+  qtyKg          Float
+  qtyMc          Int
+  qtySak         Int
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

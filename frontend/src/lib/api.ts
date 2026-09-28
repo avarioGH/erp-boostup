@@ -335,3 +335,11 @@ export const ReportsAPI: any = {
 
 
 
+
+export const exportShipment = {
+  getAll: async () => (await api.get('/sales/export-shipments')).data,
+  getOne: async (id: string) => (await api.get('/sales/export-shipments/' + id)).data,
+  create: async (data: any) => (await api.post('/sales/export-shipments', data)).data,
+  update: async (id: string, data: any) => (await api.put('/sales/export-shipments/' + id, data)).data,
+  delete: async (id: string) => (await api.delete('/sales/export-shipments/' + id)).data,
+};
