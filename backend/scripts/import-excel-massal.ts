@@ -78,7 +78,7 @@ async function main() {
               data: {
                 logNumber: logNumberStr,
                 species: species.toString(),
-                partai: "Batch Excel",
+                batch: "Batch Excel",
                 originalLength: length,
                 diameter1: diameter,
                 diameter2: diameter,
@@ -107,3 +107,4 @@ async function main() {
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());
+
