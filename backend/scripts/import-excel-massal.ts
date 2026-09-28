@@ -21,18 +21,18 @@ async function main() {
   }
   const companyId = company.id;
 
-  // Dapatkan lokasi default
-  let location = await prisma.location.findFirst({ where: { company_id: companyId } });
-  if (!location) {
-    location = await prisma.location.create({
-      data: { company_id: companyId, code: 'LOC-KAYU', name: 'Gudang Kayu Utama' }
+  // Dapatkan Warehouse default (bukan Location)
+  let warehouse = await prisma.warehouse.findFirst({ where: { company_id: companyId } });
+  if (!warehouse) {
+    warehouse = await prisma.warehouse.create({
+      data: { company_id: companyId, code: 'WH-KAYU', name: 'Gudang Kayu Utama' }
     });
   }
 
   let importedLogs = 0;
   
-  // Mencari file excel2.xlsx di folder root atau backend
-  const possiblePaths = ['../excel2.xlsx', 'excel2.xlsx', '../../excel2.xlsx'];
+  // Mencari file excel2.xlsx
+  const possiblePaths = ['../historical-data/excel2.xlsx', 'historical-data/excel2.xlsx', '../../historical-data/excel2.xlsx'];
   let targetFile = '';
   for (const p of possiblePaths) {
     if (fs.existsSync(path.resolve(__dirname, p))) {
@@ -42,7 +42,7 @@ async function main() {
   }
 
   if (!targetFile) {
-    console.error("Error: File 'excel2.xlsx' tidak ditemukan! Pastikan file berada di folder yang sama.");
+    console.error("Error: File 'excel2.xlsx' tidak ditemukan! Pastikan file berada di folder historical-data.");
     return;
   }
 
@@ -70,34 +70,32 @@ async function main() {
           const logNumberStr = logNo.toString().trim();
           
           const exist = await prisma.rawLog.findFirst({
-            where: { logNumber: logNumberStr, company_id: companyId }
+            where: { logNumber: logNumberStr }
           });
           
           if (!exist) {
             await prisma.rawLog.create({
               data: {
                 logNumber: logNumberStr,
-                company_id: companyId,
                 species: species.toString(),
                 partai: "Batch Excel",
-                lengthM: length,
-                diameterAvgCm: diameter,
-                volumeM3: volume,
+                originalLength: length,
+                diameter1: diameter,
+                diameter2: diameter,
+                diameter3: diameter,
+                diameter4: diameter,
+                averageDiameter: diameter,
+                roundedDiameter: diameter,
+                grossVolume: volume,
+                netVolume: volume,
                 status: 'AVAILABLE',
-                locationId: location.id
+                locationId: warehouse.id
               }
             });
             importedLogs++;
           }
         }
       }
-    }
-    
-    // 2. PARSING STOCK (SAWN TIMBER)
-    const stockSheet = wb.Sheets['STOCK'];
-    if (stockSheet) {
-      console.log("Parsing Sheet 'STOCK' (Sawn Timber)...");
-      // Simplified parsing logic for stock would go here
     }
 
     console.log(`==========================================`);
