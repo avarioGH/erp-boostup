@@ -52,7 +52,7 @@ export default function CreatePurchasePage() {
       try {
         const [srcData, whData, varData, specData] = await Promise.all([
           api.get("/inventory/master-data/timber-source").then(res => res.data),
-          api.get("/inventory/master-data/warehouse").then(res => res.data),
+          api.get("/inventory/warehouses").then(res => res.data),
           api.get("/inventory/master-data/timber-variant").then(res => res.data),
           api.get("/inventory/master-data/timber-species").then(res => res.data)
         ])
@@ -335,3 +335,4 @@ export default function CreatePurchasePage() {
     </div>
   )
 }
+
