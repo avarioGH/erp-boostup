@@ -46,6 +46,7 @@ export const InventoryAPI: any = {
   getCategories: async () => (await api.get('/inventory/categories')).data,
   getProducts: async () => (await api.get('/inventory/products')).data,
   getWarehouses: async () => (await api.get('/inventory/warehouses')).data,
+    getTimberVariants: async () => (await api.get('/inventory/master-data/timber-variant')).data,
   createProduct: async (data: any) => (await api.post('/inventory/products', data, { headers: { 'Content-Type': 'multipart/form-data' } })).data,
   createWarehouse: async (data: any) => (await api.post('/inventory/warehouses', data)).data,
   updateWarehouse: async (id: string, data: any) => (await api.put('/inventory/warehouses/' + id, data)).data,
@@ -328,5 +329,6 @@ export const ReportsAPI: any = {
   getStockCard: async (params?: any) => (await api.get('/inventory/reports/stock-card', { params })).data,
   getTraceability: async (params?: any) => (await api.get('/inventory/reports/traceability', { params })).data,
 };
+
 
 

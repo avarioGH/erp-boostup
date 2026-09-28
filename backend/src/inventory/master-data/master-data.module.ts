@@ -7,7 +7,8 @@ import { TimberSourceController } from './controllers/timber-source.controller';
 import { TimberSourceService } from './services/timber-source.service';
 import { LocationController } from './controllers/location.controller';
 import { LocationService } from './services/location.service';
-import { VehicleController } from './controllers/vehicle.controller';
+import { VehicleController, TimberVariantController } from './controllers/vehicle.controller';
+import { TimberVariantController } from './controllers/timber-variant.controller';
 import { VehicleService } from './services/vehicle.service';
 import { DriverController } from './controllers/driver.controller';
 import { DriverService } from './services/driver.service';
@@ -20,7 +21,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
     TimberGradeController,
     TimberSourceController,
     LocationController,
-    VehicleController,
+    VehicleController, TimberVariantController,
     DriverController
   ],
   providers: [
@@ -33,3 +34,4 @@ import { PrismaModule } from '../../prisma/prisma.module';
   ],
 })
 export class MasterDataModule {}
+
