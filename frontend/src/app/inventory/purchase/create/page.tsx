@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
-import { M3asterDataAPI, InventoryAPI, PurchaseAPI } from "@/lib/api";
+import { MasterDataAPI, InventoryAPI, PurchaseAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ export default function CreatePurchasePage() {
     items: [{ 
       timberVariantId: "", 
       quantityPcs: 1, 
-      volumeM33: 0,
+      volumeM3: 0,
       purchaseThickness: 0,
       purchaseWidth: 0,
       purchaseLength: 0,
@@ -37,7 +37,7 @@ export default function CreatePurchasePage() {
   });
 
   useEffect(() => {
-    M3asterDataAPI.getSources().then((res: any) => setSources(res?.data || res || []));
+    MasterDataAPI.getSources().then((res: any) => setSources(res?.data || res || []));
     InventoryAPI.getWarehouses().then((res: any) => setWarehouses(res?.data || res || []));
     InventoryAPI.getTimberVariants().then((res: any) => setVariants(res?.data || res || []));
   }, []);
@@ -64,7 +64,7 @@ export default function CreatePurchasePage() {
     <div className="p-4 md:p-6 max-w-5xl mx-auto pb-12 animate-in fade-in duration-500">
       <Card className="shadow-sm border-border">
         <CardHeader className="border-b border-border bg-muted/20 pb-4">
-          <CardTitle className="text-xl">Create Purchase (Beli M3asak)</CardTitle>
+          <CardTitle className="text-xl">Create Purchase (Beli Masak)</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
           {error && <Alert variant="destructive" className="mb-6"><AlertDescription>{error}</AlertDescription></Alert>}
@@ -126,7 +126,7 @@ export default function CreatePurchasePage() {
                         const variant = variants.find(v => v.id === val);
                         newItems[index].timberVariantId = val || "";
                         if (variant) {
-                           newItems[index].volumeM33 = variant.volumePerPiece * newItems[index].quantityPcs;
+                           newItems[index].volumeM3 = variant.volumePerPiece * newItems[index].quantityPcs;
                            newItems[index].purchaseThickness = variant.thickness;
                            newItems[index].purchaseWidth = variant.width;
                            newItems[index].purchaseLength = variant.length;
@@ -147,16 +147,16 @@ export default function CreatePurchasePage() {
                         const pcs = parseInt(e.target.value) || 0;
                         newItems[index].quantityPcs = pcs;
                         const variant = variants.find(v => v.id === newItems[index].timberVariantId);
-                        if (variant) newItems[index].volumeM33 = pcs * variant.volumePerPiece;
+                        if (variant) newItems[index].volumeM3 = pcs * variant.volumePerPiece;
                         setForm({ ...form, items: newItems });
                       }} />
                     </div>
 
                     <div className="space-y-2">
                       <Label>Net Vol (M3)</Label>
-                      <Input type="number" step="0.0001" value={item.volumeM33} onChange={(e) => {
+                      <Input type="number" step="0.0001" value={item.volumeM3} onChange={(e) => {
                         const newItems = [...form.items];
-                        newItems[index].volumeM33 = parseFloat(e.target.value) || 0;
+                        newItems[index].volumeM3 = parseFloat(e.target.value) || 0;
                         setForm({ ...form, items: newItems });
                       }} />
                     </div>
@@ -198,7 +198,7 @@ export default function CreatePurchasePage() {
                     </div>
                     
                     <div className="space-y-2 md:col-span-4">
-                      <Label>Keterangan Item (APM3/AF/LKL dsb)</Label>
+                      <Label>Keterangan Item (APM/AF/LKL dsb)</Label>
                       <Input value={item.notes} onChange={(e) => {
                         const newItems = [...form.items];
                         newItems[index].notes = e.target.value;
@@ -211,7 +211,7 @@ export default function CreatePurchasePage() {
               
               <Button type="button" variant="outline" className="w-full border-dashed" onClick={() => setForm({ 
                 ...form, 
-                items: [...form.items, { timberVariantId: "", quantityPcs: 1, volumeM33: 0, purchaseThickness: 0, purchaseWidth: 0, purchaseLength: 0, unitPrice: 0, notes: "" }] 
+                items: [...form.items, { timberVariantId: "", quantityPcs: 1, volumeM3: 0, purchaseThickness: 0, purchaseWidth: 0, purchaseLength: 0, unitPrice: 0, notes: "" }] 
               })}>
                 <Plus className="h-4 w-4 mr-2" />
                 Tambah Item Kayu
@@ -228,4 +228,3 @@ export default function CreatePurchasePage() {
     </div>
   );
 }
-
