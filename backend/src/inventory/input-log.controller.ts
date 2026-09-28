@@ -7,6 +7,8 @@ import { Permissions } from '../auth/permissions.decorator';
 @Controller('inventory/input-logs')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class InputLogController {
+  @Delete(':id')
+  async delete(@Param('id') id: string) { return this.service.deleteInputLog(id); }
   constructor(private readonly inputLogService: InputLogService) {}
 
   @Get()

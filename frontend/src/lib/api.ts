@@ -71,6 +71,9 @@ export const TimberAPI: any = {
   createBulkLogs: async (data: any) => (await api.post('/inventory/logs/bulk', data)).data,
   updateLog: async (id: string, data: any) => (await api.put('/inventory/logs/' + id, data)).data,
   deleteLog: async (id: string) => (await api.delete('/inventory/logs/' + id)).data,
+  deleteTrimmingLog: async (id: string) => (await api.delete('/inventory/trimming/' + id)).data,
+  deleteInputLog: async (id: string) => (await api.delete('/inventory/input-logs/' + id)).data,
+  deletePurchase: async (id: string) => (await api.delete('/inventory/purchase/' + id)).data,
   cancelRawLog: async (id: string) => (await api.post('/inventory/logs/' + id + '/cancel')).data,
 
   // --- Trimmed Logs ---

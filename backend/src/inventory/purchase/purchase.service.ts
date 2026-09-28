@@ -245,6 +245,45 @@ export class PurchaseService {
     });
   }
 
+
+  async deletePurchase(id: string) {
+    const purchase = await this.prisma.timberPurchase.findUnique({ 
+      where: { id },
+      include: { 
+        purchaseItems: { include: { purchaseLogItems: { include: { rawLogs: true } } } }
+      }
+    });
+    if (!purchase) throw new Error('Purchase not found');
+    
+    // Check if any RawLog has been processed (status != AVAILABLE)
+    for (const item of purchase.purchaseItems) {
+      for (const logItem of item.purchaseLogItems) {
+        for (const rawLog of logItem.rawLogs) {
+          if (rawLog.status !== 'AVAILABLE') {
+            throw new Error('Cannot delete purchase because some logs have already been processed (Trimming/Input).');
+          }
+        }
+      }
+    }
+
+    // Delete RawLogs
+    for (const item of purchase.purchaseItems) {
+      for (const logItem of item.purchaseLogItems) {
+        await this.prisma.rawLog.deleteMany({ where: { purchaseLogItemId: logItem.id } });
+      }
+    }
+    
+    // Delete Log Items
+    for (const item of purchase.purchaseItems) {
+      await this.prisma.timberPurchaseLogItem.deleteMany({ where: { purchaseItemId: item.id } });
+    }
+
+    // Delete Items
+    await this.prisma.timberPurchaseItem.deleteMany({ where: { purchaseId: id } });
+
+    // Delete Purchase
+    return this.prisma.timberPurchase.delete({ where: { id } });
+  }
 }
 
 

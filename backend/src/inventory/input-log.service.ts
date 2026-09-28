@@ -190,6 +190,26 @@ export class InputLogService {
       return log;
     });
   }
+
+  async deleteInputLog(id: string) {
+    const inputLog = await this.prisma.inputLog.findUnique({ where: { id }, include: { inputLogItems: true } });
+    if (!inputLog) throw new Error('Input Log not found');
+    
+    // Kembalikan status TrimmedLog ke AVAILABLE
+    for (const item of inputLog.inputLogItems) {
+      if (item.trimmedLogId) {
+        await this.prisma.trimmedLog.update({
+          where: { id: item.trimmedLogId },
+          data: { status: 'AVAILABLE' }
+        });
+      }
+    }
+
+    // Delete items first
+    await this.prisma.inputLogItem.deleteMany({ where: { inputLogId: id } });
+    // Delete log
+    return this.prisma.inputLog.delete({ where: { id } });
+  }
 }
 
 

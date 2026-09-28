@@ -153,6 +153,21 @@ export class TrimmedLogService {
     await this.audit.log({ company_id: 'SYSTEM', action: 'CANCEL', entity: 'TRIMMED_LOG', entity_id: id, before_data: { status: log.status }, after_data: { status: 'CANCELLED' } });
     return result;
   }
+
+  async deleteTrimmedLog(id: string) {
+    const log = await this.prisma.trimmedLog.findUnique({ where: { id } });
+    if (!log) throw new Error('Trimmed Log not found');
+    
+    // Kembalikan status RawLog ke AVAILABLE
+    if (log.rawLogId) {
+      await this.prisma.rawLog.update({
+        where: { id: log.rawLogId },
+        data: { status: 'AVAILABLE' }
+      });
+    }
+
+    return this.prisma.trimmedLog.delete({ where: { id } });
+  }
 }
 
 

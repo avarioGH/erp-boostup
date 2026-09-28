@@ -71,7 +71,18 @@ export default function TrimmingListPage() {
  <td className="py-3 px-6 text-right text-[13px]">{log.length} m</td>
  <td className="py-3 px-6 text-right font-bold text-foreground/90">{log.netVolume}</td>
  <td className="py-3 px-6 text-center text-[13px]">{log.status === "AVAILABLE" || log.status === "CONFIRMED" ? <span className="inline-flex items-center rounded-sm bg-success/15 px-2 py-0.5 text-[11px] font-bold text-success-foreground uppercase tracking-wider">{log.status}</span> : <span className="inline-flex items-center rounded-sm bg-secondary/80 text-secondary-foreground px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider">{log.status}</span>}</td>
- <td className="py-3 px-6 text-center text-[13px]"><Button variant="outline" size="sm" className="text-xs">View Details</Button></td>
+ <td className="py-3 px-6 text-center text-[13px]" onClick={e => e.stopPropagation()}>
+    <DropdownMenu>
+      <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">
+        <MoreHorizontal className="h-4 w-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => router.push(`/inventory/trimming/${log.id}`)}><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push(`/inventory/trimming/${log.id}/edit`)}><Pencil className="w-4 h-4 mr-2" /> Edit Log</DropdownMenuItem>
+        <DropdownMenuItem onClick={(e) => handleDelete(e, log.id)} className="text-destructive"><Trash className="w-4 h-4 mr-2" /> Delete Log</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </td>
  </tr>
  ))
  }

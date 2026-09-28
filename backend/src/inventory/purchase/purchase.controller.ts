@@ -7,6 +7,8 @@ import { Permissions } from '../../auth/permissions.decorator';
 @Controller('inventory/timber-purchase')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class PurchaseController {
+  @Delete(':id')
+  async delete(@Param('id') id: string) { return this.purchaseService.deletePurchase(id); }
   constructor(private readonly purchaseService: PurchaseService) {}
 
   @Post()
