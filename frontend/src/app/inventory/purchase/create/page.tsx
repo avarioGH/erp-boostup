@@ -153,7 +153,7 @@ export default function CreatePurchasePage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Net Vol (M3ï¿½)</Label>
+                      <Label>Net Vol (M3)</Label>
                       <Input type="number" step="0.0001" value={item.volumeM33} onChange={(e) => {
                         const newItems = [...form.items];
                         newItems[index].volumeM33 = parseFloat(e.target.value) || 0;
