@@ -86,7 +86,7 @@ async function main() {
                 roundedDiameter: diameter,
                 grossVolume: volume,
                 netVolume: volume,
-                status: 'AVAILABLE',
+                status: 'AVAILABLE', barcode: 'RAW-' + logNumberStr,
                 locationId: warehouse.id
               }
             });
@@ -105,5 +105,6 @@ async function main() {
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());
+
 
 
