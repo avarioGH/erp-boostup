@@ -11,9 +11,7 @@ async function main() {
   console.log("==========================================");
   
   // Ambil company Boostup Kayu
-  const company = await prisma.company.findFirst({
-    where: { name: { contains: 'kayu' } }
-  });
+  let company = await prisma.company.findFirst({ where: { name: { contains: 'kayu', mode: 'insensitive' } } }); if (!company) { company = await prisma.company.findFirst(); }
   
   if (!company) {
     console.error("Company Kayu tidak ditemukan!");
@@ -107,4 +105,5 @@ async function main() {
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());
+
 
