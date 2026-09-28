@@ -243,10 +243,12 @@ export function AppSidebar() {
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
  {items.filter(item => {
- const isKayu = user?.name?.toLowerCase().includes('kayu') || user?.company?.name?.toLowerCase().includes('kayu') || user?.email?.toLowerCase().includes('kayu');
+ const userName = user?.name?.toLowerCase() || "";
+ const isKayu = userName.includes('kayu');
+ const isIkan = userName.includes('ikan') || (!isKayu); // Default to Ikan logic if not explicitly Kayu
  
  if (isKayu) {
-   const allowedForKayu = ['inventory', 'production', 'dashboard', 'settings'];
+   const allowedForKayu = ['inventory', 'production', 'dashboard', 'settings', 'ai'];
    if (item.id && !allowedForKayu.includes(item.id)) return false;
  } else {
    const hiddenForIkan = ['inventory', 'production'];
@@ -354,6 +356,7 @@ export function AppSidebar() {
  </Sidebar>
  )
 }
+
 
 
 
