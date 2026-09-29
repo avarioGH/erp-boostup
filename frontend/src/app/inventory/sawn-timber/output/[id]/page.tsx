@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect, use } from "react"
 import { TimberAPI, MasterDataAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -215,8 +215,8 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
                         <td className="py-3 px-6 text-center">
                           {data.status === 'DRAFT' ? (
                             <DropdownMenu>
-                              <DropdownMenuTrigger className={inline-flex items-center justify-center rounded-sm px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider transition-colors }>
-                                {item.grade === 'PENDING' ? 'BELUM DIISI' : GRADE }
+                              <DropdownMenuTrigger className={`inline-flex items-center justify-center rounded-sm px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider transition-colors ${item.grade === 'PENDING' ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}>
+                                {item.grade === 'PENDING' ? 'BELUM DIISI' : `GRADE ${item.grade}`}
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="center">
                                 {grades.map(g => (
@@ -227,8 +227,8 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
                               </DropdownMenuContent>
                             </DropdownMenu>
                           ) : (
-                            <span className={inline-flex items-center rounded-sm px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider }>
-                              {item.grade === 'PENDING' ? 'BELUM DIISI' : GRADE }
+                            <span className={`inline-flex items-center rounded-sm px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${item.grade === 'PENDING' ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}>
+                              {item.grade === 'PENDING' ? 'BELUM DIISI' : `GRADE ${item.grade}`}
                             </span>
                           )}
                         </td>
