@@ -4,10 +4,11 @@ import { InventoryService } from '../inventory/inventory.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SalesCompletedEvent } from '../events/sales-completed.event';
 import { InventoryValuationEvent } from '../events/accounting.events';
+import { SequenceService } from '../reports/sequence.service';
 
 @Injectable()
 export class PosService {
-  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2, private inventoryService: InventoryService) {}
+  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2, private inventoryService: InventoryService, private sequenceService: SequenceService) {}
 
   async processCheckout(data: any) {
     const { companyId, userId, warehouseId, customerId, paymentMethod, items, subtotal, tax, total, idempotency_key } = data;
@@ -25,7 +26,7 @@ export class PosService {
       }
 
       // 1. Create Sales Order (Receipt)
-      const soNo = `POS-${Date.now()}`;
+      const soNo = await this.sequenceService.generateNumber(tx, companyId, 'POS', 'POS');
       const salesOrder = await tx.salesOrder.create({
         data: {
           company_id: companyId,
@@ -53,10 +54,17 @@ export class PosService {
           }
         });
 
-        if (warehouseId) {
+        // Resolve warehouseId — use provided or fall back to first warehouse for company
+        let resolvedWarehouseId = warehouseId;
+        if (!resolvedWarehouseId) {
+          const defaultWh = await tx.warehouse.findFirst({ where: { company_id: companyId } });
+          resolvedWarehouseId = defaultWh?.id;
+        }
+
+        if (resolvedWarehouseId) {
           const issueRes = await this.inventoryService.issueStock(tx as any, {
             companyId,
-            warehouseId,
+            warehouseId: resolvedWarehouseId,
             productId: item.productId,
             quantity: item.qty,
             referenceType: 'POS_SALE',

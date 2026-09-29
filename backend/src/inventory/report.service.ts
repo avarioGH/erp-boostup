@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -143,6 +143,38 @@ export class ReportService {
         itemsShipped: shipmentItemsAgg._sum.qtyMc || 0,
         pendingShipments: 0
       }
+    };
+  }
+
+  async getInflowReport(params: { startDate?: string; endDate?: string; warehouseId?: string }) {
+    const where: any = { status: { not: 'CANCELLED' } };
+    if (params.startDate || params.endDate) {
+      where.tally_date = {};
+      if (params.startDate) where.tally_date.gte = new Date(params.startDate);
+      if (params.endDate) where.tally_date.lte = new Date(params.endDate + 'T23:59:59');
+    }
+    if (params.warehouseId) where.warehouse_id = params.warehouseId;
+
+    const tallies = await this.prisma.stockInTally.findMany({
+      where,
+      include: {
+        warehouse: { select: { id: true, name: true } },
+        items: {
+          include: {
+            product: { select: { id: true, name: true, code: true } }
+          }
+        }
+      },
+      orderBy: { tally_date: 'desc' }
+    });
+
+    // Summary aggregation
+    const totalItems = tallies.reduce((sum, t) => sum + t.items.reduce((s, i) => s + i.qty, 0), 0);
+    const totalTransactions = tallies.length;
+
+    return {
+      summary: { totalTransactions, totalItems },
+      data: tallies
     };
   }
 }

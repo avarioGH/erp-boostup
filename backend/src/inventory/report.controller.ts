@@ -64,4 +64,13 @@ export class ReportController {
     const eDate = endDate ? new Date(endDate) : undefined;
     return this.reportService.getDailySawmillMonitoring({ startDate: sDate, endDate: eDate });
   }
+
+  @Get('inflow')
+  async getInflowReport(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('warehouseId') warehouseId?: string
+  ) {
+    return this.reportService.getInflowReport({ startDate, endDate, warehouseId });
+  }
 }

@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.erp.boostup.id';
 
@@ -55,8 +55,8 @@ export const InventoryAPI: any = {
   getTransactions: async () => (await api.get('/inventory/transactions')).data,
   getStocks: async () => (await api.get('/inventory/stocks')).data,
   getMovements: async () => (await api.get('/inventory/movements')).data,
+  getInflowReport: async (params?: any) => (await api.get('/inventory/reports/inflow', { params }).catch(() => ({ data: { summary: {}, data: [] } }))).data,
 };
-
 export const TimberAPI: any = {
   // --- Reports & Dashboard ---
   getDashboardSummary: async () => (await api.get('/inventory/reports/summary').catch(() => ({ data: {} }))).data,
