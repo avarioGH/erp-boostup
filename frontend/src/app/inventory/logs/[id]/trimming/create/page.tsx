@@ -117,7 +117,14 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-[16px] font-semibold">Measurements</CardTitle></CardHeader>
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
  <div className="space-y-2 md:col-span-4">
- <label className="text-sm font-medium">Trimmed Length (meters) <span className="text-red-500">*</span></label>
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium">Trimmed Length (meters) <span className="text-red-500">*</span></label>
+                  {remaining > 0 && (
+                    <button type="button" onClick={() => setForm({...form, length: remaining.toString()})} className="text-xs text-primary hover:underline font-medium">
+                      + Ambil Bagian Sisa ({remaining} m)
+                    </button>
+                  )}
+                </div>
  <Input required type="number" step="0.01" value={form.length} onChange={e => setForm({...form, length: e.target.value})} className={isExceeding ?"border-red-500" :""} />
  {isExceeding && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Total panjang trimming melebihi panjang log induk.</p>}
  </div>
