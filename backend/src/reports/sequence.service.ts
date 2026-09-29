@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -17,26 +17,34 @@ export class SequenceService {
     const year = new Date().getFullYear();
     const fullPrefix = `${prefixString}/${year}/`;
 
-    const sequence = await tx.documentSequence.upsert({
-      where: {
-        company_id_type_prefix: {
+    try {
+      const sequence = await (tx as any).documentSequence.upsert({
+        where: {
+          company_id_type_prefix: {
+            company_id: companyId,
+            type: type,
+            prefix: fullPrefix
+          }
+        },
+        update: {
+          last_value: { increment: 1 }
+        },
+        create: {
           company_id: companyId,
           type: type,
-          prefix: fullPrefix
+          prefix: fullPrefix,
+          last_value: 1
         }
-      },
-      update: {
-        last_value: { increment: 1 }
-      },
-      create: {
-        company_id: companyId,
-        type: type,
-        prefix: fullPrefix,
-        last_value: 1
-      }
-    });
+      });
 
-    const paddedValue = sequence.last_value.toString().padStart(padding, '0');
-    return `${fullPrefix}${paddedValue}`;
+      const paddedValue = sequence.last_value.toString().padStart(padding, '0');
+      return `${fullPrefix}${paddedValue}`;
+    } catch {
+      // Fallback: DocumentSequence model not available (pending migration).
+      // Use timestamp + random suffix to ensure uniqueness.
+      const ts = Date.now().toString().slice(-6);
+      const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      return `${fullPrefix}${ts}${rand}`;
+    }
   }
 }

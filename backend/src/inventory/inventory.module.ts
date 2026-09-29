@@ -30,8 +30,10 @@ import { ProductionReportController } from './production-reports/production-repo
 import { ProductionReportService } from './production-reports/production-report.service';
 import { ReservationReconciliationService } from './reconciliation/reservation-reconciliation.service';
 import { ReservationReconciliationController } from './reconciliation/reservation-reconciliation.controller';
+import { ReportsModule } from '../reports/reports.module';
 
 @Module({
+  imports: [ReportsModule],
   controllers: [StockInTallyController, 
     BatchAuditController,
     AdjustmentAuditController,

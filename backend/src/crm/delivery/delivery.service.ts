@@ -4,10 +4,11 @@ import { Injectable, BadRequestException, NotFoundException, ConflictException }
 import { PrismaService } from '../../prisma/prisma.service';
 import { consumeFifoLayers } from '../../inventory/fifo.engine';
 import { InventoryService } from '../../inventory/inventory.service';
+import { SequenceService } from '../../reports/sequence.service';
 
 @Injectable()
 export class DeliveryService {
-  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2, private inventoryService: InventoryService) {}
+  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2, private inventoryService: InventoryService, private sequenceService: SequenceService) {}
 
   async create(companyId: string, salesOrderId: string, data: any) {
     return this.prisma.$transaction(async (tx) => {
@@ -24,7 +25,7 @@ export class DeliveryService {
       });
       if (!so) throw new NotFoundException('Sales order not found');
 
-      const deliveryNumber = `DO-${Date.now()}`;
+      const deliveryNumber = await this.sequenceService.generateNumber(tx, companyId, 'DELIVERY', 'DO');
 
       // Calculate delivered so far
       const deliveredMap = {};

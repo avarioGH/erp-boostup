@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SequenceService } from '../reports/sequence.service';
 
 @Injectable()
 export class StockInTallyService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly sequenceService: SequenceService) {}
 
   async create(company_id: string, data: any) {
-    const tallyNumber = `TLY-${Date.now()}`;
     return this.prisma.$transaction(async (tx) => {
       if (data.idempotency_key) {
         const existing = await tx.stockInTally.findFirst({
@@ -14,6 +14,8 @@ export class StockInTallyService {
         });
         if (existing) throw new ConflictException('Transaction with this idempotency key already exists.');
       }
+
+      const tallyNumber = await this.sequenceService.generateNumber(tx, company_id, 'TALLY', 'TLY');
 
       const tally = await tx.stockInTally.create({
         data: {

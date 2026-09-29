@@ -4,6 +4,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { createFifoLayer, consumeFifoLayers, transferFifoLayers } from './fifo.engine';
 import { Prisma } from '@prisma/client';
+import { SequenceService } from '../reports/sequence.service';
 
 export interface TransactionItemDto {
   productId: string;
@@ -57,7 +58,7 @@ export interface CreateAdjustmentDto {
 
 @Injectable()
 export class InventoryService {
-  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2) {}
+  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2, private sequenceService: SequenceService) {}
 
   async getCategories(companyId: string) {
     return this.prisma.category.findMany({
@@ -332,7 +333,7 @@ export class InventoryService {
           company_id: data.companyId,
           warehouse_id: data.sourceWarehouseId,
           target_warehouse_id: data.targetWarehouseId || data.destinationWarehouseId,
-          transaction_no: data.transactionNo || ('TRF-' + Date.now()),
+          transaction_no: data.transactionNo || await this.sequenceService.generateNumber(tx, data.companyId, 'TRANSFER', 'TRF'),
           transaction_type: 'TRANSFER',
           status: 'Draft',
           transaction_date: data.transactionDate || new Date(),
@@ -398,7 +399,7 @@ export class InventoryService {
         data: {
           company_id: data.companyId,
           warehouse_id: data.warehouseId,
-          transaction_no: data.transactionNo || ('ADJ-' + Date.now()),
+          transaction_no: data.transactionNo || await this.sequenceService.generateNumber(tx, data.companyId, 'ADJUSTMENT', 'ADJ'),
           transaction_type: 'ADJUSTMENT',
           status: 'Draft',
           transaction_date: data.transactionDate || new Date(),
@@ -499,7 +500,7 @@ export class InventoryService {
         data: {
           company_id: companyId,
           warehouse_id: warehouseId,
-          transaction_no: 'OPN-' + Date.now(),
+          transaction_no: await this.sequenceService.generateNumber(tx, companyId, 'OPNAME', 'OPN'),
           transaction_type: 'OPNAME',
           status: 'Draft',
           transaction_date: new Date(),
