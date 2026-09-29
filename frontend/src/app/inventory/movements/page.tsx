@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -63,22 +63,22 @@ export default function MovementsPage() {
                  {data.length === 0 ? (
                    <tr><td colSpan={7} className="text-center p-12 text-muted-foreground">Tidak ada riwayat pergerakan stok.</td></tr>
                  ) : data.map((m, i) => {
-                   const qtyIn = m.qty_in || 0;
-                   const qtyOut = m.qty_out || 0;
-                   const balance = m.balance_after || 0;
-                   const productName = m.product?.name || 'Unknown Product';
-                   const weight = m.product?.weight ?  (\gr) : '';
+                  const qtyIn = m.qty_in || 0;
+                  const qtyOut = m.qty_out || 0;
+                  const balance = m.balance_after || 0;
+                  const productName = m.product?.name || 'Unknown Product';
+                  const weight = m.product?.weight ? ` (${m.product.weight}gr)` : '';
 
-                   return (
-                     <tr key={m.id || i} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                       <td className="p-4 px-6 text-foreground font-medium">{new Date(m.created_at || Date.now()).toLocaleDateString('id-ID')}</td>
-                       <td className="p-4 px-6 font-medium text-foreground">{productName}<span className="text-muted-foreground text-xs">{weight}</span></td>
-                       <td className="py-3.5 px-6 text-[13px]">{getBadgeType(m.transaction_type, m.movement_type)}</td>
-                       <td className="p-4 px-6 text-center font-bold text-emerald-600">
-                         {qtyIn > 0 ? +\ : '-'}
-                       </td>
-                       <td className="p-4 px-6 text-center font-bold text-rose-600">
-                         {qtyOut > 0 ? -\ : '-'}
+                  return (
+                    <tr key={m.id || i} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                      <td className="p-4 px-6 text-foreground font-medium">{new Date(m.created_at || Date.now()).toLocaleDateString('id-ID')}</td>
+                      <td className="p-4 px-6 font-medium text-foreground">{productName}<span className="text-muted-foreground text-xs">{weight}</span></td>
+                      <td className="py-3.5 px-6 text-[13px]">{getBadgeType(m.transaction_type, m.movement_type)}</td>
+                      <td className="p-4 px-6 text-center font-bold text-emerald-600">
+                        {qtyIn > 0 ? `+${qtyIn}` : '-'}
+                      </td>
+                      <td className="p-4 px-6 text-center font-bold text-rose-600">
+                        {qtyOut > 0 ? `-${qtyOut}` : '-'}
                        </td>
                        <td className="p-4 px-6 text-right font-bold text-foreground text-base">{balance}</td>
                        <td className="p-4 px-6 text-muted-foreground text-xs">{m.created_by?.slice(-5) || '-'}</td>
