@@ -210,29 +210,31 @@ export class RawLogService {
         }
         const netVol = this.calcService.calculateRawLogNetVolume(grossVol, hollowVol, 0);
 
-        const log = await tx.rawLog.create({
-          data: {
-            logNumber: data.logNumber,
-            species: data.species,
-            originalLength: Number(data.originalLength),
-            diameter1: d1,
-            diameter2: d2,
-            diameter3: d3,
-            diameter4: d4,
-            averageDiameter: avgDia,
-            roundedDiameter: rndDia,
-            diameterClass: diaClass,
-            grossVolume: grossVol,
-            gerowong: g || null,
-            hollowVolume: hollowVol || null,
-            netVolume: netVol,
-            batch: data.batch,
-            locationId: data.locationId || null,
-            receivingDate: data.receivingDate ? new Date(data.receivingDate) : new Date(),
-            barcode: data.barcode || null,
-            status: 'AVAILABLE'
-          }
-        });
+                  const log = await tx.rawLog.create({
+            data: {
+              logNumber: data.logNumber,
+              species: data.species,
+              speciesId: data.speciesId || undefined,
+              sourceId: data.sourceId || undefined,
+              originalLength: Number(data.originalLength),
+              diameter1: d1,
+              diameter2: d2,
+              diameter3: d3,
+              diameter4: d4,
+              averageDiameter: avgDia,
+              roundedDiameter: rndDia,
+              diameterClass: diaClass,
+              grossVolume: grossVol,
+              gerowong: g || null,
+              hollowVolume: hollowVol || null,
+              netVolume: netVol,
+              batch: data.batch,
+              locationId: data.locationId || undefined,
+              receivingDate: data.receivingDate ? new Date(data.receivingDate) : new Date(),
+              barcode: data.barcode || data.logNumber,
+              status: 'AVAILABLE'
+            }
+          });
                   if (data.purchaseLogItemId) {
             await tx.timberPurchaseLogItem.update({
               where: { id: data.purchaseLogItemId },
