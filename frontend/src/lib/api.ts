@@ -126,6 +126,7 @@ export const B2BApi: any = {
   createQuotation: async (data: any) => (await api.post('/sales/quotations', data)).data,
   confirmQuotation: async (id: string) => (await api.post('/sales/quotations/' + id + '/confirm')).data,
   getOrders: async (params?: any) => (await api.get('/sales/orders', { params })).data,
+    createOrder: async (data: any) => (await api.post('/sales/orders', data)).data,
   getOrder: async (id: string) => (await api.get('/sales/orders/' + id)).data,
   getDeliveries: async (params?: any) => (await api.get('/sales/deliveries', { params })).data,
   getDelivery: async (id: string) => (await api.get('/sales/deliveries/' + id)).data,
