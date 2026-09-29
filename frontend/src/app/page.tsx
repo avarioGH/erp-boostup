@@ -33,11 +33,30 @@ const timeAgo = (dateStr: string) => {
 }
 
 export default function OwnerDashboard() {
- const [warehouse, setWarehouse] = useState("all")
- 
- const [loading, setLoading] = useState(true)
- const [errorState, setErrorState] = useState<any>(null)
- const [kpi, setKpi] = useState<any>(null)
+  const [warehouse, setWarehouse] = useState("all")
+  
+  const [loading, setLoading] = useState(true)
+  const [errorState, setErrorState] = useState<any>(null)
+  const [kpi, setKpi] = useState<any>(null)
+
+  useEffect(() => {
+    // Redirect Kayu users to Inventory Dashboard
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('erp_user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          const userName = (user?.name || '').toLowerCase();
+          const isKayu = userName.includes('kayu') || user?.accessible_modules?.includes('inventory');
+          
+          if (isKayu) {
+            window.location.href = '/inventory/dashboard';
+            return;
+          }
+        } catch (e) {}
+      }
+    }
+
  
  const [warehouses, setWarehouses] = useState<any[]>([])
  const [lowStocks, setLowStocks] = useState<any[]>([])
