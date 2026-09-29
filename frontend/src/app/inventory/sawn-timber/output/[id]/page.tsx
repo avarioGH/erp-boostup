@@ -1,8 +1,10 @@
 ﻿"use client"
 import { useState, useEffect, use } from "react"
-import { TimberAPI } from "@/lib/api"
+import { TimberAPI, MasterDataAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Loader2, ArrowLeft, Box, Waypoints, CheckCircle2, Factory, Calendar, FileCheck, XCircle, Package, Printer } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
@@ -15,23 +17,34 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+  const [grades, setGrades] = useState<any[]>([])
 
   const loadData = () => {
-    TimberAPI.getSawnOutput(id).then(setData).catch(console.error).finally(() => setLoading(false))
+    TimberAPI, MasterDataAPI.getSawnOutput(id).then(setData).catch(console.error).finally(() => setLoading(false))
   }
   useEffect(() => { loadData() }, [id])
 
   const handleAction = async (action: "post" | "cancel") => {
     setActionLoading(true)
     try {
-      if (action === "post") await TimberAPI.postSawnOutput(id)
-      else await TimberAPI.cancelSawnOutput(id)
+      if (action === "post") await TimberAPI, MasterDataAPI.postSawnOutput(id)
+      else await TimberAPI, MasterDataAPI.cancelSawnOutput(id)
       toast({ title: "Success", description: `Output ${action === "post" ? "posted" : "cancelled"} successfully.` })
       loadData()
     } catch (err: any) {
       toast({ title: "Error", description: err.response?.data?.message || `Failed to ${action}.`, variant: "destructive" })
     } finally {
       setActionLoading(false)
+    }
+  }
+
+    const handleUpdateGrade = async (itemId: string, gradeId: string, gradeCode: string) => {
+    try {
+      await TimberAPI.updateSawnItemGrade(id, itemId, { gradeId, grade: gradeCode });
+      toast({ title: "Success", description: "Grade updated successfully." });
+      loadData();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.response?.data?.message || "Failed to update grade.", variant: "destructive" });
     }
   }
 
@@ -184,6 +197,7 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
                   <thead className="bg-muted/30 border-b border-border">
                     <tr>
                       <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Product / Variant</th>
+                      <th className="p-4 px-6 text-center font-semibold text-muted-foreground h-11">Grade</th>
                       <th className="p-4 px-6 text-center font-semibold text-muted-foreground h-11">Dimensions</th>
                       <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Qty (PCS)</th>
                       <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Volume (M³)</th>
@@ -196,9 +210,27 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
                           <div className="font-semibold text-foreground/90">{item.timberVariant?.sku || "-"}</div>
                           <div className="text-[13px] text-muted-foreground mt-0.5 flex items-center gap-2">
                             <span>{item.timberVariant?.species || "-"}</span>
-                            <span className="w-1 h-1 rounded-full bg-border"></span>
-                            <span className="font-medium text-primary">Grade {item.grade || "-"}</span>
                           </div>
+                        </td>
+                        <td className="py-3 px-6 text-center">
+                          {data.status === 'DRAFT' ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger className={inline-flex items-center justify-center rounded-sm px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider transition-colors }>
+                                {item.grade === 'PENDING' ? 'BELUM DIISI' : GRADE }
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="center">
+                                {grades.map(g => (
+                                  <DropdownMenuItem key={g.id} onClick={() => handleUpdateGrade(item.id, g.id, g.code)}>
+                                    Grade {g.code}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <span className={inline-flex items-center rounded-sm px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider }>
+                              {item.grade === 'PENDING' ? 'BELUM DIISI' : GRADE }
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 px-6 text-center font-medium text-muted-foreground">
                           {item.thicknessMm || 0} &times; {item.widthMm || 0} &times; {item.lengthMm || 0} mm

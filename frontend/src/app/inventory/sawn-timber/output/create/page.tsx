@@ -154,13 +154,18 @@ export default function CreateOutputPage() {
               <div className="space-y-2">
                 <label className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Grade <span className="text-destructive">*</span></label>
                                 <Select value={item.gradeId} onValueChange={(val) => {
-                  const selected = grades.find(g => g.id === val);
-                  setItem({...item, gradeId: val || "", grade: selected ? selected.code : ""});
+                  if (val === "PENDING") {
+                    setItem({...item, gradeId: "PENDING", grade: "PENDING"});
+                  } else {
+                    const selected = grades.find(g => g.id === val);
+                    setItem({...item, gradeId: val || "", grade: selected ? selected.code : ""});
+                  }
                 }}>
                   <SelectTrigger className="bg-background h-10">
                     <SelectValue placeholder="Pilih Grade" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="PENDING" className="text-destructive font-bold">Belum Diisi (PENDING)</SelectItem>
                     {grades.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
                   </SelectContent>
                 </Select>

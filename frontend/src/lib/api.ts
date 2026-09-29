@@ -94,6 +94,7 @@ export const TimberAPI: any = {
   getSawnOutputs: async (params?: any) => (await api.get('/inventory/sawn-timber/output', { params })).data,
   getSawnOutput: async (id: string) => (await api.get('/inventory/sawn-timber/output/' + id)).data,
   createSawnOutput: async (data: any) => (await api.post('/inventory/sawn-timber/output', data)).data,
+  updateSawnItemGrade: async (id: string, itemId: string, data: any) => (await api.patch(/inventory/sawn-timber/output//items//grade, data)).data,
   postSawnOutput: async (id: string) => (await api.post('/inventory/sawn-timber/output/' + id + '/post')).data,
   cancelSawnOutput: async (id: string) => (await api.post('/inventory/sawn-timber/output/' + id + '/cancel')).data,
   getTimberStock: async (params?: any) => (await api.get('/inventory/sawn-timber/stock', { params })).data,
