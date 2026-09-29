@@ -14,6 +14,8 @@ export default function StockMovementExplorer() {
     warehouseId: "",
     variant: "",
     type: "",
+    dateFrom: "",
+    dateTo: "",
     page: 1
   })
 
@@ -31,7 +33,7 @@ export default function StockMovementExplorer() {
     setLoading(true)
     try {
       const res = await ReportsAPI.getMovements(filters)
-      const items = res?.items || res || []
+      const items = res?.data || res?.items || (Array.isArray(res) ? res : [])
       setData(Array.isArray(items) ? items : [])
     } catch (e) {
       console.error(e)
@@ -64,6 +66,22 @@ export default function StockMovementExplorer() {
           className="bg-[#0f172a] text-white border border-border p-2 rounded"
           value={filters.variant}
           onChange={(e) => setFilters({...filters, variant: e.target.value, page: 1})}
+        />
+
+        <input 
+          type="date" 
+          className="bg-[#0f172a] text-white border border-border p-2 rounded"
+          value={filters.dateFrom}
+          onChange={(e) => setFilters({...filters, dateFrom: e.target.value, page: 1})}
+          title="Date From"
+        />
+        
+        <input 
+          type="date" 
+          className="bg-[#0f172a] text-white border border-border p-2 rounded"
+          value={filters.dateTo}
+          onChange={(e) => setFilters({...filters, dateTo: e.target.value, page: 1})}
+          title="Date To"
         />
 
         <select 

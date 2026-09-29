@@ -48,7 +48,7 @@ export class ReportController {
   }
 
   @Get('traceability')
-  async getTraceabilityReport(@Query('search') search: string) {
+  async getTraceabilityReport(@Query('search') search?: string) {
     return this.reportService.getTraceabilityReport(search);
   }
 

@@ -13,6 +13,8 @@ export default function StockCardPage() {
   const [filters, setFilters] = useState({
     warehouseId: "",
     variant: "",
+    dateFrom: "",
+    dateTo: "",
   })
 
   useEffect(() => {
@@ -59,6 +61,20 @@ export default function StockCardPage() {
           className="bg-[#0f172a] text-white border border-border p-2 rounded"
           value={filters.variant}
           onChange={(e) => setFilters({...filters, variant: e.target.value})}
+        />
+
+        <input 
+          type="date" 
+          className="bg-[#0f172a] text-white border border-border p-2 rounded"
+          value={filters.dateFrom}
+          onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
+        />
+
+        <input 
+          type="date" 
+          className="bg-[#0f172a] text-white border border-border p-2 rounded"
+          value={filters.dateTo}
+          onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
         />
 
         <button 

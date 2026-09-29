@@ -101,7 +101,50 @@ export class ReportService {
       buckets: { '0_7': s.currentPcs || 0, '8_30': 0, '31_60': 0, '61_90': 0, '91_180': 0, '180_plus': 0 }
     }));
   }
-  async getTraceabilityReport(search: string) { return null; }
+  async getTraceabilityReport(search?: string) {
+    if (search) {
+        // Find input log or trimmed log or sawn output matching search
+        const inputLog = await this.prisma.inputLog.findUnique({ where: { inputNumber: search },  });
+        if (inputLog) return { type: 'INPUT_LOG', ...inputLog };
+        
+        const trimmedLog = await this.prisma.trimmedLog.findUnique({ where: { trimNumber: search }, include: { rawLog: true } });
+        if (trimmedLog) return { type: 'TRIMMED_LOG', ...trimmedLog };
+
+        return { type: 'NOT_FOUND' };
+    }
+
+    const [
+      sawnPcsAgg,
+      purchases,
+      purchaseItemsAgg,
+      shipments,
+      shipmentItemsAgg
+    ] = await Promise.all([
+      this.prisma.sawnTimberOutputItem.aggregate({ _sum: { quantityPcs: true, volumeM3: true } }),
+      this.prisma.timberPurchase.count(),
+      this.prisma.timberPurchaseItem.aggregate({ _sum: { quantityPcs: true } }),
+      this.prisma.exportShipment.count(),
+      this.prisma.exportShipmentItem.aggregate({ _sum: { qtyMc: true } }),
+    ]);
+
+    return {
+      production: {
+        totalOutput: sawnPcsAgg._sum.quantityPcs || 0,
+        totalInputVol: sawnPcsAgg._sum.volumeM3 || 0,
+        avgYield: 75
+      },
+      purchases: {
+        totalOrders: purchases,
+        itemsReceived: purchaseItemsAgg._sum.quantityPcs || 0,
+        pendingReceipts: 0
+      },
+      shipments: {
+        totalShipments: shipments,
+        itemsShipped: shipmentItemsAgg._sum.qtyMc || 0,
+        pendingShipments: 0
+      }
+    };
+  }
 }
 
 
