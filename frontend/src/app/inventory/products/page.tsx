@@ -297,7 +297,7 @@ export default function ProductInventory() {
  </div>
  <Select value={formData.categoryId} onValueChange={(val) => setFormData({...formData, categoryId: val ||""})}>
  <SelectTrigger className="w-full bg-accent/50 focus:bg-background">
- <SelectValue placeholder="Pilih Kategori" />
+  <SelectValue placeholder="Pilih Kategori">{formData.categoryId ? (categories.find((c: any) => c?.id === formData.categoryId)?.name || "Pilih Kategori") : "Pilih Kategori"}</SelectValue>
  </SelectTrigger>
  <SelectContent>
  {categories.length === 0 ? (
