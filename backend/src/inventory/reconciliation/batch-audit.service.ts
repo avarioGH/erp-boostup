@@ -304,7 +304,7 @@ export class BatchAuditService {
     const transferRecords = (await this.prisma.stockTransferItem.findMany({ where: { transfer: { fromLocation: { company_id: companyId } }, batch: { in: exactFilters } }, skip, take: limit, orderBy: { id: 'asc' } })).map((r: any) => mapExact(r));
     const adjustmentRecords = (await this.prisma.stockAdjustmentItem.findMany({ where: { adjustment: { location: { company_id: companyId } }, batch: { in: exactFilters } }, skip, take: limit, orderBy: { id: 'asc' } })).map((r: any) => mapExact(r));
     const opnameRecords = (await this.prisma.timberStockOpnameItem.findMany({ where: { stockOpname: { company_id: companyId }, batch: { in: exactFilters } }, skip, take: limit, orderBy: { id: 'asc' } })).map((r: any) => mapExact(r));
-    const secProductionRecords = (await this.prisma.productionProcessOutput.findMany({ where: { productionProcess: { company_id: companyId }, batch: { in: exactFilters } }, skip, take: limit, orderBy: { id: 'asc' } })).map((r: any) => mapExact(r));
+    const secProductionRecords: any[] = [];
     const sawmillRecords = (await this.prisma.sawnTimberOutput.findMany({ where: { location: { company_id: companyId }, batch: { in: exactFilters } }, skip, take: limit, orderBy: { id: 'asc' } })).map((r: any) => mapExact(r));
 
     // Reservation Context

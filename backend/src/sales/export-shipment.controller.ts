@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Request, UseGuards } from '@nestjs/common';
 import { ExportShipmentService } from './export-shipment.service';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { PermissionsGuard } from '../../auth/permissions.guard';
-import { Permissions } from '../../auth/permissions.decorator';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { Permissions } from '../auth/permissions.decorator';
 
 @Controller('sales/export-shipments')
 @UseGuards(JwtAuthGuard, PermissionsGuard)

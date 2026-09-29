@@ -193,7 +193,7 @@ export class ImportService {
                   });
                 }
                                   variant = await tx.timberVariant.create({
-                    data: { productId: masterProd.id, sku, species, grade, gradeId: tGrade.id, thickness: t, width: w, length: l, volumePerPiece: (t*w*l)/1000000000 }
+                    data: { company_id: dummyCompany.id, productId: masterProd.id, sku, species, grade, gradeId: tGrade.id, thickness: t, width: w, length: l, volumePerPiece: (t*w*l)/1000000000 }
                   });
               }
 

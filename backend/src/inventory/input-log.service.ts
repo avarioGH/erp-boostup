@@ -192,11 +192,11 @@ export class InputLogService {
   }
 
   async deleteInputLog(id: string) {
-    const inputLog = await this.prisma.inputLog.findUnique({ where: { id }, include: { inputLogItems: true } });
+    const inputLog = await this.prisma.inputLog.findUnique({ where: { id }, include: { items: true } });
     if (!inputLog) throw new Error('Input Log not found');
     
     // Kembalikan status TrimmedLog ke AVAILABLE
-    for (const item of inputLog.inputLogItems) {
+    for (const item of inputLog.items) {
       if (item.trimmedLogId) {
         await this.prisma.trimmedLog.update({
           where: { id: item.trimmedLogId },

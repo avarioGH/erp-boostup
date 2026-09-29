@@ -246,44 +246,41 @@ export class PurchaseService {
   }
 
 
+  
   async deletePurchase(id: string) {
-    const purchase = await this.prisma.timberPurchase.findUnique({ 
+    const purchase = await this.prisma.timberPurchase.findUnique({
       where: { id },
-      include: { 
-        purchaseItems: { include: { purchaseLogItems: { include: { rawLogs: true } } } }
+      include: {
+        items: true,
+        logItems: true
       }
     });
     if (!purchase) throw new Error('Purchase not found');
-    
+
     // Check if any RawLog has been processed (status != AVAILABLE)
-    for (const item of purchase.purchaseItems) {
-      for (const logItem of item.purchaseLogItems) {
-        for (const rawLog of logItem.rawLogs) {
-          if (rawLog.status !== 'AVAILABLE') {
-            throw new Error('Cannot delete purchase because some logs have already been processed (Trimming/Input).');
-          }
+    const logItemIds = purchase.logItems.map(li => li.id);
+    if (logItemIds.length > 0) {
+      const rawLogs = await this.prisma.rawLog.findMany({
+        where: { purchaseLogItemId: { in: logItemIds } }
+      });
+      for (const rawLog of rawLogs) {
+        if (rawLog.status !== 'AVAILABLE') {
+          throw new Error('Cannot delete purchase because some logs have already been processed (Trimming/Input).');
         }
       }
+      
+      // Delete RawLogs
+      await this.prisma.rawLog.deleteMany({ where: { purchaseLogItemId: { in: logItemIds } } });
     }
 
-    // Delete RawLogs
-    for (const item of purchase.purchaseItems) {
-      for (const logItem of item.purchaseLogItems) {
-        await this.prisma.rawLog.deleteMany({ where: { purchaseLogItemId: logItem.id } });
-      }
-    }
-    
     // Delete Log Items
-    for (const item of purchase.purchaseItems) {
-      await this.prisma.timberPurchaseLogItem.deleteMany({ where: { purchaseItemId: item.id } });
-    }
+    await this.prisma.timberPurchaseLogItem.deleteMany({ where: { timberPurchaseId: id } });
 
     // Delete Items
-    await this.prisma.timberPurchaseItem.deleteMany({ where: { purchaseId: id } });
+    await this.prisma.timberPurchaseItem.deleteMany({ where: { timberPurchaseId: id } });
 
     // Delete Purchase
     return this.prisma.timberPurchase.delete({ where: { id } });
   }
+
 }
-
-

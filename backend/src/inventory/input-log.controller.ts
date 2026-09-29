@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards, Delete } from '@nestjs/common';
 import { InputLogService } from './input-log.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
@@ -8,7 +8,7 @@ import { Permissions } from '../auth/permissions.decorator';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class InputLogController {
   @Delete(':id')
-  async delete(@Param('id') id: string) { return this.service.deleteInputLog(id); }
+  async delete(@Param('id') id: string) { return this.inputLogService.deleteInputLog(id); }
   constructor(private readonly inputLogService: InputLogService) {}
 
   @Get()

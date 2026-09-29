@@ -19,18 +19,29 @@ export class TimberVariantController {
   async create(@Request() req: any, @Body() data: any) {
     let productId = data.productId;
 
-    // If productId is not provided, create a generic "SAWN TIMBER" product if it doesn't exist
     if (!productId) {
       let genericProduct = await this.prisma.product.findFirst({
         where: { name: 'SAWN TIMBER', company_id: req.user.companyId }
       });
       if (!genericProduct) {
+        // We need a default unit
+        let defaultUnit = await this.prisma.unit.findFirst({
+          where: { company_id: req.user.companyId }
+        });
+        if (!defaultUnit) {
+          defaultUnit = await this.prisma.unit.create({
+            data: { company_id: req.user.companyId, name: 'Pieces' }
+          });
+        }
+
         genericProduct = await this.prisma.product.create({
           data: {
             name: 'SAWN TIMBER',
             company_id: req.user.companyId,
-            type: 'GOODS',
-            category: 'SAWN_TIMBER'
+            
+            unit_id: defaultUnit.id,
+            code: 'SAWN-TIMBER',
+            purchase_price: 0, selling_price: 0
           }
         });
       }
@@ -40,7 +51,7 @@ export class TimberVariantController {
     const volume = ((data.thickness || 0) * (data.width || 0) * (data.length || 0)) / 1000000000;
     
     // Auto-generate SKU if not provided
-    const sku = data.sku || ${data.species || 'MIX'}--xx;
+    const sku = data.sku || `${data.species || 'MIX'}-${data.grade || 'PENDING'}-${data.thickness || 0}x${data.width || 0}x${data.length || 0}`;
 
     return this.prisma.timberVariant.create({
       data: {
@@ -48,9 +59,9 @@ export class TimberVariantController {
         productId: productId,
         species: data.species || 'UNKNOWN',
         grade: data.grade || 'PENDING',
-        thickness: Number(data.thickness),
-        width: Number(data.width),
-        length: Number(data.length),
+        thickness: Number(data.thickness || 0),
+        width: Number(data.width || 0),
+        length: Number(data.length || 0),
         volumePerPiece: volume,
         sku: sku,
       }
