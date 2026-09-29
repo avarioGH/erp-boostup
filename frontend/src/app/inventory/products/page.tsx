@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from"react"
 import { 
@@ -37,7 +37,7 @@ export default function ProductInventory() {
  const [showForm, setShowForm] = useState(false)
  const [isSubmitting, setIsSubmitting] = useState(false)
  const [formData, setFormData] = useState({ 
- code:"", barcode:"", name:"", purchasePrice:"", sellingPrice:"", description:"", categoryId:"" 
+ code:"", barcode:"", name:"", weight:"", purchasePrice:"0", sellingPrice:"", description:"", categoryId:"" 
  })
  const [images, setImages] = useState<File[]>([])
  
@@ -51,6 +51,7 @@ export default function ProductInventory() {
  // Column Visibility
  const [visibleColumns, setVisibleColumns] = useState({
  sku: true,
+    weight: true,
  category: true,
  price: true,
  totalStock: true
@@ -82,7 +83,7 @@ export default function ProductInventory() {
  sku: p.code,
  name: p.name,
  category: p.category?.name ||"-",
- price: Number(p.selling_price),
+ price: Number(p.selling_price), weight: p.weight,
  stockMap
  }
  })
@@ -145,6 +146,7 @@ export default function ProductInventory() {
  payload.append("purchasePrice", formData.purchasePrice);
  payload.append("sellingPrice", formData.sellingPrice);
  payload.append("description", formData.description);
+      payload.append("weight", formData.weight);
  payload.append("categoryId", formData.categoryId);
  
  images.forEach((img) => {
@@ -153,7 +155,7 @@ export default function ProductInventory() {
 
  await InventoryAPI.createProduct(payload)
  setShowForm(false)
- setFormData({ code:"", barcode:"", name:"", purchasePrice:"", sellingPrice:"", description:"", categoryId:"" })
+ setFormData({ code:"", barcode:"", name:"", weight:"", purchasePrice:"0", sellingPrice:"", description:"", categoryId:"" })
  setImages([])
  
  // Refresh Data
@@ -168,7 +170,7 @@ export default function ProductInventory() {
  sku: p.code,
  name: p.name,
  category: p.category?.name ||"-",
- price: Number(p.selling_price),
+ price: Number(p.selling_price), weight: p.weight,
  stockMap
  }
  })
@@ -261,17 +263,31 @@ export default function ProductInventory() {
  </div>
  </div>
 
- <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
- <div className="space-y-2">
- <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nama Produk <span className="text-red-500">*</span></Label>
- <Input 
- placeholder="Masukkan nama produk" 
- value={formData.name} 
- onChange={(e) => setFormData({...formData, name: e.target.value})} 
- className="bg-accent/50 focus:bg-background"
- required 
- />
- </div>
+ <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div className="space-y-2 md:col-span-2">
+    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Nama Produk Ikan <span className="text-red-500">*</span></Label>
+    <Input 
+      placeholder="Masukkan nama ikan (misal: Ikan Tenggiri)" 
+      value={formData.name} 
+      onChange={(e) => setFormData({...formData, name: e.target.value})} 
+      className="bg-accent/50 focus:bg-background"
+      required 
+    />
+  </div>
+  <div className="space-y-2">
+    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Berat (Gram) <span className="text-red-500">*</span></Label>
+    <div className="relative">
+      <Input 
+        type="number"
+        placeholder="500" 
+        value={formData.weight} 
+        onChange={(e) => setFormData({...formData, weight: e.target.value})} 
+        className="bg-accent/50 focus:bg-background pr-8"
+        required 
+      />
+      <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">gr</span>
+    </div>
+  </div>
  <div className="space-y-2">
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Kategori Produk</Label>
@@ -473,6 +489,7 @@ export default function ProductInventory() {
  <TableRow className="border-border/60">
  {visibleColumns.sku && <TableHead className="w-[100px] font-semibold">SKU</TableHead>}
  <TableHead className="font-semibold">Nama Produk</TableHead>
+                  {visibleColumns.weight && <TableHead className="font-semibold">Berat (gr)</TableHead>}
  {visibleColumns.category && <TableHead className="font-semibold">Kategori</TableHead>}
  {visibleColumns.price && <TableHead className="text-right font-semibold">Harga Jual</TableHead>}
  {warehouses.map((wh) => (
@@ -500,6 +517,7 @@ export default function ProductInventory() {
  <TableRow key={p.id} className="border-border/60 hover:bg-muted/30 dark:hover:bg-slate-800/50 transition-colors group">
  {visibleColumns.sku && <TableCell className="font-mono text-xs text-muted-foreground">{p.sku}</TableCell>}
  <TableCell className="font-medium text-foreground dark:text-white">{p.name}</TableCell>
+                    {visibleColumns.weight && <TableCell className="font-medium">{p.weight} gr</TableCell>}
  {visibleColumns.category && (
  <TableCell>
  <Badge variant="secondary" className="bg-muted/50 text-foreground font-medium rounded-md">
@@ -542,4 +560,8 @@ export default function ProductInventory() {
  </div>
  )
 }
+
+
+
+
 

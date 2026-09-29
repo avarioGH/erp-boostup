@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -10,16 +10,27 @@ export class PosService {
   constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2, private inventoryService: InventoryService) {}
 
   async processCheckout(data: any) {
-    const { companyId, userId, warehouseId, customerId, paymentMethod, items, subtotal, tax, total } = data;
+    const { companyId, userId, warehouseId, customerId, paymentMethod, items, subtotal, tax, total, idempotency_key } = data;
     let totalPosCogs = 0;
 
     return this.prisma.$transaction(async (tx) => {
+      // 0. Idempotency Check
+      if (idempotency_key) {
+        const existing = await tx.salesOrder.findFirst({
+          where: { company_id: companyId, ecommerce_session_id: idempotency_key }
+        });
+        if (existing) {
+          throw new ConflictException('Transaction with this idempotency key already exists.');
+        }
+      }
+
       // 1. Create Sales Order (Receipt)
       const soNo = `POS-${Date.now()}`;
       const salesOrder = await tx.salesOrder.create({
         data: {
           company_id: companyId,
           order_number: soNo,
+          ecommerce_session_id: idempotency_key,
           customer_id: customerId,
           order_date: new Date(),
           status: 'COMPLETED',

@@ -1,6 +1,6 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InventoryValuationEvent } from '../../events/accounting.events';
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { consumeFifoLayers } from '../../inventory/fifo.engine';
 import { InventoryService } from '../../inventory/inventory.service';
@@ -11,13 +11,20 @@ export class DeliveryService {
 
   async create(companyId: string, salesOrderId: string, data: any) {
     return this.prisma.$transaction(async (tx) => {
+      if (data.idempotency_key) {
+        const existing = await tx.deliveryOrder.findFirst({
+          where: { company_id: companyId, idempotency_key: data.idempotency_key }
+        });
+        if (existing) throw new ConflictException('Transaction with this idempotency key already exists.');
+      }
+
       const so = await tx.salesOrder.findFirst({
         where: { id: salesOrderId, company_id: companyId },
         include: { items: true, deliveries: { include: { items: true } } }
       });
       if (!so) throw new NotFoundException('Sales order not found');
 
-      const deliveryNumber = "DO-${Date.now()}";
+      const deliveryNumber = `DO-${Date.now()}`;
 
       // Calculate delivered so far
       const deliveredMap = {};
@@ -38,7 +45,7 @@ export class DeliveryService {
         const remaining = soItem.qty - alreadyDelivered;
 
         if (reqItem.qty > remaining) {
-          throw new BadRequestException("Cannot deliver more than ordered for product ${reqItem.productId}");
+          throw new BadRequestException(`Cannot deliver more than ordered for product ${reqItem.productId}`);
         }
 
         deliveryItems.push({
@@ -53,8 +60,9 @@ export class DeliveryService {
         data: {
           company_id: companyId,
           sales_order_id: salesOrderId,
+          idempotency_key: data.idempotency_key,
           delivery_number: deliveryNumber,
-          delivery_date: new Date(),
+          delivery_date: data.delivery_date ? new Date(data.delivery_date) : new Date(),
           status: 'WAITING',
           items: {
             create: deliveryItems

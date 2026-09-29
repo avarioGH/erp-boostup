@@ -1,232 +1,153 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { DashboardAPI } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Package, ArrowDownToLine, ArrowUpFromLine, Factory, LayoutDashboard, CheckCircle2, AlertTriangle, FileText } from 'lucide-react';
+﻿"use client"
 
-export default function InventoryDashboard() {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+import { useState, useEffect } from "react"
+import { api } from "@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowDownToLine, ArrowUpFromLine, Package, LayoutDashboard, Search, FileText } from "lucide-react"
+
+export default function DashboardPage() {
+  const [kpi, setKpi] = useState<any>({})
+  const [warehouseSummary, setWarehouseSummary] = useState<any[]>([])
+  const [recentMovements, setRecentMovements] = useState<any[]>([])
 
   useEffect(() => {
-    DashboardAPI.getSummary()
-      .then((res: any) => {
-        setData(res || {});
+    // We will just fetch standard stocks and movements to derive the dashboard
+    api.get('/inventory/stocks').then((res: any) => {
+      const stocks = Array.isArray(res.data) ? res.data : []
+      const totalStock = stocks.reduce((sum: number, s: any) => sum + (s.current_stock || 0), 0)
+      
+      const whMap = new Map()
+      stocks.forEach(s => {
+        const wName = s.warehouse?.name || 'Unknown'
+        whMap.set(wName, (whMap.get(wName) || 0) + (s.current_stock || 0))
       })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+      
+      setWarehouseSummary(Array.from(whMap.entries()).map(([name, stock]) => ({ name, stock })))
+      setKpi(prev => ({ ...prev, totalStock }))
+    }).catch(console.error)
 
-  if (loading) return (
-    <div className="flex h-[50vh] w-full items-center justify-center">
-      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <span className="text-sm font-medium">Loading Dashboard...</span>
-      </div>
-    </div>
-  );
+    api.get('/inventory/movements').then((res: any) => {
+      const items = Array.isArray(res.data) ? res.data : (res.data?.items || [])
+      setRecentMovements(items.slice(0, 10))
 
-  const kpi = data?.kpi || { stock: 0, stockM3: 0, todayIn: 0, todayInM3: 0, todayOut: 0, todayOutM3: 0, production: 0, productionM3: 0 };
-  const ledgerHealth = data?.ledgerHealth || 'BALANCED';
-  const warehouseSummary = data?.warehouseSummary || [];
-  const recentMovements = data?.recentMovements || [];
+      const today = new Date().toDateString()
+      let todayIn = 0
+      let todayOut = 0
+
+      items.forEach((m: any) => {
+        const mDate = new Date(m.created_at || m.date).toDateString()
+        if (mDate === today) {
+          todayIn += m.qty_in || 0
+          todayOut += m.qty_out || 0
+        }
+      })
+      
+      setKpi(prev => ({ ...prev, todayIn, todayOut }))
+    }).catch(console.error)
+  }, [])
 
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto animate-in fade-in duration-500 pb-8">
-      
-      {/* PAGE HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl md:text-[28px] font-bold tracking-tight text-foreground flex items-center gap-2">
-            <LayoutDashboard className="w-6 h-6 text-primary" />
-            Inventory Dashboard
-          </h1>
-          <p className="text-sm text-muted-foreground max-w-2xl">
-            Operational overview of your timber inventory, production, and logistics.
-          </p>
-        </div>
-        
-        {/* Ledger Health Badge */}
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${ledgerHealth === 'BALANCED' ? 'bg-success/10 border-success/20 text-success-foreground' : 'bg-destructive/10 border-destructive/20 text-destructive'} shadow-sm`}>
-          {ledgerHealth === 'BALANCED' ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-          <span className="text-[11px] font-bold uppercase tracking-wider">
-            Ledger Health: <span className="font-extrabold">{ledgerHealth}</span>
-          </span>
-        </div>
+    <div className="space-y-6 pb-10 p-4 md:p-8">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <LayoutDashboard className="w-6 h-6 md:w-8 md:h-8 text-primary" /> Dashboard Ikan
+        </h1>
+        <p className="text-sm md:text-base text-muted-foreground">Ringkasan stok dan pergerakan ikan hari ini.</p>
       </div>
 
-      {/* KPI ROW */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        {/* Total Stock */}
-        <Card className="border border-border shadow-sm flex flex-col justify-between h-full">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <Card className="shadow-sm">
           <CardHeader className="pb-2 pt-4 px-4 md:px-5">
-            <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex items-center justify-between">
-              Overall Total Stock
-              <Package className="w-4 h-4 opacity-50" />
+            <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex justify-between">
+              Total Stok Ikan
+              <Package className="w-4 h-4 text-primary opacity-70" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 md:px-5 pb-4 md:pb-5 space-y-2 flex-1 flex flex-col justify-end">
-            <div>
-              <div className="text-xl md:text-3xl font-bold text-foreground leading-none flex items-baseline gap-1">
-                {Number(kpi.stockM3 || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span className="text-sm font-medium text-muted-foreground">M3</span>
-              </div>
-              <div className="text-[13px] font-medium text-muted-foreground mt-1">
-                {Number(kpi.stock || 0).toLocaleString()} Total Items / Pcs
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-1 pt-3 border-t border-border/50 mt-auto">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-muted-foreground font-bold uppercase">Raw Log</span>
-                <span className="text-xs font-bold text-foreground">{Number(kpi.details?.rawM3 || 0).toFixed(1)} <span className="text-[10px] opacity-70">m3</span></span>
-              </div>
-              <div className="flex flex-col border-l border-border/50 pl-2">
-                <span className="text-[10px] text-muted-foreground font-bold uppercase">Trimmed</span>
-                <span className="text-xs font-bold text-foreground">{Number(kpi.details?.trimmedM3 || 0).toFixed(1)} <span className="text-[10px] opacity-70">m3</span></span>
-              </div>
-              <div className="flex flex-col border-l border-border/50 pl-2">
-                <span className="text-[10px] text-muted-foreground font-bold uppercase">Sawn</span>
-                <span className="text-xs font-bold text-foreground">{Number(kpi.details?.sawnM3 || 0).toFixed(1)} <span className="text-[10px] opacity-70">m3</span></span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Today In */}
-        <Card className="border border-border shadow-sm flex flex-col justify-between h-full">
-          <CardHeader className="pb-2 pt-4 px-4 md:px-5">
-            <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex items-center justify-between">
-              Today Inflow
-              <ArrowDownToLine className="w-4 h-4 text-primary opacity-70" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 md:px-5 pb-4 md:pb-5 space-y-1">
+          <CardContent className="px-4 md:px-5 pb-4 md:pb-5">
             <div className="text-xl md:text-3xl font-bold text-foreground">
-              {Number(kpi.todayIn || 0).toLocaleString()} <span className="text-xs md:text-sm font-medium text-muted-foreground">PCS</span>
-            </div>
-            <div className="text-xs md:text-sm font-medium text-muted-foreground">
-              {Number(kpi.todayInM3 || 0).toLocaleString(undefined, {minimumFractionDigits: 2})} M3
+              {Number(kpi.totalStock || 0).toLocaleString()} <span className="text-xs md:text-sm font-medium text-muted-foreground">Item</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Today Out */}
-        <Card className="border border-border shadow-sm flex flex-col justify-between h-full">
+        <Card className="shadow-sm">
           <CardHeader className="pb-2 pt-4 px-4 md:px-5">
-            <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex items-center justify-between">
-              Today Outflow
-              <ArrowUpFromLine className="w-4 h-4 text-destructive opacity-70" />
+            <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex justify-between">
+              Ikan Masuk Hari Ini
+              <ArrowDownToLine className="w-4 h-4 text-emerald-600 opacity-70" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 md:px-5 pb-4 md:pb-5 space-y-1">
-            <div className="text-xl md:text-3xl font-bold text-destructive">
-              {Number(kpi.todayOut || 0).toLocaleString()} <span className="text-xs md:text-sm font-medium opacity-80">PCS</span>
-            </div>
-            <div className="text-xs md:text-sm font-medium text-muted-foreground">
-              {Number(kpi.todayOutM3 || 0).toLocaleString(undefined, {minimumFractionDigits: 2})} M3
+          <CardContent className="px-4 md:px-5 pb-4 md:pb-5">
+            <div className="text-xl md:text-3xl font-bold text-emerald-600">
+              {Number(kpi.todayIn || 0).toLocaleString()} <span className="text-xs md:text-sm font-medium text-muted-foreground">Masuk</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Production Today */}
-        <Card className="border border-border shadow-sm flex flex-col justify-between h-full">
+        <Card className="shadow-sm">
           <CardHeader className="pb-2 pt-4 px-4 md:px-5">
-            <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex items-center justify-between">
-              Production Today
-              <Factory className="w-4 h-4 text-success opacity-70" />
+            <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex justify-between">
+              Ikan Keluar Hari Ini
+              <ArrowUpFromLine className="w-4 h-4 text-rose-600 opacity-70" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 md:px-5 pb-4 md:pb-5 space-y-1">
-            <div className="text-xl md:text-3xl font-bold text-success">
-              {Number(kpi.production || 0).toLocaleString()} <span className="text-xs md:text-sm font-medium opacity-80">PCS</span>
-            </div>
-            <div className="text-xs md:text-sm font-medium text-muted-foreground">
-              {Number(kpi.productionM3 || 0).toLocaleString(undefined, {minimumFractionDigits: 2})} M3
+          <CardContent className="px-4 md:px-5 pb-4 md:pb-5">
+            <div className="text-xl md:text-3xl font-bold text-rose-600">
+              {Number(kpi.todayOut || 0).toLocaleString()} <span className="text-xs md:text-sm font-medium text-muted-foreground">Keluar</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* LOWER SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* WAREHOUSE SUMMARY */}
-        <Card className="lg:col-span-4 border border-border shadow-sm flex flex-col">
+        <Card className="lg:col-span-4 shadow-sm flex flex-col">
           <CardHeader className="px-5 pt-5 pb-3 border-b border-border/50">
-            <CardTitle className="text-base font-bold">Stock by Warehouse</CardTitle>
+            <CardTitle className="text-base font-bold">Stok per Gudang</CardTitle>
           </CardHeader>
-          <CardContent className="p-0 flex-1 flex flex-col">
-            {warehouseSummary.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-8 text-muted-foreground flex-1">
-                <Package className="w-8 h-8 opacity-20 mb-2" />
-                <span className="text-sm">No warehouse data</span>
-              </div>
-            ) : (
-              <div className="divide-y divide-border/50">
-                {warehouseSummary.map((w: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
-                    <span className="text-sm font-medium text-foreground/90">{w.name}</span>
-                    <span className="text-sm font-bold bg-primary/10 text-primary px-2.5 py-0.5 rounded-md">
-                      {Number(w.stock || 0).toLocaleString()} PCS
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* RECENT MOVEMENTS */}
-        <Card className="lg:col-span-8 border border-border shadow-sm flex flex-col">
-          <CardHeader className="px-5 pt-5 pb-3 border-b border-border/50">
-            <CardTitle className="text-base font-bold">Recent Movements</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0 overflow-hidden flex-1">
-            <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none">
-              <table className="w-full text-sm min-w-[500px]">
-                <thead className="bg-muted/30">
-                  <tr>
-                    <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Date</th>
-                    <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Type</th>
-                    <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Quantity</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {recentMovements.length === 0 ? (
-                    <tr>
-                      <td colSpan={3} className="text-center py-12 text-muted-foreground">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <FileText className="w-8 h-8 opacity-20" />
-                          <span>No recent movements</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : recentMovements.map((m: any, i: number) => (
-                    <tr key={i} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-4 text-foreground/80">
-                        {m.date ? new Date(m.date).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '-'}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className={`inline-flex items-center rounded-sm px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
-                          (m.type || '').includes('IN') ? 'bg-success/15 text-success-foreground' : 
-                          (m.type || '').includes('OUT') ? 'bg-destructive/15 text-destructive' : 
-                          'bg-primary/15 text-primary'
-                        }`}>
-                          {m.type}
-                        </span>
-                      </td>
-                      <td className="text-right py-3 px-4 font-bold text-foreground">
-                        {Number(m.qty || 0).toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <CardContent className="p-0 flex-1">
+            <div className="divide-y divide-border/50">
+              {warehouseSummary.map((w: any, i: number) => (
+                <div key={i} className="flex items-center justify-between p-4 hover:bg-muted/30">
+                  <span className="text-sm font-medium">{w.name}</span>
+                  <span className="text-sm font-bold bg-primary/10 text-primary px-2.5 py-0.5 rounded-md">
+                    {Number(w.stock || 0).toLocaleString()}
+                  </span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
+        <Card className="lg:col-span-8 shadow-sm flex flex-col">
+          <CardHeader className="px-5 pt-5 pb-3 border-b border-border/50">
+            <CardTitle className="text-base font-bold">Riwayat Transaksi Terbaru</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 overflow-x-auto">
+            <table className="w-full text-sm min-w-[500px]">
+              <thead className="bg-muted/30">
+                <tr>
+                  <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Waktu</th>
+                  <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Produk</th>
+                  <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Tipe</th>
+                  <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Masuk</th>
+                  <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Keluar</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/50">
+                {recentMovements.map((m: any, i: number) => (
+                  <tr key={i} className="hover:bg-muted/30">
+                    <td className="py-3 px-4">{new Date(m.created_at).toLocaleString('id-ID')}</td>
+                    <td className="py-3 px-4 font-medium">{m.product?.name}</td>
+                    <td className="py-3 px-4"><span className="text-[11px] font-bold bg-muted px-2 py-1 rounded">{m.transaction_type}</span></td>
+                    <td className="text-right py-3 px-4 font-bold text-emerald-600">{m.qty_in > 0 ? "+" + m.qty_in : "-"}</td>
+                    <td className="text-right py-3 px-4 font-bold text-rose-600">{m.qty_out > 0 ? "-" + m.qty_out : "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
       </div>
     </div>
-  );
+  )
 }

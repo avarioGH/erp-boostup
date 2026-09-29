@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -36,6 +36,52 @@ type MenuItem = {
 
 const items: MenuItem[] = [
  { title: "Dashboard", url: "/", icon: LayoutDashboard, id: "generic-dashboard" },
+ {
+ title: "Master Data",
+ url: "/inventory/products",
+ icon: Database,
+ id: "ikan_master_data",
+ subItems: [
+ { title: "Produk Ikan", url: "/inventory/products" },
+ { title: "Daftar Pelanggan", url: "/crm/customers" }
+ ]
+ },
+ {
+ title: "Inventori",
+ url: "/inventory/stock",
+ icon: Box,
+ id: "ikan_inventory",
+ subItems: [
+ { title: "Ikan Masuk", url: "/inventory/inflow" },
+ { title: "Stok Ikan", url: "/inventory/stock" },
+ { title: "Stock Movement", url: "/inventory/movements" },
+ { title: "Penyesuaian Stok", url: "/inventory/adjustments" }
+ ]
+ },
+ {
+ title: "Laporan",
+ url: "/reports/stock",
+ icon: BarChart3,
+ id: "ikan_reports",
+ subItems: [
+ { title: "Laporan Stok", url: "/reports/stock" },
+ { title: "Laporan Ikan Masuk", url: "/reports/inflow" },
+ { title: "Laporan POS", url: "/reports/pos" },
+ { title: "Laporan Sales", url: "/reports/sales" },
+ { title: "Laporan Penjualan", url: "/reports/profit" }
+ ]
+ },
+ {
+ title: "Penjualan",
+ url: "/pos/new-transaction",
+ icon: ShoppingCart,
+ id: "ikan_sales",
+ subItems: [
+ { title: "POS (Kasir Retail)", url: "/pos/new-transaction" },
+ { title: "Sales Orders", url: "/sales/orders" },
+ { title: "Pengiriman", url: "/sales/deliveries" }
+ ]
+ },
  {
  title: "Pembelian (Purchasing)",
  url: "/purchasing/analytics",
@@ -248,12 +294,12 @@ export function AppSidebar() {
  const isIkan = userName.includes('ikan') || (!isKayu); // Default to Ikan logic if not explicitly Kayu
  
  if (isKayu) {
-      const allowedForKayu = ['inventory', 'production', 'dashboard', 'settings', 'ai'];
+      const allowedForKayu = ['inventory', 'production', 'dashboard', 'settings', 'ai', 'purchasing', 'sales', 'pos', 'crm', 'finance', 'hr'];
       if (item.id && !allowedForKayu.includes(item.id)) return false;
       if (!item.id || user?.role === 'Owner') return true;
       return user?.accessible_modules?.includes(item.id);
     } else {
-      const hiddenForIkan = ['inventory', 'production'];
+      const hiddenForIkan = ['inventory', 'production', 'purchasing', 'sales', 'pos', 'crm', 'finance', 'hr'];
       if (item.id && hiddenForIkan.includes(item.id)) return false;
       return true; // Bypass accessible modules for Ikan
     }

@@ -37,6 +37,11 @@ export default function PosTransaction() {
  const [paymentMethod, setPaymentMethod] = useState("CASH")
  const [isCheckingOut, setIsCheckingOut] = useState(false)
  const [isTaxEnabled, setIsTaxEnabled] = useState(true)
+ const [idempotencyKey, setIdempotencyKey] = useState("")
+
+ useEffect(() => {
+   setIdempotencyKey(crypto.randomUUID())
+ }, [])
 
  const [loading, setLoading] = useState(true)
  const [isError, setIsError] = useState(false)
@@ -346,6 +351,7 @@ export default function PosTransaction() {
  const payload = {
  warehouseId: selectedWarehouse || undefined,
  paymentMethod,
+ idempotency_key: idempotencyKey,
  items: cart.map(item => ({ productId: item.id, qty: item.qty, price: item.price })),
  subtotal,
  tax,
@@ -355,12 +361,14 @@ export default function PosTransaction() {
  alert(`Transaksi Sukses! (Tersimpan ke Database Real)`);
  setCart([]);
  setIsPaymentOpen(false);
+ setIdempotencyKey(crypto.randomUUID());
  } catch (error: any) {
  console.error("Checkout failed", error);
  const errMessage = error?.response?.data?.message || error.message ||"Unknown error";
  alert(`Gagal terhubung ke Database. Error: ${errMessage}`);
  setCart([]);
  setIsPaymentOpen(false);
+ setIdempotencyKey(crypto.randomUUID());
  } finally {
  setIsCheckingOut(false);
  }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -8,13 +8,22 @@ export class StockInTallyService {
   async create(company_id: string, data: any) {
     const tallyNumber = `TLY-${Date.now()}`;
     return this.prisma.$transaction(async (tx) => {
+      if (data.idempotency_key) {
+        const existing = await tx.stockInTally.findFirst({
+          where: { company_id, idempotency_key: data.idempotency_key }
+        });
+        if (existing) throw new ConflictException('Transaction with this idempotency key already exists.');
+      }
+
       const tally = await tx.stockInTally.create({
         data: {
           company_id,
+          idempotency_key: data.idempotency_key,
           tally_number: tallyNumber,
           tally_date: new Date(data.tally_date),
           warehouse_id: data.warehouse_id,
           notes: data.notes,
+          status: 'POSTED',
           items: {
             create: data.items.map((item: any) => ({
               product_id: item.product_id,
@@ -79,7 +88,7 @@ export class StockInTallyService {
 
   async findAll(company_id: string) {
     return this.prisma.stockInTally.findMany({
-      where: { company_id },
+      where: { company_id, status: { not: 'CANCELLED' } },
       include: { 
         warehouse: true, 
         items: { include: { product: true } } 
@@ -95,11 +104,24 @@ export class StockInTallyService {
         include: { items: true }
       });
       if (!tally) throw new NotFoundException('Tally not found');
+      if (tally.status === 'CANCELLED') throw new ConflictException('Tally already cancelled');
 
       // Reverse stock
       for (const item of tally.items) {
         if (item.movement_id) {
-          await tx.stockMovement.delete({ where: { id: item.movement_id } });
+          // Instead of delete, create REVERSAL
+          await tx.stockMovement.create({
+            data: {
+              company_id,
+              warehouse_id: tally.warehouse_id,
+              product_id: item.product_id,
+              transaction_type: 'REVERSAL',
+              movement_type: 'OUT',
+              transaction_id: tally.id, // Original transaction reference
+              qty_out: item.qty,
+              created_by: 'reversal-system'
+            }
+          });
         }
         
         const whStock = await tx.warehouseStock.findFirst({
@@ -116,7 +138,10 @@ export class StockInTallyService {
         }
       }
 
-      await tx.stockInTally.delete({ where: { id } });
+      await tx.stockInTally.update({ 
+        where: { id },
+        data: { status: 'CANCELLED' }
+      });
       return { success: true };
     });
   }
