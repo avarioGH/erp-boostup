@@ -1,3 +1,5 @@
+import { StockInTallyController } from './stock-in-tally.controller';
+import { StockInTallyService } from './stock-in-tally.service';
 import { BatchAuditService } from './reconciliation/batch-audit.service';
 import { BatchAuditController } from './reconciliation/batch-audit.controller';
 import { AdjustmentAuditService } from './reconciliation/adjustment-audit.service';
@@ -30,7 +32,7 @@ import { ReservationReconciliationService } from './reconciliation/reservation-r
 import { ReservationReconciliationController } from './reconciliation/reservation-reconciliation.controller';
 
 @Module({
-  controllers: [
+  controllers: [StockInTallyController, 
     BatchAuditController,
     AdjustmentAuditController,
     InventoryController, 
@@ -45,7 +47,7 @@ import { ReservationReconciliationController } from './reconciliation/reservatio
     ProductionReportController,
     ReservationReconciliationController
   ],
-  providers: [
+  providers: [StockInTallyService, 
     BatchAuditService,
     AdjustmentAuditService,
     InventoryService, 
@@ -82,5 +84,6 @@ import { ReservationReconciliationController } from './reconciliation/reservatio
   ]
 })
 export class InventoryModule {}
+
 
 

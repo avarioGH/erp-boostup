@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Loader2, Plus, Search, Filter, ChevronLeft, Send, CheckCircle2, FileText, Download, Truck, FileOutput } from 'lucide-react'
+import { Loader2, Plus, Printer, Search, Filter, ChevronLeft, Send, CheckCircle2, FileText, Download, Truck, FileOutput } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export default function SalesOrdersPage() {
@@ -87,6 +87,7 @@ export default function SalesOrdersPage() {
  
  <div className="flex items-center gap-2">
  <Button variant="outline"><Download className="w-4 h-4 mr-2" /> Export</Button>
+ <Link href={`/sales/orders/${details.id}/print`} target="_blank"><Button variant="outline"><Printer className="w-4 h-4 mr-2" /> Cetak Surat Jalan</Button></Link>
  
  {details.status === 'CONFIRMED' && (
  <Button onClick={() => router.push("/sales/deliveries")} className="">
