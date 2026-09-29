@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { api } from "@/lib/api"
+import { api, MasterDataAPI } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,6 +21,25 @@ export default function CreatePurchasePage() {
   const [variants, setVariants] = useState<any[]>([])
   const [speciesList, setSpeciesList] = useState<any[]>([])
   const [error, setError] = useState("")
+  const [isVariantModalOpen, setIsVariantModalOpen] = useState(false)
+  const [newVariant, setNewVariant] = useState({ species: "", grade: "", thickness: "", width: "", length: "" })
+  const [creatingVariant, setCreatingVariant] = useState(false)
+
+  const handleCreateVariant = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCreatingVariant(true)
+    try {
+      const res = await MasterDataAPI.createTimberVariant(newVariant)
+      setVariants([...variants, res])
+      setIsVariantModalOpen(false)
+      setNewVariant({ species: "", grade: "", thickness: "", width: "", length: "" })
+      // toast notification would go here if useToast was imported, but let's just log or ignore for now to avoid breaking imports
+    } catch (err: any) {
+      console.error("Failed to create variant", err)
+    } finally {
+      setCreatingVariant(false)
+    }
+  }
   
   const [form, setForm] = useState({
     purchaseNumber: "PO-" + Date.now().toString().slice(-6),
