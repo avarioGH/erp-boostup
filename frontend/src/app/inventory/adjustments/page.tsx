@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,7 +16,7 @@ export default function AdjustmentsPage() {
     api.get('/inventory/transactions')
       .then((res: any) => {
         const items = Array.isArray(res.data) ? res.data : [];
-        setData(items.filter(i => i.transaction_type === 'ADJUSTMENT'));
+        setData(items.filter((i: any) => i.transaction_type === 'ADJUSTMENT'));
       })
       .catch(console.error)
       .finally(() => setLoading(false))

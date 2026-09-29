@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
@@ -17,13 +17,13 @@ export default function DashboardPage() {
       const totalStock = stocks.reduce((sum: number, s: any) => sum + (s.current_stock || 0), 0)
       
       const whMap = new Map()
-      stocks.forEach(s => {
+      stocks.forEach((s: any) => {
         const wName = s.warehouse?.name || 'Unknown'
         whMap.set(wName, (whMap.get(wName) || 0) + (s.current_stock || 0))
       })
       
       setWarehouseSummary(Array.from(whMap.entries()).map(([name, stock]) => ({ name, stock })))
-      setKpi(prev => ({ ...prev, totalStock }))
+      setKpi((prev: any) => ({ ...prev, totalStock }))
     }).catch(console.error)
 
     api.get('/inventory/movements').then((res: any) => {
@@ -42,7 +42,7 @@ export default function DashboardPage() {
         }
       })
       
-      setKpi(prev => ({ ...prev, todayIn, todayOut }))
+      setKpi((prev: any) => ({ ...prev, todayIn, todayOut }))
     }).catch(console.error)
   }, [])
 
