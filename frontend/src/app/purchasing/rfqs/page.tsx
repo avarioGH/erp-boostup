@@ -131,7 +131,7 @@ export default function RFQPage() {
  <h1 className="text-[28px] font-bold tracking-tight text-foreground">Request for Quotation (RFQ)</h1>
  <p className="text-muted-foreground mt-1">Manage draft purchase quotations before confirming with suppliers.</p>
  </div>
- <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New RFQ</Button>
+ <Link href="/purchasing/rfqs/create"><Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New RFQ</Button></Link>
  </div>
  <Card className="shadow-sm">
  <CardHeader className="pb-4 border-b border-border/40">
