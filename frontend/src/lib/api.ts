@@ -47,6 +47,7 @@ export const InventoryAPI: any = {
   getProducts: async () => (await api.get('/inventory/products')).data,
   getWarehouses: async () => (await api.get('/inventory/warehouses')).data,
     getTimberVariants: async () => (await api.get('/inventory/master-data/timber-variant')).data,
+  createTimberVariant: async (data: any) => (await api.post('/inventory/master-data/timber-variant', data)).data,
   createProduct: async (data: any) => (await api.post('/inventory/products', data, { headers: { 'Content-Type': 'multipart/form-data' } })).data,
   createWarehouse: async (data: any) => (await api.post('/inventory/warehouses', data)).data,
   updateWarehouse: async (id: string, data: any) => (await api.put('/inventory/warehouses/' + id, data)).data,

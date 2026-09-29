@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Plus, X, ArrowLeft } from "lucide-react"
@@ -165,7 +166,29 @@ export default function CreatePurchasePage() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
                       <div className="space-y-2 md:col-span-2">
-                        <Label>Variant / Sku Kayu</Label>
+                        <div className="flex items-center justify-between">
+                          <Label>Variant / Sku Kayu</Label>
+                          <Dialog open={isVariantModalOpen} onOpenChange={setIsVariantModalOpen}>
+                            <DialogTrigger asChild>
+                              <button type="button" className="text-xs text-primary hover:underline font-medium">+ Buat Master Baru</button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Buat Master Data Kayu</DialogTitle>
+                              </DialogHeader>
+                              <form onSubmit={handleCreateVariant} className="space-y-4">
+                                <div><Label>Species (Jenis Kayu)</Label><Input value={newVariant.species} onChange={e=>setNewVariant({...newVariant, species: e.target.value})} placeholder="e.g. MERANTI" required /></div>
+                                <div><Label>Grade</Label><Input value={newVariant.grade} onChange={e=>setNewVariant({...newVariant, grade: e.target.value})} placeholder="e.g. A" required /></div>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div><Label>Tebal (mm)</Label><Input type="number" value={newVariant.thickness} onChange={e=>setNewVariant({...newVariant, thickness: e.target.value})} required /></div>
+                                  <div><Label>Lebar (mm)</Label><Input type="number" value={newVariant.width} onChange={e=>setNewVariant({...newVariant, width: e.target.value})} required /></div>
+                                  <div><Label>Panjang (mm)</Label><Input type="number" value={newVariant.length} onChange={e=>setNewVariant({...newVariant, length: e.target.value})} required /></div>
+                                </div>
+                                <Button type="submit" disabled={creatingVariant} className="w-full">{creatingVariant ? "Menyimpan..." : "Simpan Variant"}</Button>
+                              </form>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                         <Select value={item.timberVariantId} onValueChange={(val: any) => {
                           const newItems = [...form.items];
                           const variant = variants.find(v => v.id === val);
