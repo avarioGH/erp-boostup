@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -299,7 +299,7 @@ export function AppSidebar() {
       if (!item.id || user?.role === 'Owner') return true;
       return user?.accessible_modules?.includes(item.id);
     } else {
-      const hiddenForIkan = ['inventory', 'production', 'purchasing', 'sales', 'pos', 'crm', 'finance', 'hr'];
+      const hiddenForIkan = ['inventory', 'production', 'purchasing', 'sales', 'pos', 'crm', 'finance'];
       if (item.id && hiddenForIkan.includes(item.id)) return false;
       return true; // Bypass accessible modules for Ikan
     }
@@ -369,6 +369,11 @@ export function AppSidebar() {
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
  {settings.filter(item => {
+ const userName = user?.name?.toLowerCase() || "";
+ const isKayu = userName.includes('kayu');
+ const isIkan = userName.includes('ikan') || (!isKayu);
+ if (isIkan) return true;
+
  if (!item.id || user?.role === 'Owner') return true;
  return user?.accessible_modules?.includes(item.id);
  }).map((item) => {
