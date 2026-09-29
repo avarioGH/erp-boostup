@@ -58,25 +58,42 @@ export default function InventoryDashboard() {
       {/* KPI ROW */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {/* Total Stock */}
-        <Card className="border border-border shadow-sm">
+        <Card className="border border-border shadow-sm flex flex-col justify-between h-full">
           <CardHeader className="pb-2 pt-4 px-4 md:px-5">
             <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex items-center justify-between">
-              Total Stock
+              Overall Total Stock
               <Package className="w-4 h-4 opacity-50" />
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-4 md:px-5 pb-4 md:pb-5 space-y-1">
-            <div className="text-xl md:text-3xl font-bold text-foreground">
-              {Number(kpi.stock || 0).toLocaleString()} <span className="text-xs md:text-sm font-medium text-muted-foreground">PCS</span>
+          <CardContent className="px-4 md:px-5 pb-4 md:pb-5 space-y-2 flex-1 flex flex-col justify-end">
+            <div>
+              <div className="text-xl md:text-3xl font-bold text-foreground leading-none flex items-baseline gap-1">
+                {Number(kpi.stockM3 || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span className="text-sm font-medium text-muted-foreground">M3</span>
+              </div>
+              <div className="text-[13px] font-medium text-muted-foreground mt-1">
+                {Number(kpi.stock || 0).toLocaleString()} Total Items / Pcs
+              </div>
             </div>
-            <div className="text-xs md:text-sm font-medium text-muted-foreground">
-              {Number(kpi.stockM3 || 0).toLocaleString(undefined, {minimumFractionDigits: 2})} M3
+            
+            <div className="grid grid-cols-3 gap-1 pt-3 border-t border-border/50 mt-auto">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-muted-foreground font-bold uppercase">Raw Log</span>
+                <span className="text-xs font-bold text-foreground">{Number(kpi.details?.rawM3 || 0).toFixed(1)} <span className="text-[10px] opacity-70">m3</span></span>
+              </div>
+              <div className="flex flex-col border-l border-border/50 pl-2">
+                <span className="text-[10px] text-muted-foreground font-bold uppercase">Trimmed</span>
+                <span className="text-xs font-bold text-foreground">{Number(kpi.details?.trimmedM3 || 0).toFixed(1)} <span className="text-[10px] opacity-70">m3</span></span>
+              </div>
+              <div className="flex flex-col border-l border-border/50 pl-2">
+                <span className="text-[10px] text-muted-foreground font-bold uppercase">Sawn</span>
+                <span className="text-xs font-bold text-foreground">{Number(kpi.details?.sawnM3 || 0).toFixed(1)} <span className="text-[10px] opacity-70">m3</span></span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Today In */}
-        <Card className="border border-border shadow-sm">
+        <Card className="border border-border shadow-sm flex flex-col justify-between h-full">
           <CardHeader className="pb-2 pt-4 px-4 md:px-5">
             <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex items-center justify-between">
               Today Inflow
@@ -94,7 +111,7 @@ export default function InventoryDashboard() {
         </Card>
 
         {/* Today Out */}
-        <Card className="border border-border shadow-sm">
+        <Card className="border border-border shadow-sm flex flex-col justify-between h-full">
           <CardHeader className="pb-2 pt-4 px-4 md:px-5">
             <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex items-center justify-between">
               Today Outflow
@@ -112,7 +129,7 @@ export default function InventoryDashboard() {
         </Card>
 
         {/* Production Today */}
-        <Card className="border border-border shadow-sm">
+        <Card className="border border-border shadow-sm flex flex-col justify-between h-full">
           <CardHeader className="pb-2 pt-4 px-4 md:px-5">
             <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex items-center justify-between">
               Production Today
