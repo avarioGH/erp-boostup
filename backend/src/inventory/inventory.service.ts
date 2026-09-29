@@ -193,13 +193,13 @@ export class InventoryService {
       data: {
         company_id: data.companyId,
         code: data.code || `PRD-${Date.now()}`,
-        barcode: data.barcode || null,
+        barcode: data.barcode ? data.barcode : undefined,
         name: data.name,
         description: data.description,
         purchase_price: !isNaN(Number(data.purchasePrice)) ? Number(data.purchasePrice) : 0,
         selling_price: !isNaN(Number(data.sellingPrice)) ? Number(data.sellingPrice) : 0,
         unit_id: unit.id,
-        category_id: data.categoryId && data.categoryId !== 'undefined' && data.categoryId !== 'null' && data.categoryId !== '' ? data.categoryId : null
+        category_id: data.categoryId && data.categoryId !== 'undefined' && data.categoryId !== 'null' && data.categoryId !== '' ? data.categoryId : undefined
       }
     });
 
