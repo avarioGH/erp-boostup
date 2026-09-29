@@ -47,7 +47,7 @@ export default function OwnerDashboard() {
         try {
           const user = JSON.parse(userStr);
           const userName = (user?.name || '').toLowerCase();
-          const isKayu = userName.includes('kayu') || user?.accessible_modules?.includes('inventory');
+          const isKayu = userName.includes('kayu'); // Strict check for kayu user only
           
           if (isKayu) {
             window.location.href = '/inventory/dashboard';
