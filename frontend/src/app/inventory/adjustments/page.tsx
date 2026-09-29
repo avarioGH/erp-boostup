@@ -1,5 +1,5 @@
+"use client"
 import Link from "next/link"
-﻿"use client"
 import { useState, useEffect } from"react"
 import { api } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
