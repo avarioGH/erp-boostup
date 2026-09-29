@@ -15,7 +15,7 @@ export default function ExportShipmentsPage() {
 
   const loadData = () => {
     exportShipment.getAll().then(res => {
-      setData(res)
+      setData(res?.data || res || [])
       setLoading(false)
     }).catch(err => {
       console.error(err)
@@ -61,10 +61,10 @@ export default function ExportShipmentsPage() {
             <TableBody>
               {loading ? (
                 <TableRow><TableCell colSpan={4} className="text-center py-10">Loading...</TableCell></TableRow>
-              ) : data.length === 0 ? (
+              ) : (!data || data.length === 0) ? (
                 <TableRow><TableCell colSpan={4} className="text-center py-10">Belum ada dokumen eksport</TableCell></TableRow>
               ) : (
-                data.map((item: any) => (
+                (data || []).map((item: any) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.containerNo}</TableCell>
                     <TableCell>{item.sealNo}</TableCell>
