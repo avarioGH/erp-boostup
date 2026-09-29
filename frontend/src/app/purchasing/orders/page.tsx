@@ -257,7 +257,7 @@ export default function PurchaseOrdersPage() {
  <h1 className="text-[28px] font-bold tracking-tight text-foreground">Purchase Orders</h1>
  <p className="text-muted-foreground mt-1">Manage confirmed procurement orders and track fulfillment.</p>
  </div>
- <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New Order</Button>
+ <Link href="/purchasing/orders/create"><Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New Order</Button></Link>
  </div>
 
  <Card className="shadow-sm">
