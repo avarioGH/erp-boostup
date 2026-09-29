@@ -91,7 +91,7 @@ export default function CreateRFQPage() {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Supplier</Label>
-              <Select value={form.supplierId} onValueChange={v => setForm({...form, supplierId: v})}>
+              <Select value={form.supplierId} onValueChange={(v: any) => setForm({...form, supplierId: v})}>
                 <SelectTrigger><SelectValue placeholder="Pilih Supplier" /></SelectTrigger>
                 <SelectContent>
                   {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
@@ -100,7 +100,7 @@ export default function CreateRFQPage() {
             </div>
             <div className="space-y-2">
               <Label>Warehouse Tujuan</Label>
-              <Select value={form.warehouseId} onValueChange={v => setForm({...form, warehouseId: v})}>
+              <Select value={form.warehouseId} onValueChange={(v: any) => setForm({...form, warehouseId: v})}>
                 <SelectTrigger><SelectValue placeholder="Pilih Gudang" /></SelectTrigger>
                 <SelectContent>
                   {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
@@ -138,7 +138,7 @@ export default function CreateRFQPage() {
               <div key={index} className="grid grid-cols-12 gap-2 items-end border-b pb-4">
                 <div className="col-span-4 space-y-2">
                   <Label className="text-xs">Barang</Label>
-                  <Select value={item.productId} onValueChange={v => {
+                  <Select value={item.productId} onValueChange={(v: any) => {
                     const newItems = [...items]; newItems[index].productId = v; setItems(newItems);
                   }}>
                     <SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger>
@@ -189,3 +189,4 @@ export default function CreateRFQPage() {
     </div>
   )
 }
+

@@ -85,7 +85,7 @@ export default function CreateMOPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Bill of Materials (BOM)</Label>
-              <Select value={form.bomId} onValueChange={v => setForm({...form, bomId: v})}>
+              <Select value={form.bomId} onValueChange={(v: any) => setForm({...form, bomId: v})}>
                 <SelectTrigger><SelectValue placeholder="Pilih BOM (Resep)" /></SelectTrigger>
                 <SelectContent>
                   {boms.map(b => <SelectItem key={b.id} value={b.id}>{b.name} - {b.code}</SelectItem>)}
@@ -101,7 +101,7 @@ export default function CreateMOPage() {
 
             <div className="space-y-2">
               <Label>Gudang (Target / Source)</Label>
-              <Select value={form.warehouseId} onValueChange={v => setForm({...form, warehouseId: v})}>
+              <Select value={form.warehouseId} onValueChange={(v: any) => setForm({...form, warehouseId: v})}>
                 <SelectTrigger><SelectValue placeholder="Pilih Gudang" /></SelectTrigger>
                 <SelectContent>
                   {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
@@ -124,3 +124,4 @@ export default function CreateMOPage() {
     </div>
   )
 }
+
