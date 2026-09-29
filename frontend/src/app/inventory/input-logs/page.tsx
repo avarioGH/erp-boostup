@@ -27,8 +27,11 @@ export default function InputLogsPage() {
  const [loading, setLoading] = useState(true)
  const [search, setSearch] = useState("")
 
+ const fetchLogs = () => {
+   TimberAPI.getInputLogs().then((res: any) => setData(res.items || [])).catch(console.error).finally(() => setLoading(false))
+ }
  useEffect(() => {
- TimberAPI.getInputLogs().then((res: any) => setData(res.items || [])).catch(console.error).finally(() => setLoading(false))
+   fetchLogs()
  }, [])
 
  const filtered = data.filter(item => 
