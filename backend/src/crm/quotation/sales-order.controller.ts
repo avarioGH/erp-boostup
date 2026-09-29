@@ -1,8 +1,10 @@
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
-import { Controller, Get, Param, Query, Request } from '@nestjs/common';
+import { Controller, Get, Param, Query, Request, UseGuards } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('sales/orders')
 export class SalesOrderController {
   constructor(private prisma: PrismaService) {}

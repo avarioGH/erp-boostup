@@ -1,6 +1,9 @@
-﻿import { Controller, Get, Post, Body, Param, Query, ParseIntPipe, DefaultValuePipe } from "@nestjs/common";
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Controller, Get, Post, Body, Param, Query, ParseIntPipe, DefaultValuePipe, UseGuards } from "@nestjs/common";
 import { TimberSalesService } from "./timber-sales.service";
 
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller("sales/timber")
 export class TimberSalesController {
   constructor(private readonly service: TimberSalesService) {}

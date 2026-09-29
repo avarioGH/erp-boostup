@@ -1,9 +1,11 @@
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
 import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('finance/payments')
 export class PaymentController {
   constructor(private service: PaymentService, private prisma: PrismaService) {}

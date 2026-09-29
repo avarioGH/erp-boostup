@@ -1,6 +1,9 @@
-import { Controller, Get, Post, Param, Body, Request } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { Controller, Get, Post, Param, Body, Request, UseGuards } from '@nestjs/common';
 import { ApprovalService } from './approval.service';
 
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('approval')
 export class ApprovalController {
   constructor(private readonly approvalService: ApprovalService) {}
