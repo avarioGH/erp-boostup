@@ -188,7 +188,8 @@ export default function CreatePurchasePage() {
                         <div className="flex items-center justify-between">
                           <Label>Variant / Sku Kayu</Label>
                           <Dialog open={isVariantModalOpen} onOpenChange={setIsVariantModalOpen}>
-                            <DialogTrigger asChild>
+                            <button type="button" onClick={() => setIsVariantModalOpen(true)} className="text-xs text-primary hover:underline font-medium">+ Buat Master Baru</button>
+<DialogTrigger className="hidden">
                               <button type="button" className="text-xs text-primary hover:underline font-medium">+ Buat Master Baru</button>
                             </DialogTrigger>
                             <DialogContent>
