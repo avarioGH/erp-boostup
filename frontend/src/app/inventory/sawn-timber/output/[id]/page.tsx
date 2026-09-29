@@ -20,15 +20,15 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
   const [grades, setGrades] = useState<any[]>([])
 
   const loadData = () => {
-    TimberAPI, MasterDataAPI.getSawnOutput(id).then(setData).catch(console.error).finally(() => setLoading(false))
+    TimberAPI.getSawnOutput(id).then(setData).catch(console.error).finally(() => setLoading(false))
   }
   useEffect(() => { loadData() }, [id])
 
   const handleAction = async (action: "post" | "cancel") => {
     setActionLoading(true)
     try {
-      if (action === "post") await TimberAPI, MasterDataAPI.postSawnOutput(id)
-      else await TimberAPI, MasterDataAPI.cancelSawnOutput(id)
+      if (action === "post") await TimberAPI.postSawnOutput(id)
+      else await TimberAPI.cancelSawnOutput(id)
       toast({ title: "Success", description: `Output ${action === "post" ? "posted" : "cancelled"} successfully.` })
       loadData()
     } catch (err: any) {

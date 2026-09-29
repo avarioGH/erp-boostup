@@ -7,16 +7,37 @@ import { Input } from"@/components/ui/input"
 import { Badge } from"@/components/ui/badge"
 import { Loader2, Search, ChevronRight } from"lucide-react"
 import { useRouter } from"next/navigation"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useToast } from "@/hooks/use-toast"
+import { MoreHorizontal, Eye, Pencil, Trash } from "lucide-react"
+
 
 export default function TrimmingListPage() {
  const router = useRouter()
+ const { toast } = useToast()
  const [data, setData] = useState<any[]>([])
  const [loading, setLoading] = useState(true)
  const [search, setSearch] = useState("")
 
+ const fetchLogs = () => {
+   TimberAPI.getTrimmedLogs().then((res: any) => setData(res.items || [])).catch(console.error).finally(() => setLoading(false))
+ }
+
  useEffect(() => {
- TimberAPI.getTrimmedLogs().then((res: any) => setData(res.items || [])).catch(console.error).finally(() => setLoading(false))
+   fetchLogs()
  }, [])
+
+ const handleDelete = async (e: any, id: string) => {
+   e.stopPropagation()
+   if (!confirm("Are you sure you want to delete this log?")) return;
+   try {
+     await TimberAPI.deleteTrimmedLog(id);
+     toast({ title: "Success", description: "Log deleted." });
+     fetchLogs();
+   } catch (err: any) {
+     toast({ title: "Error", description: err.response?.data?.message || "Failed to delete", variant: "destructive" });
+   }
+ }
 
  const filtered = data.filter(item =>
  item.trimNumber?.toLowerCase().includes(search.toLowerCase()) ||

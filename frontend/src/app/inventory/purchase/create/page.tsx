@@ -119,7 +119,7 @@ export default function CreatePurchasePage() {
               </div>
               <div className="space-y-2">
                 <Label>Supplier / Sumber Kayu</Label>
-                <Select value={form.sourceId} onValueChange={val => setForm({...form, sourceId: val})} required>
+                <Select value={form.sourceId} onValueChange={val => setForm({...form, sourceId: val || ""})} required>
                   <SelectTrigger><SelectValue placeholder="Pilih Supplier" /></SelectTrigger>
                   <SelectContent>
                     {sources.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
@@ -128,7 +128,7 @@ export default function CreatePurchasePage() {
               </div>
               <div className="space-y-2">
                 <Label>Gudang Penerima</Label>
-                <Select value={form.warehouseId} onValueChange={val => setForm({...form, warehouseId: val})} required>
+                <Select value={form.warehouseId} onValueChange={val => setForm({...form, warehouseId: val || ""})} required>
                   <SelectTrigger><SelectValue placeholder="Pilih Gudang" /></SelectTrigger>
                   <SelectContent>
                     {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
