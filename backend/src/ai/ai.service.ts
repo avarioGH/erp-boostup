@@ -1,6 +1,7 @@
-﻿import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinanceService } from '../finance/finance.service';
+import { SequenceService } from '../reports/sequence.service';
 import OpenAI from 'openai';
 
 @Injectable()
@@ -23,7 +24,11 @@ export class AiService {
     'qwen3-8b'
   ];
 
-  constructor(private prisma: PrismaService, private financeService: FinanceService) {
+  constructor(
+    private prisma: PrismaService, 
+    private financeService: FinanceService,
+    private sequenceService: SequenceService
+  ) {
     // API key ditaruh di .env dengan nama JUAN_API_KEY
     // Jika tidak ada di .env, kita pakai default fallback key
     const apiKey = process.env.JUAN_API_KEY || 'sk-p8GXAXmljYonz0t5fvS0r09aN9K6iPvkCpR9UWyhXuU9ykf8';
@@ -379,6 +384,8 @@ export class AiService {
         categoryId = category.id;
       }
 
+      const productCode = await this.sequenceService.generateNumber(this.prisma, companyId, 'PRODUCT', 'PRD');
+
       await this.prisma.product.create({
         data: {
           company_id: companyId,
@@ -386,7 +393,7 @@ export class AiService {
           description: size || '',
           selling_price: sellingPrice,
           purchase_price: sellingPrice * 0.8, // Estimate 
-          code: `PRD-${Date.now().toString().slice(-6)}`,
+          code: productCode,
           unit_id: unit.id,
           category_id: categoryId,
         }
@@ -394,10 +401,11 @@ export class AiService {
       return { success: true, message: 'Produk berhasil ditambahkan.' };
     } else if (actionData.type === 'ADD_INCOME') {
       const { amount, description } = actionData.payload;
+      const transactionNo = await this.sequenceService.generateNumber(this.prisma, companyId, 'INCOME', 'INC');
       await this.financeService.createCashIn({
         companyId,
         cashAccountId: '', // Will auto-resolve
-        transactionNo: `AI-INC-${Date.now()}`,
+        transactionNo: transactionNo,
         transactionDate: new Date(),
         description: description,
         amount: amount,

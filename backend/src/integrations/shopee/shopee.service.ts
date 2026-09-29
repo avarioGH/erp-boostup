@@ -1,10 +1,11 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SequenceService } from '../../reports/sequence.service';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class ShopeeService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private sequenceService: SequenceService) {}
 
   async getStatus(companyId: string) {
     const integration = await this.prisma.marketplaceIntegration.findUnique({
@@ -81,7 +82,7 @@ export class ShopeeService {
 
     // Mocking an order fetch from Shopee and saving to Finance
     const mockOrderAmount = 150000;
-    const mockOrderNo = `SHP-${Date.now()}`;
+    const mockOrderNo = await this.sequenceService.generateNumber(this.prisma as any, companyId, 'SHOPEE_ORDER', 'SHP');
 
     // Get default cash account for Shopee
     let shopeeAccount = await this.prisma.cashAccount.findFirst({
@@ -123,3 +124,5 @@ export class ShopeeService {
     return { success: true, synced_orders: 1, total_amount: mockOrderAmount };
   }
 }
+
+
