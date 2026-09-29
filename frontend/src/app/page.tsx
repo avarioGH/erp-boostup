@@ -56,6 +56,7 @@ export default function OwnerDashboard() {
         } catch (e) {}
       }
     }
+  }, [])
 
  
  const [warehouses, setWarehouses] = useState<any[]>([])
