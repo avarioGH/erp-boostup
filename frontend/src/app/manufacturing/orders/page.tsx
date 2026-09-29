@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Loader2, Plus, Search, ChevronLeft, Factory, CheckCircle2, Play, AlertCircle, XCircle } from 'lucide-react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useToast } from"@/hooks/use-toast"
 
@@ -159,7 +160,7 @@ export default function MOPage() {
  <h1 className="text-[28px] font-bold tracking-tight text-foreground">Manufacturing Orders</h1>
  <p className="text-muted-foreground mt-1">Manage production execution, materials, and output.</p>
  </div>
- <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> Create MO</Button>
+ <Link href="/manufacturing/orders/create"><Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> Create MO</Button></Link>
  </div>
  <Card className="shadow-sm">
  <CardHeader className="pb-4 border-b border-border/40">

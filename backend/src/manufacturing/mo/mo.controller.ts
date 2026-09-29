@@ -1,4 +1,4 @@
-﻿import { PermissionsGuard } from '../../auth/permissions.guard';
+import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
 import { Controller, Get, Post, Body, Param, Req, UseGuards } from '@nestjs/common';
 import { MoService } from './mo.service';
@@ -7,6 +7,15 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('manufacturing/mo')
 export class MoController {
+  @Permissions('manufacturing.create')
+  @Post()
+  async createMO(@Req() req: any, @Body() data: any) {
+    return this.moService.createManufacturingOrder({
+      ...data,
+      company_id: req.user.companyId
+    });
+  }
+
   constructor(private readonly moService: MoService) {}
 
   @Permissions('manufacturing.view')
@@ -51,3 +60,4 @@ export class MoController {
     return this.moService.cancelProduction(req.user.companyId, id, req.user.id);
   }
 }
+
