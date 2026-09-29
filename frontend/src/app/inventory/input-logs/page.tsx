@@ -7,6 +7,7 @@ import { Input } from"@/components/ui/input"
 import { Badge } from"@/components/ui/badge"
 import { Loader2, Plus, Search, ChevronRight } from"lucide-react"
 import { useRouter } from"next/navigation"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
 
 export default function InputLogsPage() {
