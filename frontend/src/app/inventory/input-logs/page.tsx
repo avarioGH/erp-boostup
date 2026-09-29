@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
@@ -7,6 +7,7 @@ import { Input } from"@/components/ui/input"
 import { Badge } from"@/components/ui/badge"
 import { Loader2, Plus, Search, ChevronRight } from"lucide-react"
 import { useRouter } from"next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
 export default function InputLogsPage() {
   const { toast } = useToast();
