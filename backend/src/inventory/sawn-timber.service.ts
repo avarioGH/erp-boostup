@@ -58,8 +58,8 @@ export class SawnTimberService {
   }
 
     async getOrCreateTimberVariant(companyId: string, species: string, grade: string, thickness: number, width: number, length: number, speciesId?: string, gradeId?: string) {
-    if (!gradeId) {
-      throw new BadRequestException('gradeId is strictly required to create or get a TimberVariant');
+    if (!gradeId && grade !== 'PENDING') {
+      throw new BadRequestException('gradeId is strictly required to create or get a TimberVariant (except for PENDING grade)');
     }
     let actualSpecies = species;
     let actualGrade = grade;
@@ -104,6 +104,7 @@ export class SawnTimberService {
       variant = await this.prisma.timberVariant.create({
         data: {
           productId: product.id,
+          company_id: companyId,
           species: actualSpecies,
           grade: actualGrade,
           speciesId: speciesId || null,
@@ -280,6 +281,32 @@ export class SawnTimberService {
     ]);
     return { items, total, skip: Number(skip), take: Number(take) };
   }
+  async updateItemGrade(outputId: string, itemId: string, data: { gradeId: string, grade: string }) {
+    return this.prisma.$transaction(async (tx) => {
+      const output = await tx.sawnTimberOutput.findUnique({ where: { id: outputId }, include: { items: { include: { timberVariant: true } } } });
+      if (!output) throw new NotFoundException('Output not found');
+      if (output.status !== 'DRAFT') throw new BadRequestException('Only DRAFT outputs can be modified directly');
+
+      const item = output.items.find((i: any) => i.id === itemId);
+      if (!item) throw new NotFoundException('Item not found');
+      if (item.grade === data.grade) return item;
+
+      // Ensure we get companyId
+      const location = await tx.warehouse.findUnique({ where: { id: output.locationId } });
+      if (!location?.company_id) throw new BadRequestException('Cannot determine company');
+
+      // Create or get the new variant. We call getOrCreateTimberVariant but we must do it transactionally if possible.
+      // Wait, getOrCreateTimberVariant in this service uses 	his.prisma, not 	x. 
+      // It's safe to just call it (it reads/writes variants, not output items).
+      const newVariant = await this.getOrCreateTimberVariant(location.company_id, item.timberVariant.species, data.grade, item.thicknessMm, item.widthMm, item.lengthMm, item.timberVariant.speciesId || undefined, data.gradeId);
+
+      return tx.sawnTimberOutputItem.update({
+        where: { id: itemId },
+        data: { grade: data.grade, timberVariantId: newVariant.id }
+      });
+    });
+  }
+
 }
 
 

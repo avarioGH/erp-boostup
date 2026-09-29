@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { SawnTimberService } from './sawn-timber.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
@@ -44,4 +44,14 @@ export class SawnTimberController {
   async listStock(@Query() query: any) {
     return this.sawnTimberService.listStock(query);
   }
+  @Patch('output/:id/items/:itemId/grade')
+  @Permissions('write_inventory')
+  async updateItemGrade(
+    @Param('id') id: string,
+    @Param('itemId') itemId: string,
+    @Body() data: { gradeId: string; grade: string }
+  ) {
+    return this.sawnTimberService.updateItemGrade(id, itemId, data);
+  }
+
 }
