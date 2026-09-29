@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   Logger,
   NotFoundException,
@@ -76,15 +76,30 @@ export class MoService {
         productionCost += mov.total_cost;
     }
 
+    // Calculate labor and overhead from work orders
+    const workOrders = await this.prisma.manufacturingWorkOrder.findMany({
+      where: { manufacturing_order_id: mo.id },
+      include: { work_center: true }
+    });
+
+    let laborCost = 0;
+    let overheadCost = 0;
+    for (const wo of workOrders) {
+      if (wo.planned_start && wo.planned_end && wo.work_center?.cost_per_hour) {
+        const hours = (new Date(wo.planned_end).getTime() - new Date(wo.planned_start).getTime()) / (1000 * 60 * 60);
+        laborCost += hours * wo.work_center.cost_per_hour;
+      }
+    }
+
+    // Add cost traceability on the fly for the response
     return {
       ...mo,
       costing: {
         materialCost,
         productionCost,
-        laborCost: 'NOT IMPLEMENTED',
-        overheadCost: 'NOT IMPLEMENTED',
-        unitProductionCost:
-          mo.produced_quantity > 0 ? productionCost / mo.produced_quantity : 0,
+        laborCost,
+        overheadCost, // Currently defaults to 0 as we don't have separate overhead in DB
+        unitProductionCost: mo.produced_quantity > 0 ? (productionCost + laborCost + overheadCost) / mo.produced_quantity : 0,
       },
     };
   }

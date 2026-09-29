@@ -1901,6 +1901,8 @@ model QuotationItem {
 }
 
 model DeliveryOrder {
+  idempotency_key String?
+  @@unique([company_id, idempotency_key])
   id              String     @id @default(auto()) @map("_id") @db.ObjectId
   company_id      String     @db.ObjectId
   company         Company    @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -3540,6 +3542,9 @@ model ExportShipmentItem {
 }
 
 model StockInTally {
+  idempotency_key String?
+  status String @default("POSTED")
+  @@unique([company_id, idempotency_key])
   id           String             @id @default(auto()) @map("_id") @db.ObjectId
   company_id   String             @db.ObjectId
   company      Company            @relation(fields: [company_id], references: [id])
@@ -3563,6 +3568,7 @@ model StockInTallyItem {
   qty            Int
   movement_id    String?      @db.ObjectId
 }
+
 
 
 
