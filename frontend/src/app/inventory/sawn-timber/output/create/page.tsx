@@ -57,7 +57,7 @@ export default function CreateOutputPage() {
         ...form,
         outputDate: form.date,
         items: [{
-          gradeId: item.gradeId,
+          gradeId: item.gradeId === 'PENDING' ? undefined : item.gradeId,
           grade: item.grade,
           thickness: parseFloat(item.thickness),
           width: parseFloat(item.width),

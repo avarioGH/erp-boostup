@@ -169,8 +169,8 @@ export class SawnTimberService {
       });
 
               for (const item of items) {
-          if (!item.gradeId) {
-            throw new BadRequestException('Grade ID is required for all output items');
+          if (!item.gradeId && item.grade !== 'PENDING') {
+            throw new BadRequestException('Grade ID is required for all output items (except PENDING)');
           }
           // The grade string will be authoritatively determined inside getOrCreateTimberVariant using gradeId
           const variant = await this.getOrCreateTimberVariant(companyId, inputLog.species, item.grade || '', item.thickness, item.width, item.length, (inputLog as any).speciesId, item.gradeId);
