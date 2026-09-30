@@ -109,7 +109,6 @@ const items: MenuItem[] = [
         { title: "Manajemen Partai", url: "/inventory/partai" },
 
         { title: "Purchase & Shipment", url: "#", type: "label" },
- { title: "Purchase (Timber)", url: "/inventory/purchase" },
  { title: "Shipment (Delivery)", url: "/inventory/shipment" },
  
  { title: "Master Data", url: "#", type: "label" },
@@ -119,13 +118,8 @@ const items: MenuItem[] = [
  { title: "Location", url: "/inventory/master-data/location" },
  { title: "Vehicle", url: "/inventory/master-data/vehicle" },
  { title: "Driver", url: "/inventory/master-data/driver" },
-
- { title: "Log Kayu", url: "#", type: "label" },
- { title: "Log Datang (DUKB)", url: "/inventory/logs" },
- { title: "Log Trimming", url: "/inventory/trimming" },
  
  { title: "Produksi Log", url: "#", type: "label" },
- { title: "Input Logs (WIP)", url: "/inventory/input-logs" },
  { title: "Sawn Timber Output", url: "/inventory/sawn-timber/output" },
  
  { title: "Proses Lanjutan", url: "#", type: "label" },
@@ -413,6 +407,7 @@ export function AppSidebar() {
  </Sidebar>
  )
 }
+
 
 
 
