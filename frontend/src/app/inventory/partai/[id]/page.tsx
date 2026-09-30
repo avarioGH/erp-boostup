@@ -29,6 +29,17 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     fetchPartai();
   }, [id]);
 
+  
+  const handleConfirmPurchase = async (purchaseId: string) => {
+    try {
+      await PurchaseAPI.confirmPurchase(purchaseId);
+      toast({ title: "Success", description: "Purchase confirmed." });
+      fetchPartai();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.response?.data?.message || "Failed to confirm", variant: "destructive" });
+    }
+  };
+
   const handleDeletePurchase = async (purchaseId: string) => {
     if (!confirm("Are you sure you want to delete this purchase?")) return;
     try {
@@ -145,7 +156,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                       <TableCell>{(p.items?.length || 0) + (p.logItems?.length || 0)}</TableCell>
                       <TableCell>{p.totalVolumeM3 || 0}</TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-2 ">
                           <Button variant="ghost" size="sm" className="h-8 px-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/purchase/${p.id}`) }}>
                             <Eye className="w-4 h-4 mr-1" /> View
                           </Button>
@@ -176,8 +187,8 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 <CardTitle>Data Ukur Kayu Bulat (DUKB)</CardTitle>
                 <CardDescription>Daftar log mentah yang terdaftar dalam partai ini.</CardDescription>
               </div>
-              <Button onClick={() => router.push(`/inventory/logs?partaiId=${id}`)}>
-                <Plus className="w-4 h-4 mr-2" /> Kelola DUKB
+              <Button onClick={() => router.push(`/inventory/logs/create?partaiId=${id}`)}>
+                <Plus className="w-4 h-4 mr-2" /> Tambah DUKB (Terima)
               </Button>
             </CardHeader>
             <CardContent>

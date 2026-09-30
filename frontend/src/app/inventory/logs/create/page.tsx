@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, ArrowLeft, Save, Plus, Trash2, Calculator } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
 export default function MassCreateRawLogPage() {
@@ -156,6 +156,7 @@ export default function MassCreateRawLogPage() {
     setSubmitting(true)
     try {
       const payloadItems = validRows.map(r => ({
+        purchaseLogItemId: r.purchaseLogItemId || undefined,
         logNumber: r.logNumber,
         species: masterForm.species,
         speciesId: masterForm.speciesId,
