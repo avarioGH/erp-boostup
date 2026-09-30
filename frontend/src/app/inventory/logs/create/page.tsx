@@ -251,7 +251,7 @@ export default function MassCreateRawLogPage() {
             <CardDescription className="mt-1">Gunakan tombol TAB untuk pindah kolom, dan ENTER untuk baris baru.</CardDescription>
           </div>
           <div className="text-right">
-            <span className="text-sm text-muted-foreground mr-2">Total Net M&sup3;:</span>
+            <span className="text-sm text-muted-foreground mr-2">Total Net M3</span>
             <span className="text-xl font-bold text-primary">{totalNet.toFixed(4)}</span>
           </div>
         </CardHeader>
@@ -282,7 +282,7 @@ export default function MassCreateRawLogPage() {
                 <th className="p-3 text-left font-semibold text-muted-foreground font-semibold w-[100px]">Gerowong</th>
                 <th className="p-3 text-right font-semibold text-muted-foreground font-semibold bg-muted/50 w-[100px]">&Oslash; Avg</th>
                 <th className="p-3 text-right font-semibold text-muted-foreground font-semibold bg-muted/50">Gross</th>
-                <th className="p-3 text-right font-semibold text-muted-foreground font-semibold bg-muted/50">Net M&sup3;</th>
+                <th className="p-3 text-right font-semibold text-muted-foreground font-semibold bg-muted/50">Net M3</th>
                 <th className="p-3 text-center font-semibold text-muted-foreground font-semibold w-[50px]"></th>
               </tr>
             </thead>
@@ -330,4 +330,4 @@ export default function MassCreateRawLogPage() {
       </div>
     </div>
   )
-}
+}

@@ -80,7 +80,7 @@ export default function TrimmedLogDetailPage() {
  <Card className="bg-card rounded-xl border border-border shadow-sm">
  <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10"><CardTitle className="text-lg flex items-center gap-2 text-foreground"><Box className="w-4 h-4" /> Volume Calculation</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
- <div className="flex justify-between items-center"><span className="text-muted-foreground">Gross Volume</span><span className="font-medium">{data.grossVolume} m&sup3;</span></div>
+ <div className="flex justify-between items-center"><span className="text-muted-foreground">Gross</span><span className="font-medium">{totalGross.toFixed(4)} m3</span><span className="font-medium">{data.grossVolume} m&sup3;</span></div>
  <div className="flex justify-between items-center"><span className="text-muted-foreground text-red-500">Gerowong Volume</span><span>- {data.hollowVolume || 0} m&sup3;</span></div>
  <div className="flex justify-between items-center"><span className="text-muted-foreground text-warning">Trimming Volume</span><span>- {data.trimmingVolume || 0} m&sup3;</span></div>
  <hr className="border-border/50" />

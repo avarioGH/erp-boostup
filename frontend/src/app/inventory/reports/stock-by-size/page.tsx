@@ -57,7 +57,7 @@ export default function StockBySizeReport() {
                   <th className="p-3">Dimensions (T x W x L)</th>
                   <th className="p-3">Found In Products</th>
                   <th className="p-3 text-right">Total PCS</th>
-                  <th className="p-3 text-right">Total Net M³</th>
+                  <th className="p-3 text-right">Total Net M3</th>
                 </tr>
               </thead>
               <tbody>

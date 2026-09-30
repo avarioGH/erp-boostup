@@ -22,7 +22,7 @@ export default function YieldReport() {
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
  <div className="border p-4 rounded-lg bg-muted/30">
- <p className="text-sm text-gray-500">Total Input Net M??</p>
+ <p className="text-sm text-gray-500">Total Input Net M3</p>
  <p className="text-2xl font-bold">{data.summary.totalInputM3.toFixed(4)}</p>
  </div>
  <div className="border p-4 rounded-lg bg-muted/30">

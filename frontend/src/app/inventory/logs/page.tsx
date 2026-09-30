@@ -114,7 +114,7 @@ export default function RawLogsPage() {
  <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Partai</th>
  <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Length</th>
  <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">&Oslash; Avg</th>
- <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Net M&sup3;</th>
+ <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Net M3</th>
  <th className="p-4 px-6 text-center font-semibold text-muted-foreground h-11">Status</th>
  <th className="p-4 px-6 text-center font-semibold text-muted-foreground h-11">Action</th>
  </tr>
