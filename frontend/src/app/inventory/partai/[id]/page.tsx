@@ -194,7 +194,9 @@ const [partai, setPartai] = useState<any>(null);
       fetchPartai();
     } catch (e: any) {
       console.error(e);
-      toast({ title: "Gagal Trimming", description: e?.response?.data?.message || e.message, variant: "destructive" });
+      const msg = e?.response?.data?.message || e.message;
+toast({ title: "Gagal Trimming", description: msg, variant: "destructive" });
+alert("Gagal Trimming: " + msg);
     }
   };
 
