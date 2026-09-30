@@ -173,7 +173,7 @@ export class SawnTimberService {
             throw new BadRequestException('Grade ID is required for all output items (except PENDING)');
           }
           // The grade string will be authoritatively determined inside getOrCreateTimberVariant using gradeId
-          const variant = await this.getOrCreateTimberVariant(companyId, inputLog.species, item.grade || '', item.thickness, item.width, item.length, (inputLog as any).speciesId, item.gradeId);
+          const variant = await this.getOrCreateTimberVariant(companyId, inputLog.species, item.grade || '', Number(item.thickness), Number(item.width), Number(item.length), (inputLog as any).speciesId, item.gradeId);
         const volumeM3 = variant.volumePerPiece * item.quantityPcs;
         
         await tx.sawnTimberOutputItem.create({
@@ -182,9 +182,9 @@ export class SawnTimberService {
             timberVariantId: variant.id,
             grade: variant.grade,
             quantityPcs: item.quantityPcs,
-            thicknessMm: item.thickness,
-            widthMm: item.width,
-            lengthMm: item.length,
+            thicknessMm: Number(item.thickness),
+            widthMm: Number(item.width),
+            lengthMm: Number(item.length),
             volumeM3
           }
         });
