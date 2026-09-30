@@ -198,7 +198,7 @@ export default function CreateOutputPage() {
                 <Input type="number" min="1" value={item.quantityPcs} onChange={e => setItem({...item, quantityPcs: e.target.value})} placeholder="Total Pieces" required className="bg-background h-10 font-bold text-lg" />
               </div>
               <div className="space-y-2">
-                <label className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Calculated Volume (M³)</label>
+                <label className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Calculated Volume (MÂ³)</label>
                 <div className="h-10 px-3 bg-primary/5 border border-primary/20 rounded-md flex items-center justify-end">
                   <span className="font-black text-primary text-lg">{preview > 0 ? preview.toFixed(6) : "0.000000"}</span>
                 </div>
