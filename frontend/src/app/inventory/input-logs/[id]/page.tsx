@@ -39,7 +39,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
  <div className="space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-8 px-4 md:px-6 box-border">
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
  <div className="flex items-center gap-4">
- <Button variant="outline" size="icon" onClick={() => router.push('/inventory/input-logs')}><ArrowLeft className="w-4 h-4" /></Button>
+ <Button variant="outline" size="icon" onClick={() => data?.partaiId ? router.push(`/inventory/partai/${data.partaiId}?tab=input`) : router.push('/inventory/input-logs')}><ArrowLeft className="w-4 h-4" /></Button>
  <div>
  <div className="flex items-center gap-3">
  <h1 className="text-2xl font-bold tracking-tight text-foreground">{data.inputNumber}</h1>
