@@ -24,7 +24,7 @@ export class PurchaseService {
     let totalPcs = 0;
     let totalVolumeM3 = 0;
     
-    for (const item of items) {
+    for (const item of (items || [])) {
       totalPcs += item.quantityPcs;
       totalVolumeM3 += item.volumeM3;
     }
@@ -64,7 +64,7 @@ export class PurchaseService {
             purchaseDiameter2: li.purchaseDiameter2 || 0,
             purchaseDiameter3: li.purchaseDiameter3 || 0,
             purchaseDiameter4: li.purchaseDiameter4 || 0,
-            purchaseVolume: li.purchaseVolume,
+            purchaseVolume: li.purchaseVolume || 0,
           }))
         }
       },

@@ -3386,9 +3386,9 @@ model TimberPurchaseItem {
   quantityPcs Int
   volumeM3    Float
 
-  purchaseThickness Int?
-  purchaseWidth     Int?
-  purchaseLength    Int?
+  purchaseThickness Float?
+  purchaseWidth     Float?
+  purchaseLength    Float?
   unitPrice         Float?
   batch             String?
   notes             String?
@@ -3404,11 +3404,11 @@ model TimberPurchaseLogItem {
   speciesId     String?        @db.ObjectId
   timberSpecies TimberSpecies? @relation(fields: [speciesId], references: [id])
 
-  purchaseLength    Int
-  purchaseDiameter1 Int
-  purchaseDiameter2 Int
-  purchaseDiameter3 Int
-  purchaseDiameter4 Int
+  purchaseLength    Float
+  purchaseDiameter1 Float
+  purchaseDiameter2 Float
+  purchaseDiameter3 Float
+  purchaseDiameter4 Float
   purchaseVolume    Float
 
   status        String    @default("EXPECTED") // EXPECTED, RECEIVED
