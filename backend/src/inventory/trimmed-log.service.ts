@@ -84,9 +84,12 @@ export class TrimmedLogService {
       if (existingCode) throw new BadRequestException(`Trim code ${trimNumber} already exists`);
 
       // Calculations
-      const avgDia = this.calcService.calculateAverageDiameter(
-        Number(data.diameter1), Number(data.diameter2), Number(data.diameter3), Number(data.diameter4)
+      let avgDia = this.calcService.calculateAverageDiameter(
+        Number(data.diameter1) || 0, Number(data.diameter2) || 0, Number(data.diameter3) || 0, Number(data.diameter4) || 0
       );
+      if (avgDia === 0 && data.averageDiameter) {
+        avgDia = Number(data.averageDiameter);
+      }
       const rndDia = this.calcService.calculateRoundedDiameter(avgDia);
       const grossVol = this.calcService.calculateRawLogGrossVolume(rndDia, reqLen);
       
