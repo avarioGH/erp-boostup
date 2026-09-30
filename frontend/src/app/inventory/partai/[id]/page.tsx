@@ -56,7 +56,34 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     setInlineDukbRows(newRows);
   };
 
+
+  const calculateRow = (row: any) => {
+    let l = parseFloat(row.length) || 0;
+    const d1 = parseFloat(row.d1) || 0;
+    const d2 = parseFloat(row.d2) || 0;
+    const d3 = parseFloat(row.d3) || 0;
+    const d4 = parseFloat(row.d4) || 0;
+    const g = parseFloat(row.gerowong) || 0;
+
+    let avgDiaStrict = 0;
+    if (d1 > 0 || d2 > 0 || d3 > 0 || d4 > 0) {
+      avgDiaStrict = (d1 + d2 + d3 + d4) / 4;
+    }
+    const rndDia = Math.round(avgDiaStrict);
+    
+    const grossVol = l > 0 && rndDia > 0 ? (Math.pow(rndDia, 2) * l * 0.7854) / 10000 : 0;
+    const gerowongVol = l > 0 && g > 0 ? (Math.pow(g, 2) * l * 0.7854) / 10000 : 0;
+    const netVol = grossVol - gerowongVol;
+
+    return {
+      avg: avgDiaStrict,
+      gross: grossVol,
+      net: netVol < 0 ? 0 : netVol
+    }
+  };
+
   const handleSaveInlineDukb = async () => {
+
     const toSave = inlineDukbRows.filter(r => r.length && r.d1 && r.d2 && r.d3 && r.d4);
     if (toSave.length === 0) {
       toast({ title: "Tidak ada data lengkap", description: "Isi dimensi minimal pada satu log (Panjang, D1-D4) untuk menyimpannya.", variant: "destructive" });
@@ -279,16 +306,21 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                       <TableRow>
                         <TableHead className="w-[120px]">No. Log</TableHead>
                         <TableHead className="w-[100px]">Spesies</TableHead>
-                        <TableHead className="w-[80px]">P (m)</TableHead>
-                        <TableHead className="w-[80px]">D1 (cm)</TableHead>
-                        <TableHead className="w-[80px]">D2 (cm)</TableHead>
-                        <TableHead className="w-[80px]">D3 (cm)</TableHead>
-                        <TableHead className="w-[80px]">D4 (cm)</TableHead>
-                        <TableHead className="w-[80px]">Grw (cm)</TableHead>
+                        <TableHead className="w-[70px]">P (m)</TableHead>
+                        <TableHead className="w-[70px]">D1 (cm)</TableHead>
+                        <TableHead className="w-[70px]">D2 (cm)</TableHead>
+                        <TableHead className="w-[70px]">D3 (cm)</TableHead>
+                        <TableHead className="w-[70px]">D4 (cm)</TableHead>
+                        <TableHead className="w-[70px]">Grw (cm)</TableHead>
+                        <TableHead className="w-[70px] text-right">Avg</TableHead>
+                        <TableHead className="w-[80px] text-right">Gross</TableHead>
+                        <TableHead className="w-[80px] text-right text-blue-500 font-bold">Net</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {inlineDukbRows.map((r, idx) => (
+                      {inlineDukbRows.map((r, idx) => {
+                        const calc = calculateRow(r);
+                        return (
                         <TableRow key={idx}>
                           <TableCell className="p-2"><input className="w-full bg-background border rounded px-2 py-1 text-sm text-muted-foreground" value={r.logNumber} readOnly disabled/></TableCell>
                           <TableCell className="p-2"><input className="w-full bg-background border rounded px-2 py-1 text-sm text-muted-foreground" value={r.species} readOnly disabled/></TableCell>
@@ -298,12 +330,18 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                           <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.d3} onChange={e => handleInlineDukbChange(idx, 'd3', e.target.value)} /></TableCell>
                           <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.d4} onChange={e => handleInlineDukbChange(idx, 'd4', e.target.value)} /></TableCell>
                           <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.gerowong} onChange={e => handleInlineDukbChange(idx, 'gerowong', e.target.value)} /></TableCell>
+                          <TableCell className="p-2 text-right bg-muted/20 text-muted-foreground font-medium">{calc.avg > 0 ? calc.avg.toFixed(1) : "-"}</TableCell>
+                          <TableCell className="p-2 text-right bg-muted/20 text-muted-foreground">{calc.gross > 0 ? calc.gross.toFixed(3) : "-"}</TableCell>
+                          <TableCell className="p-2 text-right bg-blue-50/50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold">{calc.net > 0 ? calc.net.toFixed(3) : "-"}</TableCell>
                         </TableRow>
-                      ))}
+                      )})}
                     </TableBody>
                   </Table>
                 </div>
-                <div className="mt-4 flex justify-end">
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="text-sm">
+                    Total Net Vol. (Live): <span className="font-bold text-lg text-blue-500">{inlineDukbRows.reduce((sum, r) => sum + calculateRow(r).net, 0).toFixed(4)} m3</span>
+                  </div>
                   <Button onClick={handleSaveInlineDukb} disabled={isSavingDukb}>
                     {isSavingDukb ? "Menyimpan..." : "Simpan DUKB (Terima Parsial/Full)"}
                   </Button>
