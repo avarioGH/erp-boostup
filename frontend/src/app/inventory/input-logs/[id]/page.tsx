@@ -53,7 +53,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
  </div>
  </div>
 
- <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+ <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
  <Card className="bg-card rounded-xl border border-border shadow-sm">
  <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Operation</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
@@ -66,14 +66,39 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
  </CardContent>
  </Card>
 
- <Card className="bg-card rounded-xl border border-border shadow-sm">
- <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10"><CardTitle className="text-lg flex items-center gap-2 text-foreground"><Box className="w-4 h-4" /> Volume Summary</CardTitle></CardHeader>
- <CardContent className="pt-6 space-y-4 text-sm">
- <div className="flex justify-between items-center"><span className="text-muted-foreground">Total Pieces</span><span className="font-bold text-lg">{data.totalQty} PCS</span></div>
- <div className="flex justify-between items-center"><span className="text-muted-foreground">Total Length</span><span className="font-medium">{data.totalLength?.toFixed(2)} m</span></div>
- <div className="flex justify-between items-center"><span className="text-muted-foreground">Total Gross</span><span className="font-medium">{data.totalGross?.toFixed(4)} m3</span></div>
- <hr className="border-border/50" />
- <div className="flex justify-between items-center"><span className="font-bold text-foreground font-bold">Total Net Volume</span><span className="font-bold text-2xl text-primary">{data.totalVolume?.toFixed(4)} m3</span></div>
+ <Card className="bg-card rounded-xl border border-border shadow-sm md:col-span-2">
+ <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10">
+    <CardTitle className="text-[16px] font-semibold flex items-center justify-between">
+      <span className="flex items-center gap-2"><Factory className="w-4 h-4" /> Production Summary</span>
+    </CardTitle>
+ </CardHeader>
+ <CardContent className="pt-6">
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+    <div className="space-y-1 text-center border-r border-border/50">
+      <p className="text-muted-foreground text-xs font-semibold uppercase">Total Input</p>
+      <p className="text-2xl font-bold">{data.totalVolume?.toFixed(4)} <span className="text-sm font-normal text-muted-foreground">m3</span></p>
+    </div>
+    <div className="space-y-1 text-center border-r border-border/50">
+      <p className="text-muted-foreground text-xs font-semibold uppercase">Processed (Consumed)</p>
+      <p className="text-2xl font-bold text-blue-500">{data.processedVolume?.toFixed(4)} <span className="text-sm font-normal text-muted-foreground">m3</span></p>
+    </div>
+    <div className="space-y-1 text-center border-r border-border/50 md:border-r-0">
+      <p className="text-muted-foreground text-xs font-semibold uppercase">Remaining Input</p>
+      <p className="text-2xl font-bold text-orange-500">{data.remainingVolume?.toFixed(4)} <span className="text-sm font-normal text-muted-foreground">m3</span></p>
+    </div>
+    <div className="space-y-1 text-center">
+      <p className="text-muted-foreground text-xs font-semibold uppercase">Yield Output (Produced)</p>
+      <p className="text-2xl font-bold text-emerald-500">{data.outputVolume?.toFixed(4)} <span className="text-sm font-normal text-muted-foreground">m3</span></p>
+    </div>
+  </div>
+  <div className="flex gap-4 justify-center md:justify-start pt-2">
+    <Button onClick={() => router.push(`/inventory/sawn-timber/output/create?inputLogId=${data.id}&partaiId=${data.partaiId}`)} className="font-bold">
+      + Tally Hari Ini
+    </Button>
+    <Button variant="outline" onClick={() => router.push(`/inventory/sawn-timber/output?inputLogId=${data.id}`)}>
+      Lihat Tally (Output)
+    </Button>
+  </div>
  </CardContent>
  </Card>
 

@@ -39,7 +39,40 @@ export class InputLogService {
       }),
       this.prisma.inputLog.count({ where })
     ]);
-    return { items, total, skip: Number(skip), take: Number(take) };
+    
+      const mappedItems = items.map(log => {
+        let processedVolume = 0;
+        let outputVolume = 0;
+        if (log.sawnOutputs) {
+          log.sawnOutputs.forEach((out: any) => {
+            processedVolume += (out.consumedVolume || 0);
+            if (out.items) {
+              out.items.forEach((i: any) => outputVolume += (i.volumeM3 || 0));
+            }
+          });
+        }
+        
+        // Dynamically compute status for safety
+        let currentStatus = log.status;
+        const totalV = log.totalVolume || 0;
+        // If it was marked DONE, keep it. Otherwise logic dictates:
+        if (currentStatus !== 'DONE' && currentStatus !== 'CANCELLED') {
+           if (processedVolume > 0 && processedVolume < totalV) currentStatus = 'PROCESSING';
+           else if (processedVolume >= totalV && totalV > 0) currentStatus = 'DONE';
+           else currentStatus = 'AVAILABLE';
+        }
+
+        return {
+          ...log,
+          status: currentStatus,
+          processedVolume,
+          remainingVolume: totalV - processedVolume,
+          outputVolume
+        };
+      });
+
+      return { items: mappedItems, total, skip: Number(skip), take: Number(take) };
+
   }
 
   async getInputLog(id: string) {
@@ -192,6 +225,7 @@ export class InputLogService {
   }
 
   async deleteInputLog(id: string) {
+
     const inputLog = await this.prisma.inputLog.findUnique({ where: { id }, include: { items: true } });
     if (!inputLog) throw new Error('Input Log not found');
     

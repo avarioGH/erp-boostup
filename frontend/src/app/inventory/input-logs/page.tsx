@@ -76,8 +76,10 @@ export default function InputLogsPage() {
  <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Input Number</th>
  <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Date</th>
  <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Partai</th>
- <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Logs</th>
  <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Total M&sup3;</th>
+ <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Processed</th>
+ <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Remaining</th>
+ <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Output M&sup3;</th>
  <th className="p-4 px-6 text-center font-semibold text-muted-foreground h-11">Status</th>
  <th className="p-4 px-6 text-center font-semibold text-muted-foreground h-11">Action</th>
  </tr>
@@ -88,9 +90,16 @@ export default function InputLogsPage() {
  <td className="py-3 px-6 font-semibold text-foreground/90">{log.inputNumber}</td>
  <td className="py-3 px-6 text-[13px]">{new Date(log.date).toLocaleDateString("id-ID")}</td>
  <td className="py-3 px-6 text-[13px]">{log.batch ||"-"}</td>
- <td className="py-3 px-6 text-right text-[13px]">{log.totalQty}</td>
- <td className="py-3 px-6 text-right font-bold text-foreground/90">{log.totalVolume}</td>
- <td className="py-3 px-6 text-center text-[13px]">{log.status === "AVAILABLE" || log.status === "CONFIRMED" ? <span className="inline-flex items-center rounded-sm bg-success/15 px-2 py-0.5 text-[11px] font-bold text-success-foreground uppercase tracking-wider">{log.status}</span> : <span className="inline-flex items-center rounded-sm bg-secondary/80 text-secondary-foreground px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider">{log.status}</span>}</td>
+ <td className="py-3 px-6 text-right font-bold text-foreground/90">{log.totalVolume?.toFixed(4) || "0.0000"}</td>
+ <td className="py-3 px-6 text-right font-medium text-blue-500/90">{log.processedVolume?.toFixed(4) || "0.0000"}</td>
+ <td className="py-3 px-6 text-right font-medium text-orange-500/90">{log.remainingVolume?.toFixed(4) || "0.0000"}</td>
+ <td className="py-3 px-6 text-right font-bold text-emerald-500">{log.outputVolume?.toFixed(4) || "0.0000"}</td>
+ <td className="py-3 px-6 text-center text-[13px]">
+    {log.status === "AVAILABLE" ? <span className="inline-flex items-center rounded-sm bg-destructive/15 px-2 py-0.5 text-[11px] font-bold text-destructive uppercase tracking-wider">AVAILABLE</span> :
+     log.status === "PROCESSING" ? <span className="inline-flex items-center rounded-sm bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-600 uppercase tracking-wider">PROCESSING</span> :
+     log.status === "DONE" ? <span className="inline-flex items-center rounded-sm bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-600 uppercase tracking-wider">DONE</span> :
+     <span className="inline-flex items-center rounded-sm bg-secondary/80 text-secondary-foreground px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider">{log.status}</span>}
+ </td>
  <td className="py-3 px-6 text-center text-[13px]" onClick={e => e.stopPropagation()}>
     <DropdownMenu>
       <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">

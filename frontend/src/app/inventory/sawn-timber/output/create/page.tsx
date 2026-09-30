@@ -13,6 +13,7 @@ export default function CreateOutputPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const partaiIdFromUrl = searchParams.get('partaiId') || '';
+  const inputLogIdFromUrl = searchParams.get('inputLogId') || '';
   const { toast } = useToast()
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [inputLogs, setInputLogs] = useState<any[]>([])
@@ -20,7 +21,7 @@ export default function CreateOutputPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
-  const [form, setForm] = useState({ partaiId: partaiIdFromUrl, date: "", shift: "1", locationId: "", inputLogId: "", batch: "", notes: "" })
+  const [form, setForm] = useState({ partaiId: partaiIdFromUrl, date: "", shift: "1", locationId: "", inputLogId: inputLogIdFromUrl, batch: "", notes: "", consumedVolume: "" })
   const [item, setItem] = useState({ gradeId: "", grade: "", thickness: "", width: "", length: "", quantityPcs: "" })
   const [preview, setPreview] = useState(0)
 

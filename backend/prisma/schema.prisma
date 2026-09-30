@@ -2828,21 +2828,22 @@ model InputLogItem {
 // ==================================================
 
 model SawnTimberOutput {
-  partaiId     String?       @db.ObjectId
-  partai       TimberPartai? @relation(fields: [partaiId], references: [id])
-  id           String        @id @default(auto()) @map("_id") @db.ObjectId
-  bundleNumber String
-  outputDate   DateTime      @default(now())
-  shift        String?
-  operatorName String?
-  machine      String?
-  locationId   String        @db.ObjectId
-  location     Warehouse     @relation(fields: [locationId], references: [id])
-  inputLogId   String        @db.ObjectId
-  inputLog     InputLog      @relation(fields: [inputLogId], references: [id])
-  batch        String? // Partai
-  notes        String?
-  status       String        @default("DRAFT") // DRAFT, POSTED, CANCELLED
+  partaiId       String?       @db.ObjectId
+  partai         TimberPartai? @relation(fields: [partaiId], references: [id])
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  bundleNumber   String
+  outputDate     DateTime      @default(now())
+  shift          String?
+  operatorName   String?
+  machine        String?
+  locationId     String        @db.ObjectId
+  location       Warehouse     @relation(fields: [locationId], references: [id])
+  inputLogId     String        @db.ObjectId
+  inputLog       InputLog      @relation(fields: [inputLogId], references: [id])
+  batch          String? // Partai
+  notes          String?
+  status         String        @default("DRAFT") // DRAFT, POSTED, CANCELLED
+  consumedVolume Float         @default(0)
 
   items SawnTimberOutputItem[]
 
