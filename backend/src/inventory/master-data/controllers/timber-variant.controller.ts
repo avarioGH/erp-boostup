@@ -41,6 +41,7 @@ export class TimberVariantController {
             
             unit_id: defaultUnit.id,
             code: 'SAWN-TIMBER',
+            barcode: `GENERIC-SAWN-${Date.now()}`,
             purchase_price: 0, selling_price: 0
           }
         });

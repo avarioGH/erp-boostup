@@ -94,6 +94,7 @@ export class SawnTimberService {
             company_id: companyId,
             unit_id: unit.id,
             code: actualSpecies,
+              barcode: `KAYU-${actualSpecies.toUpperCase()}-${Date.now().toString().slice(-6)}`,
             name: `Kayu ${actualSpecies}`,
             purchase_price: 0,
             selling_price: 0

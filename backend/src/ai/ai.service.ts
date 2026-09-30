@@ -394,6 +394,7 @@ export class AiService {
           selling_price: sellingPrice,
           purchase_price: sellingPrice * 0.8, // Estimate 
           code: productCode,
+          barcode: `AI-${productCode}-${Date.now()}`,
           unit_id: unit.id,
           category_id: categoryId,
         }
