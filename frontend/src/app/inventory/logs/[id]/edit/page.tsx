@@ -36,7 +36,7 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     Promise.all([
       InventoryAPI.getWarehouses(),
-      TimberAPI.getLog(id)
+      TimberAPI.getRawLog(id)
     ]).then(([wRes, lRes]) => {
       setWarehouses(Array.isArray(wRes) ? wRes : [])
       if (lRes) {
