@@ -14,6 +14,18 @@ export class PartaiService {
     });
   }
 
+  async migrateToTesting(companyId: string) {
+    let testingPartai = await this.prisma.timberPartai.findFirst({ where: { code: 'TESTING', company_id: companyId } });
+    if (!testingPartai) testingPartai = await this.prisma.timberPartai.create({ data: { code: 'TESTING', name: 'Partai Testing (Migrasi)', company_id: companyId, status: 'COMPLETED' } });
+    const pid = testingPartai.id;
+    const p1 = await this.prisma.timberPurchase.updateMany({ where: { partaiId: null, company_id: companyId }, data: { partaiId: pid } });
+    const p2 = await this.prisma.rawLog.updateMany({ where: { partaiId: null }, data: { partaiId: pid } });
+    const p3 = await this.prisma.trimmedLog.updateMany({ where: { partaiId: null }, data: { partaiId: pid } });
+    const p4 = await this.prisma.inputLog.updateMany({ where: { partaiId: null }, data: { partaiId: pid } });
+    const p5 = await this.prisma.sawnTimberOutput.updateMany({ where: { partaiId: null }, data: { partaiId: pid } });
+    return { success: true, testingPartaiId: pid, updated: { purchases: p1.count, rawLogs: p2.count, trimmedLogs: p3.count, inputLogs: p4.count, outputs: p5.count } };
+  }
+
   async findAll(companyId: string) {
     return this.prisma.timberPartai.findMany({
       where: { company_id: companyId },
@@ -56,3 +68,4 @@ export class PartaiService {
     return this.prisma.timberPartai.delete({ where: { id } });
   }
 }
+

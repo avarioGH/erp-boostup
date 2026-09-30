@@ -15,6 +15,12 @@ export class PartaiController {
     return this.partaiService.create(req.user.companyId, data);
   }
 
+  @Get('migrate-testing')
+  @Permissions('inventory.read')
+  migrateTesting(@Request() req) {
+    return this.partaiService.migrateToTesting(req.user.companyId);
+  }
+
   @Get()
   @Permissions('inventory.read')
   findAll(@Request() req) {
@@ -39,3 +45,4 @@ export class PartaiController {
     return this.partaiService.delete(id, req.user.companyId);
   }
 }
+
