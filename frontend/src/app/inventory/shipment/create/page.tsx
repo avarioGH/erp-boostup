@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
-import { MasterDataAPI, InventoryAPI, ShipmentAPI } from "@/lib/api";
+import { MasterDataAPI, InventoryAPI, ShipmentAPI, TimberAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,14 +24,14 @@ export default function CreateShipmentPage() {
     warehouseId: "",
     vehicleId: "",
     driverId: "",
-    items: [{ productId: "", quantity: 1 }]
+    items: [{ timberVariantId: "", quantityPcs: 1 }]
   });
 
   useEffect(() => {
     InventoryAPI.getWarehouses().then((res: any) => setWarehouses(res?.data || res || [])).catch(() => {});
     MasterDataAPI.getVehicles().then((res: any) => setVehicles(res?.data || res || [])).catch(() => {});
     MasterDataAPI.getDrivers().then((res: any) => setDrivers(res?.data || res || [])).catch(() => {});
-    InventoryAPI.getStocks().then((res: any) => setStocks(res?.data || res || [])).catch(() => {});
+    TimberAPI.getTimberStock().then((res: any) => setStocks(res?.data || res || [])).catch(() => {});
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,7 +39,19 @@ export default function CreateShipmentPage() {
     setError("");
     setLoading(true);
     try {
-      await ShipmentAPI.createShipment(form);
+      const payload = {
+        ...form,
+        items: form.items.map(item => {
+          const stock = stocks.find(s => s.variantId === item.timberVariantId && s.locationId === form.warehouseId);
+          let vol = 0;
+          if (stock && stock.variant) {
+            const v = stock.variant;
+            vol = (item.quantityPcs * v.thicknessMm * v.widthMm * v.lengthMm) / 1000000000;
+          }
+          return { ...item, volumeM3: vol };
+        })
+      };
+      await ShipmentAPI.createShipment(payload);
       router.push("/inventory/shipment");
     } catch (err: any) {
       setError(err?.response?.data?.message || err.message || "Failed to create shipment");
@@ -48,14 +60,14 @@ export default function CreateShipmentPage() {
     }
   };
 
-  const getStockAmount = (productId: string) => {
-    if (!productId) return 0;
-    const stock = stocks.find(s => s.productId === productId && s.warehouseId === form.warehouseId);
-    return stock ? stock.quantity : 0;
+  const getStockAmount = (variantId: string) => {
+    if (!variantId) return 0;
+    const stock = stocks.find(s => s.variantId === variantId && s.locationId === form.warehouseId);
+    return stock ? stock.quantityPCS : 0;
   };
 
-  // Get unique products available in the selected warehouse
-  const availableProducts = Array.from(new Set(stocks.filter(s => form.warehouseId ? s.warehouseId === form.warehouseId : true).map(s => s.productId)));
+  // Get unique timber variants available in the selected warehouse
+  const availableProducts = Array.from(new Set(stocks.filter(s => form.warehouseId ? s.locationId === form.warehouseId : true).map(s => s.variantId)));
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-12 px-4 md:px-6 box-border">
@@ -103,14 +115,14 @@ export default function CreateShipmentPage() {
                 ) : (
                   <div className="space-y-4">
                     {form.items.map((item, index) => {
-                      const avail = getStockAmount(item.productId);
+                      const avail = getStockAmount(item.timberVariantId);
                       return (
                         <div key={index} className="flex flex-col sm:flex-row gap-4 items-start sm:items-end p-4 border border-border/60 bg-muted/5 rounded-lg relative group">
                           <div className="w-full sm:flex-1 space-y-2">
                             <Label className="text-[12px] uppercase text-muted-foreground font-bold tracking-wider">Product Variant</Label>
-                            <Select value={item.productId} onValueChange={(val: any) => {
+                            <Select value={item.timberVariantId} onValueChange={(val: any) => {
                               const newItems = [...form.items];
-                              newItems[index].productId = val || "";
+                              newItems[index].timberVariantId = val || "";
                               setForm({ ...form, items: newItems });
                             }}>
                               <SelectTrigger className="h-10 bg-background font-medium">
@@ -121,9 +133,10 @@ export default function CreateShipmentPage() {
                                   <SelectItem value="none" disabled>No stock available</SelectItem>
                                 ) : (
                                   availableProducts.map(pid => {
-                                    const s = stocks.find(st => st.productId === pid);
+                                    const s = stocks.find(st => st.variantId === pid);
                                     const a = getStockAmount(pid);
-                                    return <SelectItem key={pid} value={pid}>{s?.product?.name || pid} <span className="text-muted-foreground ml-1">({a} PCS available)</span></SelectItem>;
+                                    const name = s?.variant ? `${s.variant.species} ${s.variant.grade} (${s.variant.thicknessMm}x${s.variant.widthMm}x${s.variant.lengthMm})` : pid;
+                                    return <SelectItem key={pid} value={pid}>{name} <span className="text-muted-foreground ml-1">({a} PCS available)</span></SelectItem>;
                                   })
                                 )}
                               </SelectContent>
@@ -137,10 +150,10 @@ export default function CreateShipmentPage() {
                               min="1" 
                               max={avail > 0 ? avail : undefined}
                               className="h-10 bg-background font-semibold"
-                              value={item.quantity} 
+                              value={item.quantityPcs} 
                               onChange={(e) => {
                                 const newItems = [...form.items];
-                                newItems[index].quantity = parseInt(e.target.value) || 0;
+                                newItems[index].quantityPcs = parseInt(e.target.value) || 0;
                                 setForm({ ...form, items: newItems });
                               }} 
                             />
@@ -167,7 +180,7 @@ export default function CreateShipmentPage() {
                   type="button" 
                   variant="outline" 
                   className="w-full border-dashed border-2 font-semibold h-11 text-muted-foreground hover:text-foreground"
-                  onClick={() => setForm({ ...form, items: [...form.items, { productId: "", quantity: 1 }] })}
+                  onClick={() => setForm({ ...form, items: [...form.items, { timberVariantId: "", quantityPcs: 1 }] })}
                 >
                   <Plus className="w-4 h-4 mr-2" /> Add Timber Variant
                 </Button>
