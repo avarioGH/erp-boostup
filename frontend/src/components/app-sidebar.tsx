@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -105,7 +105,10 @@ const items: MenuItem[] = [
  subItems: [
  { title: "Dashboard", url: "/inventory/dashboard" },
 
- { title: "Purchase & Shipment", url: "#", type: "label" },
+ { title: "Partai (Project)", url: "#", type: "label" },
+        { title: "Manajemen Partai", url: "/inventory/partai" },
+
+        { title: "Purchase & Shipment", url: "#", type: "label" },
  { title: "Purchase (Timber)", url: "/inventory/purchase" },
  { title: "Shipment (Delivery)", url: "/inventory/shipment" },
  
@@ -410,6 +413,7 @@ export function AppSidebar() {
  </Sidebar>
  )
 }
+
 
 
 

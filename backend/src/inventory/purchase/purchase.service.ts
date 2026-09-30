@@ -11,7 +11,7 @@ export class PurchaseService {
 
   async create(companyId: string, data: any) {
     const { logItems = [] } = data;
-    const { purchaseNumber, purchaseDate, sourceId, warehouseId, notes, items } = data;
+    const { purchaseNumber, purchaseDate, sourceId, warehouseId, notes, items, partaiId } = data;
 
     // Validate if purchaseNumber exists
     const existing = await this.prisma.timberPurchase.findUnique({
@@ -361,3 +361,4 @@ export class PurchaseService {
   }
 
 }
+

@@ -1,5 +1,5 @@
-﻿"use client";
-import { useState, useEffect } from "react";
+"use client";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PurchaseAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft } from "lucide-react";
 
-export default function CreatePurchaseLogPage({ params }: { params: { id: string } }) {
+export default function CreatePurchaseLogPage({ params }: { params: any }) {
   const router = useRouter();
+  const { id } = React.use(params as Promise<{ id: string }>);
   const [purchase, setPurchase] = useState<any>(null);
   const [formData, setFormData] = useState({
     logNumber: "",
@@ -23,15 +24,18 @@ export default function CreatePurchaseLogPage({ params }: { params: { id: string
   });
 
   useEffect(() => {
-    PurchaseAPI.getPurchase(params.id).then((res: any) => {
-      setPurchase(res?.data || res);
-    });
-  }, [params.id]);
+    if (id) {
+      PurchaseAPI.getPurchase(id).then((res: any) => {
+        setPurchase(res?.data || res);
+      });
+    }
+  }, [id]);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
+    if (!id) return;
     try {
-      await PurchaseAPI.addPurchaseLogItem(params.id, {
+      await PurchaseAPI.addPurchaseLogItem(id, {
         ...formData,
         purchaseLength: Number(formData.purchaseLength),
         purchaseDiameter1: Number(formData.purchaseDiameter1),
@@ -40,7 +44,7 @@ export default function CreatePurchaseLogPage({ params }: { params: { id: string
         purchaseDiameter4: Number(formData.purchaseDiameter4),
         purchaseVolume: Number(formData.purchaseVolume) || 0,
       });
-      router.push(`/inventory/purchase/${params.id}`);
+      router.push(`/inventory/purchase/${id}`);
     } catch (err) {
       alert("Failed to save purchase log");
     }
@@ -61,7 +65,7 @@ export default function CreatePurchaseLogPage({ params }: { params: { id: string
         </CardHeader>
         <CardContent>
           <div className="text-sm text-gray-400">
-            <p>PO Number: {purchase?.purchaseNumber || purchase?.code || params.id}</p>
+            <p>PO Number: {purchase?.purchaseNumber || purchase?.code || id}</p>
             <p>Supplier: {purchase?.source?.name || purchase?.supplier?.name || "-"}</p>
           </div>
         </CardContent>

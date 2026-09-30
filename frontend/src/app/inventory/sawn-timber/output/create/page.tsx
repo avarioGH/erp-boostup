@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from "react"
 import { TimberAPI, InventoryAPI, MasterDataAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, ArrowLeft, Save, Info, MapPin, Box, Factory, Ruler } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
 export default function CreateOutputPage() {
-  const router = useRouter()
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const partaiIdFromUrl = searchParams.get('partaiId') || '';
   const { toast } = useToast()
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [inputLogs, setInputLogs] = useState<any[]>([])
@@ -18,7 +20,7 @@ export default function CreateOutputPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
-  const [form, setForm] = useState({ date: "", shift: "1", locationId: "", inputLogId: "", batch: "", notes: "" })
+  const [form, setForm] = useState({ partaiId: partaiIdFromUrl, date: "", shift: "1", locationId: "", inputLogId: "", batch: "", notes: "" })
   const [item, setItem] = useState({ gradeId: "", grade: "", thickness: "", width: "", length: "", quantityPcs: "" })
   const [preview, setPreview] = useState(0)
 
@@ -196,7 +198,7 @@ export default function CreateOutputPage() {
                 <Input type="number" min="1" value={item.quantityPcs} onChange={e => setItem({...item, quantityPcs: e.target.value})} placeholder="Total Pieces" required className="bg-background h-10 font-bold text-lg" />
               </div>
               <div className="space-y-2">
-                <label className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Calculated Volume (M³)</label>
+                <label className="text-[11px] font-semibold uppercase text-muted-foreground tracking-wider">Calculated Volume (M�)</label>
                 <div className="h-10 px-3 bg-primary/5 border border-primary/20 rounded-md flex items-center justify-end">
                   <span className="font-black text-primary text-lg">{preview > 0 ? preview.toFixed(6) : "0.000000"}</span>
                 </div>
@@ -222,6 +224,7 @@ export default function CreateOutputPage() {
     </div>
   )
 }
+
 
 
 

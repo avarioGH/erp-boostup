@@ -8,6 +8,7 @@ datasource db {
 }
 
 model Company {
+  timberPartais TimberPartai[]
   id         String  @id @default(auto()) @map("_id") @db.ObjectId
   tenant_id  String? @db.ObjectId
   tenant     Tenant? @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -3574,3 +3575,33 @@ model StockInTallyItem {
 
 
 
+
+// ==================================================
+// TIMBER PARTAI (PROJECT / BATCH)
+// ==================================================
+model TimberPartai {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id  String   @db.ObjectId
+  company     Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  code        String   
+  name        String?  
+  status      String   @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  
+  notes       String?
+  createdBy   String?
+
+  purchases         TimberPurchase[]
+  rawLogs           RawLog[]
+  trimmedLogs       TrimmedLog[]
+  inputLogs         InputLog[]
+  sawnOutputs       SawnTimberOutput[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([company_id, code])
+}

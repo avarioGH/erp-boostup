@@ -353,3 +353,11 @@ export const exportShipment = {
 };
 
 
+
+export const PartaiAPI: any = {
+  getPartais: async (params?: any) => (await api.get('/inventory/timber-partai', { params })).data,
+  getPartai: async (id: string) => (await api.get('/inventory/timber-partai/' + id)).data,
+  createPartai: async (data: any) => (await api.post('/inventory/timber-partai', data)).data,
+  updatePartai: async (id: string, data: any) => (await api.put('/inventory/timber-partai/' + id, data)).data,
+  deletePartai: async (id: string) => (await api.delete('/inventory/timber-partai/' + id)).data,
+};

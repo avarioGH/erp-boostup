@@ -123,7 +123,7 @@ export class SawnTimberService {
 
   async createOutput(data: any) {
     return this.prisma.$transaction(async (tx) => {
-      const { inputLogId, outputDate, shift, operatorName, machine, locationId, batch, notes, items } = data;
+      const { inputLogId, outputDate, shift, operatorName, machine, locationId, batch, notes, items, partaiId } = data;
       
       if (!items || items.length === 0) throw new BadRequestException('Output must contain at least one item');
       if (!inputLogId || !/^[a-f\d]{24}$/i.test(inputLogId)) throw new BadRequestException('Invalid input log ID');
@@ -154,8 +154,9 @@ export class SawnTimberService {
       const seq = String(count + 1).padStart(3, '0');
       const bundleNumber = `O-MSAW-${machineStr}-${YY}-${MM}-${seq}`;
 
-      const output = await tx.sawnTimberOutput.create({
-        data: {
+      const output = await tx.SawnTimberOutput.create({
+          data: {
+            partaiId,
           bundleNumber,
           outputDate: dateObj,
           shift,
@@ -309,6 +310,7 @@ export class SawnTimberService {
   }
 
 }
+
 
 
 

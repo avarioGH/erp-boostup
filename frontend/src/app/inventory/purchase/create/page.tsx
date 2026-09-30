@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { api, MasterDataAPI } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,7 +14,9 @@ import { Loader2, Plus, X, ArrowLeft } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function CreatePurchasePage() {
-  const router = useRouter()
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const partaiIdFromUrl = searchParams.get('partaiId') || '';
   const [loading, setLoading] = useState(false)
   const [sources, setSources] = useState<any[]>([])
   const [warehouses, setWarehouses] = useState<any[]>([])
@@ -42,6 +44,7 @@ export default function CreatePurchasePage() {
   }
   
   const [form, setForm] = useState({
+    partaiId: partaiIdFromUrl,
     purchaseNumber: "PO-" + Date.now().toString().slice(-6),
     purchaseDate: new Date().toISOString().split('T')[0],
     sourceId: "",
@@ -378,4 +381,5 @@ export default function CreatePurchasePage() {
     </div>
   )
 }
+
 
