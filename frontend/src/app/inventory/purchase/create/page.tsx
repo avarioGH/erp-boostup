@@ -71,10 +71,10 @@ export default function CreatePurchasePage() {
     async function fetchData() {
       try {
         const [srcData, whData, varData, specData] = await Promise.all([
-          api.get("/inventory/master-data/timber-source").then(res => res.data),
-          api.get("/inventory/warehouses").then(res => res.data),
-          api.get("/inventory/master-data/timber-variant").then(res => res.data),
-          api.get("/inventory/master-data/timber-species").then(res => res.data)
+          api.get("/inventory/master-data/timber-source").then(res => res.data).catch(() => []),
+          api.get("/inventory/warehouses").then(res => res.data).catch(() => []),
+          api.get("/inventory/master-data/timber-variant").then(res => res.data).catch(() => []),
+          api.get("/inventory/master-data/timber-species").then(res => res.data).catch(() => [])
         ])
         setSources(srcData)
         setWarehouses(whData)
