@@ -224,7 +224,7 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
               </div>
               <hr className="border-border" />
               <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-foreground">Net M3</span>
+                <span className="text-sm font-bold text-foreground">Net M&sup3;</span>
                 <span className="font-bold text-2xl text-primary">
                   {calc.net.toFixed(4)}
                 </span>

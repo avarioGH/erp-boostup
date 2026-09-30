@@ -78,7 +78,7 @@ export default function TrimmingListPage() {
  <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Parent Log</th>
  <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Species</th>
  <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Length</th>
- <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Net M3</th>
+ <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Net M�</th>
  <th className="p-4 px-6 text-center font-semibold text-muted-foreground h-11">Status</th>
  <th className="p-4 px-6 text-center font-semibold text-muted-foreground h-11">Action</th>
  </tr>

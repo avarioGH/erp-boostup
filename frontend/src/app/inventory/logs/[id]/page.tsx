@@ -70,9 +70,9 @@ export default function RawLogDetailPage({ params }: { params: Promise<{ id: str
  <Card className="bg-card rounded-xl border border-border shadow-sm">
  <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10"><CardTitle className="text-lg flex items-center gap-2 text-foreground"><Box className="w-4 h-4" /> Volume Calculation</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
- <div className="flex justify-between items-center"><span className="text-muted-foreground">Gross</span><span className="font-medium">{totalGross.toFixed(4)} m3</span><span className="font-medium">{data.grossVolume} m&sup3;</span></div>
- <div className="flex justify-between items-center"><span className="text-muted-foreground text-red-500">Gerowong Volume</span><span>- {data.hollowVolume || 0} m&sup3;</span></div>
- <div className="flex justify-between items-center"><span className="text-muted-foreground text-warning">Trimming Volume</span><span>- {data.trimmingVolume || 0} m&sup3;</span></div>
+ <div className="flex justify-between items-center"><span className="text-slate-500 dark:text-slate-400 font-medium">Gross Volume</span><span className="font-medium">{data.grossVolume} m&sup3;</span></div>
+ <div className="flex justify-between items-center"><span className="text-red-500 dark:text-red-400 font-medium">Gerowong Volume</span><span>- {data.hollowVolume || 0} m&sup3;</span></div>
+ <div className="flex justify-between items-center"><span className="text-amber-600 dark:text-amber-400 font-medium">Trimming Volume</span><span>- {data.trimmingVolume || 0} m&sup3;</span></div>
  <hr className="border-border" />
  <div className="flex justify-between items-center"><span className="font-bold text-foreground">Net Volume</span><span className="font-bold text-2xl text-primary">{data.netVolume} m&sup3;</span></div>
  </CardContent>
@@ -111,8 +111,8 @@ export default function RawLogDetailPage({ params }: { params: Promise<{ id: str
  <th className="p-3 text-left">Trim Code</th>
  <th className="p-3 text-right">Length</th>
  <th className="p-3 text-right">&Oslash; Avg</th>
- <th className="p-3 text-right">Gross</span><span className="font-medium">{totalGross.toFixed(4)} m3</th>
- <th className="p-3 text-right">Net m3</th>
+ <th className="p-3 text-right">Gross m&sup3;</th>
+ <th className="p-3 text-right">Net m&sup3;</th>
  <th className="p-3 text-center">Status</th>
  </tr>
  </thead>

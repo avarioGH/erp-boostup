@@ -56,7 +56,7 @@ export default function StockByProductReport() {
                 <tr>
                   <th className="p-3">Product / Species</th>
                   <th className="p-3 text-right">Total PCS</th>
-                  <th className="p-3 text-right">Total Net M3</th>
+                  <th className="p-3 text-right">Total Net M³</th>
                 </tr>
               </thead>
               <tbody>

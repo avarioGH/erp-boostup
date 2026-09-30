@@ -45,7 +45,28 @@ export default function CreateInputLogPage() {
 
  const selectedLogs = availableLogs.filter(l => selectedIds.includes(l.id))
  const totalLength = selectedLogs.reduce((sum, l) => sum + (l.length || 0), 0)
- const totalGross</span><span className="font-medium">{totalGross.toFixed(4)} m3<div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
+ const totalGross = selectedLogs.reduce((sum, l) => sum + (l.grossVolume || 0), 0)
+ const totalNet = selectedLogs.reduce((sum, l) => sum + (l.netVolume || 0), 0)
+
+ const handleSubmit = async (e: any) => {
+ e.preventDefault()
+ if (selectedIds.length === 0) {
+ toast({ title:"Validation Error", description:"Please select at least one trimmed log.", variant:"destructive" })
+ return
+ }
+ setSubmitting(true)
+ try {
+ await TimberAPI.createInputLog({ ...form, trimmedLogIds: selectedIds })
+ toast({ title:"Success", description:"Input Log created successfully." })
+ router.push('/inventory/input-logs')
+ } catch (err: any) {
+ toast({ title:"Error", description: err.response?.data?.message ||"Failed to create.", variant:"destructive" })
+ } finally {
+ setSubmitting(false)
+ }
+ }
+
+ if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>
 
  return (
  <div className="space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-8 px-4 md:px-6 box-border">
@@ -110,7 +131,7 @@ export default function CreateInputLogPage() {
  <CardContent className="pt-6 space-y-4">
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Selected Logs</span><span className="font-bold text-lg">{selectedIds.length} PCS</span></div>
  <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Total Length</span><span className="font-medium">{totalLength.toFixed(2)} m</span></div>
- <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Total Gross</span><span className="font-medium">{totalGross</span><span className="font-medium">{totalGross.toFixed(4)} m3</span></div>
+ <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Total Gross</span><span className="font-medium">{totalGross.toFixed(4)} m3</span></div>
  <hr className="border-border" />
  <div className="flex justify-between items-center"><span className="text-sm font-bold text-foreground">Total Net m3</span><span className="font-bold text-2xl text-primary">{totalNet.toFixed(4)}</span></div>
  <Button type="submit" disabled={submitting || selectedIds.length === 0} className="w-full mt-6 bg-primary text-primary-foreground hover:bg-primary/90 h-12 text-lg">

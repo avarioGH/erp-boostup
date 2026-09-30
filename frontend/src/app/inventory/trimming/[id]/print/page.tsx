@@ -100,7 +100,7 @@ export default function PrintTrimmingTally({ params }: { params: Promise<{ id: s
               <td className="border border-black p-2">{data.length || "-"}</td>
             </tr>
             <tr>
-              <td className="border border-black p-2 font-semibold">Gross</span><span className="font-medium">{totalGross.toFixed(4)} m3</td>
+              <td className="border border-black p-2 font-semibold">Gross Volume (M³)</td>
               <td className="border border-black p-2">{data.netVolume ? (Number(data.netVolume) * 1.1).toFixed(4) : "-"}</td>
             </tr>
             <tr>

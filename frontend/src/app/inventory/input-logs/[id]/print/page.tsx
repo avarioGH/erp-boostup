@@ -85,7 +85,7 @@ export default function PrintInputTally({ params }: { params: Promise<{ id: stri
               <th className="border border-black p-2 text-center w-12">No</th>
               <th className="border border-black p-2 text-left">Trim Code</th>
               <th className="border border-black p-2 text-right">Length (m)</th>
-              <th className="border border-black p-2 text-right">Net M3</th>
+              <th className="border border-black p-2 text-right">Net M³</th>
             </tr>
           </thead>
           <tbody>
