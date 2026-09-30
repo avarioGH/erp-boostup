@@ -109,7 +109,7 @@ export default function StockInPage() {
  return
  }
  
- const invalidItems = formData.(Array.isArray(items) ? items : []).filter(i => !i.productId || i.qty <= 0)
+ const invalidItems = formData.items.filter(i => !i.productId || i.qty <= 0)
  if (invalidItems.length > 0) {
  setError("Pastikan semua item memiliki produk dan kuantitas lebih dari 0")
  setLoading(false)

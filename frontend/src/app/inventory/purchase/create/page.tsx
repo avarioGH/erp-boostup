@@ -181,7 +181,7 @@ export default function CreatePurchasePage() {
                     <div className="absolute top-2 right-2">
                       {form.items.length > 1 && (
                         <Button type="button" variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => {
-                          setForm({ ...form, items: form.(Array.isArray(items) ? items : []).filter((_, i) => i !== index) });
+                          setForm({ ...form, items: form.items.filter((_, i) => i !== index) });
                         }}>
                           <X className="h-4 w-4" />
                         </Button>

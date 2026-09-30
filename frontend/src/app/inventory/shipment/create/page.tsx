@@ -165,7 +165,7 @@ export default function CreateShipmentPage() {
                             size="icon"
                             className="absolute top-2 right-2 sm:static sm:h-10 sm:w-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                             onClick={() => {
-                              setForm({ ...form, items: form.(Array.isArray(items) ? items : []).filter((_, i) => i !== index) });
+                              setForm({ ...form, items: form.items.filter((_, i) => i !== index) });
                             }}
                           >
                             <Trash2 className="w-4 h-4" />
