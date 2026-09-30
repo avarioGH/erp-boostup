@@ -1,6 +1,6 @@
 ﻿"use client";
 import React, { useEffect, useState } from "react";
-import { PartaiAPI, TimberAPI, PurchaseAPI } from "@/lib/api";
+import { api, PartaiAPI, TimberAPI, PurchaseAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Eye, Edit, Trash2, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { ArrowLeft, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 
@@ -173,6 +173,25 @@ const [partai, setPartai] = useState<any>(null);
       fetchPartai();
     } catch (e: any) {
       toast({ title: "Error", description: e.response?.data?.message || "Delete failed", variant: "destructive" });
+    }
+  };
+
+  const handleDirectTrim = async (log: any) => {
+    if (!confirm(`Buat hasil trimming penuh (100% full) untuk log ${log.logNumber} tanpa pemotongan?`)) return;
+    try {
+      await api.post(`/inventory/trimmed-log/${log.id}`, {
+        length: log.originalLength,
+        diameter1: log.diameter1 || 0,
+        diameter2: log.diameter2 || 0,
+        diameter3: log.diameter3 || 0,
+        diameter4: log.diameter4 || 0,
+        averageDiameter: log.averageDiameter || 0,
+        gerowong: log.gerowong || 0,
+        trimmingLength: 0
+      });
+      fetchPartai();
+    } catch (e: any) {
+      console.error(e);
     }
   };
 
@@ -411,27 +430,34 @@ const [partai, setPartai] = useState<any>(null);
                 </TableHeader>
                 <TableBody>
                   {(partai.rawLogs || []).map((r: any) => (
-                    <TableRow key={r.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => router.push(`/inventory/logs/${r.id}`)}>
-                      <TableCell className="font-medium">{r.logNumber}</TableCell>
-                      <TableCell>{r.species}</TableCell>
-                      <TableCell className="text-right">{r.originalLength}</TableCell>
-                      <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">{Number(r.netVolume || 0).toFixed(4)}</TableCell>
-                      <TableCell className="text-center" onClick={e => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/inventory/logs/${r.id}`)}><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => router.push(`/inventory/logs/${r.id}/edit`)}><Pencil className="w-4 h-4 mr-2" /> Edit Log</DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteLog(r.id) }} className="text-destructive"><Trash className="w-4 h-4 mr-2" /> Delete Log</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                    <TableRow key={r.id} className="hover:bg-muted/50 cursor-pointer group" onClick={() => router.push(`/inventory/logs/${r.id}`)}>
+                        <TableCell className="font-medium">{r.logNumber}</TableCell>
+                        <TableCell>{r.species}</TableCell>
+                        <TableCell className="text-right">{r.originalLength}</TableCell>
+                        <TableCell className="text-right">{Number(r.averageDiameter || 0).toFixed(1)}</TableCell>
+                        <TableCell className="text-right">{r.gerowong ? Number(r.gerowong).toFixed(1) : "-"}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{Number(r.grossVolume || 0).toFixed(4)}</TableCell>
+                        <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">{Number(r.netVolume || 0).toFixed(4)}</TableCell>
+                        <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}`) }}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20" title="Tanpa Trimming (Langsung Trim Penuh)" onClick={(e) => { e.stopPropagation(); handleDirectTrim(r) }}>
+                              <Scissors className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Edit" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}/edit`) }}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete" onClick={(e) => { e.stopPropagation(); handleDeleteLog(r.id) }}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
                   ))}
                   {(!partai.rawLogs || partai.rawLogs.length === 0) && (
-                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Belum ada raw log (DUKB) terdaftar.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada raw log (DUKB) terdaftar.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -484,7 +510,7 @@ const [partai, setPartai] = useState<any>(null);
                     </TableRow>
                   ))}
                   {(!partai.trimmedLogs || partai.trimmedLogs.length === 0) && (
-                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Belum ada proses trimming.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada proses trimming.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -537,7 +563,7 @@ const [partai, setPartai] = useState<any>(null);
                     </TableRow>
                   ))}
                   {(!partai.inputLogs || partai.inputLogs.length === 0) && (
-                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Belum ada input log (WIP).</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada input log (WIP).</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -589,7 +615,7 @@ const [partai, setPartai] = useState<any>(null);
                     </TableRow>
                   ))}
                   {(!partai.sawnOutputs || partai.sawnOutputs.length === 0) && (
-                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Belum ada output sawn timber.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada output sawn timber.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
