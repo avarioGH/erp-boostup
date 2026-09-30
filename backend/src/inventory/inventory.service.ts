@@ -1,4 +1,4 @@
-import { EventEmitter2 } from '@nestjs/event-emitter';
+﻿import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InventoryValuationEvent } from '../events/accounting.events';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -846,6 +846,7 @@ export class InventoryService {
     }
   }
 }
+
 
 
 

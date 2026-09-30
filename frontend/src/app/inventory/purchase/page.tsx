@@ -5,7 +5,7 @@ import { PurchaseAPI } from "@/lib/api";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Eye, PackageOpen, FileText } from "lucide-react";
+import { Plus, Eye, PackageOpen, FileText, Edit, Trash2 } from "lucide-react";
 
 export default function PurchaseListPage() {
   const [purchases, setPurchases] = useState<any[]>([]);
@@ -20,6 +20,18 @@ export default function PurchaseListPage() {
       setLoading(false);
     });
   }, []);
+
+  
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this purchase?")) return;
+    try {
+      await PurchaseAPI.deletePurchase(id);
+      setPurchases(purchases.filter((p) => p.id !== id));
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.response?.data?.message || "Failed to delete purchase");
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const s = (status || "").toUpperCase();
@@ -104,12 +116,26 @@ export default function PurchaseListPage() {
                       {getStatusBadge(p.status)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link href={`/inventory/purchase/${p.id}`}>
-                        <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Eye className="w-4 h-4 mr-2" />
-                          View
-                        </Button>
-                      </Link>
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Link href={`/inventory/purchase/${p.id}`}>
+                          <Button variant="ghost" size="sm" className="h-8 px-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View">
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                          </Button>
+                        </Link>
+                        {p.status === 'DRAFT' && (
+                          <>
+                            <Link href={`/inventory/purchase/${p.id}/edit`}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Edit">
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </Link>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete" onClick={() => handleDelete(p.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

@@ -1,4 +1,4 @@
-import { PermissionsGuard } from '../auth/permissions.guard';
+﻿import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
 import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards, Request, UseInterceptors, UploadedFiles } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -195,6 +195,7 @@ export class InventoryController {
     });
   }
 }
+
 
 
 

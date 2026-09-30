@@ -16,9 +16,8 @@ import {
  TableHeader,
  TableRow,
 } from"@/components/ui/table"
-import { 
- Search, Plus, Download, Box, LayoutGrid, AlertTriangle, RefreshCcw
-} from"lucide-react"
+import { Search, Plus, Download, Box, LayoutGrid, AlertTriangle, RefreshCcw
+, MoreHorizontal, Trash2, Edit2 } from "lucide-react"
 import { InventoryAPI } from"@/lib/api"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
 import imageCompression from"browser-image-compression"
@@ -29,13 +28,14 @@ import {
  DropdownMenu,
  DropdownMenuCheckboxItem,
  DropdownMenuContent,
- DropdownMenuTrigger,
+ DropdownMenuTrigger, DropdownMenuItem,
 } from"@/components/ui/dropdown-menu"
 
 export default function ProductInventory() {
  const [searchQuery, setSearchQuery] = useState("")
  const [showForm, setShowForm] = useState(false)
  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
  const [formData, setFormData] = useState({ 
  code:"", barcode:"", name:"", weight:"", purchasePrice:"0", sellingPrice:"", description:"", categoryId:"" 
  })
@@ -85,8 +85,7 @@ export default function ProductInventory() {
  name: p.name,
  category: p.category?.name ||"-",
  price: Number(p.selling_price), weight: p.weight,
- stockMap
- }
+ stockMap, barcode: p.barcode, description: p.description, purchase_price: p.purchase_price, category_id: p.category_id }
  })
  setProducts(mapped)
  } catch (error) {
@@ -117,6 +116,35 @@ export default function ProductInventory() {
     setFormData({ ...formData, weight: newVal.toString() });
     setWeightUnit(newUnit);
   }
+
+  
+  const handleDelete = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
+    try {
+      await InventoryAPI.deleteProduct(id);
+      setProducts(products.filter((p: any) => p.id !== id));
+      alert('Produk berhasil dihapus');
+    } catch (error: any) {
+      console.error('Gagal menghapus produk:', error);
+      alert('Gagal menghapus produk: ' + (error?.response?.data?.message || error.message));
+    }
+  };
+
+  const handleEdit = (p: any) => {
+    setFormData({
+      code: p.sku || '',
+      barcode: p.barcode || '',
+      name: p.name || '',
+      description: p.description || '',
+      purchasePrice: p.purchase_price || '',
+      sellingPrice: p.price || p.selling_price || '',
+      weight: p.weight || '',
+      categoryId: p.category_id || '',
+    });
+    setEditingId(p.id);
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const generateSKU = () => {
  const random = Math.floor(1000 + Math.random() * 9000);
@@ -180,7 +208,11 @@ export default function ProductInventory() {
  payload.append("images", img);
  });
 
- await InventoryAPI.createProduct(payload)
+ if (editingId) {
+        await InventoryAPI.updateProduct(editingId, payload);
+      } else {
+        await InventoryAPI.createProduct(payload);
+      }
  setShowForm(false)
  setFormData({ code:"", barcode:"", name:"", weight:"", purchasePrice:"0", sellingPrice:"", description:"", categoryId:"" })
  setImages([])
@@ -198,8 +230,7 @@ export default function ProductInventory() {
  name: p.name,
  category: p.category?.name ||"-",
  price: Number(p.selling_price), weight: p.weight,
- stockMap
- }
+ stockMap, barcode: p.barcode, description: p.description, purchase_price: p.purchase_price, category_id: p.category_id }
  })
  setProducts(mapped)
  } catch (error: any) {
@@ -236,7 +267,7 @@ export default function ProductInventory() {
  <Button variant="outline" className="gap-2 border-border bg-background">
  <Download className="w-4 h-4" /> Export
  </Button>
- <Button onClick={() => setShowForm(!showForm)} className="gap-2 shadow-md shadow-indigo-600/20">
+ <Button onClick={() => { setShowForm(!showForm); if (!showForm) { setEditingId(null); setFormData({code:"", barcode:"", name:"", description:"", purchasePrice:"", sellingPrice:"", weight:"", categoryId:""}); } }} className="gap-2 shadow-md shadow-indigo-600/20">
  <Plus className="w-4 h-4" /> {showForm ?"Batal" :"Tambah Produk"}
  </Button>
  </div>
@@ -451,7 +482,7 @@ export default function ProductInventory() {
  </div>
 
  <div className="flex justify-end gap-3 pt-6 border-t border-border/50">
- <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="w-24">Batal</Button>
+ <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingId(null); setFormData({code:"", barcode:"", name:"", description:"", purchasePrice:"", sellingPrice:"", weight:"", categoryId:""}); }} className="w-24">Batal</Button>
  <Button type="submit" className="min-w-[140px] shadow-md shadow-indigo-500/20" disabled={isSubmitting}>
  {isSubmitting ?"Menyimpan..." :"Simpan Produk"}
  </Button>
@@ -535,6 +566,7 @@ export default function ProductInventory() {
  </TableHead>
  ))}
  {visibleColumns.totalStock && <TableHead className="text-center font-bold">Total Stok</TableHead>}
+ <TableHead className="text-right font-semibold">Aksi</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
@@ -583,6 +615,23 @@ export default function ProductInventory() {
  </Badge>
  </TableCell>
  )}
+ <TableCell className="text-right">
+   <DropdownMenu>
+     <DropdownMenuTrigger className="h-8 w-8 p-0 inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50">
+         <span className="sr-only">Buka menu</span>
+         <MoreHorizontal className="h-4 w-4" />
+       </DropdownMenuTrigger>
+     <DropdownMenuContent align="end">
+       <DropdownMenuItem onClick={() => handleEdit(p)} className="cursor-pointer">
+         <Edit2 className="mr-2 h-4 w-4 text-indigo-500" /> Edit
+       </DropdownMenuItem>
+       <DropdownMenuItem onClick={() => handleDelete(p.id)} className="cursor-pointer text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-950/50">
+         <Trash2 className="mr-2 h-4 w-4" /> Hapus
+       </DropdownMenuItem>
+     </DropdownMenuContent>
+   </DropdownMenu>
+ </TableCell>
+
  </TableRow>
  )
  })
@@ -594,6 +643,10 @@ export default function ProductInventory() {
  </div>
  )
 }
+
+
+
+
 
 
 

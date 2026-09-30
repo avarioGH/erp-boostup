@@ -52,6 +52,8 @@ export const InventoryAPI: any = {
     getTimberVariants: async () => (await api.get('/inventory/master-data/timber-variant')).data,
   createTimberVariant: async (data: any) => (await api.post('/inventory/master-data/timber-variant', data)).data,
   createProduct: async (data: any) => (await api.post('/inventory/products', data, { headers: { 'Content-Type': 'multipart/form-data' } })).data,
+    updateProduct: async (id: string, data: any) => (await api.put('/inventory/products/' + id, data, { headers: { 'Content-Type': 'multipart/form-data' } })).data,
+    deleteProduct: async (id: string) => (await api.delete('/inventory/products/' + id)).data,
   createWarehouse: async (data: any) => (await api.post('/inventory/warehouses', data)).data,
   updateWarehouse: async (id: string, data: any) => (await api.put('/inventory/warehouses/' + id, data)).data,
   deleteWarehouse: async (id: string) => (await api.delete('/inventory/warehouses/' + id)).data,
@@ -349,4 +351,5 @@ export const exportShipment = {
   update: async (id: string, data: any) => (await api.put('/sales/export-shipments/' + id, data)).data,
   delete: async (id: string) => (await api.delete('/sales/export-shipments/' + id)).data,
 };
+
 
