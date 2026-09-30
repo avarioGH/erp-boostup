@@ -177,10 +177,10 @@ const [partai, setPartai] = useState<any>(null);
     }
   };
 
-  const handleDirectTrim = async (log: any) => {
+    const handleDirectTrim = async (log: any) => {
     if (!confirm(`Buat hasil trimming penuh (100% full) untuk log ${log.logNumber} tanpa pemotongan?`)) return;
     try {
-      await api.post(`/inventory/trimmed-log/${log.id}`, {
+      await api.post(`/inventory/logs/${log.id}/trimming`, {
         length: log.originalLength,
         diameter1: log.diameter1 || 0,
         diameter2: log.diameter2 || 0,
@@ -190,9 +190,11 @@ const [partai, setPartai] = useState<any>(null);
         gerowong: log.gerowong || 0,
         trimmingLength: 0
       });
+      toast({ title: "Success", description: "Log berhasil di-trim penuh." });
       fetchPartai();
     } catch (e: any) {
       console.error(e);
+      toast({ title: "Gagal Trimming", description: e?.response?.data?.message || e.message, variant: "destructive" });
     }
   };
 
@@ -425,9 +427,11 @@ const [partai, setPartai] = useState<any>(null);
                     <TableHead>No. Log</TableHead>
                     <TableHead>Spesies</TableHead>
                     <TableHead className="text-right">Panjang (m)</TableHead>
-                    <TableHead className="text-right">Volume (m³)</TableHead>
-                    <TableHead className="text-center w-[80px]">Action</TableHead>
-                  </TableRow>
+                    <TableHead className="text-right">Avg (cm)</TableHead>
+                    <TableHead className="text-right">Grw (cm)</TableHead>
+                    <TableHead className="text-right">Gross (m&sup3;)</TableHead>
+                    <TableHead className="text-right">Net (m&sup3;)</TableHead>
+                    <TableHead className="text-center w-[120px]">Action</TableHead></TableRow>
                 </TableHeader>
                 <TableBody>
                   {(partai.rawLogs || []).map((r: any) => (
