@@ -95,9 +95,12 @@ export class RawLogService {
     }
 
     // Calculations
-    const avgDia = this.calcService.calculateAverageDiameter(
+    let avgDia = this.calcService.calculateAverageDiameter(
       Number(data.diameter1), Number(data.diameter2), Number(data.diameter3), Number(data.diameter4)
     );
+    if (Number(data.diameter1) === 0 && Number(data.diameter2) === 0 && Number(data.diameter3) === 0 && Number(data.diameter4) === 0 && data.averageDiameter) {
+      avgDia = Number(data.averageDiameter);
+    }
     const rndDia = this.calcService.calculateRoundedDiameter(avgDia);
     const diaClass = this.calcService.classifyDiameter(rndDia);
     const grossVol = this.calcService.calculateRawLogGrossVolume(rndDia, Number(data.originalLength));
@@ -202,7 +205,10 @@ partaiId: data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : null),
         const d4 = Number(data.diameter4) || 0;
         const g = Number(data.gerowong) || 0;
 
-        const avgDia = this.calcService.calculateAverageDiameter(d1, d2, d3, d4);
+        let avgDia = this.calcService.calculateAverageDiameter(d1, d2, d3, d4);
+        if (d1 === 0 && d2 === 0 && d3 === 0 && d4 === 0 && data.averageDiameter) {
+          avgDia = Number(data.averageDiameter);
+        }
         const rndDia = this.calcService.calculateRoundedDiameter(avgDia);
         const diaClass = this.calcService.classifyDiameter(rndDia);
 
@@ -289,7 +295,10 @@ partaiId: data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : null),
     const g = data.gerowong !== undefined ? Number(data.gerowong) : (existingLog.gerowong || 0);
     const length = Number(data.originalLength) || existingLog.originalLength;
 
-    const avgDia = this.calcService.calculateAverageDiameter(d1, d2, d3, d4);
+    let avgDia = this.calcService.calculateAverageDiameter(d1, d2, d3, d4);
+    if (d1 === 0 && d2 === 0 && d3 === 0 && d4 === 0 && data.averageDiameter) {
+      avgDia = Number(data.averageDiameter);
+    }
     const rndDia = this.calcService.calculateRoundedDiameter(avgDia);
     const diaClass = this.calcService.classifyDiameter(rndDia);
 

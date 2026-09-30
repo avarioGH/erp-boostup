@@ -15,11 +15,24 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const router = useRouter();
   const { toast } = useToast();
   const { id } = React.use(params as Promise<{ id: string }>);
-  const [partai, setPartai] = useState<any>(null);
+const [partai, setPartai] = useState<any>(null);
   
   // -- Inline DUKB state --
   const [inlineDukbRows, setInlineDukbRows] = useState<any[]>([]);
   const [isSavingDukb, setIsSavingDukb] = useState(false);
+  const [lengthUnit, setLengthUnit] = useState<'m' | 'cm' | 'mm'>('m');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('erp_length_unit_pref');
+    if (saved === 'm' || saved === 'cm' || saved === 'mm') {
+      setLengthUnit(saved);
+    }
+  }, []);
+
+  const handleUnitChange = (unit: 'm' | 'cm' | 'mm') => {
+    setLengthUnit(unit);
+    localStorage.setItem('erp_length_unit_pref', unit);
+  };
 
 
 
@@ -58,16 +71,23 @@ export default function PartaiDetailPage({ params }: { params: any }) {
 
 
   const calculateRow = (row: any) => {
-    let l = parseFloat(row.length) || 0;
+    let lRaw = parseFloat(row.length) || 0;
+    let l = lRaw;
+    if (lengthUnit === 'cm') l = lRaw / 100;
+    if (lengthUnit === 'mm') l = lRaw / 1000;
+
     const d1 = parseFloat(row.d1) || 0;
     const d2 = parseFloat(row.d2) || 0;
     const d3 = parseFloat(row.d3) || 0;
     const d4 = parseFloat(row.d4) || 0;
+    const manualAvg = parseFloat(row.avgDia) || 0;
     const g = parseFloat(row.gerowong) || 0;
 
     let avgDiaStrict = 0;
     if (d1 > 0 || d2 > 0 || d3 > 0 || d4 > 0) {
       avgDiaStrict = (d1 + d2 + d3 + d4) / 4;
+    } else {
+      avgDiaStrict = manualAvg;
     }
     const rndDia = Math.round(avgDiaStrict);
     
@@ -76,6 +96,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     const netVol = grossVol - gerowongVol;
 
     return {
+      meterLength: l,
       avg: avgDiaStrict,
       gross: grossVol,
       net: netVol < 0 ? 0 : netVol
@@ -84,27 +105,31 @@ export default function PartaiDetailPage({ params }: { params: any }) {
 
   const handleSaveInlineDukb = async () => {
 
-    const toSave = inlineDukbRows.filter(r => r.length && r.d1 && r.d2 && r.d3 && r.d4);
+    const toSave = inlineDukbRows.filter(r => r.length && (r.avgDia || (r.d1 && r.d2 && r.d3 && r.d4)));
     if (toSave.length === 0) {
-      toast({ title: "Tidak ada data lengkap", description: "Isi dimensi minimal pada satu log (Panjang, D1-D4) untuk menyimpannya.", variant: "destructive" });
+      toast({ title: "Tidak ada data lengkap", description: "Isi dimensi minimal pada satu log (Panjang, serta D1-D4 atau Rata-rata) untuk menyimpannya.", variant: "destructive" });
       return;
     }
     setIsSavingDukb(true);
     try {
-      const payload = toSave.map(r => ({
+      const payload = toSave.map(r => {
+        const calc = calculateRow(r);
+        return {
         purchaseLogItemId: r.purchaseLogItemId,
         logNumber: r.logNumber,
         species: r.species,
-        originalLength: Number(r.length) || 0,
+        originalLength: calc.meterLength,
         diameter1: Number(r.d1) || 0,
         diameter2: Number(r.d2) || 0,
         diameter3: Number(r.d3) || 0,
         diameter4: Number(r.d4) || 0,
+        averageDiameter: Number(r.avgDia) || 0,
         gerowong: Number(r.gerowong) || 0,
         partaiId: partai.id,
         locationId: r.locationId,
         date: new Date().toISOString()
-      }));
+        };
+      });
       await TimberAPI.createBulkLogs({ items: payload });
       toast({ title: "Berhasil", description: `${payload.length} log berhasil diterima (DUKB dibuat)!` });
       fetchPartai();
@@ -295,9 +320,23 @@ export default function PartaiDetailPage({ params }: { params: any }) {
         <TabsContent value="rawlogs">
           {inlineDukbRows.length > 0 && (
             <Card className="mb-6 border-blue-500/30 shadow-sm bg-blue-50/10 dark:bg-blue-900/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-blue-600 dark:text-blue-400">Penerimaan Log (Pending dari Purchase)</CardTitle>
-                <CardDescription>Isi dimensi pada log yang datang untuk otomatis membuat DUKB. Baris yang kosong akan diabaikan (bisa diisi nanti).</CardDescription>
+              <CardHeader className="pb-3 flex flex-row items-start justify-between">
+                <div>
+                  <CardTitle className="text-blue-600 dark:text-blue-400">Penerimaan Log (Pending dari Purchase)</CardTitle>
+                  <CardDescription>Isi dimensi pada log yang datang untuk otomatis membuat DUKB. Baris yang kosong akan diabaikan (bisa diisi nanti).</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground font-medium">Satuan Panjang:</span>
+                  <select 
+                    className="border bg-background rounded px-2 py-1 text-sm font-medium"
+                    value={lengthUnit} 
+                    onChange={(e: any) => handleUnitChange(e.target.value)}
+                  >
+                    <option value="m">Meter (m)</option>
+                    <option value="cm">Centimeter (cm)</option>
+                    <option value="mm">Millimeter (mm)</option>
+                  </select>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -306,7 +345,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                       <TableRow>
                         <TableHead className="w-[120px]">No. Log</TableHead>
                         <TableHead className="w-[100px]">Spesies</TableHead>
-                        <TableHead className="w-[70px]">P (m)</TableHead>
+                        <TableHead className="w-[70px]">P ({lengthUnit})</TableHead>
                         <TableHead className="w-[70px]">D1 (cm)</TableHead>
                         <TableHead className="w-[70px]">D2 (cm)</TableHead>
                         <TableHead className="w-[70px]">D3 (cm)</TableHead>
@@ -330,7 +369,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                           <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.d3} onChange={e => handleInlineDukbChange(idx, 'd3', e.target.value)} /></TableCell>
                           <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.d4} onChange={e => handleInlineDukbChange(idx, 'd4', e.target.value)} /></TableCell>
                           <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.gerowong} onChange={e => handleInlineDukbChange(idx, 'gerowong', e.target.value)} /></TableCell>
-                          <TableCell className="p-2 text-right bg-muted/20 text-muted-foreground font-medium">{calc.avg > 0 ? calc.avg.toFixed(1) : "-"}</TableCell>
+                          <TableCell className="p-2 bg-muted/20"><input type="number" step="0.1" className="w-full bg-background border rounded px-2 py-1 text-sm text-right font-medium" value={r.avgDia !== undefined && r.avgDia !== "" ? r.avgDia : (calc.avg > 0 ? calc.avg.toFixed(1) : "")} onChange={e => handleInlineDukbChange(idx, 'avgDia', e.target.value)} placeholder={calc.avg > 0 ? calc.avg.toFixed(1) : ""} /></TableCell>
                           <TableCell className="p-2 text-right bg-muted/20 text-muted-foreground">{calc.gross > 0 ? calc.gross.toFixed(3) : "-"}</TableCell>
                           <TableCell className="p-2 text-right bg-blue-50/50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold">{calc.net > 0 ? calc.net.toFixed(3) : "-"}</TableCell>
                         </TableRow>
