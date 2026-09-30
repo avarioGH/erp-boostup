@@ -43,6 +43,9 @@ export const ExportAPI: any = {
 };
 
 export const InventoryAPI: any = {
+  getStockInTallies: async () => (await api.get('/inventory/stock-in-tally')).data,
+  createStockInTally: async (data: any) => (await api.post('/inventory/stock-in-tally', data)).data,
+  deleteStockInTally: async (id: string) => (await api.delete('/inventory/stock-in-tally/' + id)).data,
   getCategories: async () => (await api.get('/inventory/categories')).data,
   getProducts: async () => (await api.get('/inventory/products')).data,
   getWarehouses: async () => (await api.get('/inventory/warehouses')).data,
@@ -346,3 +349,4 @@ export const exportShipment = {
   update: async (id: string, data: any) => (await api.put('/sales/export-shipments/' + id, data)).data,
   delete: async (id: string) => (await api.delete('/sales/export-shipments/' + id)).data,
 };
+
