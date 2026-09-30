@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -43,6 +43,7 @@ const items: MenuItem[] = [
  id: "ikan_master_data",
  subItems: [
  { title: "Produk Ikan", url: "/inventory/products" },
+            { title: "Lokasi Gudang", url: "/inventory/warehouses" },
  { title: "Daftar Pelanggan", url: "/crm/customers" }
  ]
  },
@@ -409,6 +410,7 @@ export function AppSidebar() {
  </Sidebar>
  )
 }
+
 
 
 

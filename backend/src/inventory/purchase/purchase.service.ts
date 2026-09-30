@@ -77,8 +77,9 @@ export class PurchaseService {
 
   async confirm(id: string, companyId: string) {
     return this.prisma.$transaction(async (tx) => {
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
       const purchase = await tx.timberPurchase.findFirst({
-        where: { id, company_id: companyId },
+        where: isObjectId ? { id, company_id: companyId } : { purchaseNumber: id, company_id: companyId },
         include: { items: true }
       });
 
@@ -116,8 +117,9 @@ export class PurchaseService {
 
   async cancel(id: string, companyId: string) {
     return this.prisma.$transaction(async (tx) => {
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
       const purchase = await tx.timberPurchase.findFirst({
-        where: { id, company_id: companyId },
+        where: isObjectId ? { id, company_id: companyId } : { purchaseNumber: id, company_id: companyId },
         include: { items: true }
       });
 
@@ -181,14 +183,15 @@ export class PurchaseService {
   }
 
   async findOne(id: string, companyId: string) {
-    const purchase = await this.prisma.timberPurchase.findFirst({
-      where: { id, company_id: companyId },
-      include: {
-        source: true,
-        warehouse: true,
-        items: { include: { timberVariant: true } }, logItems: true
-      }
-    });
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+      const purchase = await this.prisma.timberPurchase.findFirst({
+        where: isObjectId ? { id, company_id: companyId } : { purchaseNumber: id, company_id: companyId },
+        include: {
+          source: true,
+          warehouse: true,
+          items: { include: { timberVariant: true } }, logItems: true
+        }
+      });
 
     if (!purchase) {
       throw new NotFoundException('Timber purchase not found');
@@ -249,13 +252,17 @@ export class PurchaseService {
   
   
   async updatePurchase(id: string, data: any) {
-    const purchase = await this.prisma.timberPurchase.findUnique({ where: { id } });
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    const purchase = await this.prisma.timberPurchase.findFirst({
+      where: isObjectId ? { id } : { purchaseNumber: id }
+    });
     if (!purchase) throw new Error('Purchase not found');
     if (purchase.status !== 'DRAFT') throw new Error('Can only edit DRAFT purchases');
+    const actualId = purchase.id;
 
     // Update main purchase
     const updated = await this.prisma.timberPurchase.update({
-      where: { id },
+      where: { id: actualId },
       data: {
         warehouseId: data.warehouseId || purchase.warehouseId,
         sourceId: data.sourceId || purchase.sourceId,
@@ -267,7 +274,7 @@ export class PurchaseService {
     // We skip updating nested items for now to keep it simple, unless we fully recreate them
     if (data.items && data.items.length > 0) {
       // Recreate items
-      await this.prisma.timberPurchaseItem.deleteMany({ where: { timberPurchaseId: id } });
+      await this.prisma.timberPurchaseItem.deleteMany({ where: { timberPurchaseId: actualId } });
       let totalPcs = 0;
       let totalVolume = 0;
       for (const item of data.items) {
@@ -275,7 +282,7 @@ export class PurchaseService {
         totalVolume += Number(item.volumeM3 || 0);
         await this.prisma.timberPurchaseItem.create({
           data: {
-            timberPurchaseId: id,
+            timberPurchaseId: actualId,
             timberVariantId: item.variantId,
             quantityPcs: Number(item.quantityPcs),
             volumeM3: Number(item.volumeM3),
@@ -284,20 +291,20 @@ export class PurchaseService {
         });
       }
       await this.prisma.timberPurchase.update({
-        where: { id },
+        where: { id: actualId },
         data: { totalPcs, totalVolumeM3: totalVolume }
       });
     }
 
     if (data.logItems && data.logItems.length > 0) {
-      await this.prisma.timberPurchaseLogItem.deleteMany({ where: { timberPurchaseId: id } });
-      await this.prisma.rawLog.deleteMany({ where: { purchaseLogItemId: { in: (await this.prisma.timberPurchaseLogItem.findMany({ where: { timberPurchaseId: id } })).map(x => x.id) } } }); // Wait, actually I just deleted them above. This is tricky. Let's just avoid complex nested log updates for now and let the user re-create or we just wipe and recreate.
+      await this.prisma.timberPurchaseLogItem.deleteMany({ where: { timberPurchaseId: actualId } });
+      await this.prisma.rawLog.deleteMany({ where: { purchaseLogItemId: { in: (await this.prisma.timberPurchaseLogItem.findMany({ where: { timberPurchaseId: actualId } })).map(x => x.id) } } }); // Wait, actually I just deleted them above. This is tricky. Let's just avoid complex nested log updates for now and let the user re-create or we just wipe and recreate.
       
       // Let's do a simple wipe and recreate for logItems
       for (const item of data.logItems) {
         await this.prisma.timberPurchaseLogItem.create({
           data: {
-            timberPurchaseId: id,
+            timberPurchaseId: actualId,
             logNumber: item.logNumber,
             species: item.species || 'UNKNOWN',
             purchaseLength: Number(item.purchaseLength || 0),
