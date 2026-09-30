@@ -64,7 +64,7 @@ export class RawLogService {
 
     async createRawLog(data: any) {
     // Identity Spoofing Protection
-    let pItem = null;
+    let pItem: any = null;
       if (data.purchaseLogItemId) {
         pItem = await this.prisma.timberPurchaseLogItem.findUnique({ where: { id: data.purchaseLogItemId }, include: { timberPurchase: true } });
       if (!pItem) throw new NotFoundException('Purchase Log Item not found');
@@ -175,7 +175,7 @@ partaiId: data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : null),
     return this.prisma.$transaction(async (tx) => {
       const createdLogs: any[] = [];
               for (const data of dataArray) {
-          let pItem = null;
+          let pItem: any = null;
       if (data.purchaseLogItemId) {
         pItem = await this.prisma.timberPurchaseLogItem.findUnique({ where: { id: data.purchaseLogItemId }, include: { timberPurchase: true } });
             if (!pItem) throw new NotFoundException('Purchase Log Item not found');
