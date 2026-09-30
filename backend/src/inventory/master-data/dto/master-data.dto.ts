@@ -1,7 +1,7 @@
 import { IsString, IsOptional, IsBoolean, IsInt } from 'class-validator';
 
 export class CreateTimberSpeciesDto {
-  @IsString() company_id: string;
+  @IsOptional() @IsString() company_id?: string;
   @IsString() code: string;
   @IsString() name: string;
   @IsOptional() @IsString() description?: string;
@@ -10,7 +10,7 @@ export class CreateTimberSpeciesDto {
 export class UpdateTimberSpeciesDto extends CreateTimberSpeciesDto {}
 
 export class CreateTimberGradeDto {
-  @IsString() company_id: string;
+  @IsOptional() @IsString() company_id?: string;
   @IsString() code: string;
   @IsString() name: string;
   @IsOptional() @IsString() description?: string;
@@ -20,7 +20,7 @@ export class CreateTimberGradeDto {
 export class UpdateTimberGradeDto extends CreateTimberGradeDto {}
 
 export class CreateTimberSourceDto {
-  @IsString() company_id: string;
+  @IsOptional() @IsString() company_id?: string;
   @IsString() code: string;
   @IsString() name: string;
   @IsString() type: string;
@@ -30,6 +30,7 @@ export class CreateTimberSourceDto {
 export class UpdateTimberSourceDto extends CreateTimberSourceDto {}
 
 export class CreateLocationDto {
+  @IsOptional() @IsString() company_id?: string;
   @IsString() warehouseId: string;
   @IsString() code: string;
   @IsString() name: string;
@@ -39,7 +40,7 @@ export class CreateLocationDto {
 export class UpdateLocationDto extends CreateLocationDto {}
 
 export class CreateVehicleDto {
-  @IsString() company_id: string;
+  @IsOptional() @IsString() company_id?: string;
   @IsString() code: string;
   @IsString() plateNumber: string;
   @IsOptional() @IsString() name?: string;
@@ -50,7 +51,7 @@ export class CreateVehicleDto {
 export class UpdateVehicleDto extends CreateVehicleDto {}
 
 export class CreateDriverDto {
-  @IsString() company_id: string;
+  @IsOptional() @IsString() company_id?: string;
   @IsOptional() @IsString() code?: string;
   @IsString() name: string;
   @IsOptional() @IsString() phone?: string;

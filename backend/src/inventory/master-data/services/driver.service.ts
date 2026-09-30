@@ -6,32 +6,32 @@ import { CreateDriverDto, UpdateDriverDto } from '../dto/master-data.dto';
 export class DriverService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
-    return this.prisma.driver.findMany();
+  async findAll(company_id: string) {
+    return this.prisma.driver.findMany({ where: { company_id } });
   }
 
-  async findOne(id: string) {
-    const item = await this.prisma.driver.findUnique({ where: { id } });
+  async findOne(id: string, company_id: string) {
+    const item = await this.prisma.driver.findUnique({ where: { id, company_id } });
     if (!item) throw new NotFoundException('Driver not found');
     return item;
   }
 
   async create(data: CreateDriverDto) {
-    return this.prisma.driver.create({ data });
+    return this.prisma.driver.create({ data: data as any });
   }
 
-  async update(id: string, data: Partial<UpdateDriverDto>) {
-    await this.findOne(id);
+  async update(id: string, data: any, company_id: string) {
+    await this.findOne(id, company_id);
     return this.prisma.driver.update({
-      where: { id },
+      where: { id, company_id },
       data,
     });
   }
 
-  async updateStatus(id: string, isActive: boolean) {
-    await this.findOne(id);
+  async updateStatus(id: string, isActive: boolean, company_id: string) {
+    await this.findOne(id, company_id);
     return this.prisma.driver.update({
-      where: { id },
+      where: { id, company_id },
       data: { isActive },
     });
   }

@@ -6,30 +6,42 @@ import { CreateLocationDto, UpdateLocationDto } from '../dto/master-data.dto';
 export class LocationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
-    return this.prisma.location.findMany();
-  }
-
-  async findOne(id: string) {
-    const item = await this.prisma.location.findUnique({ where: { id } });
-    if (!item) throw new NotFoundException('Location not found');
-    return item;
-  }
-
-  async create(data: CreateLocationDto) {
-    return this.prisma.location.create({ data });
-  }
-
-  async update(id: string, data: Partial<UpdateLocationDto>) {
-    await this.findOne(id);
-    return this.prisma.location.update({
-      where: { id },
-      data,
+  async findAll(company_id: string) {
+    return this.prisma.location.findMany({
+      where: { warehouse: { company_id } },
+      include: { warehouse: true }
     });
   }
 
-  async updateStatus(id: string, isActive: boolean) {
-    await this.findOne(id);
+  async findOne(id: string, company_id: string) {
+    const location = await this.prisma.location.findFirst({
+      where: { id, warehouse: { company_id } },
+      include: { warehouse: true }
+    });
+    if (!location) {
+      throw new NotFoundException(`Location with ID ${id} not found`);
+    }
+    return location;
+  }
+
+  async create(data: CreateLocationDto) {
+    const createData = { ...data };
+    delete createData.company_id; // not in model
+    return this.prisma.location.create({ data: createData as any });
+  }
+
+  async update(id: string, data: Partial<UpdateLocationDto>, company_id: string) {
+    await this.findOne(id, company_id);
+    const updateData = { ...data };
+    delete updateData.company_id;
+    return this.prisma.location.update({
+      where: { id },
+      data: updateData,
+    });
+  }
+
+  async updateStatus(id: string, isActive: boolean, company_id: string) {
+    await this.findOne(id, company_id);
     return this.prisma.location.update({
       where: { id },
       data: { isActive },
