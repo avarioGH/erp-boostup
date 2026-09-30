@@ -21,7 +21,7 @@ export class RawLogService {
     status?: string;
   }) {
     const { skip = 0, take = 50, search, species, diameterClass, locationId, status } = params;
-    const where: any = {};
+    const where: any = { partaiId: null };
 
     if (search) {
       where.OR = [

@@ -14,7 +14,7 @@ export class InputLogService {
     species?: string; locationId?: string; status?: string;
   }) {
     const { skip = 0, take = 50, search, species, locationId, status } = params;
-    const where: any = {};
+    const where: any = { partaiId: null };
     if (search) {
       where.OR = [
         { inputNumber: { contains: search, mode: 'insensitive' } },

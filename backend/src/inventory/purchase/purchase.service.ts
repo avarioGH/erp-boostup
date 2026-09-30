@@ -173,7 +173,7 @@ export class PurchaseService {
 
   async findAll(companyId: string) {
     return this.prisma.timberPurchase.findMany({
-      where: { company_id: companyId },
+      where: { company_id: companyId, partaiId: null },
       include: {
         source: true,
         warehouse: true,

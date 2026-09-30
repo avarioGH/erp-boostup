@@ -16,7 +16,7 @@ export class SawnTimberService {
     locationId?: string; status?: string;
   }) {
     const { skip = 0, take = 50, search, locationId, status } = params;
-    const where: any = {};
+    const where: any = { partaiId: null };
     if (search) {
       where.OR = [
         { bundleNumber: { contains: search, mode: 'insensitive' } },
@@ -264,7 +264,7 @@ export class SawnTimberService {
     skip?: number; take?: number; search?: string; locationId?: string; locationCodePrefix?: string;
   }) {
     const { skip = 0, take = 50, search, locationId, locationCodePrefix } = params;
-    const where: any = {};
+    const where: any = { partaiId: null };
     if (search) {
       where.timberVariant = { sku: { contains: search, mode: 'insensitive' } };
     }
