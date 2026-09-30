@@ -357,8 +357,6 @@ export default function ProductInventory() {
  className="bg-accent/50 focus:bg-background"
  />
  </div>
- </div>
-
  {/* Section 2: Harga */}
  <div className="space-y-4">
  <div className="flex items-center gap-2 pb-2 border-b border-border/50">
