@@ -154,7 +154,7 @@ export class SawnTimberService {
       const seq = String(count + 1).padStart(3, '0');
       const bundleNumber = `O-MSAW-${machineStr}-${YY}-${MM}-${seq}`;
 
-      const output = await tx.SawnTimberOutput.create({
+      const output = await tx.sawnTimberOutput.create({
           data: {
             partaiId,
           bundleNumber,
@@ -310,6 +310,7 @@ export class SawnTimberService {
   }
 
 }
+
 
 
 
