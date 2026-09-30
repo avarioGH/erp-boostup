@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -79,7 +79,8 @@ const items: MenuItem[] = [
  subItems: [
  { title: "POS (Kasir Retail)", url: "/pos/new-transaction" },
  { title: "Sales Orders", url: "/sales/orders" },
- { title: "Pengiriman", url: "/sales/deliveries" }
+ { title: "Pengiriman", url: "/sales/deliveries" },
+        { title: "Daftar Ekspor", url: "/sales/exports" }
  ]
  },
  {
@@ -177,7 +178,8 @@ const items: MenuItem[] = [
  subItems: [
  { title: "Penawaran (Quotation)", url: "/sales/quotations" },
  { title: "Sales Orders (SO)", url: "/sales/orders" },
- { title: "Pengiriman (Delivery)", url: "/sales/deliveries" }
+ { title: "Pengiriman (Delivery)", url: "/sales/deliveries" },
+        { title: "Daftar Ekspor", url: "/sales/exports" }
  ]
  },
  { 
@@ -407,6 +409,7 @@ export function AppSidebar() {
  </Sidebar>
  )
 }
+
 
 
 
