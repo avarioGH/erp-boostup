@@ -16,7 +16,7 @@ export default function PurchaseDetailPage() {
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
-    if (params?.id) fetchData();
+    if (params?.id && params.id !== 'undefined') fetchData();
   }, [params?.id]);
 
   const fetchData = () => {

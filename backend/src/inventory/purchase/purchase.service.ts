@@ -183,8 +183,11 @@ export class PurchaseService {
   }
 
   async findOne(id: string, companyId: string) {
-      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
-      const purchase = await this.prisma.timberPurchase.findFirst({
+    if (id === 'undefined' || !id) throw new NotFoundException('Purchase not found');
+    if (companyId === 'undefined' || !companyId) throw new BadRequestException('Invalid company ID');
+    
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+    const purchase = await this.prisma.timberPurchase.findFirst({
         where: isObjectId ? { id, company_id: companyId } : { purchaseNumber: id, company_id: companyId },
         include: {
           source: true,
