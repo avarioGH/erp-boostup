@@ -198,7 +198,7 @@ export class InventoryService {
       data: {
         company_id: data.companyId,
         code: productCode,
-        barcode: (data.barcode && data.barcode !== 'undefined' && data.barcode !== 'null' && data.barcode !== '') ? data.barcode : undefined,
+        barcode: (data.barcode && data.barcode !== 'undefined' && data.barcode !== 'null' && data.barcode !== '') ? data.barcode : "NOBARCODE-" + productCode + "-" + Date.now(),
         name: data.name,
         description: data.description,
         purchase_price: !isNaN(Number(data.purchasePrice)) ? Number(data.purchasePrice) : 0,
@@ -846,6 +846,8 @@ export class InventoryService {
     }
   }
 }
+
+
 
 
 
