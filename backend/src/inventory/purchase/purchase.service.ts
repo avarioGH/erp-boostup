@@ -32,6 +32,7 @@ export class PurchaseService {
     const purchase = await this.prisma.timberPurchase.create({
       data: {
         company_id: companyId,
+        partaiId: partaiId || null,
         purchaseNumber,
         purchaseDate: purchaseDate ? new Date(purchaseDate) : undefined,
         sourceId,

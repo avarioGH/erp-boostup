@@ -102,6 +102,7 @@ export default function CreatePurchasePage() {
         sourceId: form.sourceId,
         warehouseId: form.warehouseId,
         notes: form.notes,
+        partaiId: form.partaiId,
         items: form.purchaseType === "sawn-timber" ? form.items : [],
         logItems: form.purchaseType === "raw-log" ? form.logItems : []
       })
@@ -381,5 +382,6 @@ export default function CreatePurchasePage() {
     </div>
   )
 }
+
 
 
