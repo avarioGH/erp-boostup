@@ -1,170 +1,345 @@
-﻿"use client"
+"use client"
 import { useState, useEffect, use } from "react"
-import { TimberAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { TimberAPI, api } from "@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Loader2, ArrowLeft, Box, Waypoints, CheckCircle2, Factory, Calendar, Package, Printer } from "lucide-react"
+import { Loader2, ArrowLeft, ArrowRight, Box, CheckCircle2, Factory, Calendar, Package, Plus, Trash, Check, X, AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
 
 export default function InputLogDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const { toast } = useToast()
+  
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  
+  // Tally Modal State
+  const [tallyOpen, setTallyOpen] = useState(false)
+  const [tallyLines, setTallyLines] = useState([{ t: "", l: "", p: "", pcs: "" }])
+  const [tallyDate, setTallyDate] = useState(new Date().toISOString().split('T')[0])
+  const [savingTally, setSavingTally] = useState(false)
+  
+  // Status Update State
+  const [updatingStatus, setUpdatingStatus] = useState(false)
 
-  useEffect(() => {
-    if (!id) return
+  const loadData = () => {
     setLoading(true)
     TimberAPI.getInputLog(id)
       .then(setData)
       .catch((err: any) => setError(err?.response?.data?.message || "Gagal memuat data input log"))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    if (id) loadData()
   }, [id])
+
+  const handleUpdateStatus = async (newStatus: string) => {
+    try {
+      setUpdatingStatus(true)
+      await api.post(`/inventory/input-logs/${id}/status`, { status: newStatus })
+      toast({ title: "Status Diperbarui", description: `Status WIP berubah menjadi ${newStatus}.` })
+      loadData()
+    } catch (err: any) {
+      toast({ title: "Gagal Merubah Status", description: err?.response?.data?.message || err.message, variant: "destructive" })
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
+  const handleSaveTally = async () => {
+    try {
+      // Validate
+      const validLines = tallyLines.filter(line => Number(line.t) > 0 && Number(line.l) > 0 && Number(line.p) > 0 && Number(line.pcs) > 0)
+      if (validLines.length === 0) {
+        toast({ title: "Input Tidak Valid", description: "Mohon isi setidaknya satu baris dimensi dengan benar.", variant: "destructive" })
+        return
+      }
+      
+      if (!data.locationId) {
+        toast({ title: "Error", description: "WIP tidak memiliki gudang yang valid.", variant: "destructive" })
+        return
+      }
+
+      setSavingTally(true)
+      
+      const payload = {
+        inputLogId: id,
+        partaiId: data.partaiId,
+        outputDate: tallyDate,
+        locationId: data.locationId,
+        items: validLines.map(line => ({
+          thickness: parseFloat(line.t) * 10,
+          width: parseFloat(line.l) * 10,
+          length: parseFloat(line.p) * 10,
+          quantityPcs: parseInt(line.pcs),
+          grade: "PENDING"
+        }))
+      }
+
+      const res = await api.post('/inventory/sawn-timber/output', payload)
+      // Auto-post the tally so it enters inventory
+      await api.post(`/inventory/sawn-timber/output/${res.data.id}/post`)
+      
+      toast({ title: "Berhasil", description: "Tally harian berhasil disimpan dan di-posting." })
+      setTallyOpen(false)
+      setTallyLines([{ t: "", l: "", p: "", pcs: "" }])
+      loadData()
+    } catch (err: any) {
+      toast({ title: "Gagal Menyimpan Tally", description: err?.response?.data?.message || err.message, variant: "destructive" })
+    } finally {
+      setSavingTally(false)
+    }
+  }
 
   if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
   if (error || !data) return (
     <div className="p-8 md:p-24 flex flex-col items-center justify-center gap-4 text-center">
       <Package className="w-10 h-10 text-muted-foreground opacity-40" />
       <p className="text-base font-semibold text-foreground">{error || "Input log tidak ditemukan."}</p>
-      <Button variant="outline" onClick={() => router.push("/inventory/input-logs")}>
-        <ArrowLeft className="w-4 h-4 mr-2" /> Kembali ke Daftar
+      <Button variant="outline" onClick={() => router.push("/inventory/partai")}>
+        <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
       </Button>
     </div>
   )
 
- return (
- <div className="space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-8 px-4 md:px-6 box-border">
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
- <div className="flex items-center gap-4">
- <Button variant="outline" size="icon" onClick={() => data?.partaiId ? router.push(`/inventory/partai/${data.partaiId}?tab=input`) : router.push('/inventory/input-logs')}><ArrowLeft className="w-4 h-4" /></Button>
- <div>
- <div className="flex items-center gap-3">
- <h1 className="text-2xl font-bold tracking-tight text-foreground">{data.inputNumber}</h1>
- <Badge variant={data.status ==="AVAILABLE" ?"default" :"secondary"}>{data.status}</Badge>
- </div>
- <p className="text-muted-foreground mt-1 text-sm flex items-center gap-2"><Factory className="w-4 h-4" /> Input Log (WIP) ï¿½ {data.species}</p>
- </div>
- </div>
- <div className="flex items-center gap-2">
-    <Button variant="default" onClick={() => window.open(`/inventory/input-logs/${id}/print`, "_blank")}><Printer className="w-4 h-4 mr-2" /> Print Tally</Button>
- </div>
- </div>
+  const totalInputVol = Number(data.totalVolume || 0)
+  const outItems = (data.sawnOutputs || []).flatMap((o: any) => o.items || [])
+  const totalOutputVol = outItems.reduce((acc: number, cur: any) => acc + (cur.volumeM3 || 0), 0)
+  const progressPct = totalInputVol > 0 ? Math.min(100, Math.round((totalOutputVol / totalInputVol) * 100)) : 0
 
- <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
- <Card className="bg-card rounded-xl border border-border shadow-sm">
- <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Operation</CardTitle></CardHeader>
- <CardContent className="pt-6 space-y-4 text-sm">
- <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4">
- <div><p className="text-muted-foreground">Date</p><p className="font-bold flex items-center gap-1"><Calendar className="w-3 h-3"/> {new Date(data.date).toLocaleDateString("id-ID")}</p></div>
- <div><p className="text-muted-foreground">Shift</p><p className="font-bold">{data.shift ||"-"}</p></div>
- <div><p className="text-muted-foreground">Machine</p><p className="font-bold">MSAW-{data.machine ||"1"}</p></div>
- <div><p className="text-muted-foreground">Partai</p><p className="font-bold">{data.batch ||"-"}</p></div>
- </div>
- </CardContent>
- </Card>
+  return (
+    <div className="space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-8 px-4 md:px-6 box-border">
+      
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center space-x-4">
+            <Button variant="outline" size="icon" onClick={() => router.push(data.partaiId ? `/inventory/partai/${data.partaiId}` : '/inventory/input-logs')}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+                Job Card: {data.inputNumber}
+                {data.status === 'DONE' ? <Badge className="bg-emerald-500 hover:bg-emerald-600 text-sm py-1">DONE</Badge> 
+                  : data.status === 'IN_PROCESS' ? <Badge className="bg-amber-500 hover:bg-amber-600 text-sm py-1">IN PROCESS</Badge> 
+                  : <Badge className="bg-rose-500 hover:bg-rose-600 text-sm py-1">AVAILABLE</Badge>}
+              </h1>
+              <div className="flex items-center text-muted-foreground mt-1 space-x-4 text-sm">
+                <span className="flex items-center"><Calendar className="w-4 h-4 mr-1"/> {data.date ? new Date(data.date).toLocaleDateString("id-ID") : "-"}</span>
+                <span className="flex items-center"><Box className="w-4 h-4 mr-1"/> {data.species}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {data.status === 'AVAILABLE' && (
+            <Button variant="outline" className="border-amber-500 text-amber-600 hover:bg-amber-50" onClick={() => handleUpdateStatus('IN_PROCESS')} disabled={updatingStatus}>
+              {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Factory className="w-4 h-4 mr-2" />} Mulai Pekerjaan
+            </Button>
+          )}
+          {data.status === 'IN_PROCESS' && (
+            <Button variant="outline" className="border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={() => handleUpdateStatus('DONE')} disabled={updatingStatus}>
+              {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />} Tandai Selesai
+            </Button>
+          )}
+        </div>
+      </div>
 
- <Card className="bg-card rounded-xl border border-border shadow-sm md:col-span-2">
- <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10">
-    <CardTitle className="text-[16px] font-semibold flex items-center justify-between">
-      <span className="flex items-center gap-2"><Factory className="w-4 h-4" /> Production Summary</span>
-    </CardTitle>
- </CardHeader>
- <CardContent className="pt-6">
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-    <div className="space-y-1 text-center border-r border-border/50">
-      <p className="text-muted-foreground text-xs font-semibold uppercase">Total Input</p>
-      <p className="text-2xl font-bold">{data.totalVolume?.toFixed(4)} <span className="text-sm font-normal text-muted-foreground">m3</span></p>
-    </div>
-    <div className="space-y-1 text-center border-r border-border/50">
-      <p className="text-muted-foreground text-xs font-semibold uppercase">Processed (Consumed)</p>
-      <p className="text-2xl font-bold text-blue-500">{data.processedVolume?.toFixed(4)} <span className="text-sm font-normal text-muted-foreground">m3</span></p>
-    </div>
-    <div className="space-y-1 text-center border-r border-border/50 md:border-r-0">
-      <p className="text-muted-foreground text-xs font-semibold uppercase">Remaining Input</p>
-      <p className="text-2xl font-bold text-orange-500">{data.remainingVolume?.toFixed(4)} <span className="text-sm font-normal text-muted-foreground">m3</span></p>
-    </div>
-    <div className="space-y-1 text-center">
-      <p className="text-muted-foreground text-xs font-semibold uppercase">Yield Output (Produced)</p>
-      <p className="text-2xl font-bold text-emerald-500">{data.outputVolume?.toFixed(4)} <span className="text-sm font-normal text-muted-foreground">m3</span></p>
-    </div>
-  </div>
-  <div className="flex gap-4 justify-center md:justify-start pt-2">
-    <Button onClick={() => router.push(`/inventory/sawn-timber/output/create?inputLogId=${data.id}&partaiId=${data.partaiId}`)} className="font-bold">
-      + Tally Hari Ini
-    </Button>
-    <Button variant="outline" onClick={() => router.push(`/inventory/sawn-timber/output?inputLogId=${data.id}`)}>
-      Lihat Tally (Output)
-    </Button>
-  </div>
- </CardContent>
- </Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        
+        {/* LEFT COL: STATS & PROGRESS */}
+        <div className="md:col-span-1 space-y-6">
+          <Card className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="bg-muted/30 p-4 border-b">
+              <h3 className="font-semibold text-foreground flex items-center gap-2"><Factory className="w-4 h-4 text-primary" /> Produksi M&sup3;</h3>
+            </div>
+            <CardContent className="p-4 space-y-4">
+              <div className="flex justify-between items-end">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Input Bahan Baku</div>
+                  <div className="text-2xl font-bold">{totalInputVol.toFixed(4)} <span className="text-sm font-normal text-muted-foreground">m&sup3;</span></div>
+                </div>
+              </div>
+              <div className="flex justify-between items-end">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Output Sawn Timber</div>
+                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{totalOutputVol.toFixed(4)} <span className="text-sm font-normal text-muted-foreground">m&sup3;</span></div>
+                </div>
+              </div>
+              
+              <div className="pt-2 border-t">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="text-sm font-medium">Rendemen (Yield)</div>
+                  <div className="text-sm font-bold text-blue-600 dark:text-blue-400">{progressPct}%</div>
+                </div>
+                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 transition-all duration-500" style={{ width: `${progressPct}%` }} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
- <Card className="bg-card rounded-xl border border-border shadow-sm">
- <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><Waypoints className="w-4 h-4" /> Traceability</CardTitle></CardHeader>
- <CardContent className="pt-6">
- <div className="flex items-center gap-4 text-sm">
- <div className="p-4 border rounded text-muted-foreground border-dashed">
- <p className="font-medium flex items-center gap-2"><Box className="w-4 h-4" /> TRIMMED LOGS</p>
- <p className="text-xs">{data.totalQty} sources</p>
- </div>
- <div className="h-px bg-border flex-1 mx-2"></div>
- <div className="p-4 border rounded bg-primary/5 border-primary/20">
- <p className="font-bold text-foreground flex items-center gap-2"><Factory className="w-4 h-4" /> INPUT LOG</p>
- <p className="text-xs text-muted-foreground">{data.inputNumber}</p>
- </div>
- </div>
- </CardContent>
- </Card>
- </div>
+        {/* RIGHT COL: MATERIAL & TALLY */}
+        <div className="md:col-span-3 space-y-6">
+          
+          <Card className="bg-card rounded-xl border border-border shadow-sm">
+            <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-[16px] font-semibold">Source Material (Trimmed / Raw Logs)</CardTitle>
+                <CardDescription>Bahan baku yang dikonsumsi oleh pekerjaan ini.</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableHead className="h-10 text-xs">LOG ID / CODE</TableHead>
+                      <TableHead className="h-10 text-xs text-right">PJG (m)</TableHead>
+                      <TableHead className="h-10 text-xs text-right">RT (cm)</TableHead>
+                      <TableHead className="h-10 text-xs text-right text-emerald-600">VOL (m&sup3;)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(data.items || []).map((item: any) => {
+                      const logNum = item.trimmedLog?.trimNumber || item.rawLog?.logNumber || "N/A"
+                      const pjg = item.trimmedLog?.length || item.rawLog?.length || 0
+                      const rt = item.trimmedLog?.averageDiameter || item.rawLog?.averageDiameter || 0
+                      const vol = item.volume || 0
+                      return (
+                        <TableRow key={item.id} className="hover:bg-muted/30">
+                          <TableCell className="font-medium">{logNum}</TableCell>
+                          <TableCell className="text-right">{pjg}</TableCell>
+                          <TableCell className="text-right">{rt}</TableCell>
+                          <TableCell className="text-right font-semibold text-emerald-600 dark:text-emerald-400">{vol.toFixed(4)}</TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
 
- <Card className="bg-card rounded-xl border border-border shadow-sm">
- <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10">
- <CardTitle className="text-[16px] font-semibold">Source Material (Trimmed Logs)</CardTitle>
- </CardHeader>
- <CardContent className="p-0">
- <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none">
-    <Table>
-   <TableHeader className="bg-muted/50 border-b">
-   <TableRow>
-   <TableHead>CODE</TableHead>
-   <TableHead>JENIS</TableHead>
-   <TableHead className="text-right">PJG (m)</TableHead>
-   <TableHead className="text-right">PKL (cm)</TableHead>
-   <TableHead className="text-right">UJUNG (cm)</TableHead>
-   <TableHead className="text-right">RT (cm)</TableHead>
-   <TableHead className="text-right">M&sup3;</TableHead>
-   </TableRow>
-   </TableHeader>
-   <TableBody>
-   {data.items?.map((item: any) => (
-   <TableRow key={item.id} className="hover:bg-muted/50 transition-colors">
-   <TableCell className="font-medium">{item.trimmedLog?.trimNumber}</TableCell>
-   <TableCell className="text-muted-foreground">{item.trimmedLog?.species || item.trimmedLog?.rawLog?.species || '-'}</TableCell>
-   <TableCell className="text-right">{item.trimmedLog?.length}</TableCell>
-   <TableCell className="text-right">{item.trimmedLog?.diameter1 || item.trimmedLog?.diameter2 || 0}</TableCell>
-   <TableCell className="text-right">{item.trimmedLog?.diameter3 || item.trimmedLog?.diameter4 || 0}</TableCell>
-   <TableCell className="text-right">{Number(item.trimmedLog?.averageDiameter || 0).toFixed(1)}</TableCell>
-   <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">{Number(item.trimmedLog?.netVolume || 0).toFixed(4)}</TableCell>
-   </TableRow>
-   ))}
-   {(!data.items || data.items.length === 0) && (
-   <TableRow>
-   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Tidak ada item dalam input log ini.</TableCell>
-   </TableRow>
-   )}
-   </TableBody>
-   </Table>
- </div>
- </CardContent>
- </Card>
- </div>
- )
+          <Card className="bg-card rounded-xl border border-border shadow-sm">
+            <CardHeader className="p-4 md:p-5 border-b border-border/50 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-[16px] font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Production History (Tallies)
+                </CardTitle>
+                <CardDescription>Catatan output per hari dari gergajian ini.</CardDescription>
+              </div>
+              <Dialog open={tallyOpen} onOpenChange={setTallyOpen}>
+                <DialogTrigger>
+                  <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-emerald-600 text-primary-foreground shadow hover:bg-emerald-700 h-8 rounded-md px-3" style={data.status === "DONE" ? {opacity: 0.5, pointerEvents: "none"} : {}}><Plus className="w-4 h-4" /> Tally Hari Ini</div>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl">
+                  <DialogHeader>
+                    <DialogTitle>Input Tally Harian</DialogTitle>
+                    <DialogDescription>Masukkan hasil produksi gergajian. Sistem otomatis menghitung M&sup3; (T &times; L &times; P &times; PCS &divide; 10&sup9;).</DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4 space-y-4">
+                    <div className="w-1/3">
+                      <Label>Tanggal Produksi</Label>
+                      <Input type="date" value={tallyDate} onChange={e => setTallyDate(e.target.value)} />
+                    </div>
+                    
+                    <div className="border rounded-md overflow-hidden">
+                      <Table>
+                        <TableHeader className="bg-muted">
+                          <TableRow>
+                            <TableHead>T (cm)</TableHead>
+                            <TableHead>L (cm)</TableHead>
+                            <TableHead>P (cm)</TableHead>
+                            <TableHead>PCS</TableHead>
+                            <TableHead>M&sup3; (Auto)</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {tallyLines.map((line, idx) => {
+                            const vol = (Number(line.t || 0) * 10 * Number(line.l || 0) * 10 * Number(line.p || 0) * 10 * Number(line.pcs || 0)) / 1000000000
+                            return (
+                              <TableRow key={idx}>
+                                <TableCell className="p-2"><Input type="number" placeholder="5" value={line.t} onChange={e => { const n = [...tallyLines]; n[idx].t = e.target.value; setTallyLines(n) }} /></TableCell>
+                                <TableCell className="p-2"><Input type="number" placeholder="10" value={line.l} onChange={e => { const n = [...tallyLines]; n[idx].l = e.target.value; setTallyLines(n) }} /></TableCell>
+                                <TableCell className="p-2"><Input type="number" placeholder="400" value={line.p} onChange={e => { const n = [...tallyLines]; n[idx].p = e.target.value; setTallyLines(n) }} /></TableCell>
+                                <TableCell className="p-2"><Input type="number" placeholder="15" value={line.pcs} onChange={e => { const n = [...tallyLines]; n[idx].pcs = e.target.value; setTallyLines(n) }} /></TableCell>
+                                <TableCell className="p-2 font-mono font-semibold text-emerald-600">{vol.toFixed(4)}</TableCell>
+                                <TableCell className="p-2">
+                                  <Button variant="ghost" size="icon" onClick={() => setTallyLines(tallyLines.filter((_, i) => i !== idx))} disabled={tallyLines.length === 1}>
+                                    <X className="w-4 h-4 text-rose-500" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                      <div className="p-2 bg-muted/30 border-t">
+                        <Button variant="ghost" size="sm" onClick={() => setTallyLines([...tallyLines, { t: "", l: "", p: "", pcs: "" }])} className="w-full border border-dashed">
+                          <Plus className="w-4 h-4 mr-2" /> Tambah Ukuran Lain
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setTallyOpen(false)}>Batal</Button>
+                    <Button onClick={handleSaveTally} disabled={savingTally}>
+                      {savingTally ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />} Simpan Tally (POST)
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableHead className="h-10 text-xs">TANGGAL</TableHead>
+                      <TableHead className="h-10 text-xs">UKURAN (cm)</TableHead>
+                      <TableHead className="h-10 text-xs text-right">PCS</TableHead>
+                      <TableHead className="h-10 text-xs text-right text-emerald-600">VOL (m&sup3;)</TableHead>
+                      <TableHead className="h-10 text-xs text-center w-[120px]">STATUS</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(data.sawnOutputs || []).flatMap((o: any) => (o.items || []).map((item: any) => ({ ...item, parentDate: o.outputDate, status: o.status }))).map((i: any, idx: number) => {
+                      return (
+                        <TableRow key={i.id || idx} className="hover:bg-muted/30">
+                          <TableCell className="font-medium text-sm">{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                          <TableCell className="text-sm">{i.thicknessMm / 10} &times; {i.widthMm / 10} &times; {i.lengthMm / 10}</TableCell>
+                          <TableCell className="text-right text-sm">{i.quantityPcs}</TableCell>
+                          <TableCell className="text-right font-semibold text-emerald-600 dark:text-emerald-400 text-sm">{i.volumeM3.toFixed(4)}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className={i.status === 'POSTED' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : ""}>{i.status}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                    {(!data.sawnOutputs || data.sawnOutputs.length === 0) && (
+                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Belum ada history tally.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
 }
-
-
-
-
