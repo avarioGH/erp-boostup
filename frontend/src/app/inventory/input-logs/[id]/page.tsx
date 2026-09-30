@@ -4,6 +4,7 @@ import { TimberAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Loader2, ArrowLeft, Box, Waypoints, CheckCircle2, Factory, Calendar, Package, Printer } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -126,32 +127,37 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
  </CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none">
- <table className="min-w-[600px] md:min-w-full w-full text-sm">
- <thead className="bg-muted/50 border-b">
-   <tr>
-   <th className="p-3 px-6 text-left">CODE</th>
-   <th className="p-3 px-6 text-left">JENIS</th>
-   <th className="p-3 px-6 text-right">PJG (m)</th>
-   <th className="p-3 px-6 text-right">PKL (cm)</th>
-   <th className="p-3 px-6 text-right">UJUNG (cm)</th>
-   <th className="p-3 px-6 text-right">RT (cm)</th>
-   <th className="p-3 px-6 text-right">M&sup3;</th>
-   </tr>
-   </thead>
- <tbody>
- {data.items?.map((item: any) => (
- <tr key={item.id} className="border-b hover:bg-muted/60 transition-colors">
-   <td className="p-3 px-6 font-medium">{item.trimmedLog?.trimNumber}</td>
-   <td className="p-3 px-6 text-muted-foreground">{item.trimmedLog?.species || item.trimmedLog?.rawLog?.species || '-'}</td>
-   <td className="p-3 px-6 text-right">{item.trimmedLog?.length}</td>
-   <td className="p-3 px-6 text-right">{item.trimmedLog?.diameter1 || item.trimmedLog?.diameter2 || 0}</td>
-   <td className="p-3 px-6 text-right">{item.trimmedLog?.diameter3 || item.trimmedLog?.diameter4 || 0}</td>
-   <td className="p-3 px-6 text-right">{Number(item.trimmedLog?.averageDiameter || 0).toFixed(1)}</td>
-   <td className="p-3 px-6 text-right font-bold text-blue-600 dark:text-blue-400">{Number(item.trimmedLog?.netVolume || 0).toFixed(4)}</td>
-   </tr>
- ))}
- </tbody>
- </table>
+    <Table>
+   <TableHeader className="bg-muted/50 border-b">
+   <TableRow>
+   <TableHead>CODE</TableHead>
+   <TableHead>JENIS</TableHead>
+   <TableHead className="text-right">PJG (m)</TableHead>
+   <TableHead className="text-right">PKL (cm)</TableHead>
+   <TableHead className="text-right">UJUNG (cm)</TableHead>
+   <TableHead className="text-right">RT (cm)</TableHead>
+   <TableHead className="text-right">M&sup3;</TableHead>
+   </TableRow>
+   </TableHeader>
+   <TableBody>
+   {data.items?.map((item: any) => (
+   <TableRow key={item.id} className="hover:bg-muted/50 transition-colors">
+   <TableCell className="font-medium">{item.trimmedLog?.trimNumber}</TableCell>
+   <TableCell className="text-muted-foreground">{item.trimmedLog?.species || item.trimmedLog?.rawLog?.species || '-'}</TableCell>
+   <TableCell className="text-right">{item.trimmedLog?.length}</TableCell>
+   <TableCell className="text-right">{item.trimmedLog?.diameter1 || item.trimmedLog?.diameter2 || 0}</TableCell>
+   <TableCell className="text-right">{item.trimmedLog?.diameter3 || item.trimmedLog?.diameter4 || 0}</TableCell>
+   <TableCell className="text-right">{Number(item.trimmedLog?.averageDiameter || 0).toFixed(1)}</TableCell>
+   <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">{Number(item.trimmedLog?.netVolume || 0).toFixed(4)}</TableCell>
+   </TableRow>
+   ))}
+   {(!data.items || data.items.length === 0) && (
+   <TableRow>
+   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Tidak ada item dalam input log ini.</TableCell>
+   </TableRow>
+   )}
+   </TableBody>
+   </Table>
  </div>
  </CardContent>
  </Card>

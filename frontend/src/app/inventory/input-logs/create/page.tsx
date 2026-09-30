@@ -6,6 +6,7 @@ import { Button } from"@/components/ui/button"
 import { Input } from"@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
 import { Checkbox } from"@/components/ui/checkbox"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Loader2, ArrowLeft, Save, Calculator } from"lucide-react"
 import { useRouter, useSearchParams } from"next/navigation"
 import { useToast } from"@/hooks/use-toast"
@@ -98,30 +99,36 @@ export default function CreateInputLogPage() {
  <CardHeader className="border-b bg-muted/10 pb-4"><CardTitle className="text-base font-bold">Select Trimmed Logs</CardTitle></CardHeader>
  <CardContent className="p-0">
  <div className="max-h-[400px] overflow-y-auto">
- <table className="min-w-[600px] md:min-w-full w-full text-sm">
- <thead className="bg-muted/50 sticky top-0 border-b">
- <tr>
- <th className="p-3 w-10"></th>
- <th className="p-3 text-left">Trim Code</th>
- <th className="p-3 text-left">Parent</th>
- <th className="p-3 text-right">Length</th>
- <th className="p-3 text-right">Net M3</th>
- </tr>
- </thead>
- <tbody>
- {availableLogs.length === 0 ? <tr><td colSpan={8} className="p-4 md:p-8 text-center text-muted-foreground">No available trimmed logs.</td></tr> :
- availableLogs.map(log => (
- <tr key={log.id} className="border-b hover:bg-muted/20">
- <td className="p-3 text-center"><Checkbox checked={selectedIds.includes(log.id)} onCheckedChange={(checked) => handleSelect(log.id, !!checked)} /></td>
- <td className="p-3 font-medium">{log.trimNumber}</td>
- <td className="p-3 text-muted-foreground">{log.rawLog?.logNumber}</td>
- <td className="p-3 text-right">{log.length} m</td>
- <td className="p-3 text-right font-bold text-primary">{log.netVolume}</td>
- </tr>
- ))
- }
- </tbody>
- </table>
+    <Table>
+   <TableHeader className="bg-muted/50 sticky top-0 z-10">
+   <TableRow>
+   <TableHead className="w-10"></TableHead>
+   <TableHead>CODE</TableHead>
+   <TableHead>JENIS</TableHead>
+   <TableHead className="text-right">PJG (m)</TableHead>
+   <TableHead className="text-right">PKL (cm)</TableHead>
+   <TableHead className="text-right">UJUNG (cm)</TableHead>
+   <TableHead className="text-right">RT (cm)</TableHead>
+   <TableHead className="text-right">M&sup3;</TableHead>
+   </TableRow>
+   </TableHeader>
+   <TableBody>
+   {availableLogs.length === 0 ? <TableRow><TableCell colSpan={8} className="p-4 md:p-8 text-center text-muted-foreground">No available trimmed logs.</TableCell></TableRow> :
+   availableLogs.map(log => (
+   <TableRow key={log.id} className="hover:bg-muted/20">
+   <TableCell className="text-center"><Checkbox checked={selectedIds.includes(log.id)} onCheckedChange={(checked) => handleSelect(log.id, !!checked)} /></TableCell>
+   <TableCell className="font-medium">{log.trimNumber}</TableCell>
+   <TableCell>{log.species || log.rawLog?.species || "-"}</TableCell>
+   <TableCell className="text-right">{log.length}</TableCell>
+   <TableCell className="text-right">{log.diameter1 || log.diameter2 || 0}</TableCell>
+   <TableCell className="text-right">{log.diameter3 || log.diameter4 || 0}</TableCell>
+   <TableCell className="text-right">{Number(log.averageDiameter || 0).toFixed(1)}</TableCell>
+   <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">{Number(log.netVolume || 0).toFixed(4)}</TableCell>
+   </TableRow>
+   ))
+   }
+   </TableBody>
+   </Table>
  </div>
  </CardContent>
  </Card>
