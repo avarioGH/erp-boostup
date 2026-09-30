@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from"react"
 import { 
@@ -204,7 +204,7 @@ export default function ProductInventory() {
  setProducts(mapped)
  } catch (error) {
  console.error("Failed to save product:", error)
- alert("Gagal menyimpan produk.")
+ alert("Gagal menyimpan produk: " + (error?.response?.data?.message || error.message))
  } finally {
  setIsSubmitting(false)
  }
@@ -596,6 +596,7 @@ export default function ProductInventory() {
  </div>
  )
 }
+
 
 
 
