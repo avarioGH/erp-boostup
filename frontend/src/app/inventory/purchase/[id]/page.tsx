@@ -21,7 +21,7 @@ export default function PurchaseDetailPage({ params }: { params: { id: string } 
   const fetchData = () => {
     PurchaseAPI.getPurchase(params.id).then((res: any) => {
       setPurchase(res?.data || res);
-    }).catch((err: any) => setError("Failed to load data"));
+    }).catch((err: any) => setError(err?.response?.data?.message || err.message || "Failed to load data"));
   };
 
   const handleConfirm = async () => {
@@ -44,6 +44,7 @@ export default function PurchaseDetailPage({ params }: { params: { id: string } 
     }
   };
 
+  if (error) return <div className="p-6 text-red-500 font-semibold text-center">{error}</div>;
   if (!purchase) return <div className="p-6">Loading...</div>;
 
   return (

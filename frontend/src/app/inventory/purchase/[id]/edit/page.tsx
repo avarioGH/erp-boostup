@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -94,7 +94,7 @@ export default function EditPurchasePage({ params }: { params: { id: string } })
     if (purchaseId) {
       api.get(`/inventory/purchase/${purchaseId}`).then((res) => {
         const p = res.data;
-        setFormData(prev => ({
+        setForm(prev => ({
           ...prev,
           purchaseNumber: p.purchaseNumber || "",
           purchaseDate: p.purchaseDate ? p.purchaseDate.substring(0,10) : "",
@@ -104,26 +104,10 @@ export default function EditPurchasePage({ params }: { params: { id: string } })
         }));
         
         if (p.items) {
-          setSawnItems(p.items.map((i: any) => ({
-            variantId: i.timberVariantId || "",
-            quantityPcs: i.quantityPcs || 0,
-            volumeM3: i.volumeM3 || 0,
-            unitPrice: i.unitPrice || 0
-          })));
-        }
+          setForm(prev => ({ ...prev, items: p.items.map((i: any) => ({ variantId: i.timberVariantId || "", quantityPcs: i.quantityPcs || 0, volumeM3: i.volumeM3 || 0, unitPrice: i.unitPrice || 0 })) })); }
         
         if (p.logItems) {
-          setLogItems(p.logItems.map((i: any) => ({
-            logNumber: i.logNumber || "",
-            species: i.species || "",
-            purchaseLength: i.purchaseLength || 0,
-            purchaseDiameter1: i.purchaseDiameter1 || 0,
-            purchaseDiameter2: i.purchaseDiameter2 || 0,
-            purchaseDiameter3: i.purchaseDiameter3 || 0,
-            purchaseDiameter4: i.purchaseDiameter4 || 0,
-            purchaseVolume: i.purchaseVolume || 0
-          })));
-        }
+          setForm(prev => ({ ...prev, logItems: p.logItems.map((i: any) => ({ logNumber: i.logNumber || "", species: i.species || "", diameter: i.diameter || 0, length: i.length || 0, volume: i.volume || 0, unitPrice: i.unitPrice || 0 })) })); }
       }).catch(err => {
         console.error(err);
         setError("Failed to load purchase data for editing");
@@ -422,4 +406,6 @@ export default function EditPurchasePage({ params }: { params: { id: string } })
     </div>
   )
 }
+
+
 
