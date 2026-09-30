@@ -32,6 +32,17 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  ]).then(([wRes, tRes]) => {
  setWarehouses(Array.isArray(wRes) ? wRes : [])
  setTrimInfo(tRes)
+    if (tRes && tRes.parent) {
+      const p = tRes.parent;
+      setForm(prev => ({
+        ...prev,
+        diameter1: p.diameter1 ? p.diameter1.toString() : "",
+        diameter2: p.diameter2 ? p.diameter2.toString() : "",
+        diameter3: p.diameter3 ? p.diameter3.toString() : "",
+        diameter4: p.diameter4 ? p.diameter4.toString() : "",
+        gerowong: p.gerowong ? p.gerowong.toString() : ""
+      }))
+    }
  }).catch(console.error).finally(() => setLoading(false))
  }, [id])
 
@@ -118,7 +129,7 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
  <div className="space-y-2 md:col-span-4">
                 <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium">Trimmed Length (meters) <span className="text-red-500">*</span></label>
+                  <label className="text-sm font-medium">Panjang Log Hasil (meters) <span className="text-red-500">*</span></label>
                   {remaining > 0 && (
                     <button type="button" onClick={() => setForm({...form, length: remaining.toString()})} className="text-xs text-primary hover:underline font-medium">
                       + Ambil Bagian Sisa ({remaining} m)
@@ -133,7 +144,7 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  <div className="space-y-2"><label className="text-sm font-medium">D3 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter3} onChange={e => setForm({...form, diameter3: e.target.value})} /></div>
  <div className="space-y-2"><label className="text-sm font-medium">D4 (cm) <span className="text-red-500">*</span></label><Input required type="number" step="0.01" value={form.diameter4} onChange={e => setForm({...form, diameter4: e.target.value})} /></div>
  <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Gerowong &Oslash; (cm)</label><Input type="number" step="0.01" value={form.gerowong} onChange={e => setForm({...form, gerowong: e.target.value})} /></div>
- <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Trimming Length (meters)</label><Input type="number" step="0.01" value={form.trimmingLength} onChange={e => setForm({...form, trimmingLength: e.target.value})} /></div>
+ <div className="space-y-2 md:col-span-2"><label className="text-sm font-medium">Waste/Buangan Trimming (meters)</label><Input type="number" step="0.01" value={form.trimmingLength} onChange={e => setForm({...form, trimmingLength: e.target.value})} /></div>
  </CardContent>
  </Card>
  <Card className="shadow-sm">

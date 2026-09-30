@@ -71,9 +71,9 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
  <CardContent className="pt-6 space-y-4 text-sm">
  <div className="flex justify-between items-center"><span className="text-muted-foreground">Total Pieces</span><span className="font-bold text-lg">{data.totalQty} PCS</span></div>
  <div className="flex justify-between items-center"><span className="text-muted-foreground">Total Length</span><span className="font-medium">{data.totalLength?.toFixed(2)} m</span></div>
- <div className="flex justify-between items-center"><span className="text-muted-foreground">Total Gross</span><span className="font-medium">{data.totalGross?.toFixed(4)} m?</span></div>
+ <div className="flex justify-between items-center"><span className="text-muted-foreground">Total Gross</span><span className="font-medium">{data.totalGross?.toFixed(4)} m3</span></div>
  <hr className="border-border/50" />
- <div className="flex justify-between items-center"><span className="font-bold text-foreground font-bold">Total Net Volume</span><span className="font-bold text-2xl text-primary">{data.totalVolume?.toFixed(4)} m?</span></div>
+ <div className="flex justify-between items-center"><span className="font-bold text-foreground font-bold">Total Net Volume</span><span className="font-bold text-2xl text-primary">{data.totalVolume?.toFixed(4)} m3</span></div>
  </CardContent>
  </Card>
 

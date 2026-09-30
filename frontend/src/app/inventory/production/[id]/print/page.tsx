@@ -10,7 +10,7 @@ export default function PrintProductionSheet({ params }: { params: Promise<{ id:
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    ProductionAPI.getProduction(id).then((res: any) => {
+    ProductionAPI.getProcess(id).then((res: any) => {
       setData(res?.data || res)
       setTimeout(() => window.print(), 800)
     }).catch((err: any) => {
