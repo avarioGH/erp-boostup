@@ -140,6 +140,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>No. Pembelian</TableHead>
+                      <TableHead>Nama Log</TableHead>
                     <TableHead>Tanggal</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Total Item</TableHead>
@@ -151,6 +152,17 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                   {(partai.purchases || []).map((p: any) => (
                     <TableRow key={p.id} className="group hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/inventory/purchase/${p.id}`)}>
                       <TableCell className="font-medium">{p.purchaseNumber || p.code}</TableCell>
+                        <TableCell>
+                          {(() => {
+                            if (p.logItems && p.logItems.length > 0) {
+                              const species = Array.from(new Set(p.logItems.map((l: any) => l.species).filter(Boolean)));
+                              if (species.length > 0) return species.join(', ');
+                              return "Raw Logs";
+                            }
+                            if (p.items && p.items.length > 0) return "Sawn Timber";
+                            return "-";
+                          })()}
+                        </TableCell>
                       <TableCell>{p.purchaseDate ? new Date(p.purchaseDate).toLocaleDateString("id-ID") : "-"}</TableCell>
                       <TableCell><Badge variant="outline" className={p.status === 'CONFIRMED' ? 'text-emerald-500 border-emerald-500 bg-emerald-500/10' : 'text-muted-foreground'}>{p.status || "DRAFT"}</Badge></TableCell>
                       <TableCell>{(p.items?.length || 0) + (p.logItems?.length || 0)}</TableCell>
