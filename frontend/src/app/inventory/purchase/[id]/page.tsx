@@ -116,9 +116,6 @@ export default function PurchaseDetailPage() {
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
           <CardTitle>Purchase Logs (Raw Logs)</CardTitle>
-          <Button onClick={() => router.push(`/inventory/purchase/${params.id}/logs/create`)} size="sm">
-            Add Purchase Log
-          </Button>
         </CardHeader>
         <CardContent>
           <Table>
@@ -142,14 +139,9 @@ export default function PurchaseDetailPage() {
                   <TableCell>{log.purchaseVolume}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Badge variant={log.status === "RECEIVED" ? "default" : "secondary"}>
-                      {log.status === "RECEIVED" ? "Received" : "Not Received"}
+                      <Badge variant={log.status === "RECEIVED" ? "default" : "secondary"} className={log.status === "RECEIVED" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500" : ""}>
+                        {log.status === "RECEIVED" ? "Received" : "Not Received"}
                       </Badge>
-                      {log.status !== "RECEIVED" && (
-                        <Button variant="outline" size="sm" onClick={() => router.push(`/inventory/logs/receive?purchaseId=${params.id}&itemId=${log.id}`)}>
-                          Receive
-                        </Button>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>
