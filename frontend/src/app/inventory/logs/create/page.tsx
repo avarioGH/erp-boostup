@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
-import { TimberAPI, InventoryAPI, MasterDataAPI } from "@/lib/api"
+import { TimberAPI, InventoryAPI, MasterDataAPI, PartaiAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast"
 export default function MassCreateRawLogPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const searchParams = useSearchParams()
+  const partaiIdFromUrl = searchParams.get('partaiId') || ''
   
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [speciesList, setSpeciesList] = useState<any[]>([])
@@ -34,7 +36,7 @@ export default function MassCreateRawLogPage() {
   const [masterForm, setMasterForm] = useState({
     speciesId: "",
     species: "",
-    batch: "",
+    batch: partaiIdFromUrl,
     locationId: "",
     receivingDate: new Date().toISOString().substring(0,10),
   })
@@ -46,6 +48,60 @@ export default function MassCreateRawLogPage() {
 
   // Ref for table to handle keyboard navigation
   const tableRef = useRef<HTMLTableElement>(null);
+
+  useEffect(() => {
+    if (partaiIdFromUrl) {
+      PartaiAPI.getPartai(partaiIdFromUrl).then((partai: any) => {
+        if (partai && partai.purchases) {
+          // Find all purchaseLogItems that are NOT received yet
+          const pendingItems: any[] = [];
+          let foundSpeciesId = "";
+          let foundSpeciesName = "";
+          partai.purchases.forEach((p: any) => {
+             if (p.logItems) {
+               p.logItems.forEach((li: any) => {
+                 if (li.status !== 'RECEIVED' && p.status === 'CONFIRMED') {
+                    pendingItems.push({
+                       id: Date.now().toString() + Math.random(),
+                       purchaseLogItemId: li.id,
+                       logNumber: li.logNumber || "",
+                       length: li.length || "",
+                       d1: li.diameter1 || "",
+                       d2: li.diameter2 || "",
+                       d3: li.diameter3 || "",
+                       d4: li.diameter4 || "",
+                       gerowong: ""
+                    });
+                    if (!foundSpeciesName && li.species) {
+                        foundSpeciesName = li.species;
+                    }
+                 }
+               });
+             }
+          });
+          
+          if (pendingItems.length > 0) {
+             setRows(pendingItems);
+             
+             // Try to match species in speciesList if already loaded
+             let sId = "";
+             if (speciesList.length > 0 && foundSpeciesName) {
+                 const match = speciesList.find(s => s.code === foundSpeciesName || s.name === foundSpeciesName);
+                 if (match) sId = match.id;
+             }
+             
+             setMasterForm(prev => ({ 
+                 ...prev, 
+                 batch: partai.code || partai.id || partaiIdFromUrl,
+                 species: foundSpeciesName || prev.species,
+                 speciesId: sId || prev.speciesId
+             }));
+          }
+        }
+      }).catch(console.error);
+    }
+  }, [partaiIdFromUrl, speciesList]);
+
 
   useEffect(() => {
     Promise.all([
@@ -293,7 +349,7 @@ export default function MassCreateRawLogPage() {
                 return (
                   <tr key={row.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                     <td className="p-2 px-3 text-center text-muted-foreground font-medium">{idx + 1}</td>
-                    <td className="p-2 px-3"><Input className="h-8 rounded-sm bg-background" value={row.logNumber} onChange={e => handleRowChange(idx, 'logNumber', e.target.value)} onKeyDown={e => handleKeyDown(e, idx, 0)} /></td>
+                    <td className="p-2 px-3"><Input className="h-8 rounded-sm bg-background" value={row.logNumber} readOnly={!!row.purchaseLogItemId} onChange={e => handleRowChange(idx, 'logNumber', e.target.value)} onKeyDown={e => handleKeyDown(e, idx, 0)} /></td>
                     <td className="p-2 px-3"><Input type="number" step="0.1" className="h-8 rounded-sm bg-background" value={row.length} onChange={e => handleRowChange(idx, 'length', e.target.value)} onKeyDown={e => handleKeyDown(e, idx, 1)} /></td>
                     <td className="p-2 px-3"><Input type="number" className="h-8 rounded-sm bg-background" value={row.d1} onChange={e => handleRowChange(idx, 'd1', e.target.value)} onKeyDown={e => handleKeyDown(e, idx, 2)} /></td>
                     <td className="p-2 px-3"><Input type="number" className="h-8 rounded-sm bg-background" value={row.d2} onChange={e => handleRowChange(idx, 'd2', e.target.value)} onKeyDown={e => handleKeyDown(e, idx, 3)} /></td>
