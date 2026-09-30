@@ -35,8 +35,8 @@ export default function PurchaseListPage() {
 
   const getStatusBadge = (status: string) => {
     const s = (status || "").toUpperCase();
-    if (s === "CONFIRMED") return <span className="inline-flex items-center rounded-full bg-success/15 px-2 py-0.5 text-xs font-semibold text-success-foreground border border-success/30">CONFIRMED</span>;
-    if (s === "CANCELLED") return <span className="inline-flex items-center rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-semibold text-destructive border border-destructive/30">CANCELLED</span>;
+    if (s === "CONFIRMED") return <span className="inline-flex items-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">CONFIRMED</span>;
+    if (s === "CANCELLED") return <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2 py-0.5 text-xs font-bold text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800">CANCELLED</span>;
     return <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground border border-border">DRAFT</span>;
   };
 
@@ -107,7 +107,7 @@ export default function PurchaseListPage() {
                       {p.code || p.purchaseNumber}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {p.supplier?.name || p.supplierId}
+                      {p.source?.name || p.sourceId || '-'}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {p.warehouse?.name || p.warehouseId}
@@ -123,9 +123,7 @@ export default function PurchaseListPage() {
                             View
                           </Button>
                         </Link>
-                        {p.status === 'DRAFT' && (
-                          <>
-                            <Link href={`/inventory/purchase/${p.id}/edit`}>
+                        <Link href={`/inventory/purchase/${p.id}/edit`}>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Edit">
                                 <Edit className="w-4 h-4" />
                               </Button>
@@ -133,10 +131,8 @@ export default function PurchaseListPage() {
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete" onClick={() => handleDelete(p.id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
+                        </div>
+                      </TableCell>
                   </TableRow>
                 ))
               )}
