@@ -108,6 +108,7 @@ export class TrimmedLogService {
         data: {
           trimNumber,
           rawLogId: parent.id,
+partaiId: parent.partaiId,
           species: data.species || parent.species,
           length: reqLen,
           diameter1: Number(data.diameter1),

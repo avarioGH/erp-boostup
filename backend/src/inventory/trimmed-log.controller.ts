@@ -1,4 +1,4 @@
-﻿import { Controller, Get, Post, Body, Param, Query, Patch, UseGuards, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Patch, UseGuards, Delete } from '@nestjs/common';
 import { TrimmedLogService } from './trimmed-log.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
@@ -41,3 +41,4 @@ export class TrimmedLogController {
     return this.trimService.cancelTrimmedLog(id);
   }
 }
+

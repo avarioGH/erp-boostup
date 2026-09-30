@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.erp.boostup.id';
 
@@ -361,3 +361,4 @@ export const PartaiAPI: any = {
   updatePartai: async (id: string, data: any) => (await api.put('/inventory/timber-partai/' + id, data)).data,
   deletePartai: async (id: string) => (await api.delete('/inventory/timber-partai/' + id)).data,
 };
+

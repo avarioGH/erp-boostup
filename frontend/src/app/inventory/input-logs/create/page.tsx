@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI, InventoryAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
@@ -7,11 +7,13 @@ import { Input } from"@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
 import { Checkbox } from"@/components/ui/checkbox"
 import { Loader2, ArrowLeft, Save, Calculator } from"lucide-react"
-import { useRouter } from"next/navigation"
+import { useRouter, useSearchParams } from"next/navigation"
 import { useToast } from"@/hooks/use-toast"
 
 export default function CreateInputLogPage() {
  const router = useRouter()
+  const searchParams = useSearchParams()
+  const partaiId = searchParams.get('partaiId') || ''
  const { toast } = useToast()
  const [warehouses, setWarehouses] = useState<any[]>([])
  const [availableLogs, setAvailableLogs] = useState<any[]>([])
@@ -24,7 +26,7 @@ export default function CreateInputLogPage() {
  useEffect(() => {
     Promise.allSettled([
       InventoryAPI.getWarehouses(),
-      TimberAPI.getAvailableTrimmedLogs()
+      TimberAPI.getAvailableTrimmedLogs(partaiId ? { partaiId } : {})
     ]).then(([wRes, lRes]) => {
       if (wRes.status === 'fulfilled') {
         const wData = wRes.value;
@@ -145,6 +147,7 @@ export default function CreateInputLogPage() {
  </div>
  )
 }
+
 
 
 

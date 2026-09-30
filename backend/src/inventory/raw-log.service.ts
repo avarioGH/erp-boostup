@@ -118,6 +118,7 @@ export class RawLogService {
         const created = await this.prisma.rawLog.create({
       data: {
         logNumber: data.logNumber,
+partaiId: data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : null),
         sequence: data.sequence ? Number(data.sequence) : null,
         code: data.code,
         species: speciesStr,
@@ -213,6 +214,7 @@ export class RawLogService {
                   const log = await tx.rawLog.create({
             data: {
               logNumber: data.logNumber,
+partaiId: data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : null),
               species: data.species,
               speciesId: data.speciesId || undefined,
               sourceId: data.sourceId || undefined,
