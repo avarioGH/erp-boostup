@@ -121,7 +121,7 @@ export default function CreateExportPage() {
                   }} />
                 </div>
                 <div className="col-span-1">
-                  <Button type="button" variant="ghost" size="icon" className="text-red-500" onClick={() => setItems(items.filter((_, i) => i !== index))}>
+                  <Button type="button" variant="ghost" size="icon" className="text-red-500" onClick={() => setItems((Array.isArray(items) ? items : []).filter((_, i) => i !== index))}>
                     <X className="w-4 h-4" />
                   </Button>
                 </div>

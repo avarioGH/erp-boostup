@@ -17,7 +17,7 @@ export default function ProductionPage() {
     ProductionAPI.getProcesses().then((res: any) => setData(res.items || [])).catch(console.error).finally(() => setLoading(false))
   }, [])
 
-  const filtered = data.filter(item => 
+  const filtered = (Array.isArray(data) ? data : []).filter(item => 
     item.processNumber?.toLowerCase().includes(search.toLowerCase()) ||
     item.type?.toLowerCase().includes(search.toLowerCase())
   )

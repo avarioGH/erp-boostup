@@ -67,7 +67,7 @@ export default function CreateShipmentPage() {
   };
 
   // Get unique timber variants available in the selected warehouse
-  const availableProducts = Array.from(new Set(stocks.filter(s => form.warehouseId ? s.locationId === form.warehouseId : true).map(s => s.variantId)));
+  const availableProducts = Array.from(new Set((Array.isArray(stocks) ? stocks : []).filter(s => form.warehouseId ? s.locationId === form.warehouseId : true).map(s => s.variantId)));
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-12 px-4 md:px-6 box-border">
@@ -165,7 +165,7 @@ export default function CreateShipmentPage() {
                             size="icon"
                             className="absolute top-2 right-2 sm:static sm:h-10 sm:w-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                             onClick={() => {
-                              setForm({ ...form, items: form.items.filter((_, i) => i !== index) });
+                              setForm({ ...form, items: form.(Array.isArray(items) ? items : []).filter((_, i) => i !== index) });
                             }}
                           >
                             <Trash2 className="w-4 h-4" />

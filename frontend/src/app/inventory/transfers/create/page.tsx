@@ -97,7 +97,7 @@ export default function CreateTransferPage() {
     return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
   }
 
-  const availableVariants = stocks.filter(s => s.currentPcs > 0)
+  const availableVariants = (Array.isArray(stocks) ? stocks : []).filter(s => s.currentPcs > 0)
 
   return (
     <div className="space-y-4 md:space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-12 px-4 md:px-6 box-border">
@@ -189,7 +189,7 @@ export default function CreateTransferPage() {
                             className="absolute top-2 right-2 sm:static sm:h-10 sm:w-10 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30"
                             onClick={() => {
                               if (items.length > 1) {
-                                setItems(items.filter((_, i) => i !== index))
+                                setItems((Array.isArray(items) ? items : []).filter((_, i) => i !== index))
                               } else {
                                 setItems([{ timberVariantId: "", quantityPcs: "" }])
                               }

@@ -26,7 +26,7 @@ export default function PurchaseListPage() {
     if (!confirm("Are you sure you want to delete this purchase?")) return;
     try {
       await PurchaseAPI.deletePurchase(id);
-      setPurchases(purchases.filter((p) => p.id !== id));
+      setPurchases((Array.isArray(purchases) ? purchases : []).filter((p) => p.id !== id));
     } catch (err: any) {
       console.error(err);
       alert(err?.response?.data?.message || "Failed to delete purchase");

@@ -35,7 +35,7 @@ export default function InputLogsPage() {
    fetchLogs()
  }, [])
 
- const filtered = data.filter(item => 
+ const filtered = (Array.isArray(data) ? data : []).filter(item => 
  item.inputNumber?.toLowerCase().includes(search.toLowerCase()) ||
  item.batch?.toLowerCase().includes(search.toLowerCase())
  )

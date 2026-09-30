@@ -17,7 +17,7 @@ export default function SawnTimberOutputPage() {
     TimberAPI.getSawnOutputs().then((res: any) => setData(res.items || [])).catch(console.error).finally(() => setLoading(false))
   }, [])
 
-  const filtered = data.filter(item => 
+  const filtered = (Array.isArray(data) ? data : []).filter(item => 
     item.bundleNumber?.toLowerCase().includes(search.toLowerCase()) ||
     item.batch?.toLowerCase().includes(search.toLowerCase()) ||
     item.inputLog?.inputNumber?.toLowerCase().includes(search.toLowerCase())

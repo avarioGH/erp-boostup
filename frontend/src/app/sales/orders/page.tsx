@@ -60,7 +60,7 @@ export default function SalesOrdersPage() {
  }
  }
 
- const filtered = data.filter(item => 
+ const filtered = (Array.isArray(data) ? data : []).filter(item => 
  item.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
  item.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
  )

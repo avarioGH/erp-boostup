@@ -17,7 +17,7 @@ export default function TimberStockPage() {
     TimberAPI.getTimberStock().then((res: any) => setData(res.items || [])).catch(console.error).finally(() => setLoading(false))
   }, [])
 
-  const filtered = data.filter(item => 
+  const filtered = (Array.isArray(data) ? data : []).filter(item => 
     item.timberVariant?.sku?.toLowerCase().includes(search.toLowerCase()) ||
     item.timberVariant?.species?.toLowerCase().includes(search.toLowerCase()) ||
     item.location?.name?.toLowerCase().includes(search.toLowerCase())

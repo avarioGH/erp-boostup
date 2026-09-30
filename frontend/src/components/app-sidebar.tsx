@@ -288,7 +288,7 @@ export function AppSidebar() {
  <SidebarGroupLabel className="text-[11px] font-[650] tracking-widest text-sidebar-foreground/50 uppercase mb-4 px-2 mt-2">Core Modules</SidebarGroupLabel>
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
- {items.filter(item => {
+ {(Array.isArray(items) ? items : []).filter(item => {
  const userName = user?.name?.toLowerCase() || "";
  const isKayu = userName.includes('kayu');
  const isIkan = userName.includes('ikan') || (!isKayu); // Default to Ikan logic if not explicitly Kayu
@@ -368,7 +368,7 @@ export function AppSidebar() {
  <SidebarGroupLabel className="text-[11px] font-[650] tracking-widest text-sidebar-foreground/50 uppercase mb-4 px-2 mt-2">Settings</SidebarGroupLabel>
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
- {settings.filter(item => {
+ {(Array.isArray(settings) ? settings : []).filter(item => {
  const userName = user?.name?.toLowerCase() || "";
  const isKayu = userName.includes('kayu');
  const isIkan = userName.includes('ikan') || (!isKayu);

@@ -31,7 +31,7 @@ export default function BOMPage() {
  }
  }
 
- const filtered = data.filter(item =>
+ const filtered = (Array.isArray(data) ? data : []).filter(item =>
  item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
  item.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
  item.product?.name?.toLowerCase().includes(searchTerm.toLowerCase())

@@ -98,7 +98,7 @@ export default function PosTransaction() {
  }).format(value)
  }
 
- const filteredProducts = products.filter(p => 
+ const filteredProducts = (Array.isArray(products) ? products : []).filter(p => 
  (activeCategory ==="Semua" || p.category === activeCategory) &&
  p.name.toLowerCase().includes(searchQuery.toLowerCase())
  )

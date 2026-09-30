@@ -34,7 +34,7 @@ export default function QualityPage() {
  }
  }
 
- const filtered = data.filter(item =>
+ const filtered = (Array.isArray(data) ? data : []).filter(item =>
  item.reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
  item.product?.name?.toLowerCase().includes(searchTerm.toLowerCase())
  )

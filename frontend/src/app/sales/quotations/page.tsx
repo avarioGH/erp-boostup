@@ -70,7 +70,7 @@ export default function QuotationsPage() {
  }
  }
 
- const filtered = data.filter(item => 
+ const filtered = (Array.isArray(data) ? data : []).filter(item => 
  item.quotation_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
  item.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
  )

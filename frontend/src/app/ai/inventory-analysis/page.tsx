@@ -47,7 +47,7 @@ export default function AIInventoryAnalysisPage() {
  
  setTimeout(() => {
  // 1. Low Stock Alert (Reorder Recommendations)
- const low = stocks.filter(s => s.available_stock > 0 && s.available_stock <= 5).map(s => ({
+ const low = (Array.isArray(stocks) ? stocks : []).filter(s => s.available_stock > 0 && s.available_stock <= 5).map(s => ({
  ...s,
  recommendation: `Restock segera minimal ${s.available_stock * 3} unit berdasarkan rata-rata penjualan bulanan.`
  }))
@@ -63,7 +63,7 @@ export default function AIInventoryAnalysisPage() {
  }
  })
  
- const dead = stocks.filter(s => s.available_stock > 0 && !movedProductIds.has(s.product_id)).map(s => ({
+ const dead = (Array.isArray(stocks) ? stocks : []).filter(s => s.available_stock > 0 && !movedProductIds.has(s.product_id)).map(s => ({
  ...s,
  recommendation: `Tidak ada pergerakan dalam 30 hari. Pertimbangkan promo bundling diskon 20%.`
  }))
@@ -79,7 +79,7 @@ export default function AIInventoryAnalysisPage() {
  })
  
  const fastIds = Object.keys(moveCount).sort((a,b) => moveCount[b] - moveCount[a]).slice(0, 3)
- const fast = stocks.filter(s => fastIds.includes(s.product_id)).map(s => ({
+ const fast = (Array.isArray(stocks) ? stocks : []).filter(s => fastIds.includes(s.product_id)).map(s => ({
  ...s,
  velocity: moveCount[s.product_id],
  recommendation: `Produk tren tinggi. Tingkatkan margin sebesar 2-5% bulan depan.`

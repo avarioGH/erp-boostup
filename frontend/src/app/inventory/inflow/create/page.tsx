@@ -108,7 +108,7 @@ export default function CreateInflowPage() {
     if (!form.warehouse_id) return toast({ title: "Pilih Gudang Penerima", variant: "destructive" })
     
     // Validasi item kosong
-    const validItems = items.filter(i => i.product_id && i.qty > 0)
+    const validItems = (Array.isArray(items) ? items : []).filter(i => i.product_id && i.qty > 0)
     if (validItems.length === 0) return toast({ title: "Pilih minimal 1 ikan dengan jumlah valid", variant: "destructive" })
     
     setLoading(true)
@@ -192,7 +192,7 @@ export default function CreateInflowPage() {
                   }} />
                 </div>
                 <div className="pb-1">
-                  <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900" onClick={() => setItems(items.filter((_, i) => i !== index))}>
+                  <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900" onClick={() => setItems((Array.isArray(items) ? items : []).filter((_, i) => i !== index))}>
                     <X className="w-4 h-4" />
                   </Button>
                 </div>

@@ -107,7 +107,7 @@ export default function ChamberInPage() {
  <Select value={item.timberVariantId} onValueChange={(v) => setItem({...item, timberVariantId: v || ''})}>
  <SelectTrigger><SelectValue placeholder="Select Variant from Source Stock" /></SelectTrigger>
  <SelectContent>
- {stocks.filter(s => s.currentPcs > 0).length === 0 ? (
+ {(Array.isArray(stocks) ? stocks : []).filter(s => s.currentPcs > 0).length === 0 ? (
    <div className="p-4 text-center text-sm text-muted-foreground max-w-[300px] whitespace-normal">
      Stok kosong di lokasi ini. <br/>
      Data Variant hanya muncul jika ada fisik stoknya. <br/>
@@ -116,7 +116,7 @@ export default function ChamberInPage() {
      </a>
    </div>
  ) : (
-   stocks.filter(s => s.currentPcs > 0).map(s => (
+   (Array.isArray(stocks) ? stocks : []).filter(s => s.currentPcs > 0).map(s => (
      <SelectItem key={s.timberVariantId} value={s.timberVariantId}>
        {s.timberVariant?.name || s.timberVariant?.sku} (Avail: {s.currentPcs} PCS)
      </SelectItem>

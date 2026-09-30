@@ -86,7 +86,7 @@ export default function LocationPage() {
     setModalOpen(true)
   }
 
-  const filteredData = data.filter(item => 
+  const filteredData = (Array.isArray(data) ? data : []).filter(item => 
     Object.values(item).some(val => 
       String(val).toLowerCase().includes(search.toLowerCase())
     )

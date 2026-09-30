@@ -31,7 +31,7 @@ export default function AuditLogPage() {
  }
  }
 
- const filteredLogs = logs.filter(log => 
+ const filteredLogs = (Array.isArray(logs) ? logs : []).filter(log => 
  log.action?.toLowerCase().includes(search.toLowerCase()) || 
  log.entity?.toLowerCase().includes(search.toLowerCase()) ||
  log.ip_address?.toLowerCase().includes(search.toLowerCase())

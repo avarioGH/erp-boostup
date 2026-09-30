@@ -18,7 +18,7 @@ export default function TransfersPage() {
     TimberAPI.getTransfers().then((res: any) => setData(res.items || [])).catch(console.error).finally(() => setLoading(false))
   }, [])
 
-  const filtered = data.filter(item => 
+  const filtered = (Array.isArray(data) ? data : []).filter(item => 
     item.transferNumber?.toLowerCase().includes(search.toLowerCase()) ||
     item.fromLocation?.name?.toLowerCase().includes(search.toLowerCase()) ||
     item.toLocation?.name?.toLowerCase().includes(search.toLowerCase())

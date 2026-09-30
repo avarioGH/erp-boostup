@@ -45,7 +45,7 @@ export default function CreateInputLogPage() {
  setSelectedIds(prev => checked ? [...prev, id] : prev.filter(x => x !== id))
  }
 
- const selectedLogs = availableLogs.filter(l => selectedIds.includes(l.id))
+ const selectedLogs = (Array.isArray(availableLogs) ? availableLogs : []).filter(l => selectedIds.includes(l.id))
  const totalLength = selectedLogs.reduce((sum, l) => sum + (l.length || 0), 0)
  const totalGross = selectedLogs.reduce((sum, l) => sum + (l.grossVolume || 0), 0)
  const totalNet = selectedLogs.reduce((sum, l) => sum + (l.netVolume || 0), 0)

@@ -102,7 +102,7 @@ export default function ReservationReconciliationPage() {
   const totalPhysical = data.reduce((sum, r) => sum + r.physicalPcs, 0);
   const totalReserved = data.reduce((sum, r) => sum + r.actualReservedPcs, 0);
   const totalAvailable = data.reduce((sum, r) => sum + r.availablePcs, 0);
-  const totalHealthy = data.filter(r => r.statusFlags.includes('HEALTHY')).length;
+  const totalHealthy = (Array.isArray(data) ? data : []).filter(r => r.statusFlags.includes('HEALTHY')).length;
   const anomaliesCount = data.length - totalHealthy;
   
   return (

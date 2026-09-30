@@ -21,7 +21,7 @@ export default function StockPage() {
  ]).finally(() => setLoading(false))
  }, [])
 
- const filtered = data.filter(item => 
+ const filtered = (Array.isArray(data) ? data : []).filter(item => 
  (selectedWarehouse ==="all" || item.warehouse_id === selectedWarehouse) &&
  (item.product?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
  item.product?.sku?.toLowerCase().includes(searchTerm.toLowerCase()))

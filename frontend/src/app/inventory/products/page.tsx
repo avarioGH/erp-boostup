@@ -122,7 +122,7 @@ export default function ProductInventory() {
     if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
     try {
       await InventoryAPI.deleteProduct(id);
-      setProducts(products.filter((p: any) => p.id !== id));
+      setProducts((Array.isArray(products) ? products : []).filter((p: any) => p.id !== id));
       alert('Produk berhasil dihapus');
     } catch (error: any) {
       console.error('Gagal menghapus produk:', error);
@@ -249,7 +249,7 @@ export default function ProductInventory() {
  }).format(value)
  }
 
- const filteredProducts = products.filter(p => 
+ const filteredProducts = (Array.isArray(products) ? products : []).filter(p => 
  p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
  p.sku.toLowerCase().includes(searchQuery.toLowerCase())
  )

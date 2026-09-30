@@ -39,7 +39,7 @@ export default function TrimmingListPage() {
    }
  }
 
- const filtered = data.filter(item =>
+ const filtered = (Array.isArray(data) ? data : []).filter(item =>
  item.trimNumber?.toLowerCase().includes(search.toLowerCase()) ||
  item.rawLog?.logNumber?.toLowerCase().includes(search.toLowerCase())
  )

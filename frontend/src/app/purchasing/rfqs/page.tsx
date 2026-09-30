@@ -43,7 +43,7 @@ export default function RFQPage() {
  } finally { setActionLoading(false) }
  }
 
- const filtered = data.filter(item =>
+ const filtered = (Array.isArray(data) ? data : []).filter(item =>
  item.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
  item.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase())
  )

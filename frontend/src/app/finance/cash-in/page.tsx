@@ -24,7 +24,7 @@ export default function FinanceCashIn() {
  async function loadCategories() {
  try {
  const data = await FinanceAPI.getCategories()
- setCategories(data.filter((c: any) => c.type ==="INCOME"))
+ setCategories((Array.isArray(data) ? data : []).filter((c: any) => c.type ==="INCOME"))
  } catch (err) {
  console.error("Failed to load categories:", err)
  }

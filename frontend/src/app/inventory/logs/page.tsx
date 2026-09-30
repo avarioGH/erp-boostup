@@ -53,7 +53,7 @@ export default function RawLogsPage() {
     }
   }
 
- const filtered = data.filter(item => {
+ const filtered = (Array.isArray(data) ? data : []).filter(item => {
  const matchSearch = item.logNumber?.toLowerCase().includes(search.toLowerCase()) || 
  item.barcode?.toLowerCase().includes(search.toLowerCase()) ||
  item.batch?.toLowerCase().includes(search.toLowerCase());

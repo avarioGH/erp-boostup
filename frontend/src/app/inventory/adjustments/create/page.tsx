@@ -36,7 +36,7 @@ export default function CreateAdjustmentPage() {
   }
 
   const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index))
+    setItems((Array.isArray(items) ? items : []).filter((_, i) => i !== index))
   }
 
   const updateItem = (index: number, field: string, value: any) => {

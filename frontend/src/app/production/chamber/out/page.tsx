@@ -107,7 +107,7 @@ export default function ChamberOutPage() {
  <Select value={item.timberVariantId} onValueChange={(v) => setItem({...item, timberVariantId: v || ''})}>
  <SelectTrigger><SelectValue placeholder="Select Variant in Chamber" /></SelectTrigger>
  <SelectContent>
- {stocks.filter(s => s.currentPcs > 0).map(s => (
+ {(Array.isArray(stocks) ? stocks : []).filter(s => s.currentPcs > 0).map(s => (
  <SelectItem key={s.timberVariantId} value={s.timberVariantId}>
  {s.timberVariant?.name} (Avail: {s.currentPcs} PCS)
  </SelectItem>

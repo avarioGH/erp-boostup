@@ -72,7 +72,7 @@ export default function MassCreateRawLogPage() {
 
   const removeRow = (index: number) => {
     if (rows.length === 1) return;
-    const newRows = rows.filter((_, i) => i !== index)
+    const newRows = (Array.isArray(rows) ? rows : []).filter((_, i) => i !== index)
     setRows(newRows)
   }
 
@@ -147,7 +147,7 @@ export default function MassCreateRawLogPage() {
     }
 
     // Filter out completely empty rows
-    const validRows = rows.filter(r => r.logNumber && r.length && (r.d1 || r.avgDia))
+    const validRows = (Array.isArray(rows) ? rows : []).filter(r => r.logNumber && r.length && (r.d1 || r.avgDia))
     
     if (validRows.length === 0) {
       return toast({ title: "Validasi Gagal", description: "Minimal isi 1 baris log dengan lengkap (Log No, Length, D1 atau ÃƒÆ’Ã‹Å“ Avg)", variant: "destructive" })
@@ -330,4 +330,4 @@ export default function MassCreateRawLogPage() {
       </div>
     </div>
   )
-}
+}

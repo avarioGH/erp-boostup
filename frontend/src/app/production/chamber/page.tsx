@@ -44,7 +44,7 @@ export default function ChamberOperationsPage() {
 
  // 3. Calculate Today's IN/OUT
  const today = new Date().toISOString().split('T')[0];
- const todayTransfers = items.filter((t: any) => t.transferDate.startsWith(today) && t.status === 'POSTED');
+ const todayTransfers = (Array.isArray(items) ? items : []).filter((t: any) => t.transferDate.startsWith(today) && t.status === 'POSTED');
  
  let inPcs = 0, inM3 = 0, outPcs = 0, outM3 = 0;
  todayTransfers.forEach((t: any) => {

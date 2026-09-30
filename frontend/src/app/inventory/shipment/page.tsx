@@ -25,7 +25,7 @@ export default function ShipmentListPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = shipments.filter(s => 
+  const filtered = (Array.isArray(shipments) ? shipments : []).filter(s => 
     s.code?.toLowerCase().includes(search.toLowerCase()) ||
     s.warehouse?.name?.toLowerCase().includes(search.toLowerCase()) ||
     s.vehicle?.name?.toLowerCase().includes(search.toLowerCase())

@@ -51,7 +51,7 @@ function GoodsReceiptContent() {
  }
  }
 
- const filtered = data.filter(item =>
+ const filtered = (Array.isArray(data) ? data : []).filter(item =>
  item.receipt_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
  item.purchase_order?.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
  item.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase())
