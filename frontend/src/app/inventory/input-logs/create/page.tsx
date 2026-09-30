@@ -109,7 +109,7 @@ export default function CreateInputLogPage() {
  </tr>
  </thead>
  <tbody>
- {availableLogs.length === 0 ? <tr><td colSpan={5} className="p-4 md:p-8 text-center text-muted-foreground">No available trimmed logs.</td></tr> :
+ {availableLogs.length === 0 ? <tr><td colSpan={8} className="p-4 md:p-8 text-center text-muted-foreground">No available trimmed logs.</td></tr> :
  availableLogs.map(log => (
  <tr key={log.id} className="border-b hover:bg-muted/20">
  <td className="p-3 text-center"><Checkbox checked={selectedIds.includes(log.id)} onCheckedChange={(checked) => handleSelect(log.id, !!checked)} /></td>

@@ -128,29 +128,27 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
  <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none">
  <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/50 border-b">
- <tr>
- <th className="p-3 px-6 text-left">Trim Code</th>
- <th className="p-3 px-6 text-left">Parent Raw Log</th>
- <th className="p-3 px-6 text-right">Length</th>
- <th className="p-3 px-6 text-right">Avg ?</th>
- <th className="p-3 px-6 text-right">Gross M?</th>
- <th className="p-3 px-6 text-right">Net M?</th>
- </tr>
- </thead>
+   <tr>
+   <th className="p-3 px-6 text-left">CODE</th>
+   <th className="p-3 px-6 text-left">JENIS</th>
+   <th className="p-3 px-6 text-right">PJG (m)</th>
+   <th className="p-3 px-6 text-right">PKL (cm)</th>
+   <th className="p-3 px-6 text-right">UJUNG (cm)</th>
+   <th className="p-3 px-6 text-right">RT (cm)</th>
+   <th className="p-3 px-6 text-right">M&sup3;</th>
+   </tr>
+   </thead>
  <tbody>
  {data.items?.map((item: any) => (
  <tr key={item.id} className="border-b hover:bg-muted/60 transition-colors">
- <td className="p-3 px-6 font-medium text-primary">
- <Link href={`/inventory/trimming/${item.trimmedLogId}`} className="hover:underline">{item.trimmedLog?.trimNumber}</Link>
- </td>
- <td className="p-3 px-6 text-primary">
- <Link href={`/inventory/logs/${item.trimmedLog?.rawLogId}`} className="hover:underline">{item.trimmedLog?.rawLog?.logNumber}</Link>
- </td>
- <td className="p-3 px-6 text-right">{item.trimmedLog?.length} m</td>
- <td className="p-3 px-6 text-right">{item.trimmedLog?.averageDiameter} cm</td>
- <td className="p-3 px-6 text-right">{item.trimmedLog?.grossVolume}</td>
- <td className="p-3 px-6 text-right font-bold">{item.trimmedLog?.netVolume}</td>
- </tr>
+   <td className="p-3 px-6 font-medium">{item.trimmedLog?.trimNumber}</td>
+   <td className="p-3 px-6 text-muted-foreground">{item.trimmedLog?.species || item.trimmedLog?.rawLog?.species || '-'}</td>
+   <td className="p-3 px-6 text-right">{item.trimmedLog?.length}</td>
+   <td className="p-3 px-6 text-right">{item.trimmedLog?.diameter1 || item.trimmedLog?.diameter2 || 0}</td>
+   <td className="p-3 px-6 text-right">{item.trimmedLog?.diameter3 || item.trimmedLog?.diameter4 || 0}</td>
+   <td className="p-3 px-6 text-right">{Number(item.trimmedLog?.averageDiameter || 0).toFixed(1)}</td>
+   <td className="p-3 px-6 text-right font-bold text-blue-600 dark:text-blue-400">{Number(item.trimmedLog?.netVolume || 0).toFixed(4)}</td>
+   </tr>
  ))}
  </tbody>
  </table>
