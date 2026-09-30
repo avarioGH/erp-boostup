@@ -414,8 +414,8 @@ const [partai, setPartai] = useState<any>(null);
                     <TableRow key={r.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => router.push(`/inventory/logs/${r.id}`)}>
                       <TableCell className="font-medium">{r.logNumber}</TableCell>
                       <TableCell>{r.species}</TableCell>
-                      <TableCell className="text-right">{r.purchaseLength}</TableCell>
-                      <TableCell className="text-right font-bold text-foreground/90">{r.purchaseVolume}</TableCell>
+                      <TableCell className="text-right">{r.originalLength}</TableCell>
+                      <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">{Number(r.netVolume || 0).toFixed(4)}</TableCell>
                       <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">
