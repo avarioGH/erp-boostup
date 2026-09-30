@@ -1,14 +1,80 @@
-"use client"
-import { useState, useEffect } from "react"
+﻿"use client"
+import { useState, useEffect, useRef } from "react"
 import { InventoryAPI } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, X, ArrowLeft } from "lucide-react"
+import { Plus, X, ArrowLeft, Search } from "lucide-react"
+
+function SearchableSelect({ options, value, onChange, placeholder, disabled = false }: any) {
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: any) {
+      if (ref.current && !ref.current.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const selectedOption = options.find((o: any) => o.id === value)
+  const displayValue = open ? search : (selectedOption ? selectedOption.name : "")
+
+  const filteredOptions = options.filter((o: any) => 
+    (o.name || '').toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <div className="relative" ref={ref}>
+      <div className="relative">
+        <Input 
+          disabled={disabled}
+          value={displayValue}
+          onChange={e => { setSearch(e.target.value); if (!open) setOpen(true); }}
+          onFocus={() => { setOpen(true); setSearch(""); }}
+          placeholder={selectedOption ? selectedOption.name : placeholder}
+          className="w-full pr-8 cursor-pointer bg-accent/30"
+          readOnly={!open}
+        />
+        <Search className="w-4 h-4 absolute right-3 top-2.5 text-muted-foreground pointer-events-none" />
+      </div>
+      
+      {open && (
+        <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground border shadow-md rounded-md max-h-60 overflow-y-auto">
+          <div className="p-1 sticky top-0 bg-popover/90 backdrop-blur-sm border-b">
+             <Input 
+               autoFocus
+               value={search}
+               onChange={e => setSearch(e.target.value)}
+               placeholder="Ketik untuk mencari..."
+               className="h-8 text-sm"
+             />
+          </div>
+          {filteredOptions.length === 0 ? (
+            <div className="p-3 text-sm text-center text-muted-foreground">Tidak ditemukan.</div>
+          ) : (
+            filteredOptions.map((o: any) => (
+              <div 
+                key={o.id} 
+                className="px-3 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                onClick={() => { onChange(o.id); setOpen(false); setSearch(""); }}
+              >
+                {o.name} {o.weight ? `(${o.weight}g)` : ''}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function CreateInflowPage() {
   const router = useRouter()
@@ -40,18 +106,21 @@ export default function CreateInflowPage() {
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     if (!form.warehouse_id) return toast({ title: "Pilih Gudang Penerima", variant: "destructive" })
-    if (items.length === 0) return toast({ title: "Tambah minimal 1 barang", variant: "destructive" })
+    
+    // Validasi item kosong
+    const validItems = items.filter(i => i.product_id && i.qty > 0)
+    if (validItems.length === 0) return toast({ title: "Pilih minimal 1 ikan dengan jumlah valid", variant: "destructive" })
     
     setLoading(true)
     try {
       await InventoryAPI.createStockInTally({
         ...form,
-        items
+        items: validItems
       })
       toast({ title: "Berhasil mencatat ikan masuk" })
       router.push("/inventory/inflow")
-    } catch(err) {
-      toast({ title: "Gagal mencatat", variant: "destructive" })
+    } catch(err: any) {
+      toast({ title: "Gagal mencatat", description: err?.response?.data?.message || err.message, variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -79,12 +148,12 @@ export default function CreateInflowPage() {
             </div>
             <div className="space-y-2">
               <Label>Gudang Tujuan</Label>
-              <Select value={form.warehouse_id} onValueChange={(v: any) => setForm({...form, warehouse_id: v})}>
-                <SelectTrigger><SelectValue placeholder="Pilih Gudang" /></SelectTrigger>
-                <SelectContent>
-                  {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SearchableSelect 
+                options={warehouses} 
+                value={form.warehouse_id} 
+                onChange={(v: any) => setForm({...form, warehouse_id: v})} 
+                placeholder="Pilih Gudang..." 
+              />
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Keterangan Tambahan</Label>
@@ -100,21 +169,21 @@ export default function CreateInflowPage() {
               <Plus className="w-4 h-4 mr-2" /> Tambah Baris
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 mt-2">
             {items.map((item, index) => (
-              <div key={index} className="flex gap-4 items-end border-b pb-4">
+              <div key={index} className="flex gap-4 items-end border-b border-border/40 pb-4">
                 <div className="flex-1 space-y-2">
                   <Label className="text-xs">Jenis Ikan</Label>
-                  <Select value={item.product_id} onValueChange={(v: any) => {
-                    const newItems = [...items]; 
-                    newItems[index].product_id = v;
-                    setItems(newItems);
-                  }}>
-                    <SelectTrigger><SelectValue placeholder="Pilih Ikan..." /></SelectTrigger>
-                    <SelectContent>
-                      {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name} {p.weight ? `(${p.weight}g)` : ''}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect 
+                    options={products} 
+                    value={item.product_id} 
+                    onChange={(v: any) => {
+                      const newItems = [...items]; 
+                      newItems[index].product_id = v;
+                      setItems(newItems);
+                    }} 
+                    placeholder="Pilih Ikan..." 
+                  />
                 </div>
                 <div className="w-32 space-y-2">
                   <Label className="text-xs">Jumlah</Label>
@@ -123,7 +192,7 @@ export default function CreateInflowPage() {
                   }} />
                 </div>
                 <div className="pb-1">
-                  <Button type="button" variant="ghost" size="icon" className="text-red-500" onClick={() => setItems(items.filter((_, i) => i !== index))}>
+                  <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:bg-red-100 hover:text-red-700 dark:hover:bg-red-900" onClick={() => setItems(items.filter((_, i) => i !== index))}>
                     <X className="w-4 h-4" />
                   </Button>
                 </div>
@@ -133,10 +202,11 @@ export default function CreateInflowPage() {
           </CardContent>
         </Card>
 
-        <Button type="submit" disabled={loading} className="w-full">
+        <Button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
           {loading ? "Menyimpan..." : "Simpan Data Ikan Masuk"}
         </Button>
       </form>
     </div>
   )
 }
+
