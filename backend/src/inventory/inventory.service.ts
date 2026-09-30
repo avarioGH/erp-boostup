@@ -1,4 +1,4 @@
-import { EventEmitter2 } from '@nestjs/event-emitter';
+﻿import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InventoryValuationEvent } from '../events/accounting.events';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -203,7 +203,8 @@ export class InventoryService {
         description: data.description,
         purchase_price: !isNaN(Number(data.purchasePrice)) ? Number(data.purchasePrice) : 0,
         selling_price: !isNaN(Number(data.sellingPrice)) ? Number(data.sellingPrice) : 0,
-        unit_id: unit.id,
+          weight: data.weight && data.weight !== 'undefined' && data.weight !== 'null' && data.weight !== '' ? Number(data.weight) : undefined,
+          unit_id: unit.id,
         category_id: data.categoryId && data.categoryId !== 'undefined' && data.categoryId !== 'null' && data.categoryId !== '' ? data.categoryId : undefined
       }
     });
@@ -845,5 +846,6 @@ export class InventoryService {
     }
   }
 }
+
 
 

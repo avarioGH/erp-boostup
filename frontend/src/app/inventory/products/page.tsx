@@ -279,7 +279,7 @@ export default function ProductInventory() {
     <div className="relative">
       <Input 
         type="number"
-        placeholder="500" 
+        placeholder="Misal: 500 (dalam gram)" 
         value={formData.weight} 
         onChange={(e) => setFormData({...formData, weight: e.target.value})} 
         className="bg-accent/50 focus:bg-background pr-8"
@@ -489,7 +489,7 @@ export default function ProductInventory() {
  <TableRow className="border-border/60">
  {visibleColumns.sku && <TableHead className="w-[100px] font-semibold">SKU</TableHead>}
  <TableHead className="font-semibold">Nama Produk</TableHead>
-                  {visibleColumns.weight && <TableHead className="font-semibold">Berat (gr)</TableHead>}
+                  {visibleColumns.weight && <TableHead className="font-semibold">Berat</TableHead>}
  {visibleColumns.category && <TableHead className="font-semibold">Kategori</TableHead>}
  {visibleColumns.price && <TableHead className="text-right font-semibold">Harga Jual</TableHead>}
  {warehouses.map((wh) => (
@@ -517,7 +517,7 @@ export default function ProductInventory() {
  <TableRow key={p.id} className="border-border/60 hover:bg-muted/30 dark:hover:bg-slate-800/50 transition-colors group">
  {visibleColumns.sku && <TableCell className="font-mono text-xs text-muted-foreground">{p.sku}</TableCell>}
  <TableCell className="font-medium text-foreground dark:text-white">{p.name}</TableCell>
-                    {visibleColumns.weight && <TableCell className="font-medium">{p.weight} gr</TableCell>}
+                    {visibleColumns.weight && <TableCell className="font-medium">{p.weight ? (p.weight >= 1000 ? (p.weight / 1000) + ' kg' : p.weight + ' gr') : '-'}</TableCell>}
  {visibleColumns.category && (
  <TableCell>
  <Badge variant="secondary" className="bg-muted/50 text-foreground font-medium rounded-md">
@@ -560,6 +560,7 @@ export default function ProductInventory() {
  </div>
  )
 }
+
 
 
 
