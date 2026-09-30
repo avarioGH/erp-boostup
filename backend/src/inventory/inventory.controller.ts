@@ -1,6 +1,6 @@
-import { PermissionsGuard } from '../auth/permissions.guard';
+﻿import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
-﻿import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards, Request, UseInterceptors, UploadedFiles } from '@nestjs/common';
+ï»¿import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards, Request, UseInterceptors, UploadedFiles } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -70,7 +70,8 @@ export class InventoryController {
     } catch (error: any) {
       console.error('Error creating product:', error);
       const { HttpException, HttpStatus } = require('@nestjs/common');
-      throw new HttpException(error.message || 'Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+      if (error.code === 'P2002') { throw new HttpException('SKU atau Barcode sudah terpakai oleh produk lain', HttpStatus.BAD_REQUEST); }
+        throw new HttpException(error.message || 'Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -194,5 +195,6 @@ export class InventoryController {
     });
   }
 }
+
 
 
