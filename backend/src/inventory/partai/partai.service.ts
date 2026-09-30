@@ -42,7 +42,16 @@ export class PartaiService {
         },
         rawLogs: true,
         trimmedLogs: true,
-        inputLogs: true,
+        inputLogs: {
+          include: {
+            items: {
+              include: { trimmedLog: true, rawLog: true }
+            },
+            sawnOutputs: {
+              include: { items: true }
+            }
+          }
+        },
         sawnOutputs: {
           include: { items: true }
         }

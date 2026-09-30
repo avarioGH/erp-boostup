@@ -224,6 +224,16 @@ export class InputLogService {
     });
   }
 
+  async updateStatus(id: string, status: string) {
+    if (!['AVAILABLE', 'IN_PROCESS', 'DONE'].includes(status)) {
+      throw new BadRequestException('Invalid status');
+    }
+    return this.prisma.inputLog.update({
+      where: { id },
+      data: { status }
+    });
+  }
+
   async deleteInputLog(id: string) {
 
     const inputLog = await this.prisma.inputLog.findUnique({ where: { id }, include: { items: true } });

@@ -7,6 +7,12 @@ import { Permissions } from '../auth/permissions.decorator';
 @Controller('inventory/input-logs')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class InputLogController {
+  @Post(':id/status')
+  @Permissions('inventory.create')
+  async updateStatus(@Param('id') id: string, @Body('status') status: string) {
+    return this.inputLogService.updateStatus(id, status);
+  }
+
   @Delete(':id')
   async delete(@Param('id') id: string) { return this.inputLogService.deleteInputLog(id); }
   constructor(private readonly inputLogService: InputLogService) {}

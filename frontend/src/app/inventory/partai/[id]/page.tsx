@@ -2,13 +2,14 @@
 import React, { useEffect, useState } from "react";
 import { api, PartaiAPI, TimberAPI, PurchaseAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 
@@ -521,52 +522,68 @@ const [partai, setPartai] = useState<any>(null);
         {/* 4. INPUT LOGS */}
         <TabsContent value="input">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
               <div>
-                <CardTitle>Input Logs (Sawmill WIP)</CardTitle>
-                <CardDescription>Log yang siap untuk dimasukkan ke mesin gergaji (produksi).</CardDescription>
+                <CardTitle>Production Jobs (Input WIP)</CardTitle>
+                <CardDescription>Pekerjaan gergajian berjalan yang diambil dari DUKB/Trimmed Log.</CardDescription>
               </div>
-              <Button onClick={() => router.push(`/inventory/input-logs/create?partaiId=${id}`)}>
-                <Plus className="w-4 h-4 mr-2" /> Add Input Log
+              <Button onClick={() => router.push(`/inventory/input-logs/create?partaiId=${id}`)} className="bg-primary">
+                <Plus className="w-4 h-4 mr-2" /> Buat WIP Baru
               </Button>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nomor Input</TableHead>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Spesies</TableHead>
-                    <TableHead className="text-right">Total Pcs</TableHead>
-                    <TableHead className="text-center w-[80px]">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(partai.inputLogs || []).map((i: any) => (
-                    <TableRow key={i.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => router.push(`/inventory/input-logs/${i.id}`)}>
-                      <TableCell className="font-medium">{i.inputNumber}</TableCell>
-                      <TableCell>{i.inputDate ? new Date(i.inputDate).toLocaleDateString("id-ID") : "-"}</TableCell>
-                      <TableCell>{i.species}</TableCell>
-                      <TableCell className="text-right">{i.totalPcs}</TableCell>
-                      <TableCell className="text-center" onClick={e => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/inventory/input-logs/${i.id}`)}><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => router.push(`/inventory/input-logs/${i.id}/edit`)}><Pencil className="w-4 h-4 mr-2" /> Edit Log</DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteInput(i.id) }} className="text-destructive"><Trash className="w-4 h-4 mr-2" /> Delete Log</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {(!partai.inputLogs || partai.inputLogs.length === 0) && (
-                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada input log (WIP).</TableCell></TableRow>
-                  )}
-                </TableBody>
-              </Table>
+            <CardContent className="pt-6 space-y-4">
+              {(partai.inputLogs || []).map((i: any) => {
+                const totalInputVol = Number(i.totalVolume || 0);
+                const outItems = (i.sawnOutputs || []).flatMap((o: any) => o.items || []);
+                const totalOutputVol = outItems.reduce((acc: number, cur: any) => acc + (cur.volumeM3 || 0), 0);
+                const progressPct = totalInputVol > 0 ? Math.min(100, Math.round((totalOutputVol / totalInputVol) * 100)) : 0;
+                
+                return (
+                  <Card key={i.id} className="overflow-hidden border-border/60 hover:border-primary/40 transition-all cursor-pointer shadow-sm group" onClick={() => router.push(`/inventory/input-logs/${i.id}`)}>
+                    <div className="p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                      <div className="md:col-span-3 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-base text-primary group-hover:underline">{i.inputNumber}</span>
+                          {i.status === 'DONE' ? <Badge className="bg-emerald-500 hover:bg-emerald-600">DONE</Badge> : i.status === 'IN_PROCESS' ? <Badge className="bg-amber-500 hover:bg-amber-600">IN PROCESS</Badge> : <Badge className="bg-rose-500 hover:bg-rose-600">AVAILABLE</Badge>}
+                        </div>
+                        <div className="text-xs text-muted-foreground flex gap-1 items-center">
+                          <span className="font-medium text-foreground/80">{i.species}</span> &bull; {i.items?.length || 0} Source Logs
+                        </div>
+                      </div>
+                      
+                      <div className="md:col-span-7 grid grid-cols-3 gap-4 text-sm text-center">
+                        <div className="bg-muted/30 rounded-md p-2">
+                          <div className="text-xs text-muted-foreground mb-1">Input (m&sup3;)</div>
+                          <div className="font-semibold text-foreground/90">{totalInputVol.toFixed(4)}</div>
+                        </div>
+                        <div className="bg-muted/30 rounded-md p-2">
+                          <div className="text-xs text-muted-foreground mb-1">Output (m&sup3;)</div>
+                          <div className="font-semibold text-emerald-600 dark:text-emerald-400">{totalOutputVol.toFixed(4)}</div>
+                        </div>
+                        <div className="bg-muted/30 rounded-md p-2">
+                          <div className="text-xs text-muted-foreground mb-1">Yield</div>
+                          <div className="font-semibold text-blue-600 dark:text-blue-400">{progressPct}%</div>
+                        </div>
+                      </div>
+                      
+                      <div className="md:col-span-2 flex justify-end">
+                        <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/input-logs/${i.id}`) }}>
+                          Detail Pekerjaan <ArrowRight className="w-4 h-4 ml-1" />
+                        </Button>
+                      </div>
+                    </div>
+                    {/* Progress Bar Visualizer */}
+                    <div className="h-1.5 w-full bg-muted/50">
+                      <div className={`h-full transition-all duration-500 ${i.status === 'DONE' ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${progressPct}%` }} />
+                    </div>
+                  </Card>
+                );
+              })}
+              {(!partai.inputLogs || partai.inputLogs.length === 0) && (
+                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
+                  Belum ada pekerjaan produksi (WIP). Klik Buat WIP Baru untuk memulai.
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -574,48 +591,42 @@ const [partai, setPartai] = useState<any>(null);
         {/* 5. SAWN TIMBER OUTPUT */}
         <TabsContent value="output">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
               <div>
-                <CardTitle>Sawn Timber Output</CardTitle>
-                <CardDescription>Hasil akhir gergajian (sawn timber) dari partai ini.</CardDescription>
+                <CardTitle>Sawn Timber Output (Daily Tally)</CardTitle>
+                <CardDescription>Hasil akhir gergajian yang tercatat dari seluruh WIP partai ini.</CardDescription>
               </div>
-              <Button onClick={() => router.push(`/inventory/sawn-timber/output/create?partaiId=${id}`)}>
-                <Plus className="w-4 h-4 mr-2" /> Add Output
-              </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted/30">
                   <TableRow>
-                    <TableHead>Tanggal Output</TableHead>
-                    <TableHead>Shift / Operator</TableHead>
-                    <TableHead className="text-right">Total Item</TableHead>
-                    <TableHead className="text-right">Total Volume (m³)</TableHead>
-                    <TableHead className="text-center w-[80px]">Action</TableHead>
+                    <TableHead>Tgl Produksi</TableHead>
+                    <TableHead>Source WIP</TableHead>
+                    <TableHead>Tebal</TableHead>
+                    <TableHead>Lebar</TableHead>
+                    <TableHead>Panjang</TableHead>
+                    <TableHead className="text-right">PCS</TableHead>
+                    <TableHead className="text-right">M&sup3;</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(partai.sawnOutputs || []).map((o: any) => (
-                    <TableRow key={o.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => router.push(`/inventory/sawn-timber/output/${o.id}`)}>
-                      <TableCell className="font-medium">{o.outputDate ? new Date(o.outputDate).toLocaleDateString("id-ID") : "-"}</TableCell>
-                      <TableCell>Shift {o.shift} {o.operatorName ? `(${o.operatorName})` : ""}</TableCell>
-                      <TableCell className="text-right">{o.items?.length || 0}</TableCell>
-                      <TableCell className="text-right font-bold text-foreground/90">{o.totalVolumeM3 || 0}</TableCell>
-                      <TableCell className="text-center" onClick={e => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/inventory/sawn-timber/output/${o.id}`)}><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteOutput(o.id) }} className="text-destructive"><Trash className="w-4 h-4 mr-2" /> Delete Output</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {(!partai.sawnOutputs || partai.sawnOutputs.length === 0) && (
-                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada output sawn timber.</TableCell></TableRow>
+                  {(partai.sawnOutputs || []).flatMap((o: any) => (o.items || []).map((item: any) => ({ ...item, parentDate: o.outputDate, parentInputId: o.inputLogId }))).map((i: any) => {
+                    const wip = (partai.inputLogs || []).find((log: any) => log.id === i.parentInputId);
+                    return (
+                      <TableRow key={i.id} className="hover:bg-muted/50 transition-colors">
+                        <TableCell>{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                        <TableCell className="font-medium text-primary"><Link href={`/inventory/input-logs/${i.parentInputId}`}>{wip?.inputNumber || "WIP"}</Link></TableCell>
+                        <TableCell>{i.thicknessMm / 10} cm</TableCell>
+                        <TableCell>{i.widthMm / 10} cm</TableCell>
+                        <TableCell>{i.lengthMm / 10} cm</TableCell>
+                        <TableCell className="text-right font-medium">{i.quantityPcs}</TableCell>
+                        <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400">{i.volumeM3.toFixed(4)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {(!partai.sawnOutputs || partai.sawnOutputs.length === 0 || partai.sawnOutputs.flatMap((o: any) => o.items).length === 0) && (
+                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Belum ada output produksi.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
