@@ -40,6 +40,7 @@ export default function ProductInventory() {
  code:"", barcode:"", name:"", weight:"", purchasePrice:"0", sellingPrice:"", description:"", categoryId:"" 
  })
  const [images, setImages] = useState<File[]>([])
+  const [weightUnit, setWeightUnit] = useState<'gr' | 'kg' | 'ons'>('gr')
  
  // Real DB States
  const [loading, setLoading] = useState(true)
@@ -98,7 +99,26 @@ export default function ProductInventory() {
  fetchData()
  }, [])
 
- const generateSKU = () => {
+ const handleUnitChange = (newUnit: 'gr' | 'kg' | 'ons') => {
+    if (!formData.weight) {
+      setWeightUnit(newUnit);
+      return;
+    }
+    let inGrams = 0;
+    const currentVal = Number(formData.weight);
+    if (weightUnit === 'gr') inGrams = currentVal;
+    if (weightUnit === 'kg') inGrams = currentVal * 1000;
+    if (weightUnit === 'ons') inGrams = currentVal * 100;
+    let newVal = 0;
+    if (newUnit === 'gr') newVal = inGrams;
+    if (newUnit === 'kg') newVal = inGrams / 1000;
+    if (newUnit === 'ons') newVal = inGrams / 100;
+    newVal = Math.round(newVal * 1000) / 1000;
+    setFormData({ ...formData, weight: newVal.toString() });
+    setWeightUnit(newUnit);
+  }
+
+  const generateSKU = () => {
  const random = Math.floor(1000 + Math.random() * 9000);
  setFormData({ ...formData, code: `PRD-${random}` });
  };
@@ -145,9 +165,16 @@ export default function ProductInventory() {
  payload.append("name", formData.name);
  payload.append("purchasePrice", formData.purchasePrice);
  payload.append("sellingPrice", formData.sellingPrice);
- payload.append("description", formData.description);
-      payload.append("weight", formData.weight);
- payload.append("categoryId", formData.categoryId);
+    payload.append("description", formData.description);
+   let weightInGrams = 0;
+   if (formData.weight) {
+     const val = Number(formData.weight);
+     if (weightUnit === 'gr') weightInGrams = val;
+     if (weightUnit === 'kg') weightInGrams = val * 1000;
+     if (weightUnit === 'ons') weightInGrams = val * 100;
+   }
+   payload.append("weight", weightInGrams.toString());
+   payload.append("categoryId", formData.categoryId);
  
  images.forEach((img) => {
  payload.append("images", img);
@@ -274,18 +301,27 @@ export default function ProductInventory() {
       required 
     />
   </div>
-  <div className="space-y-2">
-    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Berat (Gram) <span className="text-red-500">*</span></Label>
-    <div className="relative">
-      <Input 
-        type="number"
-        placeholder="Misal: 500 (dalam gram)" 
-        value={formData.weight} 
-        onChange={(e) => setFormData({...formData, weight: e.target.value})} 
-        className="bg-accent/50 focus:bg-background pr-8"
-        required 
-      />
-      <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">gr</span>
+    <div className="space-y-2">
+      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Berat Produk <span className="text-red-500">*</span></Label>
+      <div className="flex rounded-md shadow-sm">
+        <Input
+          type="number"
+          placeholder="Misal: 500"
+          value={formData.weight}
+          onChange={(e) => setFormData({...formData, weight: e.target.value})}
+          className="bg-accent/50 focus:bg-background rounded-r-none border-r-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+          required
+        />
+        <select
+          value={weightUnit}
+          onChange={(e: any) => handleUnitChange(e.target.value)}
+          className="flex h-9 items-center justify-center rounded-r-md border border-input bg-muted px-3 text-sm text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        >
+          <option value="gr">Gram (gr)</option>
+          <option value="ons">Ons (100gr)</option>
+          <option value="kg">Kilogram (kg)</option>
+        </select>
+      </div>
     </div>
   </div>
  <div className="space-y-2">
@@ -560,6 +596,9 @@ export default function ProductInventory() {
  </div>
  )
 }
+
+
+
 
 
 
