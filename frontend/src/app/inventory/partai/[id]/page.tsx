@@ -16,6 +16,78 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const { toast } = useToast();
   const { id } = React.use(params as Promise<{ id: string }>);
   const [partai, setPartai] = useState<any>(null);
+  
+  // -- Inline DUKB state --
+  const [inlineDukbRows, setInlineDukbRows] = useState<any[]>([]);
+  const [isSavingDukb, setIsSavingDukb] = useState(false);
+
+
+
+  useEffect(() => {
+    if (partai && partai.purchases) {
+      const pending: any[] = [];
+      partai.purchases.forEach((p: any) => {
+        if (p.logItems && p.status === 'CONFIRMED') {
+          p.logItems.forEach((li: any) => {
+            if (li.status !== 'RECEIVED') {
+              pending.push({
+                purchaseLogItemId: li.id,
+                logNumber: li.logNumber || "",
+                species: li.species || "",
+                length: li.length || "",
+                d1: li.diameter1 || "",
+                d2: li.diameter2 || "",
+                d3: li.diameter3 || "",
+                d4: li.diameter4 || "",
+                gerowong: "",
+                locationId: p.warehouseId || partai.company_id
+              });
+            }
+          });
+        }
+      });
+      setInlineDukbRows(pending);
+    }
+  }, [partai]);
+
+  const handleInlineDukbChange = (index: number, field: string, value: string) => {
+    const newRows = [...inlineDukbRows];
+    newRows[index][field] = value;
+    setInlineDukbRows(newRows);
+  };
+
+  const handleSaveInlineDukb = async () => {
+    const toSave = inlineDukbRows.filter(r => r.length && r.d1 && r.d2 && r.d3 && r.d4);
+    if (toSave.length === 0) {
+      toast({ title: "Tidak ada data lengkap", description: "Isi dimensi minimal pada satu log (Panjang, D1-D4) untuk menyimpannya.", variant: "destructive" });
+      return;
+    }
+    setIsSavingDukb(true);
+    try {
+      const payload = toSave.map(r => ({
+        purchaseLogItemId: r.purchaseLogItemId,
+        logNumber: r.logNumber,
+        species: r.species,
+        originalLength: Number(r.length) || 0,
+        diameter1: Number(r.d1) || 0,
+        diameter2: Number(r.d2) || 0,
+        diameter3: Number(r.d3) || 0,
+        diameter4: Number(r.d4) || 0,
+        gerowong: Number(r.gerowong) || 0,
+        partaiId: partai.id,
+        locationId: r.locationId,
+        date: new Date().toISOString()
+      }));
+      await TimberAPI.createBulkLogs({ items: payload });
+      toast({ title: "Berhasil", description: `${payload.length} log berhasil diterima (DUKB dibuat)!` });
+      fetchPartai();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.response?.data?.message || "Gagal menyimpan DUKB", variant: "destructive" });
+    } finally {
+      setIsSavingDukb(true);
+      setTimeout(() => setIsSavingDukb(false), 500); 
+    }
+  };
 
   const fetchPartai = () => {
     if (id) {
@@ -192,16 +264,61 @@ export default function PartaiDetailPage({ params }: { params: any }) {
         </TabsContent>
 
         {/* 2. DUKB (RAW LOGS) */}
+                {/* 2. DUKB (RAW LOGS) */}
         <TabsContent value="rawlogs">
+          {inlineDukbRows.length > 0 && (
+            <Card className="mb-6 border-blue-500/30 shadow-sm bg-blue-50/10 dark:bg-blue-900/10">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-blue-600 dark:text-blue-400">Penerimaan Log (Pending dari Purchase)</CardTitle>
+                <CardDescription>Isi dimensi pada log yang datang untuk otomatis membuat DUKB. Baris yang kosong akan diabaikan (bisa diisi nanti).</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table className="text-sm">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[120px]">No. Log</TableHead>
+                        <TableHead className="w-[100px]">Spesies</TableHead>
+                        <TableHead className="w-[80px]">P (m)</TableHead>
+                        <TableHead className="w-[80px]">D1 (cm)</TableHead>
+                        <TableHead className="w-[80px]">D2 (cm)</TableHead>
+                        <TableHead className="w-[80px]">D3 (cm)</TableHead>
+                        <TableHead className="w-[80px]">D4 (cm)</TableHead>
+                        <TableHead className="w-[80px]">Grw (cm)</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {inlineDukbRows.map((r, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="p-2"><input className="w-full bg-background border rounded px-2 py-1 text-sm text-muted-foreground" value={r.logNumber} readOnly disabled/></TableCell>
+                          <TableCell className="p-2"><input className="w-full bg-background border rounded px-2 py-1 text-sm text-muted-foreground" value={r.species} readOnly disabled/></TableCell>
+                          <TableCell className="p-2"><input type="number" step="0.1" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.length} onChange={e => handleInlineDukbChange(idx, 'length', e.target.value)} /></TableCell>
+                          <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.d1} onChange={e => handleInlineDukbChange(idx, 'd1', e.target.value)} /></TableCell>
+                          <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.d2} onChange={e => handleInlineDukbChange(idx, 'd2', e.target.value)} /></TableCell>
+                          <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.d3} onChange={e => handleInlineDukbChange(idx, 'd3', e.target.value)} /></TableCell>
+                          <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.d4} onChange={e => handleInlineDukbChange(idx, 'd4', e.target.value)} /></TableCell>
+                          <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.gerowong} onChange={e => handleInlineDukbChange(idx, 'gerowong', e.target.value)} /></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <Button onClick={handleSaveInlineDukb} disabled={isSavingDukb}>
+                    {isSavingDukb ? "Menyimpan..." : "Simpan DUKB (Terima Parsial/Full)"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Data Ukur Kayu Bulat (DUKB)</CardTitle>
                 <CardDescription>Daftar log mentah yang terdaftar dalam partai ini.</CardDescription>
               </div>
-              <Button onClick={() => router.push(`/inventory/logs/create?partaiId=${id}`)}>
-                <Plus className="w-4 h-4 mr-2" /> Tambah DUKB (Terima)
-              </Button>
+              
             </CardHeader>
             <CardContent>
               <Table>
