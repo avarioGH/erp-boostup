@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { PartaiAPI, TimberAPI, PurchaseAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -319,7 +320,7 @@ const [partai, setPartai] = useState<any>(null);
                 {/* 2. DUKB (RAW LOGS) */}
         <TabsContent value="rawlogs">
           {inlineDukbRows.length > 0 && (
-            <Card className="mb-6 border-blue-500/30 shadow-sm bg-blue-50/10 dark:bg-blue-900/10">
+            <Card className="mb-6 border-blue-500/20 shadow-sm bg-blue-50/30 dark:bg-blue-900/20">
               <CardHeader className="pb-3 flex flex-row items-start justify-between">
                 <div>
                   <CardTitle className="text-blue-600 dark:text-blue-400">Penerimaan Log (Pending dari Purchase)</CardTitle>
@@ -328,7 +329,7 @@ const [partai, setPartai] = useState<any>(null);
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground font-medium">Satuan Panjang:</span>
                   <select 
-                    className="border bg-background rounded px-2 py-1 text-sm font-medium"
+                    className="h-8 rounded-md border border-input bg-background px-3 text-sm focus:ring-1 focus:ring-ring outline-none transition-colors"
                     value={lengthUnit} 
                     onChange={(e: any) => handleUnitChange(e.target.value)}
                   >
@@ -360,24 +361,24 @@ const [partai, setPartai] = useState<any>(null);
                       {inlineDukbRows.map((r, idx) => {
                         const calc = calculateRow(r);
                         return (
-                        <TableRow key={idx}>
-                          <TableCell className="p-2"><input className="w-full bg-background border rounded px-2 py-1 text-sm text-muted-foreground" value={r.logNumber} readOnly disabled/></TableCell>
-                          <TableCell className="p-2"><input className="w-full bg-background border rounded px-2 py-1 text-sm text-muted-foreground" value={r.species} readOnly disabled/></TableCell>
-                          <TableCell className="p-2"><input type="number" step="0.1" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.length} onChange={e => handleInlineDukbChange(idx, 'length', e.target.value)} /></TableCell>
-                          <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.d1} onChange={e => handleInlineDukbChange(idx, 'd1', e.target.value)} /></TableCell>
-                          <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.d2} onChange={e => handleInlineDukbChange(idx, 'd2', e.target.value)} /></TableCell>
-                          <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.d3} onChange={e => handleInlineDukbChange(idx, 'd3', e.target.value)} /></TableCell>
-                          <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.d4} onChange={e => handleInlineDukbChange(idx, 'd4', e.target.value)} /></TableCell>
-                          <TableCell className="p-2"><input type="number" className="w-full bg-background border rounded px-2 py-1 text-sm" value={r.gerowong} onChange={e => handleInlineDukbChange(idx, 'gerowong', e.target.value)} /></TableCell>
-                          <TableCell className="p-2 bg-muted/20"><input type="number" step="0.1" className="w-full bg-background border rounded px-2 py-1 text-sm text-right font-medium" value={r.avgDia !== undefined && r.avgDia !== "" ? r.avgDia : (calc.avg > 0 ? calc.avg.toFixed(1) : "")} onChange={e => handleInlineDukbChange(idx, 'avgDia', e.target.value)} placeholder={calc.avg > 0 ? calc.avg.toFixed(1) : ""} /></TableCell>
-                          <TableCell className="p-2 text-right bg-muted/20 text-muted-foreground">{calc.gross > 0 ? calc.gross.toFixed(3) : "-"}</TableCell>
-                          <TableCell className="p-2 text-right bg-blue-50/50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-bold">{calc.net > 0 ? calc.net.toFixed(3) : "-"}</TableCell>
+                        <TableRow key={idx} className="hover:bg-transparent">
+                          <TableCell className="p-1"><Input className="h-8 text-xs bg-muted/50 border-input cursor-not-allowed" value={r.logNumber} readOnly disabled/></TableCell>
+                          <TableCell className="p-1"><Input className="h-8 text-xs bg-muted/50 border-input cursor-not-allowed" value={r.species} readOnly disabled/></TableCell>
+                          <TableCell className="p-1"><Input type="number" step="0.1" className="h-8 text-sm" value={r.length} onChange={e => handleInlineDukbChange(idx, 'length', e.target.value)} /></TableCell>
+                          <TableCell className="p-1"><Input type="number" className="h-8 text-sm" value={r.d1} onChange={e => handleInlineDukbChange(idx, 'd1', e.target.value)} /></TableCell>
+                          <TableCell className="p-1"><Input type="number" className="h-8 text-sm" value={r.d2} onChange={e => handleInlineDukbChange(idx, 'd2', e.target.value)} /></TableCell>
+                          <TableCell className="p-1"><Input type="number" className="h-8 text-sm" value={r.d3} onChange={e => handleInlineDukbChange(idx, 'd3', e.target.value)} /></TableCell>
+                          <TableCell className="p-1"><Input type="number" className="h-8 text-sm" value={r.d4} onChange={e => handleInlineDukbChange(idx, 'd4', e.target.value)} /></TableCell>
+                          <TableCell className="p-1"><Input type="number" className="h-8 text-sm" value={r.gerowong} onChange={e => handleInlineDukbChange(idx, 'gerowong', e.target.value)} /></TableCell>
+                          <TableCell className="p-1 bg-muted/20 border-l"><Input type="number" step="0.1" className="h-8 text-sm text-right font-semibold bg-background" value={r.avgDia !== undefined && r.avgDia !== "" ? r.avgDia : (calc.avg > 0 ? calc.avg.toFixed(1) : "")} onChange={e => handleInlineDukbChange(idx, 'avgDia', e.target.value)} placeholder={calc.avg > 0 ? calc.avg.toFixed(1) : ""} /></TableCell>
+                          <TableCell className="p-2 text-right bg-muted/20 text-muted-foreground text-sm font-medium">{calc.gross > 0 ? calc.gross.toFixed(3) : "-"}</TableCell>
+                          <TableCell className="p-2 text-right bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold text-sm">{calc.net > 0 ? calc.net.toFixed(3) : "-"}</TableCell>
                         </TableRow>
                       )})}
                     </TableBody>
                   </Table>
                 </div>
-                <div className="mt-4 flex items-center justify-between">
+                <div className="mt-4 pt-4 border-t flex items-center justify-between">
                   <div className="text-sm">
                     Total Net Vol. (Live): <span className="font-bold text-lg text-blue-500">{inlineDukbRows.reduce((sum, r) => sum + calculateRow(r).net, 0).toFixed(4)} m3</span>
                   </div>
