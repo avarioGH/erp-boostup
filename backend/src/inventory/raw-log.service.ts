@@ -64,8 +64,9 @@ export class RawLogService {
 
     async createRawLog(data: any) {
     // Identity Spoofing Protection
-    if (data.purchaseLogItemId) {
-      const pItem = await this.prisma.timberPurchaseLogItem.findUnique({ where: { id: data.purchaseLogItemId } });
+    let pItem = null;
+      if (data.purchaseLogItemId) {
+        pItem = await this.prisma.timberPurchaseLogItem.findUnique({ where: { id: data.purchaseLogItemId }, include: { timberPurchase: true } });
       if (!pItem) throw new NotFoundException('Purchase Log Item not found');
       if (pItem.status === 'RECEIVED') throw new BadRequestException('Purchase Log Item already received');
       data.logNumber = pItem.logNumber;
@@ -174,8 +175,9 @@ partaiId: data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : null),
     return this.prisma.$transaction(async (tx) => {
       const createdLogs: any[] = [];
               for (const data of dataArray) {
-          if (data.purchaseLogItemId) {
-            const pItem = await tx.timberPurchaseLogItem.findUnique({ where: { id: data.purchaseLogItemId } });
+          let pItem = null;
+      if (data.purchaseLogItemId) {
+        pItem = await this.prisma.timberPurchaseLogItem.findUnique({ where: { id: data.purchaseLogItemId }, include: { timberPurchase: true } });
             if (!pItem) throw new NotFoundException('Purchase Log Item not found');
             if (pItem.status === 'RECEIVED') throw new BadRequestException('Purchase Log Item already received');
             data.logNumber = pItem.logNumber;
@@ -264,7 +266,7 @@ partaiId: data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : null),
       }
     } else if (data.purchaseLogItemId) {
       // Trying to attach to a purchase log item on update?
-      const pItem = await this.prisma.timberPurchaseLogItem.findUnique({ where: { id: data.purchaseLogItemId } });
+      const pItem = await this.prisma.timberPurchaseLogItem.findUnique({ where: { id: data.purchaseLogItemId }, include: { timberPurchase: true } });
       if (pItem) {
         data.logNumber = pItem.logNumber;
         data.species = pItem.species;

@@ -181,7 +181,7 @@ export class InputLogService {
 
       for (const item of log.items) {
         await tx.trimmedLog.update({
-          where: { id: item.trimmedLogId },
+          where: { id: item.trimmedLogId as string },
           data: { status: 'AVAILABLE', inputLogId: null }
         });
       }
@@ -199,7 +199,7 @@ export class InputLogService {
     for (const item of inputLog.items) {
       if (item.trimmedLogId) {
         await this.prisma.trimmedLog.update({
-          where: { id: item.trimmedLogId },
+          where: { id: item.trimmedLogId as string },
           data: { status: 'AVAILABLE' }
         });
       }
