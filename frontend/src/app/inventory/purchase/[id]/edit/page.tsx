@@ -131,7 +131,7 @@ export default function EditPurchasePage() {
         items: form.purchaseType === "sawn-timber" ? form.items : [],
         logItems: form.purchaseType === "raw-log" ? form.logItems : []
       })
-      router.push("/inventory/purchase")
+      router.back()
       router.refresh()
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to create purchase")
@@ -191,7 +191,7 @@ export default function EditPurchasePage() {
               <Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
             </div>
 
-            <Tabs defaultValue="sawn-timber" onValueChange={(v) => setForm({...form, purchaseType: v})} className="w-full">
+            <Tabs value={form.purchaseType} onValueChange={(v) => setForm({...form, purchaseType: v})} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="sawn-timber">Beli Kayu Gergajian (Sawn Timber)</TabsTrigger>
                 <TabsTrigger value="raw-log">Beli Log Bulat (Raw Log / DUKB)</TabsTrigger>
