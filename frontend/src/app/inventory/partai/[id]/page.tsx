@@ -475,15 +475,12 @@ alert("Gagal Trimming: " + msg);
         {/* 3. TRIMMING */}
         <TabsContent value="trimming">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Trimming</CardTitle>
-                <CardDescription>Proses pemotongan log (pangkal/ujung) sebelum masuk sawmill.</CardDescription>
-              </div>
-              <Button onClick={() => router.push(`/inventory/trimming?partaiId=${id}`)}>
-                <Plus className="w-4 h-4 mr-2" /> Trim Logs
-              </Button>
-            </CardHeader>
+                          <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Trimming</CardTitle>
+                  <CardDescription>Proses pemotongan log (pangkal/ujung) sebelum masuk sawmill.</CardDescription>
+                </div>
+              </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
