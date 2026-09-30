@@ -2676,10 +2676,10 @@ model RawLog {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  trimmedLogs  TrimmedLog[]
-  inputLogId   String?       @db.ObjectId
-  inputLog     InputLog?     @relation(fields: [inputLogId], references: [id])
-  InputLogItem InputLogItem?
+  trimmedLogs   TrimmedLog[]
+  inputLogId    String?        @db.ObjectId
+  inputLog      InputLog?      @relation(fields: [inputLogId], references: [id])
+  inputLogItems InputLogItem[]
 }
 
 // --------------------------------------------------
@@ -2718,9 +2718,9 @@ model TrimmedLog {
   location   Warehouse? @relation(fields: [locationId], references: [id])
   status     String     @default("AVAILABLE") // AVAILABLE, RESERVED, ASSIGNED_TO_INPUT, IN_PROCESS, CONSUMED, CANCELLED
 
-  inputLogId   String?       @db.ObjectId
-  inputLog     InputLog?     @relation(fields: [inputLogId], references: [id])
-  inputLogItem InputLogItem?
+  inputLogId    String?        @db.ObjectId
+  inputLog      InputLog?      @relation(fields: [inputLogId], references: [id])
+  inputLogItems InputLogItem[]
 
   notes     String?
   date      DateTime @default(now())
@@ -2814,9 +2814,9 @@ model InputLogItem {
   id           String      @id @default(auto()) @map("_id") @db.ObjectId
   inputLogId   String      @db.ObjectId
   inputLog     InputLog    @relation(fields: [inputLogId], references: [id])
-  trimmedLogId String?     @unique @db.ObjectId
+  trimmedLogId String?     @db.ObjectId
   trimmedLog   TrimmedLog? @relation(fields: [trimmedLogId], references: [id])
-  rawLogId     String?     @unique @db.ObjectId
+  rawLogId     String?     @db.ObjectId
   rawLog       RawLog?     @relation(fields: [rawLogId], references: [id])
   quantity     Int         @default(1)
   volume       Float
