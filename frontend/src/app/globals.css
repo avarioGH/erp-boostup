@@ -5,56 +5,57 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Modern Industrial SaaS Light Theme - Calibrated */
-  --background: #F5F7FA;
-  --foreground: #172033;
+
+  --background: #F1F5F9;
+  --foreground: #0F172A;
   
   --primary: #2563EB;
   --primary-foreground: #FFFFFF;
   
   --secondary: #F8FAFC;
-  --secondary-foreground: #5F6B7A;
+  --secondary-foreground: #475569;
   
   --popover: #FFFFFF;
-  --popover-foreground: #172033;
+  --popover-foreground: #0F172A;
   
   --card: #FFFFFF;
-  --card-foreground: #172033;
+  --card-foreground: #0F172A;
   
-  --muted: #F8FAFC;
-  --muted-foreground: #8A94A6;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
   
-  --accent: #F5F8FC;
-  --accent-foreground: #172033;
+  --accent: #E2E8F0;
+  --accent-foreground: #0F172A;
   
-  --destructive: #FEE2E2;
-  --destructive-foreground: #991B1B;
+  --destructive: #EF4444;
+  --destructive-foreground: #FAFAFA;
   
-  --success: #D1FAE5;
-  --success-foreground: #065F46;
+  --success: #10B981;
+  --success-foreground: #FAFAFA;
   
-  --warning: #FEF3C7;
-  --warning-foreground: #92400E;
+  --warning: #F59E0B;
+  --warning-foreground: #FAFAFA;
   
-  --info: #DBEAFE;
-  --info-foreground: #1E40AF;
+  --info: #3B82F6;
+  --info-foreground: #FAFAFA;
   
   --border: #E2E8F0;
-  --input: #F8FAFC;
+  --input: #E2E8F0;
   --ring: #2563EB;
   
   --radius: 12px;
   
-  --sidebar-background: #0F172A;
-  --sidebar-foreground: #E2E8F0;
+  --sidebar-background: #FFFFFF;
+  --sidebar-foreground: #334155;
   --sidebar-primary: #2563EB;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1E293B;
-  --sidebar-accent-foreground: #F8FAFC;
-  --sidebar-active: #EEF4FF;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #0F172A;
+  --sidebar-active: #EFF6FF;
   --sidebar-active-foreground: #1D4ED8;
-  --sidebar-border: #1E293B;
+  --sidebar-border: #E2E8F0;
   --sidebar-ring: #2563EB;
+
 }
 
 .dark {

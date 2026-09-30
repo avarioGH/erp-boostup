@@ -93,7 +93,7 @@ export default function CreatePurchasePage() {
     setError("")
     
     try {
-      await api.post("/inventory/purchase", {
+      await api.post("/inventory/timber-purchase", {
         purchaseNumber: form.purchaseNumber,
         purchaseDate: new Date(form.purchaseDate).toISOString(),
         sourceId: form.sourceId,

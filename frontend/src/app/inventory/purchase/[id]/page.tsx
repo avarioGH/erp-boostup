@@ -2,21 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { PurchaseAPI } from "@/lib/api";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 
-export default function PurchaseDetailPage({ params }: { params: { id: string } }) {
+export default function PurchaseDetailPage() {
+  const params = useParams();
   const router = useRouter();
   const [purchase, setPurchase] = useState<any>(null);
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
-    fetchData();
-  }, [params.id]);
+    if (params?.id) fetchData();
+  }, [params?.id]);
 
   const fetchData = () => {
     PurchaseAPI.getPurchase(params.id).then((res: any) => {

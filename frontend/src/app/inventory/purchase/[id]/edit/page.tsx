@@ -1,7 +1,7 @@
 ﻿"use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { api, MasterDataAPI } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,9 +13,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Plus, X, ArrowLeft } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-export default function EditPurchasePage({ params }: { params: { id: string } }) {
+export default function EditPurchasePage() {
+  const params = useParams();
   const isEdit = true;
-  const purchaseId = params.id;
+  const purchaseId = params?.id as string;
 
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -121,7 +122,7 @@ export default function EditPurchasePage({ params }: { params: { id: string } })
     setError("")
     
     try {
-      await api.post("/inventory/purchase", {
+      await api.put(`/inventory/timber-purchase/${purchaseId}`, {
         purchaseNumber: form.purchaseNumber,
         purchaseDate: new Date(form.purchaseDate).toISOString(),
         sourceId: form.sourceId,
