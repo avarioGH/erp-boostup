@@ -190,13 +190,15 @@ export class InventoryService {
       unit = await this.prisma.unit.create({ data: { company_id: data.companyId, name: 'PCS' }});
     }
 
-    const productCode = data.code || await this.sequenceService.generateNumber(this.prisma as any, data.companyId, 'PRODUCT', 'PRD');
+    const productCode = (data.code && data.code !== 'undefined' && data.code !== 'null' && data.code !== '') 
+      ? data.code 
+      : await this.sequenceService.generateNumber(this.prisma as any, data.companyId, 'PRODUCT', 'PRD');
 
     const product = await this.prisma.product.create({
       data: {
         company_id: data.companyId,
         code: productCode,
-        barcode: data.barcode ? data.barcode : undefined,
+        barcode: (data.barcode && data.barcode !== 'undefined' && data.barcode !== 'null' && data.barcode !== '') ? data.barcode : undefined,
         name: data.name,
         description: data.description,
         purchase_price: !isNaN(Number(data.purchasePrice)) ? Number(data.purchasePrice) : 0,

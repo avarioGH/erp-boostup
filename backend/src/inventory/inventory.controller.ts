@@ -67,9 +67,10 @@ export class InventoryController {
         data.images = files.map(file => `/uploads/products/${file.filename}`);
       }
       return await this.inventoryService.createProduct(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating product:', error);
-      throw error;
+      const { HttpException, HttpStatus } = require('@nestjs/common');
+      throw new HttpException(error.message || 'Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
