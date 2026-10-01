@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
@@ -106,7 +106,7 @@ function SelectContent({
            {searchable && (
             <div className="p-2 border-b border-border/50 sticky top-0 bg-popover z-10">
               <input
-                type="text"
+                type="text" ref={(el) => { if (el) { const container = el.closest('[data-slot="select-content"]'); if (container) { const items = container.querySelectorAll('[role="option"]'); items.forEach((item: any) => { item.style.display = "flex"; }); } } }}
                 placeholder="Ketik untuk mencari..."
                 className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 onChange={handleFilter}
