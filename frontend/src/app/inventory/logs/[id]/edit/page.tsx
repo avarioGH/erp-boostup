@@ -29,6 +29,7 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
     diameter2: "",
     diameter3: "",
     diameter4: "",
+    averageDiameter: "",
     gerowong: "",
     barcode: ""
   })
@@ -51,6 +52,7 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
           diameter2: lRes.diameter2 || "",
           diameter3: lRes.diameter3 || "",
           diameter4: lRes.diameter4 || "",
+          averageDiameter: lRes.averageDiameter || "",
           gerowong: lRes.gerowong || "",
           barcode: lRes.barcode || ""
         })
@@ -66,7 +68,10 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
     const d4 = parseFloat(form.diameter4) || 0
     const g = parseFloat(form.gerowong) || 0
 
-    const avgDiaStrict = (d1 + d2 + d3 + d4) / 4; 
+    let avgDiaStrict = (d1 + d2 + d3 + d4) / 4; 
+    if (avgDiaStrict === 0 && parseFloat(form.averageDiameter) > 0) {
+      avgDiaStrict = parseFloat(form.averageDiameter);
+    }
     const rndDia = Math.round(avgDiaStrict);
     
     const grossVol = l > 0 && rndDia > 0 ? (Math.pow(rndDia, 2) * l * 0.7854) / 10000 : 0
@@ -87,6 +92,7 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
         diameter2: parseFloat(form.diameter2) || 0,
         diameter3: parseFloat(form.diameter3) || 0,
         diameter4: parseFloat(form.diameter4) || 0,
+        averageDiameter: parseFloat(form.averageDiameter) || 0,
         gerowong: parseFloat(form.gerowong) || 0,
       })
       toast({ title: "Berhasil", description: "Log berhasil diperbarui." })
@@ -173,8 +179,12 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
                 <label className="text-sm font-medium text-primary">Length (m) *</label>
                 <Input required type="number" step="0.1" value={form.originalLength} onChange={e => setForm({...form, originalLength: e.target.value})} />
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <label className="text-sm font-medium text-destructive">Gerowong / Hollow (cm)</label>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Avg &Oslash; (cm)</label>
+                <Input type="number" step="0.1" value={form.averageDiameter} onChange={e => setForm({...form, averageDiameter: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-destructive">Gerowong (cm)</label>
                 <Input type="number" step="0.1" value={form.gerowong} onChange={e => setForm({...form, gerowong: e.target.value})} />
               </div>
               <div className="space-y-2">
