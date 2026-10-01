@@ -1,15 +1,20 @@
-"use client"
+﻿"use client"
 import { useEffect, useState } from 'react'
 import { InventoryAPI } from '@/lib/api'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { useToast } from '@/hooks/use-toast'
 
 export default function InflowPage() {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+  
   const { toast } = useToast()
 
   const fetchTallies = async () => {
@@ -38,6 +43,10 @@ export default function InflowPage() {
     }
   }
 
+  // Calculate pagination
+  const totalPages = Math.ceil(data.length / itemsPerPage)
+  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -51,8 +60,8 @@ export default function InflowPage() {
       </div>
 
       <Card className="shadow-sm">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
+        <CardContent className="p-0 flex flex-col min-h-[400px]">
+          <div className="overflow-x-auto flex-1">
             <table className="w-full text-sm text-left">
               <thead className="bg-muted/50 border-b">
                 <tr>
@@ -69,7 +78,7 @@ export default function InflowPage() {
                 ) : data.length === 0 ? (
                   <tr><td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">Belum ada data penerimaan.</td></tr>
                 ) : (
-                  data.map(item => (
+                  paginatedData.map(item => (
                     <tr key={item.id} className="hover:bg-muted/50 transition-colors">
                       <td className="px-6 py-4 font-medium">{item.tally_number}</td>
                       <td className="px-6 py-4">{new Date(item.tally_date).toLocaleDateString('id-ID')}</td>
@@ -86,6 +95,36 @@ export default function InflowPage() {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {!loading && data.length > 0 && (
+            <div className="border-t p-4 flex items-center justify-between bg-muted/20">
+              <span className="text-sm text-muted-foreground">
+                Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, data.length)} dari {data.length} data
+              </span>
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                </Button>
+                <div className="text-sm font-medium px-2">
+                  Halaman {currentPage} / {totalPages}
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
