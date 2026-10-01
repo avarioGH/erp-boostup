@@ -32,17 +32,18 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  ]).then(([wRes, tRes]) => {
  setWarehouses(Array.isArray(wRes) ? wRes : [])
  setTrimInfo(tRes)
-    if (tRes && tRes.parent) {
-      const p = tRes.parent;
-      setForm(prev => ({
-        ...prev,
-        diameter1: p.diameter1 ? p.diameter1.toString() : "",
-        diameter2: p.diameter2 ? p.diameter2.toString() : "",
-        diameter3: p.diameter3 ? p.diameter3.toString() : "",
-        diameter4: p.diameter4 ? p.diameter4.toString() : "",
-        gerowong: p.gerowong ? p.gerowong.toString() : ""
-      }))
-    }
+          if (tRes && tRes.parent) {
+        const p = tRes.parent;
+        setForm(prev => ({
+          ...prev,
+          diameter1: p.diameter1 ? p.diameter1.toString() : "",
+          diameter2: p.diameter2 ? p.diameter2.toString() : "",
+          diameter3: p.diameter3 ? p.diameter3.toString() : "",
+          diameter4: p.diameter4 ? p.diameter4.toString() : "",
+          manualAvg: p.averageDiameter ? p.averageDiameter.toString() : "",
+          gerowong: p.gerowong ? p.gerowong.toString() : ""
+        }))
+      }
  }).catch(console.error).finally(() => setLoading(false))
  }, [id])
 
@@ -55,7 +56,10 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  const gDia = parseFloat(form.gerowong) || 0;
  const tLen = parseFloat(form.trimmingLength) || 0;
 
- const avg = (d1 + d2 + d3 + d4) / 4;
+    let avg = (d1 + d2 + d3 + d4) / 4;
+   if (avg === 0 && parseFloat(form.manualAvg) > 0) {
+     avg = parseFloat(form.manualAvg);
+   }
  const rnd = Math.round(avg);
  
  let diaClass ="100 Cm Up";
@@ -82,18 +86,21 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  e.preventDefault()
  setSubmitting(true)
  try {
- await TimberAPI.createTrimmedLog(id, {
- ...form,
- length: parseFloat(form.length),
- diameter1: parseFloat(form.diameter1), diameter2: parseFloat(form.diameter2),
- diameter3: parseFloat(form.diameter3), diameter4: parseFloat(form.diameter4),
- gerowong: form.gerowong ? parseFloat(form.gerowong) : null,
- trimmingLength: form.trimmingLength ? parseFloat(form.trimmingLength) : null
- })
+    await TimberAPI.createTrimmedLog(id, {
+   ...form,
+   length: parseFloat(form.length),
+   diameter1: parseFloat(form.diameter1) || 0, 
+   diameter2: parseFloat(form.diameter2) || 0,
+   diameter3: parseFloat(form.diameter3) || 0, 
+   diameter4: parseFloat(form.diameter4) || 0,
+   averageDiameter: parseFloat(form.manualAvg) || 0,
+   gerowong: form.gerowong ? parseFloat(form.gerowong) : null,
+   trimmingLength: form.trimmingLength ? parseFloat(form.trimmingLength) : null
+   })
  toast({ title:"Success", description:"Trimmed log added successfully." })
  router.push(`/inventory/logs/${id}`)
  } catch (err: any) {
- toast({ title:"Error", description: err.response?.data?.message ||"Failed to create.", variant:"destructive" })
+ const msg = err.response?.data?.error?.message || err.response?.data?.message || err.message; toast({ title:"Error", description: msg, variant:"destructive" }); alert("Gagal: " + msg);
  } finally {
  setSubmitting(false)
  }
