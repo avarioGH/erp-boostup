@@ -58,7 +58,7 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled = fa
              />
           </div>
           {filteredOptions.length === 0 ? (
-            <div className="p-3 text-sm text-center text-muted-foreground">Tidak ada data ikan ditemukan. Pastikan produk ikan sudah ditambahkan.</div>
+            <div className="p-3 text-sm text-center text-muted-foreground">Belum ada pilihan ikan. (Tunggu loading atau pastikan produk sudah ada)</div>
           ) : (
             filteredOptions.map((o: any) => (
               <div 
