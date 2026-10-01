@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -56,7 +56,7 @@ const items: MenuItem[] = [
  { title: "Ikan Masuk", url: "/inventory/inflow" },
  { title: "Stok Ikan", url: "/inventory/stock" },
  { title: "Stock Movement", url: "/inventory/movements" },
- { title: "Penyesuaian Stok", url: "/inventory/adjustments" }
+ { title: "Input Stok Awal", url: "/inventory/initial-stock" }
  ]
  },
  {
@@ -407,6 +407,7 @@ export function IkanSidebar() {
  </Sidebar>
  )
 }
+
 
 
 
