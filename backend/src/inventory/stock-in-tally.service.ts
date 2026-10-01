@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SequenceService } from '../reports/sequence.service';
 
@@ -6,7 +6,7 @@ import { SequenceService } from '../reports/sequence.service';
 export class StockInTallyService {
   constructor(private readonly prisma: PrismaService, private readonly sequenceService: SequenceService) {}
 
-  async create(company_id: string, data: any) {
+  async create(company_id: string, user_id: string, data: any) {
     return this.prisma.$transaction(async (tx) => {
       if (data.idempotency_key) {
         const existing = await tx.stockInTally.findFirst({
@@ -48,7 +48,7 @@ export class StockInTallyService {
             movement_type: 'IN',
             transaction_id: tally.id,
             qty_in: item.qty,
-            created_by: 'tally-system'
+            created_by: user_id
           }
         });
 
@@ -99,7 +99,7 @@ export class StockInTallyService {
     });
   }
 
-  async remove(company_id: string, id: string) {
+  async remove(company_id: string, user_id: string, id: string) {
     return this.prisma.$transaction(async (tx) => {
       const tally = await tx.stockInTally.findUnique({
         where: { id, company_id },
@@ -121,7 +121,7 @@ export class StockInTallyService {
               movement_type: 'OUT',
               transaction_id: tally.id, // Original transaction reference
               qty_out: item.qty,
-              created_by: 'reversal-system'
+              created_by: user_id
             }
           });
         }
