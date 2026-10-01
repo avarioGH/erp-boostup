@@ -54,7 +54,7 @@ export default function InflowPage() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Input Ikan (Teli)</h1>
           <p className="text-muted-foreground mt-1">Riwayat penerimaan stok ikan harian.</p>
         </div>
-        <Link href="/inventory/inflow/create">
+        <Link href="/inventory/inflow/tambah">
           <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> Input Ikan Masuk</Button>
         </Link>
       </div>
