@@ -525,6 +525,48 @@ const [partai, setPartai] = useState<any>(null);
 
         {/* 4. INPUT LOGS */}
         <TabsContent value="input">
+          {/* AVAILABLE TRIMMED LOGS */}
+          {partai.trimmedLogs?.filter((t: any) => t.status === 'AVAILABLE').length > 0 && (
+            <Card className="mb-6 border-amber-500/20 bg-amber-50/30 dark:bg-amber-900/10">
+              <CardHeader className="border-b pb-4">
+                <CardTitle className="text-amber-700 dark:text-amber-500">Log Siap Masuk Mesin (Dari Trimming)</CardTitle>
+                <CardDescription>Pilih log hasil trimming di bawah ini untuk memulai pekerjaan produksi (WIP) baru.</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {partai.trimmedLogs.filter((t: any) => t.status === 'AVAILABLE').map((t: any) => (
+                    <div key={t.id} className="flex flex-col border rounded-lg p-4 bg-background shadow-sm hover:border-amber-400 transition-colors">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-bold text-lg">{t.trimNumber}</span>
+                        <Badge variant="outline" className="text-amber-600 border-amber-600 bg-amber-50 dark:bg-amber-900/20">SIAP POTONG</Badge>
+                      </div>
+                      <div className="text-sm text-muted-foreground mb-4">
+                        <p>Spesies: <span className="font-medium text-foreground">{t.species}</span></p>
+                        <p>Dimensi: <span className="font-medium text-foreground">{t.roundedDiameter} cm x {t.length} m</span></p>
+                        <p>Volume: <span className="font-medium text-foreground">{Number(t.netVolume || 0).toFixed(4)} m&sup3;</span></p>
+                      </div>
+                      <Button 
+                        className="w-full bg-amber-500 hover:bg-amber-600 text-white" 
+                        onClick={async () => {
+                          if (!confirm(`Kirim log ${t.trimNumber} ke mesin gergaji (Buat WIP)?`)) return;
+                          try {
+                            await TimberAPI.createInputLog({ trimmedLogIds: [t.id] });
+                            toast({ title: "Berhasil", description: `WIP Job untuk log ${t.trimNumber} berhasil dibuat.` });
+                            fetchPartai();
+                          } catch (err: any) {
+                            toast({ title: "Gagal", description: err.response?.data?.error?.message || err.response?.data?.message || err.message, variant: "destructive" });
+                          }
+                        }}
+                      >
+                        <ArrowRight className="w-4 h-4 mr-2" /> Mulai Gergaji (Buat WIP)
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
               <div>
