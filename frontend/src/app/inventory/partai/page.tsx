@@ -6,19 +6,35 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, LayoutGrid, List, FolderOpen } from "lucide-react";
+import { Plus, Search, LayoutGrid, List, FolderOpen , Eye, Edit, Trash2} from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export default function PartaiListPage() {
   const router = useRouter();
   const [partais, setPartais] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<'list' | 'folder'>('list');
-  
-  useEffect(() => {
-    PartaiAPI.getPartais().then((res: any) => {
+  const [viewMode, setViewMode] = useState<'list' | 'folder'>('list');  const fetchPartais = async () => {
+    try {
+      const res = await PartaiAPI.getPartais();
       setPartais(res || []);
-    });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDelete = async (id: string, code: string) => {
+
+    if (!confirm(`Yakin ingin menghapus partai ${code}?`)) return;
+    try {
+      await PartaiAPI.deletePartai(id);
+      fetchPartais();
+    } catch (err: any) {
+      alert("Gagal menghapus partai: " + (err?.response?.data?.error?.message || err?.response?.data?.message || err.message));
+    }
+  };
+
+  useEffect(() => {
+    fetchPartais();
   }, []);
 
   const filteredPartais = partais.filter(p => 
@@ -84,7 +100,7 @@ export default function PartaiListPage() {
               </TableHeader>
               <TableBody>
                 {filteredPartais.map((p: any) => (
-                  <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/inventory/partai/${p.id}`)}>
+                  <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50 group" onClick={() => router.push(`/inventory/partai/${p.id}`)}>
                     <TableCell className="font-bold flex items-center gap-2">
                       <FolderOpen className="w-4 h-4 text-blue-500" />
                       {p.code}
@@ -94,9 +110,19 @@ export default function PartaiListPage() {
                       <Badge variant={p.status === 'ACTIVE' ? 'default' : 'secondary'}>{p.status}</Badge>
                     </TableCell>
                     <TableCell>{new Date(p.startDate).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm">Buka Folder</Button>
-                    </TableCell>
+                                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="Buka Folder" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/partai/${p.id}`) }}>
+                            <FolderOpen className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Edit" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/partai/${p.id}/edit`) }}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete" onClick={(e) => { e.stopPropagation(); handleDelete(p.id, p.code) }}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                   </TableRow>
                 ))}
                 {filteredPartais.length === 0 && (
