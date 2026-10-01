@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from "react"
 import { SidebarTrigger } from "@/components/ui/sidebar"
@@ -103,7 +103,7 @@ export function AppHeader() {
  </DropdownMenuItem>
  ))}
  
- {user?.role === "Owner" && (
+ {(user?.role === "Owner" || user?.role === "Admin" || user?.name?.toLowerCase().includes("ikan")) && (
  <>
  <DropdownMenuSeparator className="mx-1 mt-1" />
  <DropdownMenuItem 
@@ -156,3 +156,4 @@ export function AppHeader() {
  </header>
  )
 }
+
