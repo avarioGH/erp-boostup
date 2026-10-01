@@ -568,14 +568,11 @@ const [partai, setPartai] = useState<any>(null);
           )}
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+                        <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
               <div>
                 <CardTitle>Production Jobs (Input WIP)</CardTitle>
                 <CardDescription>Pekerjaan gergajian berjalan yang diambil dari DUKB/Trimmed Log.</CardDescription>
               </div>
-              <Button onClick={() => router.push(`/inventory/input-logs/create?partaiId=${id}`)} className="bg-primary">
-                <Plus className="w-4 h-4 mr-2" /> Buat WIP Baru
-              </Button>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               {(partai.inputLogs || []).map((i: any) => {
@@ -627,7 +624,7 @@ const [partai, setPartai] = useState<any>(null);
               })}
               {(!partai.inputLogs || partai.inputLogs.length === 0) && (
                 <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
-                  Belum ada pekerjaan produksi (WIP). Klik Buat WIP Baru untuk memulai.
+                  Belum ada pekerjaan produksi (WIP). Lakukan Trimming pada log terlebih dahulu, lalu klik "Mulai Gergaji (Buat WIP)" di atas.
                 </div>
               )}
             </CardContent>
