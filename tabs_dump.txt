@@ -1,0 +1,103 @@
+<TabsContent value="input">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Input Logs (Sawmill WIP)</CardTitle>
+                <CardDescription>Log yang siap untuk dimasukkan ke mesin gergaji (produksi).</CardDescription>
+              </div>
+              <Button onClick={() => router.push(`/inventory/input-logs/create?partaiId=${id}`)}>
+                <Plus className="w-4 h-4 mr-2" /> Add Input Log
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nomor Input</TableHead>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead>Spesies</TableHead>
+                    <TableHead className="text-right">Total Pcs</TableHead>
+                    <TableHead className="text-center w-[80px]">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(partai.inputLogs || []).map((i: any) => (
+                    <TableRow key={i.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => router.push(`/inventory/input-logs/${i.id}`)}>
+                      <TableCell className="font-medium">{i.inputNumber}</TableCell>
+                      <TableCell>{i.inputDate ? new Date(i.inputDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                      <TableCell>{i.species}</TableCell>
+                      <TableCell className="text-right">{i.totalPcs}</TableCell>
+                      <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/inventory/input-logs/${i.id}`)}><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push(`/inventory/input-logs/${i.id}/edit`)}><Pencil className="w-4 h-4 mr-2" /> Edit Log</DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteInput(i.id) }} className="text-destructive"><Trash className="w-4 h-4 mr-2" /> Delete Log</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!partai.inputLogs || partai.inputLogs.length === 0) && (
+                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada input log (WIP).</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 5. SAWN TIMBER OUTPUT */}
+        <TabsContent value="output">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Sawn Timber Output</CardTitle>
+                <CardDescription>Hasil akhir gergajian (sawn timber) dari partai ini.</CardDescription>
+              </div>
+              <Button onClick={() => router.push(`/inventory/sawn-timber/output/create?partaiId=${id}`)}>
+                <Plus className="w-4 h-4 mr-2" /> Add Output
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tanggal Output</TableHead>
+                    <TableHead>Shift / Operator</TableHead>
+                    <TableHead className="text-right">Total Item</TableHead>
+                    <TableHead className="text-right">Total Volume (m³)</TableHead>
+                    <TableHead className="text-center w-[80px]">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(partai.sawnOutputs || []).map((o: any) => (
+                    <TableRow key={o.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => router.push(`/inventory/sawn-timber/output/${o.id}`)}>
+                      <TableCell className="font-medium">{o.outputDate ? new Date(o.outputDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                      <TableCell>Shift {o.shift} {o.operatorName ? `(${o.operatorName})` : ""}</TableCell>
+                      <TableCell className="text-right">{o.items?.length || 0}</TableCell>
+                      <TableCell className="text-right font-bold text-foreground/90">{o.totalVolumeM3 || 0}</TableCell>
+                      <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/inventory/sawn-timber/output/${o.id}`)}><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteOutput(o.id) }} className="text-destructive"><Trash className="w-4 h-4 mr-2" /> Delete Output</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!partai.sawnOutputs || partai.sawnOutputs.length === 0) && (
+                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada output sawn timber.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>

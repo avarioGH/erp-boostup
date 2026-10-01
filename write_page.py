@@ -1,6 +1,10 @@
-"use client"
+import os
+
+filepath = r"frontend\src\app\inventory\input-logs\[id]\page.tsx"
+
+content = """"use client"
 import { useState, useEffect, use } from "react"
-import { TimberAPI, api } from "@/lib/api"
+import { TimberAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -46,7 +50,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
   const handleUpdateStatus = async (newStatus: string) => {
     try {
       setUpdatingStatus(true)
-      await api.post(`/inventory/input-logs/${id}/status`, { status: newStatus })
+      await TimberAPI.client.post(`/inventory/input-logs/${id}/status`, { status: newStatus })
       toast({ title: "Status Diperbarui", description: `Status WIP berubah menjadi ${newStatus}.` })
       loadData()
     } catch (err: any) {
@@ -86,16 +90,16 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
         }))
       }
 
-      const res = await api.post('/inventory/sawn-timber/output', payload)
+      const res = await TimberAPI.client.post('/inventory/sawn-timber/output', payload)
       // Auto-post the tally so it enters inventory
-      await api.post(`/inventory/sawn-timber/output/${res.data.id}/post`)
+      await TimberAPI.client.post(`/inventory/sawn-timber/output/${res.data.id}/post`)
       
       toast({ title: "Berhasil", description: "Tally harian berhasil disimpan dan di-posting." })
       setTallyOpen(false)
       setTallyLines([{ t: "", l: "", p: "", pcs: "" }])
       loadData()
     } catch (err: any) {
-      toast({ title: "Gagal Menyimpan Tally", description: err?.response?.data?.error?.message || err?.response?.data?.message || err.message, variant: "destructive" }); alert("Gagal Tally: " + (err?.response?.data?.error?.message || err?.response?.data?.message || err.message));
+      toast({ title: "Gagal Menyimpan Tally", description: err?.response?.data?.message || err.message, variant: "destructive" })
     } finally {
       setSavingTally(false)
     }
@@ -242,8 +246,10 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                 <CardDescription>Catatan output per hari dari gergajian ini.</CardDescription>
               </div>
               <Dialog open={tallyOpen} onOpenChange={setTallyOpen}>
-                <DialogTrigger>
-                  <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-emerald-600 text-primary-foreground shadow hover:bg-emerald-700 h-8 rounded-md px-3" style={data.status === "DONE" ? {opacity: 0.5, pointerEvents: "none"} : {}}><Plus className="w-4 h-4" /> Tally Hari Ini</div>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" disabled={data.status === 'DONE'}>
+                    <Plus className="w-4 h-4 mr-2" /> Tally Hari Ini
+                  </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-3xl">
                   <DialogHeader>
@@ -343,3 +349,8 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
     </div>
   )
 }
+"""
+
+with open(filepath, 'w', encoding='utf-8') as f:
+    f.write(content)
+print("File successfully rewritten")

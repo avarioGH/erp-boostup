@@ -177,10 +177,10 @@ const [partai, setPartai] = useState<any>(null);
     }
   };
 
-      const handleDirectTrim = async (log: any) => {
+  const handleDirectTrim = async (log: any) => {
     if (!confirm(`Buat hasil trimming penuh (100% full) untuk log ${log.logNumber} tanpa pemotongan?`)) return;
     try {
-      await api.post(`/inventory/logs/${log.id}/trimming`, {
+      await api.post(`/inventory/trimmed-log/${log.id}`, {
         length: log.originalLength,
         diameter1: log.diameter1 || 0,
         diameter2: log.diameter2 || 0,
@@ -190,14 +190,9 @@ const [partai, setPartai] = useState<any>(null);
         gerowong: log.gerowong || 0,
         trimmingLength: 0
       });
-      toast({ title: "Success", description: "Log berhasil di-trim penuh." });
       fetchPartai();
     } catch (e: any) {
       console.error(e);
-      const rawData = e?.response?.data;
-      const msg = rawData?.error?.message || rawData?.message || e.message;
-      toast({ title: "Gagal Trimming", description: msg, variant: "destructive" });
-      alert("Gagal Trimming: " + msg);
     }
   };
 
@@ -430,11 +425,9 @@ const [partai, setPartai] = useState<any>(null);
                     <TableHead>No. Log</TableHead>
                     <TableHead>Spesies</TableHead>
                     <TableHead className="text-right">Panjang (m)</TableHead>
-                    <TableHead className="text-right">Avg (cm)</TableHead>
-                    <TableHead className="text-right">Grw (cm)</TableHead>
-                    <TableHead className="text-right">Gross (m&sup3;)</TableHead>
-                    <TableHead className="text-right">Net (m&sup3;)</TableHead>
-                    <TableHead className="text-center w-[120px]">Action</TableHead></TableRow>
+                    <TableHead className="text-right">Volume (m³)</TableHead>
+                    <TableHead className="text-center w-[80px]">Action</TableHead>
+                  </TableRow>
                 </TableHeader>
                 <TableBody>
                   {(partai.rawLogs || []).map((r: any) => (
@@ -476,12 +469,15 @@ const [partai, setPartai] = useState<any>(null);
         {/* 3. TRIMMING */}
         <TabsContent value="trimming">
           <Card>
-                          <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Trimming</CardTitle>
-                  <CardDescription>Proses pemotongan log (pangkal/ujung) sebelum masuk sawmill.</CardDescription>
-                </div>
-              </CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Trimming</CardTitle>
+                <CardDescription>Proses pemotongan log (pangkal/ujung) sebelum masuk sawmill.</CardDescription>
+              </div>
+              <Button onClick={() => router.push(`/inventory/trimming?partaiId=${id}`)}>
+                <Plus className="w-4 h-4 mr-2" /> Trim Logs
+              </Button>
+            </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
@@ -523,74 +519,13 @@ const [partai, setPartai] = useState<any>(null);
           </Card>
         </TabsContent>
 
-        {/* 4. INPUT LOGS */}
-        <TabsContent value="input">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
-              <div>
-                <CardTitle>Production Jobs (Input WIP)</CardTitle>
-                <CardDescription>Pekerjaan gergajian berjalan yang diambil dari DUKB/Trimmed Log.</CardDescription>
-              </div>
-              <Button onClick={() => router.push(`/inventory/input-logs/create?partaiId=${id}`)} className="bg-primary">
-                <Plus className="w-4 h-4 mr-2" /> Buat WIP Baru
-              </Button>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              {(partai.inputLogs || []).map((i: any) => {
-                const totalInputVol = Number(i.totalVolume || 0);
-                const outItems = (i.sawnOutputs || []).flatMap((o: any) => o.items || []);
-                const totalOutputVol = outItems.reduce((acc: number, cur: any) => acc + (cur.volumeM3 || 0), 0);
-                const progressPct = totalInputVol > 0 ? Math.min(100, Math.round((totalOutputVol / totalInputVol) * 100)) : 0;
-                
-                return (
-                  <Card key={i.id} className="overflow-hidden border-border/60 hover:border-primary/40 transition-all cursor-pointer shadow-sm group" onClick={() => router.push(`/inventory/input-logs/${i.id}`)}>
-                    <div className="p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                      <div className="md:col-span-3 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-base text-primary group-hover:underline">{i.inputNumber}</span>
-                          {i.status === 'DONE' ? <Badge className="bg-emerald-500 hover:bg-emerald-600">DONE</Badge> : i.status === 'IN_PROCESS' ? <Badge className="bg-amber-500 hover:bg-amber-600">IN PROCESS</Badge> : <Badge className="bg-rose-500 hover:bg-rose-600">AVAILABLE</Badge>}
-                        </div>
-                        <div className="text-xs text-muted-foreground flex gap-1 items-center">
-                          <span className="font-medium text-foreground/80">{i.species}</span> &bull; {i.items?.length || 0} Source Logs
-                        </div>
-                      </div>
-                      
-                      <div className="md:col-span-7 grid grid-cols-3 gap-4 text-sm text-center">
-                        <div className="bg-muted/30 rounded-md p-2">
-                          <div className="text-xs text-muted-foreground mb-1">Input (m&sup3;)</div>
-                          <div className="font-semibold text-foreground/90">{totalInputVol.toFixed(4)}</div>
-                        </div>
-                        <div className="bg-muted/30 rounded-md p-2">
-                          <div className="text-xs text-muted-foreground mb-1">Output (m&sup3;)</div>
-                          <div className="font-semibold text-emerald-600 dark:text-emerald-400">{totalOutputVol.toFixed(4)}</div>
-                        </div>
-                        <div className="bg-muted/30 rounded-md p-2">
-                          <div className="text-xs text-muted-foreground mb-1">Yield</div>
-                          <div className="font-semibold text-blue-600 dark:text-blue-400">{progressPct}%</div>
-                        </div>
-                      </div>
-                      
-                      <div className="md:col-span-2 flex justify-end">
-                        <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/input-logs/${i.id}`) }}>
-                          Detail Pekerjaan <ArrowRight className="w-4 h-4 ml-1" />
-                        </Button>
-                      </div>
-                    </div>
-                    {/* Progress Bar Visualizer */}
-                    <div className="h-1.5 w-full bg-muted/50">
-                      <div className={`h-full transition-all duration-500 ${i.status === 'DONE' ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${progressPct}%` }} />
-                    </div>
-                  </Card>
-                );
-              })}
-              {(!partai.inputLogs || partai.inputLogs.length === 0) && (
-                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
-                  Belum ada pekerjaan produksi (WIP). Klik Buat WIP Baru untuk memulai.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* 4. INPUT LOGS <TabsContent value="input">
+  <Card>
+    <CardHeader>
+      <CardTitle>Test</CardTitle>
+    </CardHeader>
+  </Card>
+</TabsContent>
 
         {/* 5. SAWN TIMBER OUTPUT */}
         <TabsContent value="output">
@@ -600,6 +535,7 @@ const [partai, setPartai] = useState<any>(null);
                 <CardTitle>Sawn Timber Output (Daily Tally)</CardTitle>
                 <CardDescription>Hasil akhir gergajian yang tercatat dari seluruh WIP partai ini.</CardDescription>
               </div>
+              {/* Output must be created from WIP, so no standalone 'Add Output' button */}
             </CardHeader>
             <CardContent className="pt-0">
               <Table>
@@ -630,7 +566,7 @@ const [partai, setPartai] = useState<any>(null);
                     );
                   })}
                   {(!partai.sawnOutputs || partai.sawnOutputs.length === 0 || partai.sawnOutputs.flatMap((o: any) => o.items).length === 0) && (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Belum ada output produksi.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada output produksi.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
