@@ -53,7 +53,7 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled = fa
                autoFocus
                value={search}
                onChange={e => setSearch(e.target.value)}
-               placeholder="Ketik untuk mencari..."
+               placeholder={"Ketik untuk mencari... (Total: " + (options?.length || 0) + ")"}
                className="h-8 text-sm"
              />
           </div>
