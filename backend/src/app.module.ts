@@ -1,3 +1,4 @@
+import { TimberSalesModule } from './sales/timber-sales.module';
 import { FixController } from './fix.controller';
 import { MasterDataModule } from './inventory/master-data/master-data.module';
 import { ApprovalModule } from './approval/approval.module';
@@ -48,6 +49,7 @@ import { ReportsModule as InventoryReportsModule } from './inventory/reports/rep
 
 @Module({
   imports: [
+    TimberSalesModule,
     ApprovalModule,
     EcommerceModule,
     SystemModule,
