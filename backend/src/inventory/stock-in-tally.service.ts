@@ -20,7 +20,7 @@ export class StockInTallyService {
       const tally = await tx.stockInTally.create({
         data: {
           company_id,
-          idempotency_key: data.idempotency_key,
+          idempotency_key: data.idempotency_key || `TLY-${Date.now()}-${Math.floor(Math.random()*10000)}`,
           tally_number: tallyNumber,
           tally_date: new Date(data.tally_date),
           warehouse_id: data.warehouse_id,
