@@ -1,4 +1,4 @@
-import axios from 'axios';
+﻿import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.erp.boostup.id';
 
@@ -184,7 +184,7 @@ export const PosAPI: any = {
   getShifts: async () => (await api.get('/pos/shifts')).data,
   openShift: async (data: any) => (await api.post('/pos/shifts/open', data)).data,
   closeShift: async (data: any) => (await api.post('/pos/shifts/close', data)).data,
-  getOrderHistory: async (params?: any) => (await api.get('/pos/transactions', { params })).data,
+  getOrderHistory: async (params?: any) => (await api.get('/pos/history', { params })).data,
 };
 
 export const FinanceAPI: any = {
