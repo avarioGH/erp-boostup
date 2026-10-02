@@ -1,3 +1,4 @@
+import { NotificationService } from '../notification/notification.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 ﻿
 import { createFifoLayer } from '../inventory/fifo.engine';
@@ -7,7 +8,8 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PurchasingService {
-  constructor(private prisma: PrismaService, private inventoryService: InventoryService, private eventEmitter: EventEmitter2) {}
+  constructor(private prisma: PrismaService,
+    private notificationService: NotificationService, private inventoryService: InventoryService, private eventEmitter: EventEmitter2) {}
 
   async getPurchaseRequests(companyId: string, page: number = 1, limit: number = 50, search?: string, status?: string) {
     const skip = (page - 1) * limit;
@@ -168,7 +170,7 @@ export class PurchasingService {
   }
 
   async receiveGoods(companyId: string, purchaseOrderId: string, receiptData: any) {
-    return this.prisma.$transaction(async (tx) => {
+    const _grnResult = await this.prisma.$transaction(async (tx) => {
       const po = await tx.purchaseOrder.findUnique({
         where: { id: purchaseOrderId, company_id: companyId },
         include: { items: true }
@@ -232,6 +234,17 @@ export class PurchasingService {
 
       return grn;
     });
+    try {
+      await this.notificationService.sendToOwners(companyId, {
+        type: 'GOODS_RECEIPT',
+        title: '📦 Inventori Masuk',
+        message: `Penerimaan barang GRN berhasil dicatat ke inventori.`,
+        severity: 'INFO',
+        actionUrl: '/purchasing/receipts',
+        idempotencyKey: `grn-notif-${Date.now()}`
+      });
+    } catch (_ne) { /* silent */ }
+    return _grnResult;
   }
 
   async createVendorBill(companyId: string, purchaseOrderId: string, billData: any) {

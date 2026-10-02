@@ -1,4 +1,4 @@
-﻿
+
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -90,6 +90,29 @@ export class NotificationService {
       where: { company_id: companyId, user_id: userId, is_read: false },
       data: { is_read: true, read_at: new Date() }
     });
+  }
+
+  async sendToOwners(companyId: string, data: Omit<CreateNotificationDto, 'companyId' | 'userId'>) {
+    try {
+      const owners = await this.prisma.user.findMany({
+        where: { company_id: companyId, status: true },
+        include: { role: true }
+      });
+      const ownerUsers = owners.filter((u: any) =>
+        u.role?.name?.toLowerCase().includes('owner') ||
+        u.name?.toLowerCase().includes('ikan')
+      );
+      for (const owner of ownerUsers) {
+        await this.send({
+          ...data,
+          companyId,
+          userId: owner.id,
+          idempotencyKey: data.idempotencyKey ? `${data.idempotencyKey}-${owner.id}` : undefined
+        });
+      }
+    } catch (e) {
+      this.logger.error('Failed to sendToOwners', e);
+    }
   }
 }
 

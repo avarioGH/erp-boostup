@@ -11,6 +11,7 @@ import {
  DropdownMenuSeparator, DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { api } from "@/lib/api"
 
 export function AppHeader() {
@@ -18,6 +19,9 @@ export function AppHeader() {
  const [user, setUser] = useState<any>(null)
  const [activeWarehouse, setActiveWarehouse] = useState<any>(null)
  const [warehouses, setWarehouses] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [notifOpen, setNotifOpen] = useState(false)
 
  useEffect(() => {
  // Fetch live warehouses
@@ -49,7 +53,18 @@ export function AppHeader() {
  }
  }, [])
 
- const handleSelectWarehouse = (wh: any) => {
+ const fetchNotifications = async () => {
+    try {
+      const [notifRes, countRes] = await Promise.all([
+        api.get('/notifications?take=20'),
+        api.get('/notifications/unread-count')
+      ])
+      setNotifications(notifRes.data || [])
+      setUnreadCount(countRes.data?.count || 0)
+    } catch (_e) { /* silent */ }
+  }
+
+  const handleSelectWarehouse = (wh: any) => {
  setActiveWarehouse(wh)
  localStorage.setItem("active_warehouse", JSON.stringify(wh))
  window.location.reload() // Reload to fetch data contextually
@@ -137,10 +152,58 @@ export function AppHeader() {
  </div>
  <div className="flex items-center gap-1 md:gap-4 shrink-0">
  <ThemeToggle />
- <button className="relative text-sidebar-foreground/80 hover:text-sidebar-accent-foreground transition-colors h-9 w-9 flex items-center justify-center rounded-md hover:bg-sidebar-accent">
- <Bell className="h-4 w-4" />
- <span className="absolute top-2 right-2.5 h-1.5 w-1.5 rounded-full bg-destructive border-[1.5px] border-background"></span>
- </button>
+ {(user?.role?.toLowerCase().includes('owner') || user?.name?.toLowerCase().includes('ikan')) ? (
+  <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}>
+    <DropdownMenuTrigger className="relative text-sidebar-foreground/80 hover:text-sidebar-accent-foreground transition-colors h-9 w-9 flex items-center justify-center rounded-md hover:bg-sidebar-accent outline-none">
+        <Bell className="h-4 w-4" />
+        {unreadCount > 0 && (
+          <span className="absolute top-1.5 right-1.5 h-4 w-4 rounded-full bg-destructive text-[9px] font-bold text-white flex items-center justify-center">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className="w-80 p-0 shadow-lg" sideOffset={8}>
+      <div className="flex items-center justify-between px-4 py-3 border-b">
+        <span className="font-semibold text-sm">Notifikasi</span>
+        {unreadCount > 0 && (
+          <button
+            onClick={async (e) => { e.stopPropagation(); try { await api.post('/notifications/read-all'); fetchNotifications(); } catch(_e){} }}
+            className="text-xs text-primary hover:underline"
+          >
+            Tandai semua dibaca
+          </button>
+        )}
+      </div>
+      <div className="max-h-[400px] overflow-y-auto">
+        {notifications.length === 0 ? (
+          <div className="px-4 py-8 text-center text-muted-foreground text-sm">Tidak ada notifikasi</div>
+        ) : (
+          notifications.map((notif: any) => (
+            <div
+              key={notif.id}
+              onClick={async () => {
+                try { if (!notif.is_read) { await api.post('/notifications/' + notif.id + '/read'); setNotifications((prev: any[]) => prev.map((n: any) => n.id === notif.id ? {...n, is_read: true} : n)); setUnreadCount((prev: number) => Math.max(0, prev - 1)); } } catch(_e){}
+                if (notif.action_url) { setNotifOpen(false); router.push(notif.action_url); }
+              }}
+              className={'flex gap-3 px-4 py-3 border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors ' + (!notif.is_read ? 'bg-primary/5' : '')}
+            >
+              <div className={'mt-1.5 w-2 h-2 rounded-full shrink-0 ' + (notif.severity === 'SUCCESS' ? 'bg-green-500' : notif.severity === 'WARNING' ? 'bg-amber-500' : notif.severity === 'ERROR' ? 'bg-red-500' : 'bg-blue-500')} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium leading-tight">{notif.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-1">{new Date(notif.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </DropdownMenuContent>
+  </DropdownMenu>
+) : (
+  <button className="relative text-sidebar-foreground/80 hover:text-sidebar-accent-foreground transition-colors h-9 w-9 flex items-center justify-center rounded-md hover:bg-sidebar-accent">
+    <Bell className="h-4 w-4" />
+  </button>
+)}
  <Separator orientation="vertical" className="hidden md:block h-5 bg-sidebar-border mx-1" />
  <div className="flex items-center gap-3 cursor-pointer group hover:bg-sidebar-accent py-1 px-2 rounded-md transition-colors">
  <Avatar className="h-8 w-8 border border-border shadow-sm">

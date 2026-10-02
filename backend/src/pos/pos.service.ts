@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationService } from '../notification/notification.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SalesCompletedEvent } from '../events/sales-completed.event';
@@ -8,14 +9,15 @@ import { SequenceService } from '../reports/sequence.service';
 
 @Injectable()
 export class PosService {
-  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2, private inventoryService: InventoryService, private sequenceService: SequenceService) {}
+  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2, private inventoryService: InventoryService,
+    private notificationService: NotificationService, private sequenceService: SequenceService) {}
 
   async processCheckout(data: any) {
     const { companyId, userId, warehouseId, paymentMethod, items, subtotal, tax, total, idempotency_key, newCustomerName, newCustomerPhone, newCustomerAddress } = data;
     let customerId = data.customerId;
     let totalPosCogs = 0;
 
-    return this.prisma.$transaction(async (tx) => {
+    const _posResult = await this.prisma.$transaction(async (tx) => {
       // 0. Idempotency Check
       if (idempotency_key) {
         const existing = await tx.salesOrder.findFirst({
@@ -170,6 +172,20 @@ export class PosService {
 
       return salesOrder;
     });
+    // Notify owners
+    try {
+      const _total = data.total || 0;
+      await this.notificationService.sendToOwners(data.companyId, {
+        type: 'POS_SALE',
+        title: '🛒 Penjualan POS Baru',
+        message: `Transaksi POS senilai Rp ${Math.round(_total).toLocaleString('id-ID')} berhasil dicatat.`,
+        severity: 'SUCCESS',
+        entityType: 'SALES_ORDER',
+        actionUrl: '/pos/reports',
+        idempotencyKey: `pos-sale-notif-${data.idempotency_key || Date.now()}`
+      });
+    } catch (_ne) { /* silent */ }
+    return _posResult;
   }
 
   async getHistory(companyId: string) {

@@ -1,3 +1,4 @@
+import { NotificationService } from '../notification/notification.service';
 ﻿import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PayrollPostedEvent, PayrollPaymentEvent } from '../events/accounting.events';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
@@ -5,7 +6,8 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class HrService {
-  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2) {}
+  constructor(private prisma: PrismaService,
+    private notificationService: NotificationService, private eventEmitter: EventEmitter2) {}
 
   // Departments
   async getDepartments(companyId: string) {
@@ -130,7 +132,7 @@ export class HrService {
   }
 
   async createAttendance(data: any) {
-    return this.prisma.attendance.create({
+    const _att = await this.prisma.attendance.create({
       data: {
         company_id: data.companyId, employee_id: data.employeeId,
         date: new Date(data.date),

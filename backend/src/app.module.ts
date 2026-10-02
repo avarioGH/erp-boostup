@@ -32,6 +32,7 @@ import { CrmModule } from './crm/crm.module';
 import { PurchasingModule } from './purchasing/purchasing.module';
 import { HrModule } from './hr/hr.module';
 import { PosModule } from './pos/pos.module';
+import { NotificationModule } from './notification/notification.module';
 import { ShopeeModule } from './integrations/shopee/shopee.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -69,7 +70,8 @@ import { ReportsModule as InventoryReportsModule } from './inventory/reports/rep
     IntegrationsModule,
     TripayModule,
     CrmModule,
-    PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule,  MrpModule, MasterDataModule, ProductionModule, PurchaseModule, ShipmentModule, OpnameModule
+    PurchasingModule, HrModule, PosModule,
+    NotificationModule, ShopeeModule, AiModule,  MrpModule, MasterDataModule, ProductionModule, PurchaseModule, ShipmentModule, OpnameModule
   ],
   controllers: [AppController, FixController],
   providers: [AppService],
