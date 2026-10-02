@@ -134,7 +134,7 @@ export default function CreateSalesOrderPage() {
                 </div>
                 <div className="col-span-2 space-y-2">
                   <Label className="text-xs">Qty</Label>
-                  <Input type="number" min="1" value={item.qty} onChange={e => {
+                  <Input type="number" step="any" min="0" value={item.qty} onChange={e => {
                     const newItems = [...items]; newItems[index].qty = e.target.value as any; setItems(newItems);
                   }} />
                 </div>

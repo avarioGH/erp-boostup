@@ -797,9 +797,9 @@ model InventoryTransactionItem {
   transaction    InventoryTransaction @relation(fields: [transaction_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   product_id     String               @db.ObjectId
   product        Product              @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  qty            Int
-  system_qty     Int?
-  counted_qty    Int?
+  qty            Float
+  system_qty            Float?
+  counted_qty            Float?
   difference     Int?
   unit_cost      Float                @default(0)
   subtotal       Float                @default(0)
@@ -853,9 +853,9 @@ model WarehouseStock {
   product_id   String    @db.ObjectId
   product      Product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  current_stock   Int @default(0)
-  reserved_stock  Int @default(0)
-  available_stock Int @default(0)
+  current_stock   Float @default(0)
+  reserved_stock  Float @default(0)
+  available_stock Float @default(0)
 
   updated_at DateTime @updatedAt
 
@@ -1680,9 +1680,9 @@ model SalesOrderItem {
   sales_order    SalesOrder @relation(fields: [sales_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   product_id     String     @db.ObjectId
   product        Product    @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  qty            Int
-  system_qty     Int?
-  counted_qty    Int?
+  qty            Float
+  system_qty            Float?
+  counted_qty            Float?
   difference     Int?
   unit_price     Float
   subtotal       Float
@@ -1892,7 +1892,7 @@ model QuotationItem {
   quotation    Quotation @relation(fields: [quotation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   product_id   String    @db.ObjectId
   product      Product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  qty          Int
+  qty            Float
   unit_price   Float
   discount     Float     @default(0)
   tax          Float     @default(0)
@@ -1932,9 +1932,9 @@ model DeliveryOrderItem {
   delivery_order    DeliveryOrder @relation(fields: [delivery_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   product_id        String        @db.ObjectId
   product           Product       @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  ordered_qty       Int
-  delivered_qty     Int
-  remaining_qty     Int
+  ordered_qty            Float
+  delivered_qty            Float
+  remaining_qty            Float
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -3603,7 +3603,7 @@ model StockInTallyItem {
   tally       StockInTally @relation(fields: [tally_id], references: [id], onDelete: Cascade)
   product_id  String       @db.ObjectId
   product     Product      @relation(fields: [product_id], references: [id])
-  qty         Int
+  qty            Float
   movement_id String?      @db.ObjectId
 }
 

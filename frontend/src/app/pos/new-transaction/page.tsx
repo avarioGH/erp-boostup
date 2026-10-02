@@ -253,7 +253,10 @@ export default function PosTransaction() {
  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md hover:bg-card" onClick={() => updateQty(item.id, -1)}>
  <Minus className="w-3 h-3" />
  </Button>
- <span className="text-sm font-bold w-4 text-center">{item.qty}</span>
+ <input type="number" step="any" min="0" value={item.qty} onChange={(e) => {
+  const v = e.target.value === "" ? 0 : parseFloat(e.target.value);
+  setCart(prev => prev.map(i => i.id === item.id ? { ...i, qty: v } : i));
+}} className="w-16 text-center text-sm font-bold bg-transparent outline-none" />
  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-md hover:bg-card" onClick={() => updateQty(item.id, 1)}>
  <Plus className="w-3 h-3" />
  </Button>
