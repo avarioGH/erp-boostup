@@ -68,21 +68,23 @@ export default function InflowPage() {
                   <th className="px-6 py-4 font-medium text-muted-foreground">Nomor Teli</th>
                   <th className="px-6 py-4 font-medium text-muted-foreground">Tanggal</th>
                   <th className="px-6 py-4 font-medium text-muted-foreground">Gudang</th>
+                    <th className="px-6 py-4 font-medium text-muted-foreground">Keterangan</th>
                   <th className="px-6 py-4 font-medium text-muted-foreground">Total Item</th>
                   <th className="px-6 py-4 font-medium text-muted-foreground text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {loading ? (
-                  <tr><td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">Memuat data...</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">Memuat data...</td></tr>
                 ) : data.length === 0 ? (
-                  <tr><td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">Belum ada data penerimaan.</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">Belum ada data penerimaan.</td></tr>
                 ) : (
                   paginatedData.map(item => (
                     <tr key={item.id} className="hover:bg-muted/50 transition-colors">
                       <td className="px-6 py-4 font-medium">{item.tally_number}</td>
                       <td className="px-6 py-4">{new Date(item.tally_date).toLocaleDateString('id-ID')}</td>
                       <td className="px-6 py-4">{item.warehouse?.name || '-'}</td>
+                        <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">{item.notes || '-'}</td>
                       <td className="px-6 py-4">{item.items?.length || 0} Barang</td>
                       <td className="px-6 py-4 text-right">
                         <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(item.id)}>
