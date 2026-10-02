@@ -1,6 +1,6 @@
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
-﻿import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AnalyticsService } from './analytics.service';
 
@@ -14,34 +14,20 @@ export class AnalyticsController {
   async getSalesAnalytics(
     @Request() req: any,
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
   ) {
-    return this.analyticsService.getSalesAnalytics(req.user.company_id, startDate, endDate);
+    return this.analyticsService.getSalesAnalytics(req.user.company_id || req.user.companyId, startDate, endDate);
   }
 
   @Permissions('analytics.view')
   @Get('customers')
   async getCustomerAnalytics(@Request() req: any) {
-    return this.analyticsService.getCustomerAnalytics(req.user.company_id);
+    return this.analyticsService.getCustomerAnalytics(req.user.company_id || req.user.companyId);
   }
 
-  @Permissions('analytics.view')
-  @Get('pipeline')
-  async getPipelineAnalytics(@Request() req: any) {
-    return this.analyticsService.getPipelineAnalytics(req.user.company_id);
-  }
-
-  @Permissions('analytics.view')
-  @Get('financial')
-  async getFinancialAnalytics(@Request() req: any) {
-    return this.analyticsService.getFinancialAnalytics(req.user.company_id);
-  }
-  @Permissions('analytics.view')
+  // Used by DashboardAPI.getKPIs on frontend root page
   @Get('dashboard')
-  async getDashboardData(@Request() req: any, @Query('timeRange') timeRange: string) {
-    return { summary: { revenue: 0, customers: 0, orders: 0 }, chartData: [] };
+  async getDashboardData(@Request() req: any, @Query('timeRange') timeRange: string, @Query('warehouseId') warehouseId: string) {
+    return this.analyticsService.getDashboardKPIs(req.user.company_id || req.user.companyId, warehouseId);
   }
 }
-
-
-
