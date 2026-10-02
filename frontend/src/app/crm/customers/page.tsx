@@ -118,6 +118,10 @@ export default function CustomersPage() {
  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contact@abc.com" />
  </div>
  </div>
+ <div className="space-y-2 md:col-span-2">
+ <Label>Alamat / Address</Label>
+ <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Jl. Sudirman No. 1, Jakarta..." />
+ </div>
  <div className="flex justify-end gap-2 pt-4">
  <Button variant="ghost" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
  <Button type="submit">{editId ? "Update Customer" : "Create Customer"}</Button>
