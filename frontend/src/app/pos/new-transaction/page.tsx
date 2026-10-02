@@ -20,7 +20,7 @@ import {
  Search, ScanLine, ShoppingCart, Plus, Minus, 
  Trash2, CreditCard, Banknote, QrCode, User, AlertTriangle
 } from"lucide-react"
-import { InventoryAPI, PosAPI } from"@/lib/api"
+import { InventoryAPI, PosAPI, api } from"@/lib/api"
 
 type CartItem = {
  id: string
