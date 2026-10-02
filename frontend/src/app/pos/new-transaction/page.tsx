@@ -364,7 +364,7 @@ export default function PosTransaction() {
  setIdempotencyKey(crypto.randomUUID());
  } catch (error: any) {
  console.error("Checkout failed", error);
- const errMessage = error?.response?.data?.message || error.message ||"Unknown error";
+ const errMessage = error?.response?.data?.error?.message || error?.response?.data?.message || error.message ||"Unknown error";
  alert(`Gagal terhubung ke Database. Error: ${errMessage}`);
  setCart([]);
  setIsPaymentOpen(false);
