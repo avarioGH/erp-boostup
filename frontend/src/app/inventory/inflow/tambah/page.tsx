@@ -85,6 +85,7 @@ export default function CreateInflowPage() {
   const [loading, setLoading] = useState(false)
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
+  const [lockedWarehouse, setLockedWarehouse] = useState(false)
 
   const [form, setForm] = useState({
     warehouse_id: "",
@@ -103,6 +104,14 @@ export default function CreateInflowPage() {
     ]).then(([wh, prod]) => {
       setWarehouses(wh?.data || wh || [])
       setProducts(prod?.data || prod || [])
+      
+      if (typeof window !== 'undefined') {
+        const active = localStorage.getItem('active_warehouse')
+        if (active && active !== 'all') {
+          setLockedWarehouse(true)
+          setForm(prev => ({ ...prev, warehouse_id: active }))
+        }
+      }
     })
   }, [])
 
@@ -155,7 +164,9 @@ export default function CreateInflowPage() {
                 options={warehouses} 
                 value={form.warehouse_id} 
                 onChange={(v: any) => setForm({...form, warehouse_id: v})} 
-                placeholder="Pilih Gudang..." 
+                placeholder="Pilih Gudang..."
+                disabled={lockedWarehouse}
+                renderLabel={(o: any) => o.name}
               />
             </div>
             <div className="space-y-2 md:col-span-2">
