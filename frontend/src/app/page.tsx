@@ -34,6 +34,24 @@ const timeAgo = (dateStr: string) => {
 
 export default function OwnerDashboard() {
   const [warehouse, setWarehouse] = useState("all")
+
+  useEffect(() => {
+    const syncWarehouse = () => {
+      const stored = localStorage.getItem('active_warehouse');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setWarehouse(parsed && parsed.id ? parsed.id : 'all');
+        } catch(e) {}
+      } else {
+        setWarehouse('all');
+      }
+    };
+    syncWarehouse(); // initial
+    window.addEventListener('warehouse_changed', syncWarehouse);
+    return () => window.removeEventListener('warehouse_changed', syncWarehouse);
+  }, []);
+
   
   const [loading, setLoading] = useState(true)
   const [errorState, setErrorState] = useState<any>(null)
@@ -200,7 +218,7 @@ export default function OwnerDashboard() {
  )}
  <div className="flex items-center gap-3 bg-card p-1.5 rounded-lg border border-border shadow-sm">
  <span className="text-xs font-semibold text-muted-foreground pl-3 hidden sm:inline-block uppercase tracking-wider">Cabang:</span>
- <Select value={warehouse} onValueChange={(val) => setWarehouse(val as string)}>
+ <div className="hidden"><Select value={warehouse} onValueChange={(val) => setWarehouse(val as string)}>
  <SelectTrigger className="w-[180px] border-none bg-accent focus:ring-0 focus:ring-offset-0 h-8 text-sm font-medium">
  <SelectValue placeholder="Pilih Gudang" />
  </SelectTrigger>

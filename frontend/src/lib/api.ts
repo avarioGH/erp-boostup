@@ -10,6 +10,16 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('erp_token') : null;
   if (token) config.headers.Authorization = 'Bearer ' + token;
+  const activeWarehouse = typeof window !== 'undefined' ? localStorage.getItem('active_warehouse') : null;
+  if (activeWarehouse) {
+    try {
+      const parsed = JSON.parse(activeWarehouse);
+      if (parsed && parsed.id) {
+        config.headers['X-Warehouse-Id'] = parsed.id;
+        config.params = { ...config.params, warehouseId: parsed.id };
+      }
+    } catch(e) {}
+  }
   return config;
 });
 

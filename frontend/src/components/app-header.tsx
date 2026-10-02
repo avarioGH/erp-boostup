@@ -44,7 +44,7 @@ export function AppHeader() {
  } else {
  // Default to Pusat (null warehouse)
  setActiveWarehouse(null)
- localStorage.setItem("active_warehouse", JSON.stringify(null))
+ localStorage.setItem("active_warehouse", JSON.stringify(null)); window.dispatchEvent(new Event("warehouse_changed"));
  }
  } catch (e) {
  console.error("Error parsing user data", e)
@@ -66,7 +66,7 @@ export function AppHeader() {
 
   const handleSelectWarehouse = (wh: any) => {
  setActiveWarehouse(wh)
- localStorage.setItem("active_warehouse", JSON.stringify(wh))
+ localStorage.setItem("active_warehouse", JSON.stringify(wh)); window.dispatchEvent(new Event("warehouse_changed"));
  window.location.reload() // Reload to fetch data contextually
  }
 
