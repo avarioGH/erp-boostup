@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/comp
 import { Button } from"@/components/ui/button"
 import { Input } from"@/components/ui/input"
 import { Label } from"@/components/ui/label"
-import { Plus, Search, Filter, Phone, Mail, MapPin, Building2, ChevronLeft, ArrowRight, User } from"lucide-react"
+import { Edit, Trash2, Plus, Search, Filter, Phone, Mail, MapPin, Building2, ChevronLeft, ArrowRight, User } from"lucide-react"
 import { Badge } from"@/components/ui/badge"
 import { useRouter } from"next/navigation"
 import { useDataTable } from"@/hooks/use-data-table"
@@ -23,6 +23,7 @@ export default function CustomersPage() {
  const [name, setName] = useState("")
  const [phone, setPhone] = useState("")
  const [email, setEmail] = useState("")
+ const [editId, setEditId] = useState<string|null>(null)
 
  const fetchCustomers = async () => {
  try {
@@ -76,7 +77,7 @@ export default function CustomersPage() {
  <Card className="border-primary/20 shadow-sm animate-in slide-in-from-top-4">
  <form onSubmit={handleSave}>
  <CardHeader className="bg-muted/20 border-b pb-4">
- <CardTitle className="text-[16px] font-semibold">Create New Customer</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">{editId ? "Edit Customer" : "Create New Customer"}</CardTitle>
  </CardHeader>
  <CardContent className="space-y-4 pt-6">
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -95,7 +96,7 @@ export default function CustomersPage() {
  </div>
  <div className="flex justify-end gap-2 pt-4">
  <Button variant="ghost" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
- <Button type="submit">Create Customer</Button>
+ <Button type="submit">{editId ? "Update Customer" : "Create Customer"}</Button>
  </div>
  </CardContent>
  </form>
@@ -166,10 +167,18 @@ export default function CustomersPage() {
  <Badge variant="secondary" className="bg-emerald-100 text-primary hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-primary">Active</Badge>
  </td>
  <td className="p-3 px-4 text-right">
- <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
- View 360 <ArrowRight className="ml-1 h-3 w-3" />
- </Button>
- </td>
+   <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+     <Button variant="ghost" size="sm" onClick={(e) => openEdit(e, c)} className="h-8 w-8 p-0">
+       <Edit className="h-4 w-4 text-blue-500" />
+     </Button>
+     <Button variant="ghost" size="sm" onClick={(e) => handleDelete(e, c.id)} className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600">
+       <Trash2 className="h-4 w-4 text-red-500" />
+     </Button>
+     <Button variant="ghost" size="sm" className="h-8" onClick={(e) => { e.stopPropagation(); router.push(`/crm/customers/${c.id}`); }}>
+       View 360 <ArrowRight className="ml-1 h-3 w-3" />
+     </Button>
+   </div>
+   </td>
  </tr>
  ))}
  </tbody>
