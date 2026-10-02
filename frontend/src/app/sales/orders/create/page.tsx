@@ -248,23 +248,18 @@ export default function CreateSalesOrderPage() {
               <div key={index} className="grid grid-cols-12 gap-2 items-end border-b pb-4">
                 <div className="col-span-5 space-y-2">
                   <Label className="text-xs">Barang</Label>
-                  <Select value={item.product_id} onValueChange={(v: any) => {
-                    const newItems = [...items]; 
-                    newItems[index].product_id = v;
-                    // Auto fill price if possible
-                    const prod = products.find(p => p.id === v || p._id === v);
-                    if (prod && prod.sell_price) newItems[index].unit_price = prod.sell_price;
-                    setItems(newItems);
-                  }}>
-                    <SelectTrigger><SelectValue placeholder="Pilih Produk..." /></SelectTrigger>
-                    <SelectContent>
-                      {products.map(p => (
-                        <SelectItem key={p.id || p._id} value={p.id || p._id}>
-                          {p.code ? `[${p.code}] ` : ''}{p.name || 'Unknown Product'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect 
+                    options={products}
+                    value={item.product_id}
+                    onChange={(v: any) => {
+                      const newItems = [...items]; 
+                      newItems[index].product_id = v;
+                      const prod = products.find((p: any) => p.id === v || p._id === v);
+                      if (prod && prod.sell_price) newItems[index].unit_price = prod.sell_price;
+                      setItems(newItems);
+                    }}
+                    placeholder="Pilih Produk..."
+                  />
                 </div>
                 <div className="col-span-2 space-y-2">
                   <Label className="text-xs">Qty</Label>
