@@ -297,7 +297,12 @@ export default function CreateSalesOrderPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
               <div className="space-y-2">
-                <Label>Jumlah Dibayar (Rp)</Label>
+                <div className="flex justify-between items-center">
+                  <Label>Jumlah Dibayar (Rp)</Label>
+                  <Button type="button" variant="outline" size="sm" className="h-6 text-xs px-2" onClick={() => setPaidAmount(totalAmount)}>
+                    Dibayar Full
+                  </Button>
+                </div>
                 <Input 
                   type="number" 
                   min="0" 
