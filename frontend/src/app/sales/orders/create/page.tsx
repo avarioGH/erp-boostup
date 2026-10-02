@@ -30,7 +30,7 @@ export default function CreateSalesOrderPage() {
 
   useEffect(() => {
     Promise.all([
-      api.get('/master-data/customers').then(res => res.data).catch(() => []), // Replace with CustomerAPI if exists
+      api.get('/customers').then(res => res.data).catch(() => []), // Replace with CustomerAPI if exists
       InventoryAPI.getProducts().catch(() => [])
     ]).then(([cust, prod]) => {
       // Handle the fact that customer API might be returning {data: []}
