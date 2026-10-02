@@ -23,6 +23,7 @@ export default function CustomersPage() {
  const [name, setName] = useState("")
  const [phone, setPhone] = useState("")
  const [email, setEmail] = useState("")
+ const [address, setAddress] = useState("")
  const [editId, setEditId] = useState<string|null>(null)
 
  const fetchCustomers = async () => {
@@ -46,13 +47,13 @@ export default function CustomersPage() {
     e.preventDefault();
     try {
       if (editId) {
-         await api.put(`/customers/${editId}`, { name, phone, email });
+         await api.put(`/customers/${editId}`, { name, phone, email, address });
       } else {
-         await api.post("/customers", { name, phone, email });
+         await api.post("/customers", { name, phone, email, address });
       }
       setShowForm(false);
       setEditId(null);
-      setName(""); setPhone(""); setEmail("");
+      setName(""); setPhone(""); setEmail(""); setAddress("");
       fetchCustomers();
     } catch (err) {
       console.error(err);
@@ -77,7 +78,7 @@ export default function CustomersPage() {
     setEditId(c.id);
     setName(c.name);
     setPhone(c.phone || "");
-    setEmail(c.email || "");
+    setEmail(c.email || ""); setAddress(c.address || "");
     setShowForm(true);
   }
 
