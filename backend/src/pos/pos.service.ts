@@ -11,7 +11,8 @@ export class PosService {
   constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2, private inventoryService: InventoryService, private sequenceService: SequenceService) {}
 
   async processCheckout(data: any) {
-    const { companyId, userId, warehouseId, customerId, paymentMethod, items, subtotal, tax, total, idempotency_key } = data;
+    const { companyId, userId, warehouseId, paymentMethod, items, subtotal, tax, total, idempotency_key, newCustomerName, newCustomerPhone, newCustomerAddress } = data;
+    let customerId = data.customerId;
     let totalPosCogs = 0;
 
     return this.prisma.$transaction(async (tx) => {
@@ -23,6 +24,20 @@ export class PosService {
         if (existing) {
           throw new ConflictException('Transaction with this idempotency key already exists.');
         }
+      }
+
+      // 0.5 Create New Customer if requested
+      if (!customerId && newCustomerName) {
+        const newCust = await tx.customer.create({
+          data: {
+            company_id: companyId,
+            name: newCustomerName,
+            phone: newCustomerPhone || undefined,
+            address: newCustomerAddress || undefined,
+            status: true, code: "CUST-" + Date.now()
+          }
+        });
+        customerId = newCust.id;
       }
 
       // 1. Create Sales Order (Receipt)

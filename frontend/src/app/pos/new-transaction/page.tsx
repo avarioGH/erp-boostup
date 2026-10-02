@@ -41,6 +41,7 @@ export default function PosTransaction() {
   const [isNewCustomer, setIsNewCustomer] = useState(false)
   const [newCustomerName, setNewCustomerName] = useState("")
   const [newCustomerPhone, setNewCustomerPhone] = useState("")
+  const [newCustomerAddress, setNewCustomerAddress] = useState("")
   
   useEffect(() => {
      api.get("/customers?limit=100").then(res => {
@@ -331,10 +332,13 @@ export default function PosTransaction() {
        </Button>
     </div>
     {isNewCustomer ? (
-       <div className="flex gap-2">
-         <Input placeholder="Nama" value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} />
-         <Input placeholder="No HP" value={newCustomerPhone} onChange={e => setNewCustomerPhone(e.target.value)} />
-       </div>
+       <div className="flex flex-col gap-2">
+           <div className="flex gap-2">
+             <Input placeholder="Nama" value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} />
+             <Input placeholder="No HP" value={newCustomerPhone} onChange={e => setNewCustomerPhone(e.target.value)} />
+           </div>
+           <Input placeholder="Alamat (Opsional)" value={newCustomerAddress} onChange={e => setNewCustomerAddress(e.target.value)} />
+         </div>
     ) : (
        <select 
          className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -416,6 +420,11 @@ export default function PosTransaction() {
  warehouseId: selectedWarehouse || undefined,
  paymentMethod,
  idempotency_key: idempotencyKey,
+   customerId: !isNewCustomer ? selectedCustomerId : undefined,
+   newCustomerName: isNewCustomer ? newCustomerName : undefined,
+   newCustomerPhone: isNewCustomer ? newCustomerPhone : undefined,
+   newCustomerAddress: isNewCustomer ? newCustomerAddress : undefined,
+   paidAmount,
  items: cart.map(item => ({ productId: item.id, qty: item.qty, price: item.price })),
  subtotal,
  tax,
