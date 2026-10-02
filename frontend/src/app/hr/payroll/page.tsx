@@ -31,8 +31,8 @@ export default function PayrollPage() {
  HrAPI.getEmployees()
  ])
  
- setPayrolls(payRes.data)
- setEmployees(empRes.data)
+ setPayrolls(Array.isArray(payRes) ? payRes : (payRes?.data || []))
+ setEmployees(Array.isArray(empRes) ? empRes : (empRes?.data || []))
  } catch (e) {
  console.error(e)
  } finally {
