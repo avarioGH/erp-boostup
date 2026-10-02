@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useEffect } from"react"
 import { 
@@ -49,9 +49,7 @@ export default function WarehouseSettings() {
  if (storedUser) {
  const parsedUser = JSON.parse(storedUser)
  setUser(parsedUser)
- if (parsedUser.role !=="Owner") {
- router.push("/")
- }
+ 
  } else {
  router.push("/")
  }
@@ -114,7 +112,7 @@ export default function WarehouseSettings() {
  (wh.address && wh.address.toLowerCase().includes(searchQuery.toLowerCase()))
  )
 
- if (user?.role !=="Owner") return null;
+ 
 
  return (
  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -123,7 +121,7 @@ export default function WarehouseSettings() {
  <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-white flex items-center gap-2">
  <MapPin className="w-8 h-8 text-primary dark:text-primary" /> Pengaturan Gudang
  </h1>
- <p className="text-[14px] text-muted-foreground mt-1">Kelola lokasi gudang dan cabang Anda (Khusus Owner).</p>
+ <p className="text-[14px] text-muted-foreground mt-1">Kelola lokasi gudang dan cabang Anda .</p>
  </div>
  
  <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
@@ -304,3 +302,5 @@ export default function WarehouseSettings() {
  </div>
  )
 }
+
+
