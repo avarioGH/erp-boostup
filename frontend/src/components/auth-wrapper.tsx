@@ -41,11 +41,11 @@ export function AuthWrapper({ children }: { children: React.ReactNode }) {
 
  return (
  <SidebarProvider>
- <AppSidebar />
+ <div className="print:hidden"><AppSidebar /></div>
  <div className="flex min-h-svh flex-1 flex-col overflow-hidden">
- <AppHeader />
- <main className="flex-1 overflow-auto bg-background p-6 md:p-8">
- <div className="mx-auto max-w-7xl">
+ <div className="print:hidden"><AppHeader /></div>
+ <main className="flex-1 overflow-auto bg-background p-6 md:p-8 print:p-0 print:overflow-visible print:bg-white">
+ <div className="mx-auto max-w-7xl print:max-w-none print:mx-0 print:w-full">
  {children}
  </div>
  </main>
