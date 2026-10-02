@@ -31,6 +31,7 @@ model Company {
   units           Unit[]
   brands          Brand[]
   products        Product[]
+  disposals       InventoryDisposal[]
   assetCategories AssetCategory[]
   assets          AssetMaster[]
   transactions    InventoryTransaction[]
@@ -249,6 +250,8 @@ model User {
   // POS
   pos_shifts PosShift[] @relation("UserPosShifts")
 
+  created_disposals  InventoryDisposal[]   @relation("DisposalCreator")
+  approved_disposals InventoryDisposal[]   @relation("DisposalApprover")
   // RBAC Warehouse Access
   warehouse_accesses UserWarehouseAccess[]
 
@@ -290,6 +293,7 @@ model Warehouse {
   employees              Employee[]
   pos_shifts             PosShift[]
 
+  disposals     InventoryDisposal[]
   user_accesses UserWarehouseAccess[]
 
   created_at                 DateTime                  @default(now())
@@ -391,6 +395,7 @@ model Brand {
 
 model Product {
   timberVariants            TimberVariant[]
+  disposalItems             InventoryDisposalItem[]
   purchase_request_items    PurchaseRequestItem[]
   boms                      Bom[]
   bom_items                 BomItem[]
@@ -798,8 +803,8 @@ model InventoryTransactionItem {
   product_id     String               @db.ObjectId
   product        Product              @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   qty            Float
-  system_qty            Float?
-  counted_qty            Float?
+  system_qty     Float?
+  counted_qty    Float?
   difference     Int?
   unit_cost      Float                @default(0)
   subtotal       Float                @default(0)
@@ -1646,6 +1651,7 @@ model SalesOrder {
   total_amount   Float
   notes          String?
   pos_shift_id   String?   @db.ObjectId
+  warehouse_id   String?   @db.ObjectId
   pos_shift      PosShift? @relation(fields: [pos_shift_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   payment_method String? // Cash, QRIS, Debit, Credit, Transfer, Split
   payment_status String? // UNPAID, PARTIAL, PAID
@@ -1681,8 +1687,8 @@ model SalesOrderItem {
   product_id     String     @db.ObjectId
   product        Product    @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   qty            Float
-  system_qty            Float?
-  counted_qty            Float?
+  system_qty     Float?
+  counted_qty    Float?
   difference     Int?
   unit_price     Float
   subtotal       Float
@@ -1892,7 +1898,7 @@ model QuotationItem {
   quotation    Quotation @relation(fields: [quotation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   product_id   String    @db.ObjectId
   product      Product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  qty            Float
+  qty          Float
   unit_price   Float
   discount     Float     @default(0)
   tax          Float     @default(0)
@@ -1932,9 +1938,9 @@ model DeliveryOrderItem {
   delivery_order    DeliveryOrder @relation(fields: [delivery_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   product_id        String        @db.ObjectId
   product           Product       @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  ordered_qty            Float
-  delivered_qty            Float
-  remaining_qty            Float
+  ordered_qty       Float
+  delivered_qty     Float
+  remaining_qty     Float
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -3603,7 +3609,7 @@ model StockInTallyItem {
   tally       StockInTally @relation(fields: [tally_id], references: [id], onDelete: Cascade)
   product_id  String       @db.ObjectId
   product     Product      @relation(fields: [product_id], references: [id])
-  qty            Float
+  qty         Float
   movement_id String?      @db.ObjectId
 }
 
@@ -3635,4 +3641,44 @@ model TimberPartai {
   updatedAt DateTime @updatedAt
 
   @@unique([company_id, code])
+}
+
+model InventoryDisposal {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  company_id   String    @db.ObjectId
+  company      Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  warehouse_id String    @db.ObjectId
+  warehouse    Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  disposal_number String
+  disposal_date   DateTime
+  status          String // DRAFT, PENDING, APPROVED, REJECTED, COMPLETED, CANCELLED
+  reason          String
+  notes           String?
+
+  created_by  String? @db.ObjectId
+  creator     User?   @relation("DisposalCreator", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  approved_by String? @db.ObjectId
+  approver    User?   @relation("DisposalApprover", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  approved_at  DateTime?
+  completed_at DateTime?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  items InventoryDisposalItem[]
+
+  @@unique([company_id, disposal_number])
+}
+
+model InventoryDisposalItem {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  disposal_id String            @db.ObjectId
+  disposal    InventoryDisposal @relation(fields: [disposal_id], references: [id], onDelete: Cascade)
+  product_id  String            @db.ObjectId
+  product     Product           @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  qty   Float
+  unit  String?
+  notes String?
 }

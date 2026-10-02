@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowDownToLine, ArrowUpFromLine, Package, LayoutDashboard, Search, FileText } from "lucide-react"
+import { ArrowDownToLine, ArrowUpFromLine, Package, LayoutDashboard, Search, FileText , AlertTriangle} from "lucide-react"
 
 export default function FishDashboard() {
   const [kpi, setKpi] = useState<any>({})
@@ -94,6 +94,20 @@ export default function FishDashboard() {
           <CardContent className="px-4 md:px-5 pb-4 md:pb-5">
             <div className="text-xl md:text-3xl font-bold text-rose-600">
               {Number(kpi.todayOut || 0).toLocaleString()} <span className="text-xs md:text-sm font-medium text-muted-foreground">Keluar</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm cursor-pointer hover:border-primary transition-colors" onClick={() => window.location.href = '/inventory/disposals'}>
+          <CardHeader className="pb-2 pt-4 px-4 md:px-5">
+            <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex justify-between">
+              Deadstock / Pemusnahan
+              <AlertTriangle className="w-4 h-4 text-orange-500 opacity-70" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 md:px-5 pb-4 md:pb-5">
+            <div className="text-xl md:text-3xl font-bold text-orange-500">
+              {Number(kpi.deadstock || 0).toLocaleString()} <span className="text-xs md:text-sm font-medium text-muted-foreground">Item</span>
             </div>
           </CardContent>
         </Card>
