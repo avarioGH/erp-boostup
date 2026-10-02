@@ -125,7 +125,7 @@ export default function Customer360Page() {
  <CardTitle className="text-sm font-medium text-muted-foreground">Total Piutang</CardTitle>
  </CardHeader>
  <CardContent>
- <div className="text-2xl font-bold text-destructive">{formatCurrency(finance.outstandingJumlah || 0)}</div>
+ <div className="text-2xl font-bold text-destructive">{formatCurrency(finance.outstandingAmount || 0)}</div>
  </CardContent>
  </Card>
  <Card className="shadow-sm">
@@ -291,20 +291,32 @@ export default function Customer360Page() {
  <tr>
  <th className="px-4 py-3 font-medium">Order #</th>
  <th className="px-4 py-3 font-medium">Tanggal</th>
- <th className="px-4 py-3 font-medium">Status</th>
+ <th className="px-4 py-3 font-medium">Status Order</th>
+ <th className="px-4 py-3 font-medium">Status Bayar</th>
  <th className="px-4 py-3 font-medium text-right">Total</th>
+ <th className="px-4 py-3 font-medium text-right">Sisa Piutang</th>
  </tr>
  </thead>
  <tbody>
- {sales.orders.map((so: any) => (
+ {sales.orders.map((so: any) => {
+   const paid = so.paid_amount !== undefined ? so.paid_amount : (so.total_amount || 0);
+   const sisa = Math.max(0, (so.total_amount || 0) - paid);
+   return (
  <tr key={so.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{so.order_number}</td>
  <td className="px-4 py-3">{new Date(so.order_date || so.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{so.status}</Badge></td>
+ <td className="px-4 py-3">
+   <span className={`px-2 py-1 rounded-full text-xs font-bold ${so.payment_status === 'PAID' ? 'bg-green-100 text-green-700' : so.payment_status === 'PARTIALLY_PAID' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-600'}`}>
+     {so.payment_status === 'PAID' ? 'LUNAS' : so.payment_status === 'PARTIALLY_PAID' ? 'PIUTANG' : 'BELUM BAYAR'}
+   </span>
+ </td>
  <td className="px-4 py-3 text-right">{formatCurrency(so.total_amount)}</td>
+ <td className={`px-4 py-3 text-right font-semibold ${sisa > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>{sisa > 0 ? formatCurrency(sisa) : '-'}</td>
  </tr>
- ))}
- {sales.orders.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No sales orders found.</td></tr>}
+   );
+ })}
+ {sales.orders.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Belum ada transaksi.</td></tr>}
  </tbody>
  </table>
  </CardContent>

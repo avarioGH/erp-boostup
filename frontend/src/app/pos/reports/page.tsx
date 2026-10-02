@@ -131,8 +131,8 @@ export default function PosReports() {
                       <TableCell>{item.customer?.name || "Pelanggan Umum"}</TableCell>
                       <TableCell>{item.payment_method || "-"}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.status === "COMPLETED" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}`}>
-                          {item.status || "UNKNOWN"}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.payment_status === "PAID" ? "bg-green-100 text-green-700" : item.payment_status === "PARTIALLY_PAID" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`}>
+                          {item.payment_status === "PAID" ? "LUNAS" : item.payment_status === "PARTIALLY_PAID" ? "PIUTANG" : "BELUM BAYAR"}
                         </span>
                       </TableCell>
                       <TableCell className="text-right font-semibold">Rp {(item.total_amount || 0).toLocaleString("id-ID")}</TableCell>
@@ -148,3 +148,4 @@ export default function PosReports() {
     </div>
   )
 }
+
