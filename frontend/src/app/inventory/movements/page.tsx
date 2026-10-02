@@ -71,7 +71,7 @@ export default function MovementsPage() {
 
                   return (
                     <tr key={m.id || i} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                      <td className="p-4 px-6 text-foreground font-medium">{new Date(m.created_at || Date.now()).toLocaleDateString('id-ID')}</td>
+                      <td className="p-4 px-6 text-foreground font-medium">{(() => { try { return new Date(m.created_at || Date.now()).toLocaleDateString("id-ID") } catch(e) { return "-" } })()}</td>
                       <td className="p-4 px-6 font-medium text-foreground">{productName}<span className="text-muted-foreground text-xs">{weight}</span></td>
                       <td className="py-3.5 px-6 text-[13px]">{getBadgeType(m.transaction_type, m.movement_type)}</td>
                       <td className="p-4 px-6 text-center font-bold text-emerald-600">
