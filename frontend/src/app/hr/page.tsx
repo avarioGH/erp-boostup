@@ -22,7 +22,7 @@ export default function HrDashboard() {
  employees: employees.length,
  presentToday: attendance.filter((a: any) => {
  const date = new Date(a.date).toISOString().split('T')[0]
- const today = new Date().toISOString().split('T')[0]
+ const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
  return date === today && a.status === 'Present'
  }).length,
  payrolls: payrolls.length

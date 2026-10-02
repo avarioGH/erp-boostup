@@ -47,7 +47,7 @@ export default function EditPurchasePage() {
   
   const [form, setForm] = useState({
     purchaseNumber: "PO-" + Date.now().toString().slice(-6),
-    purchaseDate: new Date().toISOString().split('T')[0],
+    purchaseDate: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
     sourceId: "",
     warehouseId: "",
     notes: "",

@@ -18,7 +18,7 @@ export default function CreateExportPage() {
     containerNo: "",
     sealNo: "",
     vehicleNo: "",
-    exportDate: new Date().toISOString().split('T')[0]
+    exportDate: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
   })
 
   const [items, setItems] = useState([

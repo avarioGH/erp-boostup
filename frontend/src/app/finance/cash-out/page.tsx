@@ -36,7 +36,7 @@ export default function FinanceCashOut() {
  amount:"",
  categoryId:"", 
  description:"",
- date: new Date().toISOString().split('T')[0]
+ date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
  })
 
  const handleSubmit = async (e: React.FormEvent) => {

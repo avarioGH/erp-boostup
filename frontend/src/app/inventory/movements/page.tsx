@@ -26,6 +26,7 @@ export default function MovementsPage() {
    if (type === 'OUT' || movType === 'OUT') return <Badge className="bg-amber-100 text-amber-800 border-none">Stok Keluar</Badge>
    if (type === 'ADJUSTMENT' || movType === 'ADJUSTMENT_PLUS' || movType === 'ADJUSTMENT_MINUS') return <Badge className="bg-rose-100 text-rose-800 border-none">Penyesuaian Stok</Badge>
    if (type === 'TRANSFER' || movType === 'TRANSFER') return <Badge className="bg-purple-100 text-purple-800 border-none">Transfer Gudang</Badge>
+   if (type === 'DISPOSAL' || movType === 'DISPOSAL') return <Badge className="bg-red-100 text-red-800 border-none">Pemusnahan</Badge>
    return <Badge variant="outline">{type || movType}</Badge>
  }
 

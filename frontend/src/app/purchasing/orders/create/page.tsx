@@ -22,7 +22,7 @@ export default function CreateOrderPage() {
   const [form, setForm] = useState({
     supplierId: "",
     warehouseId: "",
-    orderDate: new Date().toISOString().split('T')[0],
+    orderDate: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
     expectedReceipt: "",
     notes: "",
     paymentTerms: ""

@@ -89,7 +89,7 @@ export default function CreateInflowPage() {
 
   const [form, setForm] = useState({
     warehouse_id: "",
-    tally_date: new Date().toISOString().split('T')[0],
+    tally_date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
     notes: ""
   })
 

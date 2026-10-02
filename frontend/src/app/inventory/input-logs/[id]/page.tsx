@@ -25,7 +25,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
   // Tally Modal State
   const [tallyOpen, setTallyOpen] = useState(false)
   const [tallyLines, setTallyLines] = useState([{ t: "", l: "", p: "", pcs: "" }])
-  const [tallyDate, setTallyDate] = useState(new Date().toISOString().split('T')[0])
+  const [tallyDate, setTallyDate] = useState(new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0])
   const [savingTally, setSavingTally] = useState(false)
   
   // Status Update State

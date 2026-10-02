@@ -117,7 +117,7 @@ export default function CreateSalesOrderPage() {
 
   const [form, setForm] = useState({
     customer_id: "",
-    order_date: new Date().toISOString().split('T')[0],
+    order_date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
     notes: "",
     payment_method: "Transfer"
   })

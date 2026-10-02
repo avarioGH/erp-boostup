@@ -43,7 +43,7 @@ export default function ChamberOperationsPage() {
  const totalM3 = chamberStocks.reduce((sum: number, s: any) => sum + (s.currentVolumeM3 || 0), 0);
 
  // 3. Calculate Today's IN/OUT
- const today = new Date().toISOString().split('T')[0];
+ const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
  const todayTransfers = (Array.isArray(items) ? items : []).filter((t: any) => t.transferDate.startsWith(today) && t.status === 'POSTED');
  
  let inPcs = 0, inM3 = 0, outPcs = 0, outM3 = 0;
