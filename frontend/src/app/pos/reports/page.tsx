@@ -5,12 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { PosAPI } from "@/lib/api"
+import { PaginationControls } from "@/components/ui/pagination-controls"
 import { Search, DollarSign, Receipt, TrendingUp } from "lucide-react"
 
 export default function PosReports() {
   const [history, setHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     fetchData()
@@ -36,6 +39,9 @@ export default function PosReports() {
   const totalRevenue = filtered.reduce((sum, h) => sum + (h.total_amount || 0), 0)
   const totalTransactions = filtered.length
   
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const paginatedData = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -91,7 +97,7 @@ export default function PosReports() {
               placeholder="Cari nota atau pelanggan..." 
               className="pl-8" 
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             />
           </div>
         </CardHeader>
@@ -118,7 +124,7 @@ export default function PosReports() {
                     <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">Tidak ada transaksi ditemukan.</TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((item: any) => (
+                  paginatedData.map((item: any) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.order_number || "-"}</TableCell>
                       <TableCell>{new Date(item.order_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</TableCell>
@@ -136,6 +142,7 @@ export default function PosReports() {
               </TableBody>
             </Table>
           </div>
+          <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </CardContent>
       </Card>
     </div>

@@ -6,12 +6,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ReportsAPI } from "@/lib/api"
+import { PaginationControls } from "@/components/ui/pagination-controls"
 import { Search, FileSpreadsheet, Download, FileText, Banknote, ShoppingCart, Percent } from "lucide-react"
 
 export default function ProfitReport() {
   const [report, setReport] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     fetchData()
@@ -52,6 +55,9 @@ export default function ProfitReport() {
   )
 
   const formatCurrency = (val: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(val)
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const paginatedData = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -110,7 +116,7 @@ export default function ProfitReport() {
               placeholder="Cari transaksi..." 
               className="pl-8" 
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             />
           </div>
         </CardHeader>
@@ -136,7 +142,7 @@ export default function ProfitReport() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((row: any, i: number) => (
+                  paginatedData.map((row: any, i: number) => (
                     <TableRow key={i}>
                       {columns.map((col: any) => (
                         <TableCell key={col.key} className={col.type === "currency" ? "text-right font-medium" : ""}>
@@ -158,6 +164,7 @@ export default function ProfitReport() {
               </TableBody>
             </Table>
           </div>
+          <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </CardContent>
       </Card>
     </div>

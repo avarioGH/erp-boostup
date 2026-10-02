@@ -5,12 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { InventoryAPI } from "@/lib/api"
+import { PaginationControls } from "@/components/ui/pagination-controls"
 import { Search } from "lucide-react"
 
 export default function ReportsStock() {
   const [stocks, setStocks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     fetchStocks()
@@ -34,6 +37,9 @@ export default function ReportsStock() {
     s.warehouse?.name?.toLowerCase().includes(search.toLowerCase())
   )
 
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const paginatedData = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -54,7 +60,7 @@ export default function ReportsStock() {
               placeholder="Cari produk atau gudang..." 
               className="pl-8" 
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             />
           </div>
         </CardHeader>
@@ -81,7 +87,7 @@ export default function ReportsStock() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((stock: any) => (
+                  paginatedData.map((stock: any) => (
                     <TableRow key={stock.id}>
                       <TableCell className="font-medium">{stock.product?.name || "Produk Tanpa Nama"}</TableCell>
                       <TableCell>{stock.warehouse?.name || "Gudang Tidak Diketahui"}</TableCell>
@@ -93,6 +99,7 @@ export default function ReportsStock() {
               </TableBody>
             </Table>
           </div>
+          <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </CardContent>
       </Card>
     </div>
