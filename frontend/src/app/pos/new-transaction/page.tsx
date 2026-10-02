@@ -36,7 +36,19 @@ export default function PosTransaction() {
  const [isPaymentOpen, setIsPaymentOpen] = useState(false)
  const [paymentMethod, setPaymentMethod] = useState("CASH")
   const [paidAmount, setPaidAmount] = useState<number | "">(0)
- const [isCheckingOut, setIsCheckingOut] = useState(false)
+   const [customers, setCustomers] = useState<any[]>([])
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("")
+  const [isNewCustomer, setIsNewCustomer] = useState(false)
+  const [newCustomerName, setNewCustomerName] = useState("")
+  const [newCustomerPhone, setNewCustomerPhone] = useState("")
+  
+  useEffect(() => {
+     api.get("/customers?limit=100").then(res => {
+         if (res.data?.data) setCustomers(res.data.data)
+     }).catch(console.error)
+  }, [])
+
+  const [isCheckingOut, setIsCheckingOut] = useState(false)
  const [isTaxEnabled, setIsTaxEnabled] = useState(true)
  const [idempotencyKey, setIdempotencyKey] = useState("")
 
@@ -308,7 +320,31 @@ export default function PosTransaction() {
  </DialogHeader>
  
  <div className="py-4 space-y-6">
- <div className="text-center p-4 bg-accent rounded-xl border border-border">
+ <div className="space-y-2">
+    <div className="flex justify-between items-center">
+       <p className="text-sm font-medium text-foreground">Pelanggan</p>
+       <Button type="button" variant="ghost" size="sm" className="h-6 text-xs px-2" onClick={() => setIsNewCustomer(!isNewCustomer)}>
+          {isNewCustomer ? "Pilih Eksisting" : "+ Pelanggan Baru"}
+       </Button>
+    </div>
+    {isNewCustomer ? (
+       <div className="flex gap-2">
+         <Input placeholder="Nama" value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} />
+         <Input placeholder="No HP" value={newCustomerPhone} onChange={e => setNewCustomerPhone(e.target.value)} />
+       </div>
+    ) : (
+       <select 
+         className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+         value={selectedCustomerId}
+         onChange={(e) => setSelectedCustomerId(e.target.value)}
+       >
+         <option value="">-- Umum / Tanpa Nama --</option>
+         {customers.map(c => <option key={c.id} value={c.id}>{c.name} {c.phone ? ` - ${c.phone}` : ""}</option>)}
+       </select>
+    )}
+</div>
+
+<div className="text-center p-4 bg-accent rounded-xl border border-border">
  <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-1">Total Tagihan</p>
  <h2 className="text-3xl font-bold text-primary">{formatIDR(total)}</h2>
  </div>
