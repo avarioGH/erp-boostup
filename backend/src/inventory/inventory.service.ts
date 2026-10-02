@@ -647,7 +647,7 @@ export class InventoryService {
   }) {
     if (params.quantity <= 0) throw new BadRequestException('Quantity must be greater than 0');
 
-    const stock = await tx.warehouseStock.findUnique({
+    let stock = await tx.warehouseStock.findUnique({
       where: { company_id_warehouse_id_product_id: { company_id: params.companyId, warehouse_id: params.warehouseId, product_id: params.productId } }
     });
 
