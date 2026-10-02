@@ -50,6 +50,8 @@ export default function PosTransaction() {
   }, [])
 
   const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const [receiptData, setReceiptData] = useState<any>(null)
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false)
  const [isTaxEnabled, setIsTaxEnabled] = useState(true)
  const [idempotencyKey, setIdempotencyKey] = useState("")
 
@@ -442,8 +444,24 @@ export default function PosTransaction() {
  tax,
  total
  };
- await PosAPI.checkout(payload);
- alert(`Transaksi Sukses! (Tersimpan ke Database Real)`);
+ const checkoutResult = await PosAPI.checkout(payload);
+ const _user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('erp_user') || '{}') : {};
+ const _activeWh = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('active_warehouse') || 'null') : null;
+ setReceiptData({
+   orderNumber: checkoutResult?.data?.order_number || checkoutResult?.order_number || ('POS-' + Date.now()),
+   date: new Date(),
+   items: cart.map((item) => ({ ...item })),
+   subtotal,
+   tax,
+   total,
+   paidAmount: Number(paidAmount) || total,
+   change: Math.max(0, (Number(paidAmount) || total) - total),
+   paymentMethod,
+   cashierName: _user?.name || 'Kasir',
+   warehouseName: _activeWh?.name || 'Pusat',
+   customerName: isNewCustomer ? newCustomerName : (customers.find((c) => c.id === selectedCustomerId)?.name || ''),
+ });
+ setIsReceiptOpen(true);
  setCart([]);
  setIsPaymentOpen(false);
  setIdempotencyKey(crypto.randomUUID());
@@ -464,6 +482,124 @@ export default function PosTransaction() {
  </DialogFooter>
  </DialogContent>
  </Dialog>
+
+      {/* ====== RECEIPT MODAL ====== */}
+      {receiptData && (
+        <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
+          <DialogContent className="max-w-sm p-0 overflow-hidden">
+            <div id="pos-receipt" className="bg-white text-gray-900 p-6 font-mono text-sm">
+              {/* Header */}
+              <div className="text-center mb-4">
+                <div className="font-bold text-lg uppercase tracking-widest">STRUK PEMBAYARAN</div>
+                <div className="text-xs text-gray-500">{receiptData.warehouseName}</div>
+                <div className="text-xs text-gray-400 mt-1">{new Date(receiptData.date).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</div>
+              </div>
+
+              {/* Order Info */}
+              <div className="border-t border-dashed border-gray-300 pt-3 mb-3">
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>No. Transaksi</span>
+                  <span className="font-semibold text-gray-700">{receiptData.orderNumber}</span>
+                </div>
+                {receiptData.customerName && (
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>Pelanggan</span>
+                    <span className="font-semibold text-gray-700">{receiptData.customerName}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Kasir</span>
+                  <span className="font-semibold text-gray-700">{receiptData.cashierName}</span>
+                </div>
+              </div>
+
+              {/* Items */}
+              <div className="border-t border-dashed border-gray-300 py-3 mb-3">
+                {receiptData.items.map((item: any, i: number) => (
+                  <div key={i} className="mb-2">
+                    <div className="font-medium text-gray-800 truncate">{item.name}</div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+                      <span>{item.qty} x Rp {Math.round(item.price).toLocaleString('id-ID')}</span>
+                      <span className="font-semibold text-gray-700">Rp {Math.round(item.qty * item.price).toLocaleString('id-ID')}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Totals */}
+              <div className="border-t border-dashed border-gray-300 pt-3">
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>Subtotal</span>
+                  <span>Rp {Math.round(receiptData.subtotal).toLocaleString('id-ID')}</span>
+                </div>
+                {receiptData.tax > 0 && (
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>PPN (11%)</span>
+                    <span>Rp {Math.round(receiptData.tax).toLocaleString('id-ID')}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-base mt-2 text-gray-900">
+                  <span>TOTAL</span>
+                  <span>Rp {Math.round(receiptData.total).toLocaleString('id-ID')}</span>
+                </div>
+                <div className="border-t border-dashed border-gray-300 my-2" />
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>Metode Bayar</span>
+                  <span className="font-medium">{receiptData.paymentMethod === 'CASH' ? 'Tunai' : receiptData.paymentMethod === 'TRANSFER' ? 'Transfer' : receiptData.paymentMethod}</span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>Dibayar</span>
+                  <span className="font-medium">Rp {Math.round(receiptData.paidAmount).toLocaleString('id-ID')}</span>
+                </div>
+                {receiptData.change > 0 && (
+                  <div className="flex justify-between text-xs font-bold text-green-700 mt-1">
+                    <span>Kembalian</span>
+                    <span>Rp {Math.round(receiptData.change).toLocaleString('id-ID')}</span>
+                  </div>
+                )}
+                {receiptData.paidAmount < receiptData.total && (
+                  <div className="flex justify-between text-xs font-bold text-amber-600 mt-1">
+                    <span>Sisa Piutang</span>
+                    <span>Rp {Math.round(receiptData.total - receiptData.paidAmount).toLocaleString('id-ID')}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="text-center mt-4 text-xs text-gray-400 border-t border-dashed border-gray-300 pt-3">
+                <div>Terima kasih atas pembelian Anda!</div>
+                <div className="mt-1">Barang yang sudah dibeli tidak dapat dikembalikan.</div>
+              </div>
+            </div>
+
+            {/* Print & Close buttons — hidden when printing */}
+            <div className="flex gap-2 p-4 bg-gray-50 border-t print:hidden">
+              <button
+                onClick={() => {
+                  const printContents = document.getElementById('pos-receipt')?.innerHTML || '';
+                  const win = window.open('', '_blank', 'width=400,height=600');
+                  if (win) {
+                    win.document.write(`<!DOCTYPE html><html><head><title>Struk</title><style>
+                      body { font-family: monospace; font-size: 12px; color: #111; margin: 0; padding: 16px; }
+                      @media print { body { margin: 0; } }
+                    </style></head><body>${printContents}<script>window.onload=function(){window.print();window.close();}<\/script></body></html>`);
+                    win.document.close();
+                  }
+                }}
+                className="flex-1 bg-gray-900 text-white text-sm font-medium py-2 rounded-md hover:bg-gray-700 transition-colors"
+              >
+                🖨️ Print Struk
+              </button>
+              <button
+                onClick={() => setIsReceiptOpen(false)}
+                className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2 rounded-md hover:bg-gray-100 transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
  </div>
  )
 }
