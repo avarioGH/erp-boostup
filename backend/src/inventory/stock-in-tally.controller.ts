@@ -12,7 +12,7 @@ export class StockInTallyController {
   @Permissions('inventory.create')
   @Post()
   create(@Req() req: any, @Body() data: any) {
-    return this.service.create(req.user.companyId || req.user.company_id, req.user.id, data);
+    return this.service.create(req.user.companyId || req.user.company_id, (req.user.userId || req.user.id), data);
   }
 
   @Permissions('inventory.view')
@@ -24,6 +24,6 @@ export class StockInTallyController {
   @Permissions('inventory.delete')
   @Delete(':id')
   remove(@Req() req: any, @Param('id') id: string) {
-    return this.service.remove(req.user.companyId || req.user.company_id, req.user.id, id);
+    return this.service.remove(req.user.companyId || req.user.company_id, (req.user.userId || req.user.id), id);
   }
 }
