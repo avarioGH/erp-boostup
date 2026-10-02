@@ -43,22 +43,45 @@ export default function CustomersPage() {
  }, [page, limit, search, status])
 
  const handleSave = async (e: React.FormEvent) => {
- e.preventDefault()
- try {
- const res = await api.post("/customers", { name, phone, email })
- if (res.status === 200 || res.status === 201) {
- setShowForm(false)
- setName("")
- setPhone("")
- setEmail("")
- fetchCustomers()
- }
- } catch (e) {
- console.error(e)
- }
- }
+    e.preventDefault();
+    try {
+      if (editId) {
+         await api.put(`/customers/${editId}`, { name, phone, email });
+      } else {
+         await api.post("/customers", { name, phone, email });
+      }
+      setShowForm(false);
+      setEditId(null);
+      setName(""); setPhone(""); setEmail("");
+      fetchCustomers();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save customer");
+    }
+  }
+  
+  const handleDelete = async (e: any, id: string) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this customer?")) return;
+    try {
+      await api.delete(`/customers/${id}`);
+      fetchCustomers();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete customer");
+    }
+  }
+  
+  const openEdit = (e: any, c: any) => {
+    e.stopPropagation();
+    setEditId(c.id);
+    setName(c.name);
+    setPhone(c.phone || "");
+    setEmail(c.email || "");
+    setShowForm(true);
+  }
 
- const filteredCustomers = customers
+  const filteredCustomers = customers
 
  return (
  <div className="space-y-6">
