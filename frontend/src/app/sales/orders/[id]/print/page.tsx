@@ -184,11 +184,11 @@ export default function SOPrintPage() {
                 <tr>
                   <td className="py-3 font-bold">STATUS</td>
                   <td className="py-3 text-right">
-                    <span className={\`px-3 py-1 font-bold rounded text-xs \${
+                    <span className={`px-3 py-1 font-bold rounded text-xs ${
                       paymentStatus === 'LUNAS' ? 'bg-green-100 text-green-800 border-green-200' :
                       paymentStatus === 'BELUM DIBAYAR' ? 'bg-red-100 text-red-800 border-red-200' :
                       'bg-yellow-100 text-yellow-800 border-yellow-200'
-                    } border\`}>
+                    } border`}>
                       {paymentStatus}
                     </span>
                   </td>
