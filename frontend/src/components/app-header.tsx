@@ -61,7 +61,7 @@ export function AppHeader() {
  <Separator orientation="vertical" className="mx-1 h-5 bg-sidebar-border" />
  
  {/* WAREHOUSE SELECTOR */}
- <DropdownMenu>
+ <DropdownMenu onOpenChange={(open) => { if(open) fetchWarehouses() }}>
  <DropdownMenuTrigger className="flex items-center gap-2 md:gap-2.5 px-2 md:px-3 py-1.5 border border-sidebar-border bg-sidebar-accent/30 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all ml-1 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring text-sidebar-foreground">
  <div className="bg-primary/10 text-primary p-1 rounded-md">
  <MapPin className="w-3.5 h-3.5" />
