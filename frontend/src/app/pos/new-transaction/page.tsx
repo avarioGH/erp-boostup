@@ -76,7 +76,11 @@ export default function PosTransaction() {
  
  if (dbWarehouses && dbWarehouses.length > 0) {
  setWarehouses(dbWarehouses)
- setSelectedWarehouse(dbWarehouses[0].id)
+ // Use active warehouse from header selector, fallback to first
+ const storedWh = typeof window !== 'undefined' ? localStorage.getItem('active_warehouse') : null;
+ const activeWh = storedWh && storedWh !== 'null' && storedWh !== 'undefined' ? JSON.parse(storedWh) : null;
+ const matchWh = activeWh ? dbWarehouses.find((w: any) => w.id === activeWh.id) : null;
+ setSelectedWarehouse(matchWh ? matchWh.id : dbWarehouses[0].id)
  }
 
  // Map Prisma products to UI format
@@ -85,7 +89,15 @@ export default function PosTransaction() {
  name: p.name,
  category: p.category?.name ||"Lainnya",
  price: Number(p.selling_price),
- stock: p.warehouse_stocks?.reduce((acc: number, ws: any) => acc + ws.current_stock, 0) || 0,
+ stock: (() => {
+     const storedWh2 = typeof window !== 'undefined' ? localStorage.getItem('active_warehouse') : null;
+     const activeWh2 = storedWh2 && storedWh2 !== 'null' && storedWh2 !== 'undefined' ? JSON.parse(storedWh2) : null;
+     if (activeWh2) {
+       const whStock = p.warehouse_stocks?.find((ws: any) => ws.warehouse_id === activeWh2.id);
+       return whStock?.current_stock || 0;
+     }
+     return p.warehouse_stocks?.reduce((acc: number, ws: any) => acc + ws.current_stock, 0) || 0;
+   })(),
  img:"📦" // default icon
  }))
  setProducts(mapped)
