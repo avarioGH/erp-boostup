@@ -35,6 +35,7 @@ export default function PosTransaction() {
  const [cart, setCart] = useState<CartItem[]>([])
  const [isPaymentOpen, setIsPaymentOpen] = useState(false)
  const [paymentMethod, setPaymentMethod] = useState("CASH")
+  const [paidAmount, setPaidAmount] = useState<number | "">(0)
  const [isCheckingOut, setIsCheckingOut] = useState(false)
  const [isTaxEnabled, setIsTaxEnabled] = useState(true)
  const [idempotencyKey, setIdempotencyKey] = useState("")
@@ -312,7 +313,28 @@ export default function PosTransaction() {
  <h2 className="text-3xl font-bold text-primary">{formatIDR(total)}</h2>
  </div>
 
- <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+ <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">Jumlah Pembayaran</p>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">Rp</span>
+              <input
+                type="number"
+                value={paidAmount}
+                onChange={(e) => setPaidAmount(e.target.value ? Number(e.target.value) : "")}
+                className="w-full pl-9 pr-3 py-3 rounded-md border border-border bg-background font-semibold text-lg"
+              />
+            </div>
+            {(paidAmount || 0) > total && (
+               <p className="text-xs text-red-500 font-medium mt-1">Jumlah pembayaran melebihi sisa tagihan.</p>
+            )}
+            <div className="flex justify-between items-center text-sm font-medium mt-2">
+              <span className="text-muted-foreground">Sisa Tagihan:</span>
+              <span className="text-foreground">{formatIDR(Math.max(0, total - (paidAmount || 0)))}</span>
+            </div>
+          </div>
+
+          <p className="text-sm font-medium text-foreground mt-4">Metode Pembayaran</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  <Button 
  variant="outline" 
  className={`h-16 flex flex-col gap-1 border-2 ${paymentMethod === 'CASH' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground'}`}
@@ -341,7 +363,7 @@ export default function PosTransaction() {
  </div>
  
  <DialogFooter>
- <Button variant="outline" onClick={() => setIsPaymentOpen(false)} disabled={isCheckingOut}>Batal</Button>
+ <Button variant="outline" onClick={() => setIsPaymentOpen(false)} disabled={isCheckingOut || (paidAmount || 0) > total}>Batal</Button>
  <Button 
  className="bg-primary hover:bg-primary/90 text-primary-foreground" 
  disabled={isCheckingOut}
