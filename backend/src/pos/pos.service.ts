@@ -27,6 +27,13 @@ export class PosService {
 
       // 1. Create Sales Order (Receipt)
       const soNo = await this.sequenceService.generateNumber(tx, companyId, 'POS', 'POS');
+      const totalAmount = total ?? items.reduce((s: number, i: any) => s + i.qty * i.price, 0);
+      const paidAmount = data.paidAmount !== undefined ? data.paidAmount : totalAmount;
+      
+      let initialPaymentStatus = 'UNPAID';
+      if (paidAmount >= totalAmount - 0.01) initialPaymentStatus = 'PAID';
+      else if (paidAmount > 0) initialPaymentStatus = 'PARTIALLY_PAID';
+
       const salesOrder = await tx.salesOrder.create({
         data: {
           company_id: companyId,
@@ -35,8 +42,8 @@ export class PosService {
           customer_id: customerId,
           order_date: new Date(),
           status: 'COMPLETED',
-          total_amount: total ?? items.reduce((s: number, i: any) => s + i.qty * i.price, 0),
-          payment_status: 'PAID',
+          total_amount: totalAmount,
+          payment_status: initialPaymentStatus,
           payment_method: paymentMethod || 'CASH',
         }
       });

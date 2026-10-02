@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { CustomerController } from './customer.controller';
 import { OrderController } from './order.controller';
 import { DeliveryModule } from './delivery/delivery.module';
@@ -8,6 +8,7 @@ import { VoucherController } from './voucher.controller';
 import { CrmService } from './crm.service';
 import { CrmController } from './crm.controller';
 import { InventoryModule } from '../inventory/inventory.module';
+import { CustomerService } from './customer.service';
 
 @Module({
   imports: [DeliveryModule, QuotationModule, Customer360Module, InventoryModule],
@@ -17,10 +18,8 @@ import { InventoryModule } from '../inventory/inventory.module';
     VoucherController,
     CrmController
   ],
-  providers: [CrmService],
-  exports: [CrmService]
+  providers: [CrmService, CustomerService],
+  exports: [CrmService, CustomerService]
 })
 export class CrmModule {}
-
-
 

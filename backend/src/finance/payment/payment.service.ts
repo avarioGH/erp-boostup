@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PaymentProcessedEvent } from '../../events/accounting.events';
@@ -7,77 +7,120 @@ import { PaymentProcessedEvent } from '../../events/accounting.events';
 export class PaymentService {
   constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2) {}
 
-  async create(companyId: string, data: any) {
+  async create(companyId: string, data: any, userId?: string) {
     return this.prisma.$transaction(async (tx) => {
-      const invoice = await tx.invoice.findFirst({
-        where: { id: data.invoiceId, company_id: companyId }
-      });
-      if (!invoice) throw new NotFoundException('Invoice not found');
-      // Fix status check to handle PARTIALLY PAID and POSTED
-      if (invoice.status !== 'POSTED' && invoice.status !== 'PARTIALLY PAID' && invoice.status !== 'PARTIAL') {
-         throw new BadRequestException('Invoice must be POSTED to receive payment');
+      let paymentNumber = data.paymentNumber;
+      if (!paymentNumber) {
+        paymentNumber = "PAY-" + Date.now();
       }
 
-      // 12. PAYMENT ENGINE: Amount Validated (Never allow payment > remaining)
-      if (data.amount > invoice.remaining_amount) {
-         throw new BadRequestException('Payment exceeds remaining amount');
+      if (data.amount <= 0) {
+        throw new BadRequestException('Payment amount must be greater than 0');
+      }
+
+      // If they provide allocations explicitly
+      const allocations = data.allocations || [];
+      if (!allocations.length && data.salesOrderId) {
+        allocations.push({ salesOrderId: data.salesOrderId, amount: data.amount });
+      } else if (!allocations.length && data.invoiceId) {
+        allocations.push({ invoiceId: data.invoiceId, amount: data.amount });
+      }
+
+      if (allocations.length === 0 && !data.allowUnallocated) {
+        throw new BadRequestException('Payment must have at least one allocation');
+      }
+
+      let totalAllocated = 0;
+      for (const alloc of allocations) {
+        if (alloc.amount <= 0) throw new BadRequestException('Allocation amount must be greater than 0');
+        totalAllocated += alloc.amount;
       }
       
-      // 12. PAYMENT ENGINE: Never allow negative payment
-      if (data.amount <= 0) {
-         throw new BadRequestException('Payment amount must be strictly positive');
+      // Ensure we don't have floating point inaccuracies causing false alarms
+      if (Math.abs(totalAllocated - data.amount) > 0.01 && !data.allowUnallocated) {
+        throw new BadRequestException(`Total allocated (${totalAllocated}) does not match payment amount (${data.amount})`);
       }
 
-      const paymentNumber = "PAY-" + Date.now();
-
+      // Create Payment
       const payment = await tx.payment.create({
         data: {
           company_id: companyId,
-          invoice_id: invoice.id,
+          customer_id: data.customerId || undefined,
+          invoice_id: data.invoiceId || undefined,
           payment_number: paymentNumber,
           payment_date: new Date(data.paymentDate || Date.now()),
           amount: data.amount,
           payment_method: data.paymentMethod || 'BANK_TRANSFER',
-          notes: data.notes
+          reference: data.reference,
+          notes: data.notes,
+          created_by: userId
         }
       });
 
-      const newRemaining = invoice.remaining_amount - data.amount;
-        const newPaid = invoice.paid_amount + data.amount;
-        const newStatus = newRemaining <= 0 ? 'PAID' : 'PARTIALLY_PAID'; // Note: status enum is usually PARTIALLY_PAID
+      let isAP = false;
 
-        const invoiceUpd = await tx.invoice.updateMany({
-          where: { 
-            id: invoice.id,
-            remaining_amount: invoice.remaining_amount // Optimistic Concurrency Control
-          },
-          data: { 
-            paid_amount: { increment: data.amount },
-            remaining_amount: { decrement: data.amount },
-            status: newRemaining <= 0 ? 'PAID' : invoice.status === 'POSTED' ? 'PARTIALLY_PAID' : invoice.status
+      // Process Allocations
+      for (const alloc of allocations) {
+        await tx.paymentAllocation.create({
+          data: {
+            payment_id: payment.id,
+            sales_order_id: alloc.salesOrderId || undefined,
+            invoice_id: alloc.invoiceId || undefined,
+            amount: alloc.amount
           }
         });
 
-        if (invoiceUpd.count === 0) {
-          throw new BadRequestException('Concurrency conflict or invoice state changed. Please retry.');
+        if (alloc.salesOrderId) {
+          const so = await tx.salesOrder.findFirst({ where: { id: alloc.salesOrderId } });
+          if (!so) throw new NotFoundException(`Sales Order ${alloc.salesOrderId} not found`);
+          
+          // Re-calculate SO paid amount using all its allocations
+          const allAllocations = await tx.paymentAllocation.findMany({ where: { sales_order_id: alloc.salesOrderId }});
+          const totalPaid = allAllocations.reduce((sum, a) => sum + a.amount, 0);
+          const outstanding = so.total_amount - totalPaid;
+
+          if (outstanding < -0.01) {
+            throw new BadRequestException(`Payment allocation exceeds outstanding for SO ${so.order_number}`);
+          }
+
+          let newStatus = 'UNPAID';
+          if (totalPaid >= so.total_amount - 0.01) newStatus = 'PAID';
+          else if (totalPaid > 0) newStatus = 'PARTIALLY_PAID';
+
+          await tx.salesOrder.update({
+            where: { id: so.id },
+            data: { payment_status: newStatus }
+          });
         }
 
-      if (invoice.sales_order_id && newStatus === 'PAID') {
-         await tx.salesOrder.update({
-           where: { id: invoice.sales_order_id },
-           data: { payment_status: 'PAID' }
-         });
+        if (alloc.invoiceId) {
+          const inv = await tx.invoice.findFirst({ where: { id: alloc.invoiceId } });
+          if (!inv) throw new NotFoundException(`Invoice ${alloc.invoiceId} not found`);
+          if (inv.type === 'AP' || inv.type === 'VENDOR_BILL') isAP = true;
+          
+          const newRemaining = inv.remaining_amount - alloc.amount;
+          const newPaid = inv.paid_amount + alloc.amount;
+          if (newRemaining < -0.01) {
+            throw new BadRequestException(`Payment allocation exceeds remaining for Invoice ${inv.invoice_number}`);
+          }
+
+          let newStatus = 'PARTIALLY_PAID';
+          if (newRemaining <= 0.01) newStatus = 'PAID';
+
+          await tx.invoice.update({
+            where: { id: inv.id },
+            data: { remaining_amount: newRemaining, paid_amount: newPaid, status: newStatus }
+          });
+        }
       }
 
-      let accountId = data.accountId;
+      // Record to Ledger (Finance Transaction)
+      let accountId = data.cashAccountId;
       if (!accountId) {
         const cashAcc = await tx.cashAccount.findFirst({ where: { company_id: companyId }});
         if (cashAcc) accountId = cashAcc.id;
-        // if no cash account is found, it's fine, the accounting listener will handle it using defaults or mappings
       }
 
-      const isAP = (invoice.type === 'AP' || invoice.type === 'VENDOR_BILL');
-      
       if (accountId) {
         await tx.financeTransaction.create({
           data: {
@@ -89,27 +132,48 @@ export class PaymentService {
             reference_id: payment.id,
             transaction_date: payment.payment_date,
             status: 'COMPLETED',
-            description: `Payment for invoice ${invoice.invoice_number}`, 
-            created_by: '6aa02dc075845f59e02b3f01'
+            description: `Pembayaran ${paymentNumber}`, 
+            created_by: userId || '000000000000000000000000'
           }
         });
-      }
 
-      // Emit strictly typed Accounting Event for Idempotent GlService listening
-      await this.eventEmitter.emitAsync('payment.processed', new PaymentProcessedEvent(
-        companyId,
-        payment.id,
-        'EVT-' + Date.now(),
-        payment.payment_date,
-        {
-           type: isAP ? 'PAYABLE' : 'RECEIVABLE',
-           amount: payment.amount,
-           accountId: accountId
-        },
-        tx as any
-      ));
+        // Emit strictly typed Accounting Event for Idempotent GlService listening
+        await this.eventEmitter.emitAsync('payment.processed', new PaymentProcessedEvent(
+          companyId,
+          payment.id,
+          'EVT-' + Date.now(),
+          payment.payment_date,
+          {
+             type: isAP ? 'PAYABLE' : 'RECEIVABLE',
+             amount: payment.amount,
+             accountId: accountId
+          },
+          tx as any
+        ));
+      }
 
       return payment;
     });
   }
+
+  async findAll(companyId: string) {
+    return this.prisma.payment.findMany({
+      where: { company_id: companyId },
+      include: { allocations: true, customer: true },
+      orderBy: { payment_date: 'desc' }
+    });
+  }
+
+  async findOne(companyId: string, id: string) {
+    return this.prisma.payment.findFirst({
+      where: { id, company_id: companyId },
+      include: { 
+        allocations: {
+          include: { sales_order: true, invoice: true }
+        }, 
+        customer: true 
+      }
+    });
+  }
 }
+

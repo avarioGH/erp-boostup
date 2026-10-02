@@ -1591,6 +1591,7 @@ model Customer {
   status       Boolean    @default(true)
 
   company_name     String?
+  payments         Payment[]
   billing_address  String?
   delivery_address String?
   tax_id           String?
@@ -1648,6 +1649,8 @@ model SalesOrder {
   pos_shift      PosShift? @relation(fields: [pos_shift_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   payment_method String? // Cash, QRIS, Debit, Credit, Transfer, Split
   payment_status String? // UNPAID, PARTIAL, PAID
+
+  allocations PaymentAllocation[]
 
   channel              String? @default("B2B") // POS, B2B, ECOMMERCE
   ecommerce_session_id String? // Idempotency key for checkout
@@ -1969,9 +1972,10 @@ model Invoice {
   items    InvoiceItem[]
   payments Payment[]
 
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  deleted_at DateTime?
+  created_at        DateTime            @default(now())
+  updated_at        DateTime            @updatedAt
+  deleted_at        DateTime?
+  PaymentAllocation PaymentAllocation[]
 
   @@unique([company_id, invoice_number])
 }
@@ -1991,22 +1995,42 @@ model InvoiceItem {
 }
 
 model Payment {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String   @db.ObjectId
-  company        Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  invoice_id     String   @db.ObjectId
-  invoice        Invoice  @relation(fields: [invoice_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  company_id     String    @db.ObjectId
+  company        Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customer_id    String?   @db.ObjectId
+  customer       Customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  invoice_id     String?   @db.ObjectId
+  invoice        Invoice?  @relation(fields: [invoice_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   payment_number String
   payment_date   DateTime
   amount         Float
   payment_method String // CASH, BANK_TRANSFER, etc.
+  reference      String?
   notes          String?
+
+  created_by String? @db.ObjectId
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
+  allocations PaymentAllocation[]
+
   @@unique([company_id, payment_number])
+}
+
+model PaymentAllocation {
+  id             String      @id @default(auto()) @map("_id") @db.ObjectId
+  payment_id     String      @db.ObjectId
+  payment        Payment     @relation(fields: [payment_id], references: [id], onDelete: Cascade)
+  sales_order_id String?     @db.ObjectId
+  sales_order    SalesOrder? @relation(fields: [sales_order_id], references: [id], onDelete: NoAction)
+  invoice_id     String?     @db.ObjectId
+  invoice        Invoice?    @relation(fields: [invoice_id], references: [id], onDelete: NoAction)
+  amount         Float
+
+  created_at DateTime @default(now())
 }
 
 model PurchaseOrder {
