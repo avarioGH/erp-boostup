@@ -134,7 +134,7 @@ export class AccountingListener {
     // Create it dynamically for tests
     let act = await tx.accountType.findFirst();
     if (!act) {
-      act = await tx.accountType.create({ data: { name: 'Auto Generated', normal_balance: 'Debit' } });
+      act = await tx.accountType.create({ data: { name: 'Auto Generated', normal_balance: 'Debit', code: 'AUTO-' + Date.now() } });
     }
     const newAcc = await tx.chartOfAccount.create({
       data: {
