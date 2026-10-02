@@ -228,7 +228,7 @@ export default function OwnerDashboard() {
  <SelectItem key={wh?.id || idx} value={wh?.id || `wh-${idx}`}>{wh?.name}</SelectItem>
  ))}
  </SelectContent>
- </Select>
+ </Select></div>
  </div>
  </div>
  </div>
