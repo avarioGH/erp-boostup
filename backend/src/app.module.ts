@@ -1,3 +1,4 @@
+import { FixController } from './fix.controller';
 import { MasterDataModule } from './inventory/master-data/master-data.module';
 import { ApprovalModule } from './approval/approval.module';
 import { EcommerceModule } from './ecommerce/ecommerce.module';
@@ -68,7 +69,7 @@ import { ReportsModule as InventoryReportsModule } from './inventory/reports/rep
     CrmModule,
     PurchasingModule, HrModule, PosModule, ShopeeModule, AiModule,  MrpModule, MasterDataModule, ProductionModule, PurchaseModule, ShipmentModule, OpnameModule
   ],
-  controllers: [AppController],
+  controllers: [AppController, FixController],
   providers: [AppService],
 })
 
