@@ -76,6 +76,7 @@ export class PosService {
             quantity: item.qty,
             referenceType: 'POS_SALE',
             referenceId: salesOrder.id,
+              allowNegative: true,
             description: `POS Sale ${soNo}`,
             userId: userId || '000000000000000000000000'
           });

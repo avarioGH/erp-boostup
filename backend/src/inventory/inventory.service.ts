@@ -651,7 +651,22 @@ export class InventoryService {
       where: { company_id_warehouse_id_product_id: { company_id: params.companyId, warehouse_id: params.warehouseId, product_id: params.productId } }
     });
 
-    if (!stock) throw new BadRequestException('Stock not found for product ' + params.productId);
+    if (!stock) {
+      if (params.allowNegative) {
+        stock = await tx.warehouseStock.create({
+          data: {
+            company_id: params.companyId,
+            warehouse_id: params.warehouseId,
+            product_id: params.productId,
+            current_stock: 0,
+            available_stock: 0,
+            reserved_stock: 0
+          }
+        });
+      } else {
+        throw new BadRequestException('Stock not found for product ' + params.productId);
+      }
+    }
 
     const updateRes = await tx.warehouseStock.updateMany({
       where: { 
