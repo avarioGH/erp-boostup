@@ -189,7 +189,7 @@ export default function CreateSalesOrderPage() {
                   min="0" 
                   placeholder="Kosongkan jika belum bayar sama sekali" 
                   value={paidAmount} 
-                  onChange={e => setPaidAmount(e.target.value)} 
+                  onChange={e => setPaidAmount(e.target.value ? Number(e.target.value) : "")} 
                 />
                 <p className="text-xs text-muted-foreground">
                   Isi sesuai nominal yang dibayar customer saat ini.
