@@ -350,7 +350,10 @@ export default function PosTransaction() {
  </div>
 
  <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Jumlah Pembayaran</p>
+            <div className="flex items-center justify-between mb-1">
+                <p className="text-sm font-medium text-foreground">Jumlah Pembayaran</p>
+                <button type="button" onClick={() => setPaidAmount(total)} className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-md transition-colors shadow-sm">Bayar Lunas</button>
+              </div>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">Rp</span>
               <input
