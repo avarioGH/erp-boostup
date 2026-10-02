@@ -209,7 +209,7 @@ export default function Customer360Page() {
  <td className="px-4 py-3 font-medium">{o.title}</td>
  <td className="px-4 py-3"><Badge variant="outline">{o.stage}</Badge></td>
  <td className="px-4 py-3">{formatCurrency(o.expected_value)}</td>
- <td className="px-4 py-3">{o.expected_close_date ? new Date(o.expected_close_date).toLocaleTanggalString() : '-'}</td>
+ <td className="px-4 py-3">{o.expected_close_date ? new Date(o.expected_close_date).toLocaleDateString() : '-'}</td>
  </tr>
  ))}
  {crm.opportunities.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No opportunities found.</td></tr>}
@@ -238,7 +238,7 @@ export default function Customer360Page() {
  <td className="px-4 py-3"><Badge variant="secondary">{act.type}</Badge></td>
  <td className="px-4 py-3">{act.title}</td>
  <td className="px-4 py-3">{act.status}</td>
- <td className="px-4 py-3">{act.due_date ? new Date(act.due_date).toLocaleTanggalString() : '-'}</td>
+ <td className="px-4 py-3">{act.due_date ? new Date(act.due_date).toLocaleDateString() : '-'}</td>
  </tr>
  ))}
  {crm.activities.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No activities found.</td></tr>}
@@ -269,7 +269,7 @@ export default function Customer360Page() {
  {sales.quotations.map((q: any) => (
  <tr key={q.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{q.quotation_number}</td>
- <td className="px-4 py-3">{new Date(q.quotation_date || q.created_at).toLocaleTanggalString()}</td>
+ <td className="px-4 py-3">{new Date(q.quotation_date || q.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{q.status}</Badge></td>
  <td className="px-4 py-3 text-right">{formatCurrency(q.total_amount)}</td>
  </tr>
@@ -299,7 +299,7 @@ export default function Customer360Page() {
  {sales.orders.map((so: any) => (
  <tr key={so.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{so.order_number}</td>
- <td className="px-4 py-3">{new Date(so.order_date || so.created_at).toLocaleTanggalString()}</td>
+ <td className="px-4 py-3">{new Date(so.order_date || so.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{so.status}</Badge></td>
  <td className="px-4 py-3 text-right">{formatCurrency(so.total_amount)}</td>
  </tr>
@@ -331,7 +331,7 @@ export default function Customer360Page() {
  {sales.deliveries.map((d: any) => (
  <tr key={d.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{d.delivery_number}</td>
- <td className="px-4 py-3">{new Date(d.delivery_date || d.created_at).toLocaleTanggalString()}</td>
+ <td className="px-4 py-3">{new Date(d.delivery_date || d.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{d.status}</Badge></td>
  </tr>
  ))}
@@ -364,7 +364,7 @@ export default function Customer360Page() {
  {finance.invoices.map((inv: any) => (
  <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{inv.invoice_number}</td>
- <td className="px-4 py-3">{new Date(inv.invoice_date || inv.created_at).toLocaleTanggalString()}</td>
+ <td className="px-4 py-3">{new Date(inv.invoice_date || inv.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{inv.status}</Badge></td>
  <td className="px-4 py-3 text-right font-medium">{formatCurrency(inv.total)}</td>
  <td className="px-4 py-3 text-right text-destructive font-medium">{formatCurrency(inv.remaining_amount)}</td>
@@ -395,7 +395,7 @@ export default function Customer360Page() {
  {finance.payments.map((p: any) => (
  <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{p.payment_number}</td>
- <td className="px-4 py-3">{new Date(p.payment_date || p.created_at).toLocaleTanggalString()}</td>
+ <td className="px-4 py-3">{new Date(p.payment_date || p.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{p.method}</Badge></td>
  <td className="px-4 py-3 text-right font-medium text-primary">{formatCurrency(p.amount)}</td>
  </tr>
