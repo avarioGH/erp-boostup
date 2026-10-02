@@ -18,24 +18,29 @@ export class SequenceService {
     const fullPrefix = `${prefixString}/${year}/`;
 
     try {
-      const sequence = await (tx as any).documentSequence.upsert({
+      let sequence = await (tx as any).documentSequence.findFirst({
         where: {
-          company_id_type_prefix: {
-            company_id: companyId,
-            type: type,
-            prefix: fullPrefix
-          }
-        },
-        update: {
-          last_value: { increment: 1 }
-        },
-        create: {
           company_id: companyId,
           type: type,
-          prefix: fullPrefix,
-          last_value: 1
+          prefix: fullPrefix
         }
       });
+
+      if (sequence) {
+        sequence = await (tx as any).documentSequence.update({
+          where: { id: sequence.id },
+          data: { last_value: { increment: 1 } }
+        });
+      } else {
+        sequence = await (tx as any).documentSequence.create({
+          data: {
+            company_id: companyId,
+            type: type,
+            prefix: fullPrefix,
+            last_value: 1
+          }
+        });
+      }
 
       const paddedValue = sequence.last_value.toString().padStart(padding, '0');
       return `${fullPrefix}${paddedValue}`;
