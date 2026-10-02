@@ -60,16 +60,16 @@ export default function Customer360Page() {
  const feed = unifiedTimeline.map((t: any) => ({
  id: t.ref,
  type: t.type,
- date: new Date(t.date),
+ date: new Tanggal(t.date),
  title: t.type === 'ORDER' ? `Sales Order Created` : t.type === 'INVOICE' ? 'Invoice Posted' : 'Opportunity Created'
  })).sort((a, b) => b.date.getTime() - a.date.getTime());
 
  // Add more from actual arrays if not in timeline
  const allEvents = [
- ...crm.activities.map((a:any) => ({ id: a.id, type: 'ACTIVITY', date: new Date(a.created_at), title: `Activity: ${a.title} (${a.type})` })),
- ...sales.quotations.map((q:any) => ({ id: q.id, type: 'QUOTATION', date: new Date(q.created_at), title: `Quotation ${q.quotation_number} created` })),
- ...sales.deliveries.map((d:any) => ({ id: d.id, type: 'DELIVERY', date: new Date(d.created_at), title: `Delivery ${d.delivery_number} processed` })),
- ...finance.payments.map((p:any) => ({ id: p.id, type: 'PAYMENT', date: new Date(p.created_at), title: `Payment received: ${formatCurrency(p.amount)}` })),
+ ...crm.activities.map((a:any) => ({ id: a.id, type: 'ACTIVITY', date: new Tanggal(a.created_at), title: `Activity: ${a.title} (${a.type})` })),
+ ...sales.quotations.map((q:any) => ({ id: q.id, type: 'QUOTATION', date: new Tanggal(q.created_at), title: `Quotation ${q.quotation_number} created` })),
+ ...sales.deliveries.map((d:any) => ({ id: d.id, type: 'DELIVERY', date: new Tanggal(d.created_at), title: `Delivery ${d.delivery_number} processed` })),
+ ...finance.payments.map((p:any) => ({ id: p.id, type: 'PAYMENT', date: new Tanggal(p.created_at), title: `Payment received: ${formatCurrency(p.amount)}` })),
  ...feed
  ].sort((a, b) => b.date.getTime() - a.date.getTime());
 
@@ -78,7 +78,7 @@ export default function Customer360Page() {
  {/* Action Bar */}
  <div className="flex items-center gap-4 text-sm text-muted-foreground">
  <button onClick={() => router.push('/crm/customers')} className="flex items-center hover:text-foreground transition-colors">
- <ArrowLeft className="h-4 w-4 mr-1" /> Back to Customers
+ <ArrowLeft className="h-4 w-4 mr-1" /> Kembali ke Daftar Pelanggan
  </button>
  </div>
 
@@ -93,12 +93,12 @@ export default function Customer360Page() {
  <div className="flex items-center gap-2"><Building2 className="h-4 w-4" /> {profile.code}</div>
  <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {profile.phone || '-'}</div>
  <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {profile.email || '-'}</div>
- <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {profile.address || 'No address provided'}</div>
+ <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {profile.address || 'Tidak ada alamat'}</div>
  </div>
  </div>
  <div className="flex flex-wrap gap-2 md:justify-end">
- <Button variant="outline" size="sm"><FileText className="w-4 h-4 mr-2" /> New Quotation</Button>
- <Button variant="default" size="sm"><Activity className="w-4 h-4 mr-2" /> Log Activity</Button>
+ <Button variant="outline" size="sm" onClick={() => alert("Fitur Penawaran Segera Hadir")}><FileText className="w-4 h-4 mr-2" /> Buat Penawaran</Button>
+ <Button variant="default" size="sm"><Activity className="w-4 h-4 mr-2" /> Catat Aktivitas</Button>
  </div>
  </div>
 
@@ -114,7 +114,7 @@ export default function Customer360Page() {
  </Card>
  <Card className="shadow-sm">
  <CardHeader className="pb-2">
- <CardTitle className="text-sm font-medium text-muted-foreground">Total Orders</CardTitle>
+ <CardTitle className="text-sm font-medium text-muted-foreground">Total Pesanan</CardTitle>
  </CardHeader>
  <CardContent>
  <div className="text-2xl font-bold">{sales.orderCount}</div>
@@ -122,15 +122,15 @@ export default function Customer360Page() {
  </Card>
  <Card className="shadow-sm">
  <CardHeader className="pb-2">
- <CardTitle className="text-sm font-medium text-muted-foreground">Outstanding AR</CardTitle>
+ <CardTitle className="text-sm font-medium text-muted-foreground">Total Piutang</CardTitle>
  </CardHeader>
  <CardContent>
- <div className="text-2xl font-bold text-destructive">{formatCurrency(finance.outstandingAmount || 0)}</div>
+ <div className="text-2xl font-bold text-destructive">{formatCurrency(finance.outstandingJumlah || 0)}</div>
  </CardContent>
  </Card>
  <Card className="shadow-sm">
  <CardHeader className="pb-2">
- <CardTitle className="text-sm font-medium text-muted-foreground">Active Opportunities</CardTitle>
+ <CardTitle className="text-sm font-medium text-muted-foreground">Peluang Aktif</CardTitle>
  </CardHeader>
  <CardContent>
  <div className="text-2xl font-bold text-primary">{crm.opportunities.length}</div>
@@ -142,11 +142,11 @@ export default function Customer360Page() {
  <Tabs defaultValue="overview" className="w-full">
  <div className="overflow-x-auto pb-2">
  <TabsList className="bg-card border w-max md:w-full justify-start md:justify-center">
- <TabsTrigger value="overview">Overview & Timeline</TabsTrigger>
+ <TabsTrigger value="overview">Ringkasan & Riwayat</TabsTrigger>
  <TabsTrigger value="crm">CRM</TabsTrigger>
- <TabsTrigger value="sales">Sales & Quotations</TabsTrigger>
- <TabsTrigger value="deliveries">Deliveries</TabsTrigger>
- <TabsTrigger value="finance">Finance</TabsTrigger>
+ <TabsTrigger value="sales">Penjualan & Penawaran</TabsTrigger>
+ <TabsTrigger value="deliveries">Pengiriman</TabsTrigger>
+ <TabsTrigger value="finance">Keuangan</TabsTrigger>
  </TabsList>
  </div>
  
@@ -191,7 +191,7 @@ export default function Customer360Page() {
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
  <CardTitle className="text-[16px] font-semibold">Opportunities</CardTitle>
- <Link href="/crm/opportunities"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
+ <Link href="/crm/opportunities"><Button variant="outline" size="sm">Kelola <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
  <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
@@ -200,7 +200,7 @@ export default function Customer360Page() {
  <th className="px-4 py-3 font-medium">Title</th>
  <th className="px-4 py-3 font-medium">Stage</th>
  <th className="px-4 py-3 font-medium">Expected Value</th>
- <th className="px-4 py-3 font-medium">Close Date</th>
+ <th className="px-4 py-3 font-medium">Close Tanggal</th>
  </tr>
  </thead>
  <tbody>
@@ -209,7 +209,7 @@ export default function Customer360Page() {
  <td className="px-4 py-3 font-medium">{o.title}</td>
  <td className="px-4 py-3"><Badge variant="outline">{o.stage}</Badge></td>
  <td className="px-4 py-3">{formatCurrency(o.expected_value)}</td>
- <td className="px-4 py-3">{o.expected_close_date ? new Date(o.expected_close_date).toLocaleDateString() : '-'}</td>
+ <td className="px-4 py-3">{o.expected_close_date ? new Tanggal(o.expected_close_date).toLocaleTanggalString() : '-'}</td>
  </tr>
  ))}
  {crm.opportunities.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No opportunities found.</td></tr>}
@@ -229,7 +229,7 @@ export default function Customer360Page() {
  <th className="px-4 py-3 font-medium">Type</th>
  <th className="px-4 py-3 font-medium">Title</th>
  <th className="px-4 py-3 font-medium">Status</th>
- <th className="px-4 py-3 font-medium">Due Date</th>
+ <th className="px-4 py-3 font-medium">Due Tanggal</th>
  </tr>
  </thead>
  <tbody>
@@ -238,7 +238,7 @@ export default function Customer360Page() {
  <td className="px-4 py-3"><Badge variant="secondary">{act.type}</Badge></td>
  <td className="px-4 py-3">{act.title}</td>
  <td className="px-4 py-3">{act.status}</td>
- <td className="px-4 py-3">{act.due_date ? new Date(act.due_date).toLocaleDateString() : '-'}</td>
+ <td className="px-4 py-3">{act.due_date ? new Tanggal(act.due_date).toLocaleTanggalString() : '-'}</td>
  </tr>
  ))}
  {crm.activities.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No activities found.</td></tr>}
@@ -253,14 +253,14 @@ export default function Customer360Page() {
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
  <CardTitle className="text-[16px] font-semibold">Quotations</CardTitle>
- <Link href="/sales/quotations"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
+ <Link href="/sales/quotations"><Button variant="outline" size="sm">Kelola <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
  <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="px-4 py-3 font-medium">Quotation #</th>
- <th className="px-4 py-3 font-medium">Date</th>
+ <th className="px-4 py-3 font-medium">Tanggal</th>
  <th className="px-4 py-3 font-medium">Status</th>
  <th className="px-4 py-3 font-medium text-right">Total</th>
  </tr>
@@ -269,7 +269,7 @@ export default function Customer360Page() {
  {sales.quotations.map((q: any) => (
  <tr key={q.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{q.quotation_number}</td>
- <td className="px-4 py-3">{new Date(q.quotation_date || q.created_at).toLocaleDateString()}</td>
+ <td className="px-4 py-3">{new Tanggal(q.quotation_date || q.created_at).toLocaleTanggalString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{q.status}</Badge></td>
  <td className="px-4 py-3 text-right">{formatCurrency(q.total_amount)}</td>
  </tr>
@@ -283,14 +283,14 @@ export default function Customer360Page() {
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
  <CardTitle className="text-[16px] font-semibold">Sales Orders</CardTitle>
- <Link href="/sales/orders"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
+ <Link href="/sales/orders"><Button variant="outline" size="sm">Kelola <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
  <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="px-4 py-3 font-medium">Order #</th>
- <th className="px-4 py-3 font-medium">Date</th>
+ <th className="px-4 py-3 font-medium">Tanggal</th>
  <th className="px-4 py-3 font-medium">Status</th>
  <th className="px-4 py-3 font-medium text-right">Total</th>
  </tr>
@@ -299,7 +299,7 @@ export default function Customer360Page() {
  {sales.orders.map((so: any) => (
  <tr key={so.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{so.order_number}</td>
- <td className="px-4 py-3">{new Date(so.order_date || so.created_at).toLocaleDateString()}</td>
+ <td className="px-4 py-3">{new Tanggal(so.order_date || so.created_at).toLocaleTanggalString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{so.status}</Badge></td>
  <td className="px-4 py-3 text-right">{formatCurrency(so.total_amount)}</td>
  </tr>
@@ -315,15 +315,15 @@ export default function Customer360Page() {
  <TabsContent value="deliveries" className="mt-4">
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
- <CardTitle className="text-[16px] font-semibold">Deliveries</CardTitle>
- <Link href="/sales/deliveries"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
+ <CardTitle className="text-[16px] font-semibold">Pengiriman</CardTitle>
+ <Link href="/sales/deliveries"><Button variant="outline" size="sm">Kelola <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
  <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="px-4 py-3 font-medium">Delivery #</th>
- <th className="px-4 py-3 font-medium">Date</th>
+ <th className="px-4 py-3 font-medium">Tanggal</th>
  <th className="px-4 py-3 font-medium">Status</th>
  </tr>
  </thead>
@@ -331,7 +331,7 @@ export default function Customer360Page() {
  {sales.deliveries.map((d: any) => (
  <tr key={d.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{d.delivery_number}</td>
- <td className="px-4 py-3">{new Date(d.delivery_date || d.created_at).toLocaleDateString()}</td>
+ <td className="px-4 py-3">{new Tanggal(d.delivery_date || d.created_at).toLocaleTanggalString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{d.status}</Badge></td>
  </tr>
  ))}
@@ -346,31 +346,31 @@ export default function Customer360Page() {
  <TabsContent value="finance" className="space-y-4 mt-4">
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
- <CardTitle className="text-[16px] font-semibold">Invoices</CardTitle>
- <Link href="/finance/invoices"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
+ <CardTitle className="text-[16px] font-semibold">Faktur Tagihan</CardTitle>
+ <Link href="/finance/invoices"><Button variant="outline" size="sm">Kelola <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
  <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
- <th className="px-4 py-3 font-medium">Invoice #</th>
- <th className="px-4 py-3 font-medium">Date</th>
+ <th className="px-4 py-3 font-medium">Nomor Faktur</th>
+ <th className="px-4 py-3 font-medium">Tanggal</th>
  <th className="px-4 py-3 font-medium">Status</th>
  <th className="px-4 py-3 font-medium text-right">Total</th>
- <th className="px-4 py-3 font-medium text-right">Remaining</th>
+ <th className="px-4 py-3 font-medium text-right">Sisa Tagihan</th>
  </tr>
  </thead>
  <tbody>
  {finance.invoices.map((inv: any) => (
  <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{inv.invoice_number}</td>
- <td className="px-4 py-3">{new Date(inv.invoice_date || inv.created_at).toLocaleDateString()}</td>
+ <td className="px-4 py-3">{new Tanggal(inv.invoice_date || inv.created_at).toLocaleTanggalString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{inv.status}</Badge></td>
  <td className="px-4 py-3 text-right font-medium">{formatCurrency(inv.total)}</td>
  <td className="px-4 py-3 text-right text-destructive font-medium">{formatCurrency(inv.remaining_amount)}</td>
  </tr>
  ))}
- {finance.invoices.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No invoices found.</td></tr>}
+ {finance.invoices.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Tidak ada faktur tagihan.</td></tr>}
  </tbody>
  </table>
  </CardContent>
@@ -378,29 +378,29 @@ export default function Customer360Page() {
  
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
- <CardTitle className="text-[16px] font-semibold">Payments Received</CardTitle>
- <Link href="/finance/payments"><Button variant="outline" size="sm">Manage <Navigation className="w-3 h-3 ml-1" /></Button></Link>
+ <CardTitle className="text-[16px] font-semibold">Riwayat Pembayaran Masuk</CardTitle>
+ <Link href="/finance/payments"><Button variant="outline" size="sm">Kelola <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
  <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
- <th className="px-4 py-3 font-medium">Payment #</th>
- <th className="px-4 py-3 font-medium">Date</th>
- <th className="px-4 py-3 font-medium">Method</th>
- <th className="px-4 py-3 font-medium text-right">Amount</th>
+ <th className="px-4 py-3 font-medium">Nomor Pembayaran</th>
+ <th className="px-4 py-3 font-medium">Tanggal</th>
+ <th className="px-4 py-3 font-medium">Metode</th>
+ <th className="px-4 py-3 font-medium text-right">Jumlah</th>
  </tr>
  </thead>
  <tbody>
  {finance.payments.map((p: any) => (
  <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{p.payment_number}</td>
- <td className="px-4 py-3">{new Date(p.payment_date || p.created_at).toLocaleDateString()}</td>
+ <td className="px-4 py-3">{new Tanggal(p.payment_date || p.created_at).toLocaleTanggalString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{p.method}</Badge></td>
  <td className="px-4 py-3 text-right font-medium text-primary">{formatCurrency(p.amount)}</td>
  </tr>
  ))}
- {finance.payments.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No payments found.</td></tr>}
+ {finance.payments.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Tidak ada riwayat pembayaran.</td></tr>}
  </tbody>
  </table>
  </CardContent>

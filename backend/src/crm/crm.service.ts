@@ -249,7 +249,7 @@ export class CrmService {
 
     if (!customer) throw new NotFoundException('Customer not found');
 
-    const salesOrders = await this.prisma.salesOrder.findMany({
+    const salesOrders = await this.prisma.salesOrder.findMany({ include: { allocations: true },
       where: { customer_id: customerId, company_id: companyId },
       orderBy: { created_at: 'desc' }
     });
@@ -290,15 +290,28 @@ export class CrmService {
       orderBy: { created_at: 'desc' }
     });
 
-    let totalSales = 0; // LTV is POSTED AR non-POS invoices
-    let outstandingInvoices = 0;
-    
-    invoices.forEach(inv => {
-      outstandingInvoices += inv.remaining_amount;
-      if (inv.status === 'POSTED' && inv.type === 'AR' && (!inv.sales_order || !inv.sales_order.pos_shift_id)) {
-        totalSales += inv.total;
-      }
-    });
+    let totalSales = 0;
+      let outstandingInvoices = 0;
+
+      // Old invoice logic
+      invoices.forEach(inv => {
+        if (inv.status !== 'PAID') {
+          outstandingInvoices += inv.remaining_amount || 0;
+        }
+        if (inv.status === 'POSTED' && inv.type === 'AR' && (!inv.sales_order || !inv.sales_order.pos_shift_id)) {
+          totalSales += inv.total;
+        }
+      });
+
+      // New SalesOrder Piutang logic
+      salesOrders.forEach(so => {
+         if (so.status !== "CANCELLED") {
+             totalSales += so.total_amount;
+             const paid = so.allocations?.reduce((acc, a) => acc + a.amount, 0) || 0;
+             const outst = so.total_amount - paid;
+             if (outst > 0) outstandingInvoices += outst;
+         }
+      });
 
     return {
       profile: customer,
