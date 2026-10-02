@@ -179,8 +179,8 @@ export const CRMAPI: any = {
 
 export const PosAPI: any = {
   getProducts: async () => (await api.get('/pos/products')).data,
-  createTransaction: async (data: any) => (await api.post('/pos/transactions', data)).data,
-  checkout: async (data: any) => (await api.post('/pos/transactions', data)).data,
+  createTransaction: async (data: any) => (await api.post('/pos/checkout', data)).data,
+  checkout: async (data: any) => (await api.post('/pos/checkout', data)).data,
   getShifts: async () => (await api.get('/pos/shifts')).data,
   openShift: async (data: any) => (await api.post('/pos/shifts/open', data)).data,
   closeShift: async (data: any) => (await api.post('/pos/shifts/close', data)).data,
@@ -336,6 +336,7 @@ export const OpnameAPI: any = {
 };
 
 export const ReportsAPI: any = {
+  getDynamicReport: async (module: string, type: string, params?: any) => (await api.get('/reports/' + module + '/' + type, { params })).data,
   getMovements: async (params?: any) => (await api.get('/inventory/reports/movements', { params })).data,
   getStockCard: async (params?: any) => (await api.get('/inventory/reports/stock-card', { params })).data,
   getTraceability: async (params?: any) => (await api.get('/inventory/reports/traceability', { params })).data,
@@ -361,4 +362,7 @@ export const PartaiAPI: any = {
   updatePartai: async (id: string, data: any) => (await api.put('/inventory/timber-partai/' + id, data)).data,
   deletePartai: async (id: string) => (await api.delete('/inventory/timber-partai/' + id)).data,
 };
+
+
+
 
