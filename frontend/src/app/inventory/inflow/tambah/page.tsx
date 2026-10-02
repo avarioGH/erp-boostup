@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect, useRef } from "react"
 import { InventoryAPI } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -142,7 +142,7 @@ export default function CreateInflowPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <Card>
+        <Card className="overflow-visible">
           <CardHeader><CardTitle>Informasi Penerimaan</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -165,7 +165,7 @@ export default function CreateInflowPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-visible">
           <CardHeader className="flex flex-row justify-between items-center pb-2">
             <CardTitle>Rincian Ikan</CardTitle>
             <Button type="button" variant="outline" size="sm" onClick={() => setItems([...items, { product_id: "", qty: 1 }])}>
@@ -212,5 +212,6 @@ export default function CreateInflowPage() {
     </div>
   )
 }
+
 
 
