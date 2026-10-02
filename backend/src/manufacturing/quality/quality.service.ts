@@ -20,8 +20,8 @@ export class QualityService {
         product: true, 
         manufacturing_order: true, 
         work_order: true,
-        quality_point: true,
-        inspector: true,
+        
+        
         dispositions: true
       },
       orderBy: { created_at: 'desc' }
@@ -47,7 +47,7 @@ export class QualityService {
     return this.prisma.$transaction(async (tx) => {
       const check = await (tx.qualityCheck as any).findUnique({
         where: { id },
-        include: { quality_point: true, manufacturing_order: true }
+        include: {  manufacturing_order: true }
       });
 
       if (!check || check.company_id !== company_id) {
