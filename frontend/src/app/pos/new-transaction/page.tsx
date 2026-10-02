@@ -460,6 +460,7 @@ export default function PosTransaction() {
    cashierName: _user?.name || 'Kasir',
    warehouseName: _activeWh?.name || 'Pusat',
    customerName: isNewCustomer ? newCustomerName : (customers.find((c) => c.id === selectedCustomerId)?.name || ''),
+   customerAddress: isNewCustomer ? newCustomerAddress : (customers.find((c) => c.id === selectedCustomerId)?.address || ''),
  });
  setIsReceiptOpen(true);
  setCart([]);
@@ -502,10 +503,18 @@ export default function PosTransaction() {
                   <span className="font-semibold text-gray-700">{receiptData.orderNumber}</span>
                 </div>
                 {receiptData.customerName && (
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>Pelanggan</span>
-                    <span className="font-semibold text-gray-700">{receiptData.customerName}</span>
-                  </div>
+                  <>
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Pelanggan</span>
+                      <span className="font-semibold text-gray-700">{receiptData.customerName}</span>
+                    </div>
+                    {receiptData.customerAddress && (
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>Alamat</span>
+                        <span className="font-medium text-gray-700 text-right max-w-[60%] line-clamp-2">{receiptData.customerAddress}</span>
+                      </div>
+                    )}
+                  </>
                 )}
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                   <span>Kasir</span>
