@@ -1,4 +1,4 @@
-﻿import { Controller, Get } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
 
 @Controller('fix')
@@ -27,7 +27,10 @@ export class FixController {
 
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { role_id: ownerRole.id },
+      data: { 
+        role_id: ownerRole.id,
+        accessible_modules: ['inventory', 'production', 'sales', 'pos', 'crm', 'finance', 'purchasing', 'manufacturing', 'hr', 'reports']
+      },
     });
 
     const warehouses = await this.prisma.warehouse.findMany({
@@ -46,7 +49,7 @@ export class FixController {
 
     return {
       success: true,
-      message: 'User ikan is now Owner and has all access',
+      message: 'Berhasil! Akun ikan sekarang adalah Owner dan memiliki semua akses modul & gudang. Silakan Logout dan Login kembali di frontend.',
       warehouses: warehouses.length,
     };
   }
