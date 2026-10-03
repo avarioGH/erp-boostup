@@ -275,7 +275,7 @@ export default function Customer360Page() {
  <CardTitle className="text-sm font-medium text-muted-foreground">Peluang Aktif</CardTitle>
  </CardHeader>
  <CardContent>
- <div className="text-2xl font-bold text-primary">{crm.opportunities.length}</div>
+ <div className="text-2xl font-bold text-primary">{crm.activeOpportunities}</div>
  </CardContent>
  </Card>
  </div>
@@ -354,7 +354,7 @@ export default function Customer360Page() {
  <td className="px-4 py-3">{o.expected_close_date ? new Date(o.expected_close_date).toLocaleDateString() : '-'}</td>
  </tr>
  ))}
- {crm.opportunities.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No opportunities found.</td></tr>}
+ {crm.activeOpportunities === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No opportunities found.</td></tr>}
  </tbody>
  </table>
  </CardContent>
