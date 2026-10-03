@@ -26,8 +26,20 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled = fa
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  
+  const getDisplay = (o: any) => {
+    if (!o) return "";
+    let text = o.name || o.code || "";
+    // Jika ada nomor HP, tambahkan di sebelah nama
+    if (o.phone) text += ` (${o.phone})`;
+    // Jika ada kode dan BUKAN kode auto-generate panjang (CUST-/SUP-), tampilkan kodenya (misal untuk Produk)
+    else if (o.code && !o.code.startsWith('CUST-') && !o.code.startsWith('SUP-') && !o.code.startsWith('VEND-')) {
+      text = `${o.code} - ${text}`;
+    }
+    return text;
+  };
   const selectedOption = options?.find((o: any) => o.id === value || o._id === value)
-  const displayValue = open ? search : (selectedOption ? (selectedOption.code ? `${selectedOption.code} - ${selectedOption.name}` : selectedOption.name) : "")
+  const displayValue = open ? search : getDisplay(selectedOption)
 
   const filteredOptions = (options || []).filter((o: any) => 
     (o.name || '').toLowerCase().includes(search.toLowerCase()) || 
@@ -42,7 +54,7 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled = fa
           value={displayValue}
           onChange={e => { setSearch(e.target.value); if (!open) setOpen(true); }}
           onFocus={() => { setOpen(true); setSearch(""); }}
-          placeholder={selectedOption ? (selectedOption.code ? `${selectedOption.code} - ${selectedOption.name}` : selectedOption.name) : (placeholder || "Pilih...")}
+          placeholder={selectedOption ? getDisplay(selectedOption) : (placeholder || "Pilih...")}
           className="w-full pr-8 cursor-pointer bg-accent/30"
           readOnly={!open}
         />
@@ -72,7 +84,7 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled = fa
                 style={{ minHeight: '36px', display: 'block', borderBottom: '1px solid #333' }}
                 onClick={() => { onChange(o?.id || o?._id); setOpen(false); setSearch(""); }}
               >
-                {o.code ? `${o.code} - ` : ''}{o.name}
+                {getDisplay(o)}
               </div>
             ))
           )}
