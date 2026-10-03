@@ -9,7 +9,10 @@ export class ExportShipmentService {
     return this.prisma.exportShipment.findMany({
       where: { company_id: companyId },
       include: { items: true },
-      orderBy: { exportDate: 'desc' },
+      orderBy: [
+        { exportDate: 'desc' },
+        { created_at: 'desc' }
+      ],
     });
   }
 
