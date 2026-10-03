@@ -590,7 +590,7 @@ export default function Customer360Page() {
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label>Tipe Aktivitas</Label>
-              <Select value={actType} onValueChange={setActType}>
+              <Select value={actType} onValueChange={(val: any) => setActType(val || "")}>
                 <SelectTrigger><SelectValue placeholder="Pilih Tipe" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NOTE">Catatan (Note)</SelectItem>

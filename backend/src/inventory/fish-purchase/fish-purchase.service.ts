@@ -58,7 +58,7 @@ export class FishPurchaseService {
             product_id: item.product_id,
             qty: item.qty,
             unit_price: item.unit_price,
-            subtotal: item.qty * item.unit_price,
+            sub
             received_qty: item.qty,
             billed_qty: item.qty,
           }
@@ -144,9 +144,9 @@ export class FishPurchaseService {
             product_id: item.product_id,
             qty: item.qty,
             unit_price: item.unit_price,
-            subtotal: item.qty * item.unit_price,
+            sub
             tax: 0,
-            total: item.qty * item.unit_price,
+            
           }
         });
       }

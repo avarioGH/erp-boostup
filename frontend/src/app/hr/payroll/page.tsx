@@ -1,190 +1,102 @@
+
 "use client"
-import { HrAPI } from"@/lib/api"
+import React, { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import api from '@/lib/api'
+import { Banknote, FileText } from 'lucide-react'
 
-import { useState, useEffect } from"react"
-import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
-import { Button } from"@/components/ui/button"
-import { Input } from"@/components/ui/input"
-import { Label } from"@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
-import { Plus } from"lucide-react"
+export default function HrPayroll() {
+  const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7)) // YYYY-MM
+  const [payrolls, setPayrolls] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
 
-export default function PayrollPage() {
- const [payrolls, setPayrolls] = useState<any[]>([])
- const [employees, setEmployees] = useState<any[]>([])
- const [loading, setLoading] = useState(true)
- const [showForm, setShowForm] = useState(false)
- 
- // Form Data
- const [employeeId, setEmployeeId] = useState("")
- const [period, setPeriod] = useState("")
- const [basicSalary, setBasicSalary] = useState("")
- const [allowance, setAllowance] = useState("")
- const [deduction, setDeduction] = useState("")
+  const fetchPayrolls = async () => {
+    try {
+      setLoading(true)
+      const res = await api.get('/hr/payroll')
+      setPayrolls(res.data || [])
+    } catch(err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
- const fetchData = async () => {
- try {
- setLoading(true)
- 
- const [payRes, empRes] = await Promise.all([
- HrAPI.getPayrolls(),
- HrAPI.getEmployees()
- ])
- 
- setPayrolls(Array.isArray(payRes) ? payRes : (payRes?.data || []))
- setEmployees(Array.isArray(empRes) ? empRes : (empRes?.data || []))
- } catch (e) {
- console.error(e)
- } finally {
- setLoading(false)
- }
- }
+  useEffect(() => {
+    fetchPayrolls()
+  }, [])
 
- useEffect(() => {
- fetchData()
- }, [])
+  const handleGenerate = async () => {
+    if (!period) return alert("Pilih periode!")
+    try {
+      setLoading(true)
+      await api.post('/hr/payroll/generate', { period })
+      alert("Payroll berhasil di-generate!")
+      fetchPayrolls()
+    } catch(err) {
+      console.error(err)
+      alert("Gagal generate payroll")
+    } finally {
+      setLoading(false)
+    }
+  }
 
- // When employee changes, auto-fill their basic salary
- useEffect(() => {
- if (employeeId) {
- const emp = employees.find(e => e.id === employeeId)
- if (emp) {
- setBasicSalary(emp.basic_salary)
- }
- }
- }, [employeeId, employees])
+  return (
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Penggajian (Payroll)</h1>
+          <p className="text-muted-foreground">Generate slip gaji otomatis berdasarkan data absensi (potongan telat/absen).</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Input type="month" value={period} onChange={e => setPeriod(e.target.value)} />
+          <Button onClick={handleGenerate} disabled={loading}>
+            <Banknote className="w-4 h-4 mr-2" /> Generate Payroll
+          </Button>
+        </div>
+      </div>
 
- const handleSave = async (e: React.FormEvent) => {
- e.preventDefault()
- try {
- const token = localStorage.getItem("erp_token")
- const items = []
- if (Number(allowance) > 0) items.push({ type:"ALLOWANCE", name:"General Allowance", amount: Number(allowance) })
- if (Number(deduction) > 0) items.push({ type:"DEDUCTION", name:"General Deduction", amount: Number(deduction) })
- 
- const res = await HrAPI.createPayroll({
- employeeId,
- period,
- basicSalary,
- items
- })
- if (res.status === 200 || res.status === 201) {
- setShowForm(false)
- setEmployeeId("")
- setPeriod("")
- setBasicSalary("")
- setAllowance("")
- setDeduction("")
- fetchData()
- }
- } catch (e) {
- console.error(e)
- }
- }
-
- const formatCurrency = (amount: number) => {
- return new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR" }).format(amount)
- }
-
- return (
- <div className="space-y-6">
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0">
- <div>
- <h1 className="text-[28px] font-bold tracking-tight text-foreground">Payroll</h1>
- <p className="text-muted-foreground">Process employee salaries and generate payslips.</p>
- </div>
- <Button onClick={() => setShowForm(!showForm)}>
- <Plus className="mr-2 h-4 w-4" />
- Process Payroll
- </Button>
- </div>
-
- {showForm && (
- <Card>
- <form onSubmit={handleSave}>
- <CardHeader>
- <CardTitle>Generate Payslip</CardTitle>
- </CardHeader>
- <CardContent className="space-y-4">
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- <div className="space-y-2">
- <Label>Employee</Label>
- <Select value={employeeId} onValueChange={(val) => setEmployeeId(val ||"")} required>
- <SelectTrigger><SelectValue placeholder="Select Employee" /></SelectTrigger>
- <SelectContent>
- {employees.map(e => <SelectItem key={e.id} value={e.id}>{e.first_name} {e.last_name}</SelectItem>)}
- </SelectContent>
- </Select>
- </div>
- <div className="space-y-2">
- <Label>Period (e.g., 2026-07)</Label>
- <Input value={period} onChange={(e) => setPeriod(e.target.value)} required />
- </div>
- </div>
- <div className="space-y-2">
- <Label>Basic Salary (IDR)</Label>
- <Input type="number" value={basicSalary} onChange={(e) => setBasicSalary(e.target.value)} required />
- </div>
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- <div className="space-y-2">
- <Label>Total Allowances (+)</Label>
- <Input type="number" value={allowance} onChange={(e) => setAllowance(e.target.value)} />
- </div>
- <div className="space-y-2">
- <Label>Total Deductions (-)</Label>
- <Input type="number" value={deduction} onChange={(e) => setDeduction(e.target.value)} />
- </div>
- </div>
- <div className="flex justify-end gap-2 pt-4">
- <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
- <Button type="submit">Process</Button>
- </div>
- </CardContent>
- </form>
- </Card>
- )}
-
- <Card>
- <CardHeader>
- <CardTitle>Payroll History</CardTitle>
- </CardHeader>
- <CardContent>
- {loading ? (
- <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
- ) : payrolls.length === 0 ? (
- <p className="text-sm text-muted-foreground text-center py-4">No payroll records found.</p>
- ) : (
- <div className="border rounded-md">
- <table className="min-w-[600px] md:min-w-full w-full text-sm">
- <thead>
- <tr className="border-b bg-muted/50">
- <th className="p-3 text-left font-medium">Period</th>
- <th className="p-3 text-left font-medium">Employee</th>
- <th className="p-3 text-right font-medium">Basic Salary</th>
- <th className="p-3 text-right font-medium">Net Salary</th>
- <th className="p-3 text-left font-medium">Status</th>
- </tr>
- </thead>
- <tbody>
- {payrolls.map((p) => (
- <tr key={p.id} className="border-b last:border-0 hover:bg-muted/50">
- <td className="p-3 font-medium">{p.period}</td>
- <td className="p-3">{p.employee?.first_name} {p.employee?.last_name}</td>
- <td className="p-3 text-right">{formatCurrency(p.basic_salary)}</td>
- <td className="p-3 text-right font-bold text-primary">{formatCurrency(p.net_salary)}</td>
- <td className="p-3">
- <span className="px-2 py-1 rounded-full text-xs font-medium bg-muted">
- {p.status}
- </span>
- </td>
- </tr>
- ))}
- </tbody>
- </table>
- </div>
- )}
- </CardContent>
- </Card>
- </div>
- )
+      <Card>
+        <CardHeader>
+          <CardTitle>Riwayat Penggajian</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Periode</TableHead>
+                <TableHead>Karyawan</TableHead>
+                <TableHead>Gaji Pokok</TableHead>
+                <TableHead>Potongan</TableHead>
+                <TableHead>Gaji Bersih</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {payrolls.filter((p: any) => p.period === period).map((p: any) => (
+                <TableRow key={p.id}>
+                  <TableCell>{p.period}</TableCell>
+                  <TableCell className="font-medium">{p.employee?.first_name}</TableCell>
+                  <TableCell>Rp {p.basic_salary?.toLocaleString()}</TableCell>
+                  <TableCell className="text-rose-500">Rp {p.total_deduction?.toLocaleString()}</TableCell>
+                  <TableCell className="font-bold text-emerald-600">Rp {p.net_pay?.toLocaleString()}</TableCell>
+                  <TableCell>{p.status}</TableCell>
+                  <TableCell>
+                    <Button variant="outline" size="sm"><FileText className="w-4 h-4 mr-1"/> Slip</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {payrolls.filter((p: any) => p.period === period).length === 0 && (
+                <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">Tidak ada payroll untuk periode {period}</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
