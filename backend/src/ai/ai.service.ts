@@ -192,7 +192,7 @@ export class AiService {
         where: { company_id: companyId },
         include: { product: true, warehouse: true }
       });
-      let stockInfo = stocks.map(s => `- ${s.product?.name || 'Ikan'} (${s.product?.sku || ''}): ${s.current_stock} pcs (Gudang: ${s.warehouse?.name || '-'}) `).join('\n');
+      let stockInfo = stocks.map(s => `- ${s.product?.name || 'Ikan'} (${s.product?.code || ''}): ${s.current_stock} pcs (Gudang: ${s.warehouse?.name || '-'}) `).join('\n');
       if (!stockInfo) stockInfo = 'Belum ada stok barang.';
 
       const today = new Date();
