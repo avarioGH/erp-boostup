@@ -375,7 +375,7 @@ export default function Customer360Page() {
  </tr>
  </thead>
  <tbody>
- {crm.activities.map((act: any) => (
+ {(activities?.today || activities || []).map((act: any) => (
  <tr key={act.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3"><Badge variant="secondary">{act.type}</Badge></td>
  <td className="px-4 py-3">{act.title}</td>
@@ -408,7 +408,7 @@ export default function Customer360Page() {
  </tr>
  </thead>
  <tbody>
- {sales.quotations.map((q: any) => (
+ {(quotations || []).map((q: any) => (
  <tr key={q.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{q.quotation_number}</td>
  <td className="px-4 py-3">{new Date(q.quotation_date || q.created_at).toLocaleDateString()}</td>
@@ -416,7 +416,7 @@ export default function Customer360Page() {
  <td className="px-4 py-3 text-right">{formatCurrency(q.total_amount)}</td>
  </tr>
  ))}
- {sales.quotations.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No quotations found.</td></tr>}
+ {(quotations || []).length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No quotations found.</td></tr>}
  </tbody>
  </table>
  </CardContent>
@@ -490,14 +490,14 @@ export default function Customer360Page() {
  </tr>
  </thead>
  <tbody>
- {sales.deliveries.map((d: any) => (
+ {(deliveries || []).map((d: any) => (
  <tr key={d.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{d.delivery_number}</td>
  <td className="px-4 py-3">{new Date(d.delivery_date || d.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{d.status}</Badge></td>
  </tr>
  ))}
- {sales.deliveries.length === 0 && <tr><td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">No deliveries found.</td></tr>}
+ {(deliveries || []).length === 0 && <tr><td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">No deliveries found.</td></tr>}
  </tbody>
  </table>
  </CardContent>
