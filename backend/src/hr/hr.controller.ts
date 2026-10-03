@@ -1,6 +1,6 @@
 import { Query, Param, PermissionsGuard } from '../auth/permissions.guard';
-import { Permissions } from '../auth/permissions.decorator';
-import {
+import { Query, Param, Permissions } from '../auth/permissions.decorator';
+import { Query, Param,
   Controller,
   Get,
   Post,
@@ -10,8 +10,8 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { HrService } from './hr.service';
+import { Query, Param, JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Query, Param, HrService } from './hr.service';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('hr')
