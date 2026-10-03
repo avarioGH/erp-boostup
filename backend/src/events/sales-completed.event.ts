@@ -10,6 +10,7 @@ export class SalesCompletedEvent {
   sourceEntityId: string;
   payload: {
     totalAmount: number;
+    paidAmount?: number;
     paymentMethod: string;
     userId: string;
   };
