@@ -28,7 +28,10 @@ export class SalesOrderController {
         customer: true,
         allocations: true,
       },
-      orderBy: { order_date: 'desc' },
+      orderBy: [
+        { order_date: 'desc' },
+        { created_at: 'desc' }
+      ],
     });
     return { data };
   }
