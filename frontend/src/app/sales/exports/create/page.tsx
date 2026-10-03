@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, X, ArrowLeft } from "lucide-react"
+import { Plus, X, ArrowLeft, Trash2 } from "lucide-react"
 
 export default function CreateExportPage() {
   const router = useRouter()
@@ -21,22 +21,39 @@ export default function CreateExportPage() {
     exportDate: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
   })
 
-  const [items, setItems] = useState([
-    { groupName: "PAK LUCKY", productName: "", qtyKg: "", qtyMc: "", qtySak: "" }
+  // Grouped state
+  const [groups, setGroups] = useState([
+    { groupName: "", items: [{ productName: "", qtyKg: "", qtyMc: "", qtySak: "" }] }
   ])
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     setLoading(true)
     try {
+      const flatItems: any[] = [];
+      groups.forEach(g => {
+        g.items.forEach(i => {
+          if (i.productName || i.qtyKg || i.qtyMc || i.qtySak) {
+            flatItems.push({
+              groupName: g.groupName || "-",
+              productName: i.productName,
+              qtyKg: parseFloat(i.qtyKg) || 0,
+              qtyMc: parseInt(i.qtyMc) || 0,
+              qtySak: parseInt(i.qtySak) || 0
+            })
+          }
+        })
+      })
+
+      if (flatItems.length === 0) {
+        toast({ title: "Masukkan minimal 1 barang", variant: "destructive" })
+        setLoading(false)
+        return
+      }
+
       const payload = {
         ...form,
-        items: items.map(i => ({
-          ...i,
-          qtyKg: parseFloat(i.qtyKg) || 0,
-          qtyMc: parseInt(i.qtyMc) || 0,
-          qtySak: parseInt(i.qtySak) || 0
-        }))
+        items: flatItems
       }
       await exportShipment.create(payload)
       toast({ title: "Berhasil disimpan" })
@@ -48,8 +65,44 @@ export default function CreateExportPage() {
     }
   }
 
+  const addGroup = () => {
+    setGroups([...groups, { groupName: "", items: [{ productName: "", qtyKg: "", qtyMc: "", qtySak: "" }] }])
+  }
+
+  const removeGroup = (groupIndex: number) => {
+    if (groups.length === 1) return;
+    const newGroups = [...groups];
+    newGroups.splice(groupIndex, 1);
+    setGroups(newGroups);
+  }
+
+  const addItem = (groupIndex: number) => {
+    const newGroups = [...groups];
+    newGroups[groupIndex].items.push({ productName: "", qtyKg: "", qtyMc: "", qtySak: "" });
+    setGroups(newGroups);
+  }
+
+  const removeItem = (groupIndex: number, itemIndex: number) => {
+    const newGroups = [...groups];
+    if (newGroups[groupIndex].items.length === 1) return;
+    newGroups[groupIndex].items.splice(itemIndex, 1);
+    setGroups(newGroups);
+  }
+
+  const updateGroupName = (groupIndex: number, val: string) => {
+    const newGroups = [...groups];
+    newGroups[groupIndex].groupName = val;
+    setGroups(newGroups);
+  }
+
+  const updateItem = (groupIndex: number, itemIndex: number, field: string, val: string) => {
+    const newGroups = [...groups] as any;
+    newGroups[groupIndex].items[itemIndex][field] = val;
+    setGroups(newGroups);
+  }
+
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div className="flex items-center space-x-4">
         <Button variant="ghost" size="icon" onClick={() => router.push("/sales/exports")}>
           <ArrowLeft className="w-4 h-4" />
@@ -59,18 +112,18 @@ export default function CreateExportPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
-          <CardHeader><CardTitle>Data Kontainer</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
+          <CardHeader><CardTitle>Informasi Kontainer</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label>No. CONTAINER</Label>
+              <Label>No Kontainer</Label>
               <Input value={form.containerNo} onChange={e => setForm({...form, containerNo: e.target.value})} required />
             </div>
             <div className="space-y-2">
-              <Label>No. SEAL</Label>
-              <Input value={form.sealNo} onChange={e => setForm({...form, sealNo: e.target.value})} />
+              <Label>No Segel / Seal</Label>
+              <Input value={form.sealNo} onChange={e => setForm({...form, sealNo: e.target.value})} required />
             </div>
             <div className="space-y-2">
-              <Label>No. KENDARAAN</Label>
+              <Label>No Polisi Kendaraan</Label>
               <Input value={form.vehicleNo} onChange={e => setForm({...form, vehicleNo: e.target.value})} />
             </div>
             <div className="space-y-2">
@@ -80,59 +133,72 @@ export default function CreateExportPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row justify-between items-center">
-            <CardTitle>Rincian Barang (Per Supplier/Grup)</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => setItems([...items, { groupName: "", productName: "", qtyKg: "", qtyMc: "", qtySak: "" }])}>
-              <Plus className="w-4 h-4 mr-2" /> Tambah Baris
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {items.map((item, index) => (
-              <div key={index} className="grid grid-cols-12 gap-2 items-end border-b pb-4">
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-xs">Grup (Supplier)</Label>
-                  <Input placeholder="PAK LUCKY..." value={item.groupName} onChange={e => {
-                    const newItems = [...items]; newItems[index].groupName = e.target.value; setItems(newItems);
-                  }} required />
-                </div>
-                <div className="col-span-4 space-y-2">
-                  <Label className="text-xs">Nama Barang</Label>
-                  <Input placeholder="TGR HEADLESS..." value={item.productName} onChange={e => {
-                    const newItems = [...items]; newItems[index].productName = e.target.value; setItems(newItems);
-                  }} required />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-xs">Jumlah KG</Label>
-                  <Input type="number" step="0.1" value={item.qtyKg} onChange={e => {
-                    const newItems = [...items]; newItems[index].qtyKg = e.target.value; setItems(newItems);
-                  }} />
-                </div>
-                <div className="col-span-1 space-y-2">
-                  <Label className="text-xs">MC</Label>
-                  <Input type="number" value={item.qtyMc} onChange={e => {
-                    const newItems = [...items]; newItems[index].qtyMc = e.target.value; setItems(newItems);
-                  }} />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-xs">SAK/KARUNG</Label>
-                  <Input type="number" value={item.qtySak} onChange={e => {
-                    const newItems = [...items]; newItems[index].qtySak = e.target.value; setItems(newItems);
-                  }} />
-                </div>
-                <div className="col-span-1">
-                  <Button type="button" variant="ghost" size="icon" className="text-red-500" onClick={() => setItems((Array.isArray(items) ? items : []).filter((_, i) => i !== index))}>
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
+        {groups.map((group, gIdx) => (
+          <Card key={gIdx} className="border-2 border-muted">
+            <CardHeader className="flex flex-row justify-between items-center bg-muted/20 pb-4 border-b">
+              <div className="flex-1 max-w-md space-y-1">
+                <Label className="text-sm font-semibold">Grup (Supplier) / Pemilik Barang</Label>
+                <Input 
+                  placeholder="Misal: PAK BUDI" 
+                  value={group.groupName} 
+                  onChange={e => updateGroupName(gIdx, e.target.value)} 
+                  required 
+                />
               </div>
-            ))}
-          </CardContent>
-        </Card>
+              {groups.length > 1 && (
+                <Button type="button" variant="ghost" className="text-destructive" onClick={() => removeGroup(gIdx)}>
+                  <Trash2 className="w-4 h-4 mr-2" /> Hapus Grup
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {group.items.map((item, iIdx) => (
+                <div key={iIdx} className="grid grid-cols-12 gap-3 items-end">
+                  <div className="col-span-1 flex justify-center pb-2">
+                    <span className="text-muted-foreground font-medium text-sm">{iIdx + 1}.</span>
+                  </div>
+                  <div className="col-span-5 space-y-1">
+                    <Label className="text-xs">Nama Barang</Label>
+                    <Input placeholder="" value={item.productName} onChange={e => updateItem(gIdx, iIdx, 'productName', e.target.value)} required />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label className="text-xs">Jumlah KG</Label>
+                    <Input type="number" step="0.1" value={item.qtyKg} onChange={e => updateItem(gIdx, iIdx, 'qtyKg', e.target.value)} />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label className="text-xs">MC</Label>
+                    <Input type="number" value={item.qtyMc} onChange={e => updateItem(gIdx, iIdx, 'qtyMc', e.target.value)} />
+                  </div>
+                  <div className="col-span-2 space-y-1 relative">
+                    <Label className="text-xs">SAK / KARUNG</Label>
+                    <div className="flex items-center gap-2">
+                      <Input type="number" value={item.qtySak} onChange={e => updateItem(gIdx, iIdx, 'qtySak', e.target.value)} />
+                      {group.items.length > 1 && (
+                        <Button type="button" variant="ghost" size="icon" className="text-destructive flex-shrink-0" onClick={() => removeItem(gIdx, iIdx)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="pt-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => addItem(gIdx)}>
+                  <Plus className="w-4 h-4 mr-2" /> Tambah Barang di Grup Ini
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
 
-        <Button type="submit" disabled={loading} className="w-full">
-          {loading ? "Menyimpan..." : "Simpan Dokumen"}
-        </Button>
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+          <Button type="button" variant="secondary" onClick={addGroup} className="w-full sm:w-auto">
+            <Plus className="w-4 h-4 mr-2" /> Tambah Grup Supplier Lain
+          </Button>
+          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+            {loading ? "Menyimpan..." : "Simpan Data Eksport"}
+          </Button>
+        </div>
       </form>
     </div>
   )
