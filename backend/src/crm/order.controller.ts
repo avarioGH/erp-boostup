@@ -73,7 +73,7 @@ export class OrderController {
           order_number: orderNumber,
           order_date: new Date(),
           status: 'COMPLETED',
-          total_amount: totalAmount, ecommerce_session_id: MANUAL__,
+          total_amount: totalAmount, ecommerce_session_id: 'MANUAL_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
           notes: data.notes,
           items: {
             create: orderItems,
