@@ -441,7 +441,7 @@ export default function Customer360Page() {
  </tr>
  </thead>
  <tbody>
- {sales.orders.map((so: any) => {
+ {(salesOrders || []).map((so: any) => {
    const paid = so.paid_amount !== undefined ? so.paid_amount : (so.total_amount || 0);
    const sisa = Math.max(0, (so.total_amount || 0) - paid);
    return (
@@ -466,7 +466,7 @@ export default function Customer360Page() {
  </tr>
    );
  })}
- {sales.orders.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Belum ada transaksi.</td></tr>}
+ {(salesOrders || []).length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Belum ada transaksi.</td></tr>}
  </tbody>
  </table>
  </CardContent>
