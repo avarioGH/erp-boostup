@@ -1,6 +1,6 @@
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
-import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, ForbiddenException } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -12,6 +12,20 @@ export class AiController {
   @Permissions('ai.create')
   @Post('chat')
   async chat(
+    @Req() req,
+    @Body() body: { prompt: string; chatHistory?: any[] },
+  ) {
+    if (req.user.role?.toLowerCase() !== 'owner') {
+      throw new ForbiddenException('Fitur Chat AI ini hanya dapat diakses oleh Owner.');
+    }
+    return this.aiService.handleChat(
+      req.user,
+      body.prompt,
+      body.chatHistory || [],
+    );
+  }
+
+  async _old_chat(
     @Req() req,
     @Body() body: { prompt: string; chatHistory?: any[] },
   ) {
