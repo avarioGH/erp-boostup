@@ -154,7 +154,7 @@ export default function PosReports() {
               />
             </div>
             <div className="w-full sm:w-48">
-              <UISelect value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
+              <UISelect value={statusFilter} onValueChange={(v) => { setStatusFilter(v || "ALL"); setCurrentPage(1); }}>
                 <SelectTrigger><SelectValue placeholder="Semua Status"/></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Semua Status</SelectItem>
