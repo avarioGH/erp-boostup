@@ -220,10 +220,10 @@ export default function PosReports() {
         <DialogContent>
           <DialogHeader><DialogTitle>Pencatatan Pembayaran Piutang</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="p-3 bg-gray-50 border rounded text-sm space-y-1">
-              <p><span className="text-gray-500">Nota:</span> <span className="font-medium">{selectedOrder?.order_number}</span></p>
-              <p><span className="text-gray-500">Pelanggan:</span> <span className="font-medium">{selectedOrder?.customer?.name || 'Umum'}</span></p>
-              <p><span className="text-gray-500">Total Tagihan:</span> <span className="font-medium">Rp {(selectedOrder?.total_amount || 0).toLocaleString('id-ID')}</span></p>
+            <div className="p-3 bg-muted border rounded text-sm space-y-1">
+              <p><span className="text-muted-foreground">Nota:</span> <span className="font-medium">{selectedOrder?.order_number}</span></p>
+              <p><span className="text-muted-foreground">Pelanggan:</span> <span className="font-medium">{selectedOrder?.customer?.name || 'Umum'}</span></p>
+              <p><span className="text-muted-foreground">Total Tagihan:</span> <span className="font-medium">Rp {(selectedOrder?.total_amount || 0).toLocaleString('id-ID')}</span></p>
             </div>
             
             <div className="space-y-2">
