@@ -61,6 +61,7 @@ export class SalesOrderController {
       const order = await tx.salesOrder.create({
         data: {
           company_id: compId,
+          ecommerce_session_id: "MANUAL_" + Date.now() + Math.random().toString(36).substring(7),
           customer_id: body.customer_id,
           order_number: orderNo,
           order_date: new Date(body.order_date || new Date()),

@@ -229,6 +229,7 @@ export class AccountingListener {
     if (!act) {
       act = await tx.accountType.create({
         data: {
+          company_id: companyId,
           name: 'Auto Generated',
           normal_balance: 'Debit',
           code: 'AUTO-' + Date.now(),
