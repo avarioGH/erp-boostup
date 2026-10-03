@@ -305,16 +305,14 @@ export class AccountingListener {
       ['Pendapatan Penjualan POS', 'Sales Revenue'],
     );
 
-    const items = [];
+    const items: any[] = [];
     
     // Piutang account for any unpaid balance
     const arAccountId = await this.resolveAccount(
       tx,
       event.companyId,
       ['1-1004', '1102', 'Piutang'],
-      ['Piutang Usaha', 'Accounts Receivable'],
-      'AUTO-AR',
-      'Debit'
+      ['Piutang Usaha', 'Accounts Receivable']
     );
 
     const paidAmount = event.payload.paidAmount !== undefined ? event.payload.paidAmount : event.payload.totalAmount;
