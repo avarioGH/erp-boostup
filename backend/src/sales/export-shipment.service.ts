@@ -11,7 +11,7 @@ export class ExportShipmentService {
       include: { items: true },
       orderBy: [
         { exportDate: 'desc' },
-        { created_at: 'desc' }
+        { createdAt: 'desc' }
       ],
     });
   }
