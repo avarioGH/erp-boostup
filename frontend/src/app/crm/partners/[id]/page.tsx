@@ -410,7 +410,16 @@ export default function Customer360Page() {
  <td className="px-4 py-3 font-mono text-xs">{q.quotation_number}</td>
  <td className="px-4 py-3">{new Date(q.quotation_date || q.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{q.status}</Badge></td>
- <td className="px-4 py-3 text-right">{formatCurrency(q.total_amount)}</td>
+ <td className="px-4 py-3 text-right space-x-2">
+     {so.invoice_status !== 'INVOICED' && (
+        <Button variant="outline" size="sm" onClick={() => handleCreateInvoice(so.id)} disabled={isCreatingInv === so.id}>
+          {isCreatingInv === so.id ? '...' : 'Buat Faktur'}
+        </Button>
+     )}
+     {sisa > 0 && (
+        <Button variant="default" size="sm" onClick={() => { setPayAmount(sisa); setPayModalOpen(true); }}>Bayar</Button>
+     )}
+   </td>
  </tr>
  ))}
  {sales.quotations.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No quotations found.</td></tr>}
@@ -439,7 +448,7 @@ export default function Customer360Page() {
  </thead>
  <tbody>
  {sales.orders.map((so: any) => {
-   const paid = so.paid_amount !== undefined ? so.paid_amount : (so.total_amount || 0);
+   const paid = so.allocations?.reduce((sum: number, a: any) => sum + Number(a.amount || 0), 0) || 0;
    const sisa = Math.max(0, (so.total_amount || 0) - paid);
    return (
  <tr key={so.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
