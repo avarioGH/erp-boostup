@@ -229,7 +229,7 @@ export default function Customer360Page() {
  <CardTitle className="text-sm font-medium text-muted-foreground">Total Invoiced (LTV)</CardTitle>
  </CardHeader>
  <CardContent>
- <div className="text-2xl font-bold">{formatCurrency(sales.totalSales || 0)}</div>
+ <div className="text-2xl font-bold">{formatCurrency(sales.totalInvoiced || 0)}</div>
  </CardContent>
  </Card>
  <Card className="shadow-sm">
