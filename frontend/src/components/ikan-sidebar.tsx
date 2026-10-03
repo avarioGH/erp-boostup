@@ -304,7 +304,7 @@ export function IkanSidebar() {
       if (!item.id || user?.role === 'Owner') return true;
       return user?.accessible_modules?.includes(item.id);
     } else {
-      const hiddenForIkan = ['inventory', 'production', 'sales', 'pos', 'crm', 'finance'];
+      const hiddenForIkan = ['inventory', 'production', 'sales', 'pos', 'crm', 'finance', 'purchasing', 'manufacturing'];
       if (item.id && hiddenForIkan.includes(item.id)) return false;
       if (!item.id || user?.role === 'Owner') return true;
       const idMap: any = { ikan_master_data: 'inventory', ikan_inventory: 'inventory', ikan_reports: 'reports', ikan_sales: 'pos' };
