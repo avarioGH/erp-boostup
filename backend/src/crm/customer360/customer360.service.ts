@@ -37,7 +37,7 @@ export class Customer360Service {
         totalInvoiced += inv.total;
         totalPaid += inv.paid_amount;
         outstanding += inv.remaining_amount;
-      } else if (inv.type === 'AP' && inv.supplier_id === customerId) {
+      } else if (inv.type === 'AP' && (inv.supplier_id === customerId || inv.customer_id === customerId)) {
         outstandingAp += inv.remaining_amount;
       }
     });

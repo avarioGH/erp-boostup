@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { CRMAPI, FinanceAPI } from '@/lib/api';
+import api, { CRMAPI, FinanceAPI } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +32,9 @@ export default function Customer360Page() {
   const [actDesc, setActDesc] = useState('');
   const [isSavingAct, setIsSavingAct] = useState(false);
   const [isCreatingInv, setIsCreatingInv] = useState<string | null>(null);
+  const [nettingModalOpen, setNettingModalOpen] = useState(false);
+  const [nettingAmount, setNettingAmount] = useState('');
+  const [nettingNotes, setNettingNotes] = useState('');
 
   const handleCreateInvoice = async (soId: string) => {
     setIsCreatingInv(soId);
@@ -71,6 +74,19 @@ export default function Customer360Page() {
     }
   };
 
+  const handleNetting = async () => {
+    try {
+      if(!nettingAmount || Number(nettingAmount) <= 0) return alert('Nominal invalid');
+      await api.post('/finance/netting', { partner_id: partnerId, amount: Number(nettingAmount), notes: nettingNotes });
+      setNettingModalOpen(false);
+      setNettingAmount('');
+      const res = await CRMAPI.getPartner360(partnerId);
+      setData(res);
+      alert('Kompensasi berhasil!');
+    } catch(err:any) {
+      alert('Gagal: ' + (err.response?.data?.message || err.message));
+    }
+  };
   const handlePay = async () => {
     if (!payAmount || Number(payAmount) <= 0) return alert('Nominal tidak valid');
     setIsPaying(true);
@@ -150,7 +166,10 @@ export default function Customer360Page() {
  );
  if (!data?.profile) return <div className="p-4 md:p-8 text-center text-red-500">Customer not found.</div>;
 
- const { profile, sales, finance, crm, timeline } = data;
+ const { customer: profile, summary, salesOrders, invoices, payments, nettings, opportunities, activities, timeline } = data;
+  const finance = { outstandingAmount: summary?.outstanding || 0, outstandingAp: summary?.outstanding_ap || 0, netBalance: summary?.net_balance || 0, invoices: invoices || [], payments: payments || [], nettings: nettings || [] };
+  const sales = { orderCount: salesOrders?.length || 0, totalInvoiced: summary?.total_invoiced || 0, totalPurchased: summary?.total_purchased || 0 };
+  const crm = { activeOpportunities: opportunities?.length || 0 };
 
  // Enhance timeline with unified data if backend timeline is incomplete
  let unifiedTimeline = [...(timeline || [])];
@@ -228,6 +247,27 @@ export default function Customer360Page() {
  <div className="text-2xl font-bold text-destructive">{formatCurrency(finance.outstandingAmount || 0)}</div>
  </CardContent>
  </Card>
+  <Card className="shadow-sm">
+    <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+      <CardTitle className="text-sm font-medium text-muted-foreground">Total Hutang</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-orange-600">{formatCurrency(finance.outstandingAp || 0)}</div>
+    </CardContent>
+  </Card>
+  <Card className="shadow-sm bg-primary/5">
+    <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+      <CardTitle className="text-sm font-medium text-primary">Net Balance</CardTitle>
+      {(finance.outstandingAmount > 0 && finance.outstandingAp > 0) && (
+        <Button size="sm" onClick={() => setNettingModalOpen(true)}>Kompensasi</Button>
+      )}
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold text-primary">{formatCurrency(finance.netBalance || 0)}</div>
+      <p className="text-xs text-muted-foreground mt-1">{(finance.netBalance > 0) ? 'Perusahaan berpiutang' : (finance.netBalance < 0 ? 'Perusahaan berhutang' : 'Lunas')}</p>
+    </CardContent>
+  </Card>
+  
  <Card className="shadow-sm">
  <CardHeader className="pb-2">
  <CardTitle className="text-sm font-medium text-muted-foreground">Peluang Aktif</CardTitle>
@@ -474,6 +514,7 @@ export default function Customer360Page() {
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="px-4 py-3 font-medium">Nomor Faktur</th>
+<th className="px-4 py-3 font-medium">Tipe</th>
  <th className="px-4 py-3 font-medium">Tanggal</th>
  <th className="px-4 py-3 font-medium">Status</th>
  <th className="px-4 py-3 font-medium text-right">Total</th>
@@ -484,6 +525,7 @@ export default function Customer360Page() {
  {finance.invoices.map((inv: any) => (
  <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{inv.invoice_number}</td>
+<td className="px-4 py-3 text-xs">{inv.type === "AR" ? "Penjualan (AR)" : "Pembelian (AP)"}</td>
  <td className="px-4 py-3">{new Date(inv.invoice_date || inv.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{inv.status}</Badge></td>
  <td className="px-4 py-3 text-right font-medium">{formatCurrency(inv.total)}</td>
