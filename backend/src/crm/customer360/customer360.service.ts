@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -18,7 +18,10 @@ export class Customer360Service {
     const invoices = await this.prisma.invoice.findMany({
       where: {
         company_id: companyId,
-        customer_id: customerId,
+        OR: [
+          { customer_id: customerId },
+          { supplier_id: customerId }
+        ],
         status: { notIn: ['DRAFT', 'CANCELLED'] },
       },
       orderBy: { invoice_date: 'desc' },
@@ -27,12 +30,19 @@ export class Customer360Service {
     let totalInvoiced = 0;
     let totalPaid = 0;
     let outstanding = 0;
+    let outstandingAp = 0;
 
     invoices.forEach((inv) => {
-      totalInvoiced += inv.total;
-      totalPaid += inv.paid_amount;
-      outstanding += inv.remaining_amount; // strictly from authoritative fields
+      if (inv.type === 'AR' && inv.customer_id === customerId) {
+        totalInvoiced += inv.total;
+        totalPaid += inv.paid_amount;
+        outstanding += inv.remaining_amount;
+      } else if (inv.type === 'AP' && inv.supplier_id === customerId) {
+        outstandingAp += inv.remaining_amount;
+      }
     });
+
+    const netBalance = outstanding - outstandingAp;
 
     // 2. Opportunities & Pipeline
     const opportunities = await this.prisma.opportunity.findMany({
@@ -126,6 +136,12 @@ export class Customer360Service {
 
     const lastPayment = payments.length > 0 ? payments[0].payment_date : null;
 
+    // 7.5. Netting
+    const nettings = await this.prisma.netting.findMany({
+      where: { company_id: companyId, partner_id: customerId },
+      orderBy: { date: 'desc' },
+    });
+
     // 8. Timeline Assembly (Top 50 events combined)
     const timeline: any[] = [];
 
@@ -177,6 +193,14 @@ export class Customer360Service {
         ref: p.id,
       }),
     );
+    nettings.forEach((n) =>
+      timeline.push({
+        type: 'NETTING',
+        date: n.date,
+        title: `Netting Completed: ${n.netting_number}`,
+        ref: n.id,
+      }),
+    );
     activities
       .filter((a) => a.status === 'DONE')
       .forEach((a) =>
@@ -199,6 +223,8 @@ export class Customer360Service {
         total_invoiced: totalInvoiced,
         total_paid: totalPaid,
         outstanding: outstanding,
+        outstanding_ap: outstandingAp,
+        net_balance: netBalance,
         open_pipeline: openPipeline,
         weighted_pipeline: weightedPipeline,
         won_value: wonValue,
@@ -218,6 +244,7 @@ export class Customer360Service {
       deliveries,
       invoices,
       payments,
+      nettings,
       timeline: timeline.slice(0, 50),
     };
   }

@@ -212,6 +212,7 @@ export const FinanceAPI: any = {
   getCashFlowReport: async (params?: any) => (await api.get('/reports/finance/cash-flow', { params }).catch(() => ({ data: {} }))).data,
   getProfitLossReport: async (params?: any) => (await api.get('/reports/finance/profit-loss', { params }).catch(() => ({ data: {} }))).data,
   createVendorBill: async (poId: string) => (await api.post('/purchasing/orders/' + poId + '/bill', {})).data,
+  createNetting: async (data: any) => (await api.post('/finance/netting', data)).data,
 };
 
 export const HrAPI: any = {

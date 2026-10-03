@@ -32,7 +32,7 @@ export default function PurchaseFishForm() {
           api.get('/inventory/warehouses'),
           api.get('/inventory/products')
         ])
-        setPartners(pRes.data || [])
+        setPartners(pRes.data?.data || pRes.data || [])
         setWarehouses(wRes.data || [])
         setProducts(prRes.data || [])
       } catch (err) {

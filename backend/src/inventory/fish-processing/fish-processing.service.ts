@@ -7,7 +7,7 @@ export class FishProcessingService {
 
   async processStock(data: any, reqUser: any) {
     const { date, notes, inputs, outputs } = data;
-    const company_id = reqUser.company_id;
+    const company_id = (reqUser.company_id || reqUser.companyId);
     const created_by = reqUser.id;
 
     if (!inputs || inputs.length === 0 || !outputs || outputs.length === 0) {
@@ -155,7 +155,7 @@ export class FishProcessingService {
 
   async getTransformations(reqUser: any) {
     return this.prisma.stockTransformation.findMany({
-      where: { company_id: reqUser.company_id },
+      where: { company_id: (reqUser.company_id || reqUser.companyId) },
       include: {
         inputs: { include: { product: true, warehouse: true } },
         outputs: { include: { product: true, warehouse: true } },
