@@ -184,7 +184,7 @@ export const CRMAPI: any = {
   getLeads: async () => (await api.get('/crm/leads')).data,
   getOpportunities: async () => (await api.get('/crm/opportunities')).data,
   convertLead: async (id: string) => (await api.post('/crm/leads/' + id + '/convert')).data,
-  getPartner360: async (id: string) => (await api.get('/crm/partners/' + id + '/360')).data,
+  getPartner360: async (id: string) => (await api.get('/crm/customers/' + id + '/360')).data,
   createActivity: async (data: any) => (await api.post('/crm/activities', data)).data,
 };
 
