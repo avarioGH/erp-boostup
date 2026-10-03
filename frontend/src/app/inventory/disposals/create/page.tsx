@@ -114,7 +114,7 @@ export default function CreateDisposalPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-[#0f172a] text-white border-border">
+        <Card className="bg-[#0f172a] text-white border-border overflow-visible">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Barang Dimusnahkan</CardTitle>
             <Button type="button" onClick={addItem} size="sm" className="gap-2" disabled={!form.warehouseId}><Plus className="w-4 h-4"/> Tambah Barang</Button>

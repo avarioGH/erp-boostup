@@ -248,7 +248,7 @@ export default function CreateSalesOrderPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-visible">
           <CardHeader className="flex flex-row justify-between items-center pb-2">
             <CardTitle>Rincian Barang</CardTitle>
             <Button type="button" variant="outline" size="sm" onClick={() => setItems([...items, { product_id: "", qty: 1, unit_price: 0 }])}>

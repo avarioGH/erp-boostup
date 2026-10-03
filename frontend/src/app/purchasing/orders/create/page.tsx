@@ -131,8 +131,8 @@ export default function CreateOrderPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row justify-between items-center pb-2">
+        <Card className="overflow-visible">
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Rincian Barang</CardTitle>
             <Button type="button" variant="outline" size="sm" onClick={() => setItems([...items, { productId: "", qty: 1, price: 0, taxRate: 0, discount: 0 }])}>
               <Plus className="w-4 h-4 mr-2" /> Tambah Barang
