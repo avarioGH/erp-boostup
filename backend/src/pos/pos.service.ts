@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
 import { InventoryService } from '../inventory/inventory.service';
@@ -9,11 +13,29 @@ import { SequenceService } from '../reports/sequence.service';
 
 @Injectable()
 export class PosService {
-  constructor(private prisma: PrismaService, private eventEmitter: EventEmitter2, private inventoryService: InventoryService,
-    private notificationService: NotificationService, private sequenceService: SequenceService) {}
+  constructor(
+    private prisma: PrismaService,
+    private eventEmitter: EventEmitter2,
+    private inventoryService: InventoryService,
+    private notificationService: NotificationService,
+    private sequenceService: SequenceService,
+  ) {}
 
   async processCheckout(data: any) {
-    const { companyId, userId, warehouseId, paymentMethod, items, subtotal, tax, total, idempotency_key, newCustomerName, newCustomerPhone, newCustomerAddress } = data;
+    const {
+      companyId,
+      userId,
+      warehouseId,
+      paymentMethod,
+      items,
+      subtotal,
+      tax,
+      total,
+      idempotency_key,
+      newCustomerName,
+      newCustomerPhone,
+      newCustomerAddress,
+    } = data;
     let customerId = data.customerId;
     let totalPosCogs = 0;
 
@@ -21,10 +43,15 @@ export class PosService {
       // 0. Idempotency Check
       if (idempotency_key) {
         const existing = await tx.salesOrder.findFirst({
-          where: { company_id: companyId, ecommerce_session_id: idempotency_key }
+          where: {
+            company_id: companyId,
+            ecommerce_session_id: idempotency_key,
+          },
         });
         if (existing) {
-          throw new ConflictException('Transaction with this idempotency key already exists.');
+          throw new ConflictException(
+            'Transaction with this idempotency key already exists.',
+          );
         }
       }
 
@@ -36,17 +63,25 @@ export class PosService {
             name: newCustomerName,
             phone: newCustomerPhone || undefined,
             address: newCustomerAddress || undefined,
-            status: true, code: "CUST-" + Date.now()
-          }
+            status: true,
+            code: 'CUST-' + Date.now(),
+          },
         });
         customerId = newCust.id;
       }
 
       // 1. Create Sales Order (Receipt)
-      const soNo = await this.sequenceService.generateNumber(tx, companyId, 'POS', 'POS');
-      const totalAmount = total ?? items.reduce((s: number, i: any) => s + i.qty * i.price, 0);
-      const paidAmount = data.paidAmount !== undefined ? data.paidAmount : totalAmount;
-      
+      const soNo = await this.sequenceService.generateNumber(
+        tx,
+        companyId,
+        'POS',
+        'POS',
+      );
+      const totalAmount =
+        total ?? items.reduce((s: number, i: any) => s + i.qty * i.price, 0);
+      const paidAmount =
+        data.paidAmount !== undefined ? data.paidAmount : totalAmount;
+
       let initialPaymentStatus = 'UNPAID';
       if (paidAmount >= totalAmount - 0.01) initialPaymentStatus = 'PAID';
       else if (paidAmount > 0) initialPaymentStatus = 'PARTIALLY_PAID';
@@ -62,7 +97,7 @@ export class PosService {
           total_amount: totalAmount,
           payment_status: initialPaymentStatus,
           payment_method: paymentMethod || 'CASH',
-        }
+        },
       });
 
       // 2. Loop Items
@@ -75,13 +110,15 @@ export class PosService {
             qty: item.qty,
             unit_price: item.price,
             subtotal: item.qty * item.price,
-          }
+          },
         });
 
         // Resolve warehouseId — use provided or fall back to first warehouse for company
         let resolvedWarehouseId = warehouseId;
         if (!resolvedWarehouseId) {
-          const defaultWh = await tx.warehouse.findFirst({ where: { company_id: companyId } });
+          const defaultWh = await tx.warehouse.findFirst({
+            where: { company_id: companyId },
+          });
           resolvedWarehouseId = defaultWh?.id;
         }
 
@@ -93,9 +130,9 @@ export class PosService {
             quantity: item.qty,
             referenceType: 'POS_SALE',
             referenceId: salesOrder.id,
-              allowNegative: true,
+            allowNegative: true,
             description: `POS Sale ${soNo}`,
-            userId: userId || '000000000000000000000000'
+            userId: userId || '000000000000000000000000',
           });
           totalPosCogs += issueRes.consumedCost;
         }
@@ -103,7 +140,7 @@ export class PosService {
 
       // 3. Finance Transaction (Add Revenue)
       const cashAccount = await tx.cashAccount.findFirst({
-        where: { company_id: companyId }
+        where: { company_id: companyId },
       });
 
       if (cashAccount) {
@@ -120,10 +157,8 @@ export class PosService {
             description: `Penjualan POS #${soNo}`,
             status: 'COMPLETED',
             created_by: userId,
-          }
+          },
         });
-
-        
       }
 
       // 4. Audit Log
@@ -134,8 +169,10 @@ export class PosService {
           action: 'CREATE',
           entity: 'POS_Transaction',
           entity_id: salesOrder.id,
-          after_data: { details: `Kasir memproses transaksi ${soNo} senilai ${total}` }
-        }
+          after_data: {
+            details: `Kasir memproses transaksi ${soNo} senilai ${total}`,
+          },
+        },
       });
 
       // 5. Emit Domain Event for Accounting Integration
@@ -148,26 +185,29 @@ export class PosService {
           payload: {
             totalAmount: salesOrder.total_amount,
             paymentMethod: paymentMethod || 'CASH',
-            userId
+            userId,
           },
-          tx: tx as any
-        })
+          tx: tx as any,
+        }),
       );
 
       // Emit COGS to accounting
       if (totalPosCogs > 0) {
-        await this.eventEmitter.emitAsync('inventory.valuation', new InventoryValuationEvent(
-          companyId,
-          salesOrder.id,
-          `VAL-POS-${salesOrder.id}`,
-          new Date(),
-          {
-            type: 'COGS',
-            totalValue: totalPosCogs,
-            description: 'COGS for POS ' + salesOrder.order_number
-          },
-          tx
-        ));
+        await this.eventEmitter.emitAsync(
+          'inventory.valuation',
+          new InventoryValuationEvent(
+            companyId,
+            salesOrder.id,
+            `VAL-POS-${salesOrder.id}`,
+            new Date(),
+            {
+              type: 'COGS',
+              totalValue: totalPosCogs,
+              description: 'COGS for POS ' + salesOrder.order_number,
+            },
+            tx,
+          ),
+        );
       }
 
       return salesOrder;
@@ -182,9 +222,11 @@ export class PosService {
         severity: 'SUCCESS',
         entityType: 'SALES_ORDER',
         actionUrl: '/pos/reports',
-        idempotencyKey: `pos-sale-notif-${data.idempotency_key || Date.now()}`
+        idempotencyKey: `pos-sale-notif-${data.idempotency_key || Date.now()}`,
       });
-    } catch (_ne) { /* silent */ }
+    } catch (_ne) {
+      /* silent */
+    }
     return _posResult;
   }
 
@@ -193,11 +235,12 @@ export class PosService {
       where: { company_id: companyId },
       include: {
         customer: true,
+        allocations: true,
         items: {
-          include: { product: true }
-        }
+          include: { product: true },
+        },
       },
-      orderBy: { order_date: 'desc' }
+      orderBy: { order_date: 'desc' },
     });
   }
 
@@ -206,14 +249,14 @@ export class PosService {
       where: {
         company_id: companyId,
         user_id: userId,
-        status: 'OPEN'
-      }
+        status: 'OPEN',
+      },
     });
   }
 
   async openShift(data: any) {
     const { companyId, warehouseId, userId, startingCash } = data;
-    
+
     // Check if there is already an open shift
     const existingShift = await this.getCurrentShift(companyId, userId);
     if (existingShift) {
@@ -227,13 +270,13 @@ export class PosService {
         user_id: userId,
         starting_cash: startingCash,
         status: 'OPEN',
-      }
+      },
     });
   }
 
   async closeShift(data: any) {
     const { companyId, userId, endingCash } = data;
-    
+
     const existingShift = await this.getCurrentShift(companyId, userId);
     if (!existingShift) {
       throw new BadRequestException('No open shift found to close');
@@ -244,9 +287,8 @@ export class PosService {
       data: {
         end_time: new Date(),
         ending_cash: endingCash,
-        status: 'CLOSED'
-      }
+        status: 'CLOSED',
+      },
     });
   }
 }
-
