@@ -55,7 +55,7 @@ export class DisposalService {
         warehouse_id: dto.warehouseId,
         disposal_number: disposalNo,
         disposal_date: new Date(),
-        reason: dto.reason,
+        reason: dto.reason || dto.notes || "Disposal",
         notes: dto.notes,
         status: 'DRAFT',
         created_by: userId,
