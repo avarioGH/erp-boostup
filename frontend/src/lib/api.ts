@@ -185,6 +185,7 @@ export const CRMAPI: any = {
   getOpportunities: async () => (await api.get('/crm/opportunities')).data,
   convertLead: async (id: string) => (await api.post('/crm/leads/' + id + '/convert')).data,
   getCustomer360: async (id: string) => (await api.get('/crm/customers/' + id + '/360')).data,
+  createActivity: async (data: any) => (await api.post('/crm/activities', data)).data,
 };
 
 export const PosAPI: any = {
@@ -376,3 +377,4 @@ export const PartaiAPI: any = {
 
 
 
+export const InventoryDisposalAPI: any = { getDisposals: async (params?: any) => (await api.get('/inventory/disposals', { params })).data, getDisposal: async (id: string) => (await api.get('/inventory/disposals/' + id)).data, createDisposal: async (data: any) => (await api.post('/inventory/disposals', data)).data, submitDisposal: async (id: string) => (await api.post('/inventory/disposals/' + id + '/submit')).data, approveDisposal: async (id: string, note?: string) => (await api.post('/inventory/disposals/' + id + '/approve', { note })).data, rejectDisposal: async (id: string, note?: string) => (await api.post('/inventory/disposals/' + id + '/reject', { note })).data, cancelDisposal: async (id: string) => (await api.post('/inventory/disposals/' + id + '/cancel')).data, };

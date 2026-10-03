@@ -26,6 +26,35 @@ export default function Customer360Page() {
   const [payMethod, setPayMethod] = useState('Transfer');
   const [payRef, setPayRef] = useState('');
   const [isPaying, setIsPaying] = useState(false);
+  const [activityModalOpen, setActivityModalOpen] = useState(false);
+  const [actType, setActType] = useState('NOTE');
+  const [actTitle, setActTitle] = useState('');
+  const [actDesc, setActDesc] = useState('');
+  const [isSavingAct, setIsSavingAct] = useState(false);
+
+  const handleSaveActivity = async () => {
+    if (!actTitle) return alert('Judul aktivitas wajib diisi');
+    setIsSavingAct(true);
+    try {
+      await CRMAPI.createActivity({
+        customer_id: customerId,
+        type: actType,
+        title: actTitle,
+        description: actDesc,
+      });
+      alert('Aktivitas berhasil dicatat!');
+      setActivityModalOpen(false);
+      setActTitle('');
+      setActDesc('');
+      
+      const res = await CRMAPI.getCustomer360(customerId);
+      setData(res);
+    } catch(err: any) {
+      alert('Gagal: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSavingAct(false);
+    }
+  };
 
   const handlePay = async () => {
     if (!payAmount || Number(payAmount) <= 0) return alert('Nominal tidak valid');
@@ -152,7 +181,7 @@ export default function Customer360Page() {
  </div>
  </div>
  <div className="flex flex-wrap gap-2 md:justify-end">
- <Button variant="outline" size="sm" onClick={() => alert("Fitur Penawaran Segera Hadir")}><FileText className="w-4 h-4 mr-2" /> Buat Penawaran</Button>
+ <Button variant="outline" size="sm" onClick={() => router.push('/sales/quotations/create?customer_id=' + customerId)}><FileText className="w-4 h-4 mr-2" /> Buat Penawaran</Button>
  <Button variant="default" size="sm"><Activity className="w-4 h-4 mr-2" /> Catat Aktivitas</Button>
  </div>
  </div>
