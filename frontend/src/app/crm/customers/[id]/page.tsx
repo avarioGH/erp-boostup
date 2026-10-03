@@ -31,6 +31,21 @@ export default function Customer360Page() {
   const [actTitle, setActTitle] = useState('');
   const [actDesc, setActDesc] = useState('');
   const [isSavingAct, setIsSavingAct] = useState(false);
+  const [isCreatingInv, setIsCreatingInv] = useState<string | null>(null);
+
+  const handleCreateInvoice = async (soId: string) => {
+    setIsCreatingInv(soId);
+    try {
+      await FinanceAPI.createInvoiceFromSO({ salesOrderId: soId });
+      alert('Faktur berhasil dibuat!');
+      const res = await CRMAPI.getCustomer360(customerId);
+      setData(res); // Refresh all data to update the invoices table
+    } catch(err: any) {
+      alert('Gagal membuat faktur: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsCreatingInv(null);
+    }
+  };
 
   const handleSaveActivity = async () => {
     if (!actTitle) return alert('Judul aktivitas wajib diisi');
@@ -380,6 +395,7 @@ export default function Customer360Page() {
  <th className="px-4 py-3 font-medium">Status Bayar</th>
  <th className="px-4 py-3 font-medium text-right">Total</th>
  <th className="px-4 py-3 font-medium text-right">Sisa Piutang</th>
+ <th className="px-4 py-3 font-medium text-right">Aksi</th>
  </tr>
  </thead>
  <tbody>
@@ -398,10 +414,17 @@ export default function Customer360Page() {
  </td>
  <td className="px-4 py-3 text-right">{formatCurrency(so.total_amount)}</td>
  <td className={`px-4 py-3 text-right font-semibold ${sisa > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>{sisa > 0 ? formatCurrency(sisa) : '-'}</td>
+ <td className="px-4 py-3 text-right">
+   {so.invoice_status !== 'INVOICED' && (
+      <Button variant="outline" size="sm" onClick={() => handleCreateInvoice(so.id)} disabled={isCreatingInv === so.id}>
+        {isCreatingInv === so.id ? '...' : 'Buat Faktur'}
+      </Button>
+   )}
+ </td>
  </tr>
    );
  })}
- {sales.orders.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Belum ada transaksi.</td></tr>}
+ {sales.orders.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Belum ada transaksi.</td></tr>}
  </tbody>
  </table>
  </CardContent>
