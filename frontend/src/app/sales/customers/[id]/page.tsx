@@ -15,7 +15,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api } from "@/lib/api";
+import { api, FinanceAPI } from "@/lib/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function CustomerDetailPage() {
   const { id } = useParams();
@@ -47,6 +51,66 @@ export default function CustomerDetailPage() {
 
   const { customer, financials, salesOrders, payments } = data;
 
+  
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [payAmount, setPayAmount] = useState<number | ''>('');
+  const [payMethod, setPayMethod] = useState('Transfer');
+  const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0]);
+  const [payRef, setPayRef] = useState('');
+  const [isPaying, setIsPaying] = useState(false);
+
+  const fetchDetail = async () => {
+    try {
+      const res = await api.get('/customers/' + id);
+      setData(res.data);
+    } catch (error) {}
+  };
+
+  const handleSavePayment = async () => {
+    if (!payAmount || Number(payAmount) <= 0) return alert('Nominal harus lebih dari 0');
+    setIsPaying(true);
+    try {
+      const sortedOrders = [...(salesOrders || [])].sort((a: any, b: any) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
+      
+      let remainingToAllocate = Number(payAmount);
+      const unpaidOrders: any[] = [];
+      
+      for (const so of sortedOrders) {
+        if (remainingToAllocate <= 0) break;
+        if (so.status === 'CANCELLED') continue;
+        
+        const paid = so.allocations?.reduce((acc: number, a: any) => acc + a.amount, 0) || 0;
+        const outst = so.total_amount - paid;
+        
+        if (outst > 0) {
+          const allocate = Math.min(outst, remainingToAllocate);
+          unpaidOrders.push({ salesOrderId: so.id, amount: allocate });
+          remainingToAllocate -= allocate;
+        }
+      }
+
+      await FinanceAPI.createPayment({
+        customerId: id,
+        amount: Number(payAmount),
+        paymentMethod: payMethod,
+        paymentDate: payDate,
+        reference: payRef,
+        allocations: unpaidOrders,
+        allowUnallocated: true
+      });
+
+      alert('Pembayaran berhasil dicatat!');
+      setPayModalOpen(false);
+      setPayAmount('');
+      setPayRef('');
+      fetchDetail();
+    } catch(err: any) {
+      alert('Gagal: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -71,7 +135,7 @@ export default function CustomerDetailPage() {
         </Button>
         <h1 className="text-3xl font-bold">Detail Pelanggan</h1>
         <div className="flex-1" />
-        <Button>
+        <Button onClick={() => setPayModalOpen(true)}>
           <CreditCard className="w-4 h-4 mr-2" />
           Bayar Piutang
         </Button>
