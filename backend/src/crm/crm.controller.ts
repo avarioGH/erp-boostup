@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
@@ -29,7 +38,11 @@ export class CrmController {
 
   @Patch('leads/:id')
   @Permissions('crm.lead.update')
-  async updateLead(@Request() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateLead(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.crmService.updateLead(req.user.company_id, id, data);
   }
 
@@ -59,14 +72,24 @@ export class CrmController {
 
   @Patch('opportunities/:id')
   @Permissions('crm.opportunity.update')
-  async updateOpportunity(@Request() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateOpportunity(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.crmService.updateOpportunity(req.user.company_id, id, data);
   }
 
   @Post('opportunities/:id/quotation')
   @Permissions('crm.opportunity.update')
-  async createQuotationFromOpportunity(@Request() req: any, @Param('id') id: string) {
-    return this.crmService.createQuotationFromOpportunity(req.user.company_id, id);
+  async createQuotationFromOpportunity(
+    @Request() req: any,
+    @Param('id') id: string,
+  ) {
+    return this.crmService.createQuotationFromOpportunity(
+      req.user.company_id,
+      id,
+    );
   }
 
   @Get('activities')
@@ -83,7 +106,11 @@ export class CrmController {
 
   @Patch('activities/:id')
   @Permissions('crm.activity.update')
-  async updateActivity(@Request() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateActivity(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.crmService.updateActivity(req.user.company_id, id, data);
   }
 

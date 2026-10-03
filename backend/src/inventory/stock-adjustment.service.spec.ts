@@ -18,10 +18,10 @@ describe('StockAdjustmentService - Phase 45.6 Regression Tests', () => {
     },
     auditLog: {
       create: jest.fn(),
-    }
+    },
   };
 
-    const mockAudit = {
+  const mockAudit = {
     logAction: jest.fn(),
   };
   const mockLedger = {
@@ -52,13 +52,28 @@ describe('StockAdjustmentService - Phase 45.6 Regression Tests', () => {
       id: 'adj1',
       status: 'POSTED',
       locationId: 'locA',
-      items: [{ timberVariantId: 'tv1', differencePcs: 20, differenceM3: 1, batch: 'B001' }]
+      items: [
+        {
+          timberVariantId: 'tv1',
+          differencePcs: 20,
+          differenceM3: 1,
+          batch: 'B001',
+        },
+      ],
     });
 
     await service.cancelAdjustment('adj1');
 
     expect(ledger.createMovement).toHaveBeenCalledWith(
-      mockPrisma, 'locA', 'tv1', 'ADJ', 'ADJUSTMENT_OUT', 'adj1', 20, 1, 'B001'
+      mockPrisma,
+      'locA',
+      'tv1',
+      'ADJ',
+      'ADJUSTMENT_OUT',
+      'adj1',
+      20,
+      1,
+      'B001',
     );
   });
 
@@ -67,13 +82,28 @@ describe('StockAdjustmentService - Phase 45.6 Regression Tests', () => {
       id: 'adj2',
       status: 'POSTED',
       locationId: 'locA',
-      items: [{ timberVariantId: 'tv1', differencePcs: -20, differenceM3: -1, batch: 'B002' }]
+      items: [
+        {
+          timberVariantId: 'tv1',
+          differencePcs: -20,
+          differenceM3: -1,
+          batch: 'B002',
+        },
+      ],
     });
 
     await service.cancelAdjustment('adj2');
 
     expect(ledger.createMovement).toHaveBeenCalledWith(
-      mockPrisma, 'locA', 'tv1', 'ADJ', 'ADJUSTMENT_IN', 'adj2', 20, 1, 'B002'
+      mockPrisma,
+      'locA',
+      'tv1',
+      'ADJ',
+      'ADJUSTMENT_IN',
+      'adj2',
+      20,
+      1,
+      'B002',
     );
   });
 
@@ -82,13 +112,28 @@ describe('StockAdjustmentService - Phase 45.6 Regression Tests', () => {
       id: 'adj3',
       status: 'POSTED',
       locationId: 'locA',
-      items: [{ timberVariantId: 'tv1', differencePcs: -10, differenceM3: -0.5, batch: ' p001 ' }]
+      items: [
+        {
+          timberVariantId: 'tv1',
+          differencePcs: -10,
+          differenceM3: -0.5,
+          batch: ' p001 ',
+        },
+      ],
     });
 
     await service.cancelAdjustment('adj3');
 
     expect(ledger.createMovement).toHaveBeenCalledWith(
-      mockPrisma, 'locA', 'tv1', 'ADJ', 'ADJUSTMENT_IN', 'adj3', 10, 0.5, ' p001 '
+      mockPrisma,
+      'locA',
+      'tv1',
+      'ADJ',
+      'ADJUSTMENT_IN',
+      'adj3',
+      10,
+      0.5,
+      ' p001 ',
     );
   });
 
@@ -97,12 +142,27 @@ describe('StockAdjustmentService - Phase 45.6 Regression Tests', () => {
       id: 'adj4',
       status: 'POSTED',
       locationId: 'Warehouse_A',
-      items: [{ timberVariantId: 'tv1', differencePcs: -5, differenceM3: -0.1, batch: 'B1' }]
+      items: [
+        {
+          timberVariantId: 'tv1',
+          differencePcs: -5,
+          differenceM3: -0.1,
+          batch: 'B1',
+        },
+      ],
     });
 
     await service.cancelAdjustment('adj4');
     expect(ledger.createMovement).toHaveBeenCalledWith(
-      mockPrisma, 'Warehouse_A', 'tv1', 'ADJ', 'ADJUSTMENT_IN', 'adj4', 5, 0.1, 'B1'
+      mockPrisma,
+      'Warehouse_A',
+      'tv1',
+      'ADJ',
+      'ADJUSTMENT_IN',
+      'adj4',
+      5,
+      0.1,
+      'B1',
     );
   });
 
@@ -111,12 +171,27 @@ describe('StockAdjustmentService - Phase 45.6 Regression Tests', () => {
       id: 'adj5',
       status: 'POSTED',
       locationId: 'locA',
-      items: [{ timberVariantId: 'Variant_A', differencePcs: -5, differenceM3: -0.1, batch: 'B1' }]
+      items: [
+        {
+          timberVariantId: 'Variant_A',
+          differencePcs: -5,
+          differenceM3: -0.1,
+          batch: 'B1',
+        },
+      ],
     });
 
     await service.cancelAdjustment('adj5');
     expect(ledger.createMovement).toHaveBeenCalledWith(
-      mockPrisma, 'locA', 'Variant_A', 'ADJ', 'ADJUSTMENT_IN', 'adj5', 5, 0.1, 'B1'
+      mockPrisma,
+      'locA',
+      'Variant_A',
+      'ADJ',
+      'ADJUSTMENT_IN',
+      'adj5',
+      5,
+      0.1,
+      'B1',
     );
   });
 
@@ -124,10 +199,12 @@ describe('StockAdjustmentService - Phase 45.6 Regression Tests', () => {
     mockPrisma.stockAdjustment.findUnique.mockResolvedValue({
       id: 'adj6',
       status: 'CANCELLED',
-      items: []
+      items: [],
     });
 
-    await expect(service.cancelAdjustment('adj6')).rejects.toThrow(BadRequestException);
+    await expect(service.cancelAdjustment('adj6')).rejects.toThrow(
+      BadRequestException,
+    );
     expect(ledger.createMovement).not.toHaveBeenCalled();
   });
 
@@ -136,12 +213,23 @@ describe('StockAdjustmentService - Phase 45.6 Regression Tests', () => {
       id: 'adj7',
       status: 'POSTED',
       locationId: 'locA',
-      items: [{ timberVariantId: 'tv1', differencePcs: 10, differenceM3: 0.5, batch: 'B1' }]
+      items: [
+        {
+          timberVariantId: 'tv1',
+          differencePcs: 10,
+          differenceM3: 0.5,
+          batch: 'B1',
+        },
+      ],
     });
-    
-    mockLedger.createMovement.mockRejectedValueOnce(new Error('Simulated DB Failure'));
 
-    await expect(service.cancelAdjustment('adj7')).rejects.toThrow('Simulated DB Failure');
+    mockLedger.createMovement.mockRejectedValueOnce(
+      new Error('Simulated DB Failure'),
+    );
+
+    await expect(service.cancelAdjustment('adj7')).rejects.toThrow(
+      'Simulated DB Failure',
+    );
     expect(mockPrisma.stockAdjustment.update).not.toHaveBeenCalled();
     expect(mockPrisma.auditLog.create).not.toHaveBeenCalled();
   });
@@ -151,13 +239,28 @@ describe('StockAdjustmentService - Phase 45.6 Regression Tests', () => {
       id: 'adj8',
       status: 'POSTED',
       locationId: 'locA',
-      items: [{ timberVariantId: 'tv1', differencePcs: -20, differenceM3: -1, batch: 'B1' }]
+      items: [
+        {
+          timberVariantId: 'tv1',
+          differencePcs: -20,
+          differenceM3: -1,
+          batch: 'B1',
+        },
+      ],
     });
 
     await service.cancelAdjustment('adj8');
 
     expect(ledger.createMovement).toHaveBeenCalledWith(
-      mockPrisma, 'locA', 'tv1', 'ADJ', 'ADJUSTMENT_IN', 'adj8', 20, 1, 'B1'
+      mockPrisma,
+      'locA',
+      'tv1',
+      'ADJ',
+      'ADJUSTMENT_IN',
+      'adj8',
+      20,
+      1,
+      'B1',
     );
   });
 });

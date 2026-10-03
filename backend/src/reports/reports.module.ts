@@ -20,8 +20,14 @@ import { InventoryReportService } from './services/inventory-report.service';
     SequenceService,
     FinancialReportService,
     SalesReportService,
-    InventoryReportService
+    InventoryReportService,
   ],
-  exports: [ReportService, ExportService, PdfService, DocumentService, SequenceService]
+  exports: [
+    ReportService,
+    ExportService,
+    PdfService,
+    DocumentService,
+    SequenceService,
+  ],
 })
 export class ReportsModule {}

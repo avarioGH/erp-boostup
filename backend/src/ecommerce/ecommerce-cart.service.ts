@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -7,66 +11,105 @@ export class EcommerceCartService {
 
   async getCart(companyId: string, sessionId: string) {
     let cart = await this.prisma.ecommerceCart.findUnique({
-      where: { company_id_session_id: { company_id: companyId, session_id: sessionId } },
+      where: {
+        company_id_session_id: { company_id: companyId, session_id: sessionId },
+      },
       include: {
         items: {
           include: {
             product: {
-              select: { id: true, name: true, selling_price: true, image: true, ecommerce_slug: true }
-            }
-          }
-        }
-      }
+              select: {
+                id: true,
+                name: true,
+                selling_price: true,
+                image: true,
+                ecommerce_slug: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!cart) {
       cart = await this.prisma.ecommerceCart.create({
         data: { company_id: companyId, session_id: sessionId },
-        include: { items: { include: { product: { select: { id: true, name: true, selling_price: true, image: true, ecommerce_slug: true } } } } }
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  selling_price: true,
+                  image: true,
+                  ecommerce_slug: true,
+                },
+              },
+            },
+          },
+        },
       });
     }
 
     return this.calculateCart(cart);
   }
 
-  async addItem(companyId: string, sessionId: string, productId: string, quantity: number) {
-    if (quantity <= 0) throw new BadRequestException('Quantity must be greater than 0');
+  async addItem(
+    companyId: string,
+    sessionId: string,
+    productId: string,
+    quantity: number,
+  ) {
+    if (quantity <= 0)
+      throw new BadRequestException('Quantity must be greater than 0');
 
-    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
     if (!product || !product.status || !product.is_published) {
       throw new BadRequestException('Product is not available');
     }
 
     let cart = await this.prisma.ecommerceCart.findUnique({
-      where: { company_id_session_id: { company_id: companyId, session_id: sessionId } }
+      where: {
+        company_id_session_id: { company_id: companyId, session_id: sessionId },
+      },
     });
     if (!cart) {
       cart = await this.prisma.ecommerceCart.create({
-        data: { company_id: companyId, session_id: sessionId }
+        data: { company_id: companyId, session_id: sessionId },
       });
     }
 
     const existingItem = await this.prisma.ecommerceCartItem.findFirst({
-      where: { cart_id: cart.id, product_id: productId }
+      where: { cart_id: cart.id, product_id: productId },
     });
 
     if (existingItem) {
       await this.prisma.ecommerceCartItem.update({
         where: { id: existingItem.id },
-        data: { quantity: existingItem.quantity + quantity }
+        data: { quantity: existingItem.quantity + quantity },
       });
     } else {
       await this.prisma.ecommerceCartItem.create({
-        data: { cart_id: cart.id, product_id: productId, quantity }
+        data: { cart_id: cart.id, product_id: productId, quantity },
       });
     }
 
     return this.getCart(companyId, sessionId);
   }
 
-  async updateItem(companyId: string, sessionId: string, itemId: string, quantity: number) {
+  async updateItem(
+    companyId: string,
+    sessionId: string,
+    itemId: string,
+    quantity: number,
+  ) {
     const cart = await this.prisma.ecommerceCart.findUnique({
-      where: { company_id_session_id: { company_id: companyId, session_id: sessionId } }
+      where: {
+        company_id_session_id: { company_id: companyId, session_id: sessionId },
+      },
     });
     if (!cart) throw new NotFoundException('Cart not found');
 
@@ -75,7 +118,7 @@ export class EcommerceCartService {
     } else {
       await this.prisma.ecommerceCartItem.update({
         where: { id: itemId },
-        data: { quantity }
+        data: { quantity },
       });
     }
 
@@ -84,7 +127,9 @@ export class EcommerceCartService {
 
   async removeItem(companyId: string, sessionId: string, itemId: string) {
     const cart = await this.prisma.ecommerceCart.findUnique({
-      where: { company_id_session_id: { company_id: companyId, session_id: sessionId } }
+      where: {
+        company_id_session_id: { company_id: companyId, session_id: sessionId },
+      },
     });
     if (!cart) throw new NotFoundException('Cart not found');
 
@@ -94,10 +139,14 @@ export class EcommerceCartService {
 
   async clearCart(companyId: string, sessionId: string) {
     const cart = await this.prisma.ecommerceCart.findUnique({
-      where: { company_id_session_id: { company_id: companyId, session_id: sessionId } }
+      where: {
+        company_id_session_id: { company_id: companyId, session_id: sessionId },
+      },
     });
     if (cart) {
-      await this.prisma.ecommerceCartItem.deleteMany({ where: { cart_id: cart.id } });
+      await this.prisma.ecommerceCartItem.deleteMany({
+        where: { cart_id: cart.id },
+      });
     }
     return { success: true };
   }
@@ -115,7 +164,7 @@ export class EcommerceCartService {
         image: item.product.image,
         quantity: item.quantity,
         unit_price: item.product.selling_price,
-        subtotal: lineTotal
+        subtotal: lineTotal,
       };
     });
 
@@ -128,8 +177,7 @@ export class EcommerceCartService {
       items,
       subtotal,
       tax,
-      grand_total
+      grand_total,
     };
   }
 }
-

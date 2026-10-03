@@ -7,6 +7,6 @@ import { PrismaModule } from '../../prisma/prisma.module';
   imports: [PrismaModule],
   controllers: [PartaiController],
   providers: [PartaiService],
-  exports: [PartaiService]
+  exports: [PartaiService],
 })
 export class PartaiModule {}

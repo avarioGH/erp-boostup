@@ -22,7 +22,9 @@ export class AutomationService {
    * Dipanggil oleh seluruh modul di ERP saat terjadi perubahan status/data.
    */
   async handleEvent(payload: WorkflowEventPayload) {
-    this.logger.log(`Received Event: ${payload.eventName} for Reference: ${payload.referenceId}`);
+    this.logger.log(
+      `Received Event: ${payload.eventName} for Reference: ${payload.referenceId}`,
+    );
 
     // 1. Cari Workflow aktif yang mendengarkan event ini
     const workflows = await this.prisma.workflowMaster.findMany({
@@ -31,11 +33,13 @@ export class AutomationService {
         trigger_event: payload.eventName,
         status: true,
       },
-      include: { nodes: true, edges: true }
+      include: { nodes: true, edges: true },
     });
 
     if (workflows.length === 0) {
-      this.logger.log(`No active workflows found for event: ${payload.eventName}`);
+      this.logger.log(
+        `No active workflows found for event: ${payload.eventName}`,
+      );
       return;
     }
 
@@ -50,11 +54,11 @@ export class AutomationService {
    */
   private async executeWorkflow(workflow: any, payload: WorkflowEventPayload) {
     // Cari node "Start"
-    const startNode = workflow.nodes.find(n => n.node_type === 'Start');
+    const startNode = workflow.nodes.find((n) => n.node_type === 'Start');
     if (!startNode) return;
 
     let currentNode = startNode;
-    
+
     // Looping Node Traversing
     while (currentNode) {
       // Catat ke Log (Opsional, untuk debug)
@@ -64,21 +68,28 @@ export class AutomationService {
           workflow_master_id: workflow.id,
           event_name: `Executing Node: ${currentNode.node_name}`,
           status: 'SUCCESS',
-        }
+        },
       });
 
       switch (currentNode.node_type) {
         case 'Condition':
           // Evaluasi Rule Engine dari config JSON (Misal: config.amount > 50000000)
-          const conditionPassed = this.evaluateCondition(currentNode.config, payload.data);
-          currentNode = this.getNextNode(workflow, currentNode.id, conditionPassed ? 'True' : 'False');
+          const conditionPassed = this.evaluateCondition(
+            currentNode.config,
+            payload.data,
+          );
+          currentNode = this.getNextNode(
+            workflow,
+            currentNode.id,
+            conditionPassed ? 'True' : 'False',
+          );
           break;
 
         case 'Approval':
           // Buat Approval Request Dinamis
           await this.createDynamicApproval(currentNode, payload);
           // Berhenti di sini, biarkan Approval Endpoint yang men-trigger node selanjutnya
-          currentNode = null; 
+          currentNode = null;
           break;
 
         case 'Notification':
@@ -113,13 +124,16 @@ export class AutomationService {
   private getNextNode(workflow: any, currentNodeId: string, label?: string) {
     let edge;
     if (label) {
-      edge = workflow.edges.find(e => e.source_node_id === currentNodeId && e.condition_label === label);
+      edge = workflow.edges.find(
+        (e) =>
+          e.source_node_id === currentNodeId && e.condition_label === label,
+      );
     } else {
-      edge = workflow.edges.find(e => e.source_node_id === currentNodeId);
+      edge = workflow.edges.find((e) => e.source_node_id === currentNodeId);
     }
-    
+
     if (edge) {
-      return workflow.nodes.find(n => n.id === edge.target_node_id);
+      return workflow.nodes.find((n) => n.id === edge.target_node_id);
     }
     return null;
   }
@@ -127,9 +141,12 @@ export class AutomationService {
   /**
    * Routing Dynamic Approval
    */
-  private async createDynamicApproval(node: any, payload: WorkflowEventPayload) {
+  private async createDynamicApproval(
+    node: any,
+    payload: WorkflowEventPayload,
+  ) {
     const config = node.config as any; // Berisi role/user target
-    
+
     await this.prisma.approvalRequest.create({
       data: {
         company_id: payload.companyId,
@@ -139,7 +156,7 @@ export class AutomationService {
         status: 'PENDING',
         assigned_role: config.targetRole || null,
         assigned_user: config.targetUser || null,
-      }
+      },
     });
 
     // Kirim Internal Inbox ke assignee
@@ -151,7 +168,7 @@ export class AutomationService {
           message_type: 'Approval',
           title: 'New Approval Request',
           content: `You have a new pending approval for ${payload.referenceId}.`,
-        }
+        },
       });
     }
   }
@@ -170,7 +187,7 @@ export class AutomationService {
           status: 'TODO',
           priority: 'HIGH',
           reference_id: payload.referenceId,
-        }
+        },
       });
     }
     // Implementasi Notifikasi Webhook/Email/WA akan dipush ke Queue di sini

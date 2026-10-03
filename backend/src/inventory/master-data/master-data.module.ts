@@ -21,8 +21,9 @@ import { PrismaModule } from '../../prisma/prisma.module';
     TimberGradeController,
     TimberSourceController,
     LocationController,
-    VehicleController, TimberVariantController,
-    DriverController
+    VehicleController,
+    TimberVariantController,
+    DriverController,
   ],
   providers: [
     TimberSpeciesService,
@@ -30,8 +31,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
     TimberSourceService,
     LocationService,
     VehicleService,
-    DriverService
+    DriverService,
   ],
 })
 export class MasterDataModule {}
-

@@ -18,7 +18,20 @@ import { AssetFinanceController } from './asset/asset-finance.controller';
 
 @Module({
   imports: [PrismaModule, GlModule, InvoiceModule, PaymentModule],
-  controllers: [FinanceController, PeriodController, BankReconciliationController, ExpenseController, AssetFinanceController],
-  providers: [ExpenseService, AssetService, FinanceService, PeriodService, BankReconciliationService], exports: [FinanceService]
+  controllers: [
+    FinanceController,
+    PeriodController,
+    BankReconciliationController,
+    ExpenseController,
+    AssetFinanceController,
+  ],
+  providers: [
+    ExpenseService,
+    AssetService,
+    FinanceService,
+    PeriodService,
+    BankReconciliationService,
+  ],
+  exports: [FinanceService],
 })
 export class FinanceModule {}

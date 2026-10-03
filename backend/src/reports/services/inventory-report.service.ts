@@ -6,30 +6,36 @@ import { ReportFilterDto, ReportResultDto } from '../report.types';
 export class InventoryReportService {
   constructor(private prisma: PrismaService) {}
 
-  async getInventoryValuation(filters: ReportFilterDto): Promise<ReportResultDto> {
-    const whereCondition: any = { company_id: filters.company_id, remaining_quantity: { gt: 0 } };
-    if (filters.warehouse_id) whereCondition.warehouse_id = filters.warehouse_id;
+  async getInventoryValuation(
+    filters: ReportFilterDto,
+  ): Promise<ReportResultDto> {
+    const whereCondition: any = {
+      company_id: filters.company_id,
+      remaining_quantity: { gt: 0 },
+    };
+    if (filters.warehouse_id)
+      whereCondition.warehouse_id = filters.warehouse_id;
     if (filters.product_id) whereCondition.product_id = filters.product_id;
 
     const layers = await this.prisma.inventoryCostLayer.findMany({
       where: whereCondition,
-      include: { product: true, warehouse: true }
+      include: { product: true, warehouse: true },
     });
 
     let totalValuation = 0;
     const productMap = new Map<string, any>();
 
-    layers.forEach(layer => {
+    layers.forEach((layer) => {
       const val = layer.remaining_quantity * layer.unit_cost;
       totalValuation += val;
-      
+
       const p = layer.product;
       if (!productMap.has(p.id)) {
         productMap.set(p.id, {
-           code: p.code,
-           name: p.name,
-           qty: 0,
-           value: 0
+          code: p.code,
+          name: p.name,
+          qty: 0,
+          value: 0,
         });
       }
       const pData = productMap.get(p.id);
@@ -37,11 +43,11 @@ export class InventoryReportService {
       pData.value += val;
     });
 
-    const data = Array.from(productMap.values()).map(p => ({
-       product_code: p.code,
-       product_name: p.name,
-       qty: p.qty,
-       valuation: p.value
+    const data = Array.from(productMap.values()).map((p) => ({
+      product_code: p.code,
+      product_name: p.name,
+      qty: p.qty,
+      valuation: p.value,
     }));
 
     return {
@@ -50,10 +56,10 @@ export class InventoryReportService {
         { header: 'Item Code', key: 'product_code' },
         { header: 'Product Name', key: 'product_name' },
         { header: 'Remaining Qty', key: 'qty', type: 'number' },
-        { header: 'Total Value', key: 'valuation', type: 'currency' }
+        { header: 'Total Value', key: 'valuation', type: 'currency' },
       ],
       data,
-      totals: { valuation: totalValuation }
+      totals: { valuation: totalValuation },
     };
   }
 
@@ -64,11 +70,11 @@ export class InventoryReportService {
 
     const stocks = await this.prisma.warehouseStock.findMany({
       where,
-      include: { product: true, warehouse: true }
+      include: { product: true, warehouse: true },
     });
 
     let totalQty = 0;
-    const data = stocks.map(s => {
+    const data = stocks.map((s) => {
       totalQty += s.current_stock;
       return {
         warehouse: s.warehouse.name,
@@ -76,7 +82,7 @@ export class InventoryReportService {
         product_name: s.product.name,
         current_stock: s.current_stock,
         reserved_stock: s.reserved_stock,
-        available_stock: s.available_stock
+        available_stock: s.available_stock,
       };
     });
 
@@ -88,11 +94,10 @@ export class InventoryReportService {
         { header: 'Product Name', key: 'product_name' },
         { header: 'On Hand', key: 'current_stock', type: 'number' },
         { header: 'Allocated', key: 'reserved_stock', type: 'number' },
-        { header: 'Available', key: 'available_stock', type: 'number' }
+        { header: 'Available', key: 'available_stock', type: 'number' },
       ],
       data,
-      totals: { current_stock: totalQty }
+      totals: { current_stock: totalQty },
     };
   }
 }
-

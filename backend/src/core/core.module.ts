@@ -10,7 +10,7 @@ import { AllExceptionsFilter } from './all-exceptions.filter';
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
-    }
+    },
   ],
   exports: [AuditService],
 })

@@ -11,8 +11,15 @@ export class AiController {
 
   @Permissions('ai.create')
   @Post('chat')
-  async chat(@Req() req, @Body() body: { prompt: string; chatHistory?: any[] }) {
-    return this.aiService.handleChat(req.user, body.prompt, body.chatHistory || []);
+  async chat(
+    @Req() req,
+    @Body() body: { prompt: string; chatHistory?: any[] },
+  ) {
+    return this.aiService.handleChat(
+      req.user,
+      body.prompt,
+      body.chatHistory || [],
+    );
   }
 
   @Permissions('ai.create')

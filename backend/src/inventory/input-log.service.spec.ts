@@ -21,7 +21,8 @@ describe('InputLog Validation', () => {
         findMany: jest.fn(),
         update: jest.fn(),
       },
-      inputLogItem: { create: jest.fn() }, auditLog: { create: jest.fn() }
+      inputLogItem: { create: jest.fn() },
+      auditLog: { create: jest.fn() },
     };
     auditMock = { createLog: jest.fn() };
     service = new InputLogService(prismaMock, auditMock);
@@ -29,20 +30,31 @@ describe('InputLog Validation', () => {
 
   it('should reject if trimmed logs are missing or consumed', async () => {
     prismaMock.trimmedLog.findMany.mockResolvedValue([
-      { id: '1', status: 'CONSUMED' }
+      { id: '1', status: 'CONSUMED' },
     ]);
 
-    await expect(service.createInputLog({ trimmedLogIds: ['1'] }))
-      .rejects.toThrow(BadRequestException);
+    await expect(
+      service.createInputLog({ trimmedLogIds: ['1'] }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('should process successfully with AVAILABLE trimmed logs', async () => {
     prismaMock.trimmedLog.findMany.mockResolvedValue([
-      { id: '1', status: 'AVAILABLE', species: 'Ulin', length: 4, grossVolume: 1, netVolume: 0.9 }
+      {
+        id: '1',
+        status: 'AVAILABLE',
+        species: 'Ulin',
+        length: 4,
+        grossVolume: 1,
+        netVolume: 0.9,
+      },
     ]);
     prismaMock.inputLog.count.mockResolvedValue(0);
     prismaMock.inputLog.findUnique.mockResolvedValue(null);
-    prismaMock.inputLog.create.mockResolvedValue({ id: 'in1', inputNumber: 'I-MSAW-1-25-10-001' });
+    prismaMock.inputLog.create.mockResolvedValue({
+      id: 'in1',
+      inputNumber: 'I-MSAW-1-25-10-001',
+    });
 
     const res = await service.createInputLog({ trimmedLogIds: ['1'] });
     expect(res).toBeDefined();

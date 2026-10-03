@@ -5,7 +5,13 @@ import { PrismaService } from '../prisma/prisma.service';
 export class IntegrationLogService {
   constructor(private prisma: PrismaService) {}
 
-  async logEvent(companyId: string, userId: string, action: string, integrationId: string, details: any) {
+  async logEvent(
+    companyId: string,
+    userId: string,
+    action: string,
+    integrationId: string,
+    details: any,
+  ) {
     const safeDetails = { ...details };
     if (safeDetails.secret) safeDetails.secret = '***';
     if (safeDetails.apiKey) safeDetails.apiKey = '***';
@@ -19,8 +25,8 @@ export class IntegrationLogService {
         entity_id: integrationId,
         ip_address: '0.0.0.0',
         browser: 'SYSTEM',
-        device: 'SYSTEM'
-      }
+        device: 'SYSTEM',
+      },
     });
   }
 }

@@ -8,7 +8,7 @@ export class DocumentService {
   async getInvoicePdfDefinition(companyId: string, invoiceId: string) {
     const inv = await this.prisma.invoice.findFirst({
       where: { id: invoiceId, company_id: companyId },
-      include: { customer: true, items: { include: { product: true } } }
+      include: { customer: true, items: { include: { product: true } } },
     });
     if (!inv) throw new NotFoundException('Invoice not found');
 
@@ -21,21 +21,21 @@ export class DocumentService {
         { header: 'Product', key: 'product' },
         { header: 'Qty', key: 'qty' },
         { header: 'Unit Price', key: 'price' },
-        { header: 'Total', key: 'total' }
+        { header: 'Total', key: 'total' },
       ],
-      data: inv.items.map(item => ({
+      data: inv.items.map((item) => ({
         product: item.product.name,
         qty: item.qty,
         price: item.unit_price,
-        total: item.subtotal
+        total: item.subtotal,
       })),
       totals: {
-        'Subtotal': inv.subtotal,
-        'Tax': inv.tax,
-        'Total': inv.total,
-        'Paid': inv.paid_amount,
-        'Balance Due': inv.remaining_amount
-      }
+        Subtotal: inv.subtotal,
+        Tax: inv.tax,
+        Total: inv.total,
+        Paid: inv.paid_amount,
+        'Balance Due': inv.remaining_amount,
+      },
     };
   }
 }

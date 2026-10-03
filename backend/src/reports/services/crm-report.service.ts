@@ -8,11 +8,11 @@ export class CrmReportService {
 
   async getCrmFunnel(filters: ReportFilterDto): Promise<ReportResultDto> {
     const opportunities = await this.prisma.opportunity.findMany({
-      where: { company_id: filters.company_id }
+      where: { company_id: filters.company_id },
     });
-    
+
     const byStage: Record<string, number> = {};
-    opportunities.forEach(o => {
+    opportunities.forEach((o) => {
       byStage[o.stage] = (byStage[o.stage] || 0) + 1;
     });
 
@@ -20,10 +20,9 @@ export class CrmReportService {
       title: 'CRM Funnel',
       columns: [
         { header: 'Stage', key: 'stage' },
-        { header: 'Count', key: 'count', type: 'number' }
+        { header: 'Count', key: 'count', type: 'number' },
       ],
-      data: Object.keys(byStage).map(k => ({ stage: k, count: byStage[k] }))
+      data: Object.keys(byStage).map((k) => ({ stage: k, count: byStage[k] })),
     };
   }
 }
-

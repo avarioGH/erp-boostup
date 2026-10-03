@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Put, Param, Delete, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Put,
+  Param,
+  Delete,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { JwtAuthGuard } from '../../../auth/jwt-auth.guard';
 
@@ -11,7 +21,7 @@ export class TimberVariantController {
   async findAll(@Request() req: any) {
     return this.prisma.timberVariant.findMany({
       where: { company_id: req.user.companyId },
-      include: { product: true }
+      include: { product: true },
     });
   }
 
@@ -21,16 +31,16 @@ export class TimberVariantController {
 
     if (!productId) {
       let genericProduct = await this.prisma.product.findFirst({
-        where: { name: 'SAWN TIMBER', company_id: req.user.companyId }
+        where: { name: 'SAWN TIMBER', company_id: req.user.companyId },
       });
       if (!genericProduct) {
         // We need a default unit
         let defaultUnit = await this.prisma.unit.findFirst({
-          where: { company_id: req.user.companyId }
+          where: { company_id: req.user.companyId },
         });
         if (!defaultUnit) {
           defaultUnit = await this.prisma.unit.create({
-            data: { company_id: req.user.companyId, name: 'Pieces' }
+            data: { company_id: req.user.companyId, name: 'Pieces' },
           });
         }
 
@@ -38,21 +48,26 @@ export class TimberVariantController {
           data: {
             name: 'SAWN TIMBER',
             company_id: req.user.companyId,
-            
+
             unit_id: defaultUnit.id,
             code: 'SAWN-TIMBER',
             barcode: `GENERIC-SAWN-${Date.now()}`,
-            purchase_price: 0, selling_price: 0
-          }
+            purchase_price: 0,
+            selling_price: 0,
+          },
         });
       }
       productId = genericProduct.id;
     }
 
-    const volume = ((data.thickness || 0) * (data.width || 0) * (data.length || 0)) / 1000000000;
-    
+    const volume =
+      ((data.thickness || 0) * (data.width || 0) * (data.length || 0)) /
+      1000000000;
+
     // Auto-generate SKU if not provided
-    const sku = data.sku || `${data.species || 'MIX'}-${data.grade || 'PENDING'}-${data.thickness || 0}x${data.width || 0}x${data.length || 0}`;
+    const sku =
+      data.sku ||
+      `${data.species || 'MIX'}-${data.grade || 'PENDING'}-${data.thickness || 0}x${data.width || 0}x${data.length || 0}`;
 
     return this.prisma.timberVariant.create({
       data: {
@@ -65,7 +80,7 @@ export class TimberVariantController {
         length: Number(data.length || 0),
         volumePerPiece: volume,
         sku: sku,
-      }
+      },
     });
   }
 }

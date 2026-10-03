@@ -8,6 +8,6 @@ import { InventoryLedgerService } from '../inventory-ledger.service';
   imports: [PrismaModule],
   controllers: [PurchaseController],
   providers: [PurchaseService, InventoryLedgerService],
-  exports: [PurchaseService]
+  exports: [PurchaseService],
 })
 export class PurchaseModule {}

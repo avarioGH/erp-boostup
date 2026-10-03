@@ -1,5 +1,4 @@
-﻿
-import { Injectable, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GlService } from '../gl/gl.service';
 
@@ -21,13 +20,13 @@ export interface FinanceTransactionDto {
 export class FinanceService {
   constructor(
     private prisma: PrismaService,
-    private glService: GlService
+    private glService: GlService,
   ) {}
 
   async getCategories(companyId: string) {
     return this.prisma.financeCategory.findMany({
       where: { company_id: companyId },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
     });
   }
 
@@ -36,9 +35,18 @@ export class FinanceService {
       // Auto-resolve missing accounts
       let cashAccountId = data.cashAccountId;
       if (!cashAccountId) {
-        let account = await tx.cashAccount.findFirst({ where: { company_id: data.companyId, name: 'Kas Utama' } });
+        let account = await tx.cashAccount.findFirst({
+          where: { company_id: data.companyId, name: 'Kas Utama' },
+        });
         if (!account) {
-          account = await tx.cashAccount.create({ data: { company_id: data.companyId, code: 'CASH-001', name: 'Kas Utama', account_type: 'Cash' } });
+          account = await tx.cashAccount.create({
+            data: {
+              company_id: data.companyId,
+              code: 'CASH-001',
+              name: 'Kas Utama',
+              account_type: 'Cash',
+            },
+          });
         }
         cashAccountId = account.id;
       }
@@ -48,11 +56,20 @@ export class FinanceService {
       if (!debitId || !creditId) {
         // GL Posting is skipped if accounts are not provided to avoid complex schema dependency here
       }
-      
+
       let catId = data.categoryId;
       if (!catId) {
-        let cat = await tx.financeCategory.findFirst({ where: { company_id: data.companyId, name: 'General' } });
-        if (!cat) cat = await tx.financeCategory.create({ data: { company_id: data.companyId, name: 'General', type: 'INCOME' } });
+        let cat = await tx.financeCategory.findFirst({
+          where: { company_id: data.companyId, name: 'General' },
+        });
+        if (!cat)
+          cat = await tx.financeCategory.create({
+            data: {
+              company_id: data.companyId,
+              name: 'General',
+              type: 'INCOME',
+            },
+          });
         catId = cat.id;
       }
       // 1. Create Immutable Transaction Header & Item
@@ -70,12 +87,14 @@ export class FinanceService {
           approved_by: data.userId,
           approved_at: new Date(),
           items: {
-            create: [{
-              category_id: catId,
-              amount: data.amount,
-              description: data.description,
-            }]
-          }
+            create: [
+              {
+                category_id: catId,
+                amount: data.amount,
+                description: data.description,
+              },
+            ],
+          },
         },
       });
 
@@ -87,16 +106,22 @@ export class FinanceService {
           action: 'CREATE_APPROVED',
           entity: 'FinanceTransaction_CashIn',
           entity_id: transaction.id,
-        }
+        },
       });
       // 4. Generate GL Double Entry
-      const accountRecord = await tx.cashAccount.findUnique({ where: { id: cashAccountId } });
+      const accountRecord = await tx.cashAccount.findUnique({
+        where: { id: cashAccountId },
+      });
       if (!accountRecord?.chart_of_account_id) {
-         throw new BadRequestException('Cash Account must have mapped Chart of Account');
+        throw new BadRequestException(
+          'Cash Account must have mapped Chart of Account',
+        );
       }
       debitId = debitId || accountRecord.chart_of_account_id;
       if (!creditId) {
-         throw new BadRequestException('Credit account ID must be provided for Cash In');
+        throw new BadRequestException(
+          'Credit account ID must be provided for Cash In',
+        );
       }
 
       await this.glService.createJournalEntryWithinTx(tx as any, {
@@ -108,7 +133,7 @@ export class FinanceService {
         items: [
           { accountId: debitId, debit: data.amount, credit: 0 },
           { accountId: creditId, debit: 0, credit: data.amount },
-        ]
+        ],
       });
 
       return transaction;
@@ -120,9 +145,18 @@ export class FinanceService {
       // Auto-resolve missing accounts
       let cashAccountId = data.cashAccountId;
       if (!cashAccountId) {
-        let account = await tx.cashAccount.findFirst({ where: { company_id: data.companyId, name: 'Kas Utama' } });
+        let account = await tx.cashAccount.findFirst({
+          where: { company_id: data.companyId, name: 'Kas Utama' },
+        });
         if (!account) {
-          account = await tx.cashAccount.create({ data: { company_id: data.companyId, code: 'CASH-001', name: 'Kas Utama', account_type: 'Cash' } });
+          account = await tx.cashAccount.create({
+            data: {
+              company_id: data.companyId,
+              code: 'CASH-001',
+              name: 'Kas Utama',
+              account_type: 'Cash',
+            },
+          });
         }
         cashAccountId = account.id;
       }
@@ -132,16 +166,27 @@ export class FinanceService {
       if (!debitId || !creditId) {
         // GL Posting is skipped if accounts are not provided
       }
-      
+
       let catId = data.categoryId;
       if (!catId) {
-        let cat = await tx.financeCategory.findFirst({ where: { company_id: data.companyId, name: 'General Expense' } });
-        if (!cat) cat = await tx.financeCategory.create({ data: { company_id: data.companyId, name: 'General Expense', type: 'EXPENSE' } });
+        let cat = await tx.financeCategory.findFirst({
+          where: { company_id: data.companyId, name: 'General Expense' },
+        });
+        if (!cat)
+          cat = await tx.financeCategory.create({
+            data: {
+              company_id: data.companyId,
+              name: 'General Expense',
+              type: 'EXPENSE',
+            },
+          });
         catId = cat.id;
       }
 
       // Validasi Saldo
-      const account = await tx.cashAccount.findUnique({ where: { id: cashAccountId } });
+      const account = await tx.cashAccount.findUnique({
+        where: { id: cashAccountId },
+      });
       if (!account || Number(account.current_balance) < data.amount) {
         throw new BadRequestException('Insufficient balance in Cash Account');
       }
@@ -161,23 +206,31 @@ export class FinanceService {
           approved_by: data.userId,
           approved_at: new Date(),
           items: {
-            create: [{
-              category_id: catId,
-              amount: data.amount,
-              description: data.description,
-            }]
-          }
+            create: [
+              {
+                category_id: catId,
+                amount: data.amount,
+                description: data.description,
+              },
+            ],
+          },
         },
       });
 
       // 3. GL Double Entry
-      const accountRecord = await tx.cashAccount.findUnique({ where: { id: cashAccountId } });
+      const accountRecord = await tx.cashAccount.findUnique({
+        where: { id: cashAccountId },
+      });
       if (!accountRecord?.chart_of_account_id) {
-         throw new BadRequestException('Cash Account must have mapped Chart of Account');
+        throw new BadRequestException(
+          'Cash Account must have mapped Chart of Account',
+        );
       }
       creditId = creditId || accountRecord.chart_of_account_id;
       if (!debitId) {
-         throw new BadRequestException('Debit account ID must be provided for Cash Out');
+        throw new BadRequestException(
+          'Debit account ID must be provided for Cash Out',
+        );
       }
 
       await this.glService.createJournalEntryWithinTx(tx as any, {
@@ -189,18 +242,22 @@ export class FinanceService {
         items: [
           { accountId: debitId, debit: data.amount, credit: 0 },
           { accountId: creditId, debit: 0, credit: data.amount },
-        ]
+        ],
       });
 
       return transaction;
     });
   }
 
-  async reverseTransaction(originalTxId: string, userId: string, reverseTxNo: string) {
+  async reverseTransaction(
+    originalTxId: string,
+    userId: string,
+    reverseTxNo: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
-      const originalTx = await tx.financeTransaction.findUnique({ 
+      const originalTx = await tx.financeTransaction.findUnique({
         where: { id: originalTxId },
-        include: { items: true }
+        include: { items: true },
       });
 
       if (!originalTx || originalTx.status !== 'Approved') {
@@ -208,8 +265,9 @@ export class FinanceService {
       }
 
       // 1. Create Reversal Transaction
-      const reversalType = originalTx.transaction_type === 'Cash In' ? 'Cash Out' : 'Cash In';
-      
+      const reversalType =
+        originalTx.transaction_type === 'Cash In' ? 'Cash Out' : 'Cash In';
+
       const reversedTx = await tx.financeTransaction.create({
         data: {
           company_id: originalTx.company_id,
@@ -226,19 +284,19 @@ export class FinanceService {
           approved_by: userId,
           approved_at: new Date(),
           items: {
-            create: originalTx.items.map(item => ({
+            create: originalTx.items.map((item) => ({
               category_id: item.category_id,
               amount: item.amount,
               description: `Reversal: ${item.description}`,
-            }))
-          }
-        }
+            })),
+          },
+        },
       });
 
       // 2. Mark Original as Reversed
       await tx.financeTransaction.update({
         where: { id: originalTx.id },
-        data: { status: 'Reversed' }
+        data: { status: 'Reversed' },
       });
 
       // Note: A full GL Reversal would also fetch the original JournalEntry and flip Debit/Credit here.
@@ -252,7 +310,7 @@ export class FinanceService {
           entity_id: reversedTx.id,
           before_data: originalTx as any,
           after_data: reversedTx as any,
-        }
+        },
       });
 
       return reversedTx;
@@ -265,9 +323,9 @@ export class FinanceService {
     const transactions = await this.prisma.financeTransaction.findMany({
       where: {
         company_id: companyId,
-        status: { in: ['Approved', 'COMPLETED'] }
+        status: { in: ['Approved', 'COMPLETED'] },
       },
-      include: { items: { include: { category: true } } }
+      include: { items: { include: { category: true } } },
     });
 
     const incomeMap = new Map<string, number>();
@@ -276,14 +334,20 @@ export class FinanceService {
     let totalExpense = 0;
 
     for (const tx of transactions) {
-      if (tx.transaction_type === 'Cash In' || tx.transaction_type === 'Income') {
+      if (
+        tx.transaction_type === 'Cash In' ||
+        tx.transaction_type === 'Income'
+      ) {
         for (const item of tx.items) {
           const val = Number(item.amount);
           const catName = item.category ? item.category.name : 'Lainnya';
           totalIncome += val;
           incomeMap.set(catName, (incomeMap.get(catName) || 0) + val);
         }
-      } else if (tx.transaction_type === 'Cash Out' || tx.transaction_type === 'Expense') {
+      } else if (
+        tx.transaction_type === 'Cash Out' ||
+        tx.transaction_type === 'Expense'
+      ) {
         for (const item of tx.items) {
           const val = Number(item.amount);
           const catName = item.category ? item.category.name : 'Lainnya';
@@ -294,11 +358,17 @@ export class FinanceService {
     }
 
     return {
-      revenue: Array.from(incomeMap.entries()).map(([name, amount]) => ({ name, amount })),
-      expenses: Array.from(expenseMap.entries()).map(([name, amount]) => ({ name, amount })),
+      revenue: Array.from(incomeMap.entries()).map(([name, amount]) => ({
+        name,
+        amount,
+      })),
+      expenses: Array.from(expenseMap.entries()).map(([name, amount]) => ({
+        name,
+        amount,
+      })),
       totalRevenue: totalIncome,
       totalExpenses: totalExpense,
-      netProfit: totalIncome - totalExpense
+      netProfit: totalIncome - totalExpense,
     };
   }
 
@@ -306,9 +376,9 @@ export class FinanceService {
     const transactions = await this.prisma.financeTransaction.findMany({
       where: {
         company_id: companyId,
-        status: { in: ['Approved', 'COMPLETED'] }
+        status: { in: ['Approved', 'COMPLETED'] },
       },
-      orderBy: { transaction_date: 'asc' }
+      orderBy: { transaction_date: 'asc' },
     });
 
     let totalInflow = 0;
@@ -318,19 +388,25 @@ export class FinanceService {
 
     for (const tx of transactions) {
       const val = Number(tx.total_amount);
-      if (tx.transaction_type === 'Cash In' || tx.transaction_type === 'Income') {
+      if (
+        tx.transaction_type === 'Cash In' ||
+        tx.transaction_type === 'Income'
+      ) {
         totalInflow += val;
         cashInflows.push({
           date: tx.transaction_date,
           description: tx.description || 'Penerimaan',
-          amount: val
+          amount: val,
         });
-      } else if (tx.transaction_type === 'Cash Out' || tx.transaction_type === 'Expense') {
+      } else if (
+        tx.transaction_type === 'Cash Out' ||
+        tx.transaction_type === 'Expense'
+      ) {
         totalOutflow += val;
         cashOutflows.push({
           date: tx.transaction_date,
           description: tx.description || 'Pengeluaran',
-          amount: val
+          amount: val,
         });
       }
     }
@@ -340,32 +416,42 @@ export class FinanceService {
       cashOutflows,
       totalInflow,
       totalOutflow,
-      netCashFlow: totalInflow - totalOutflow
+      netCashFlow: totalInflow - totalOutflow,
     };
   }
 
   async getBalanceSheetReport(companyId: string) {
     // 1. Calculate Cash Balance
     const cashAccounts = await this.prisma.cashAccount.findMany({
-      where: { company_id: companyId }
+      where: { company_id: companyId },
     });
-    const totalCash = cashAccounts.reduce((sum, acc) => sum + Number(acc.current_balance), 0);
+    const totalCash = cashAccounts.reduce(
+      (sum, acc) => sum + Number(acc.current_balance),
+      0,
+    );
 
     // 2. Calculate Inventory Value
     const stocks = await this.prisma.warehouseStock.findMany({
       where: { company_id: companyId },
-      include: { product: true }
+      include: { product: true },
     });
-    const inventoryValue = stocks.reduce((sum, stock) => sum + (stock.current_stock * Number(stock.product.purchase_price)), 0);
+    const inventoryValue = stocks.reduce(
+      (sum, stock) =>
+        sum + stock.current_stock * Number(stock.product.purchase_price),
+      0,
+    );
 
     // 3. Asset Master Value (If Asset module is active)
     const fixedAssets = await this.prisma.assetMaster.findMany({
-      where: { company_id: companyId }
+      where: { company_id: companyId },
     });
-    const fixedAssetValue = fixedAssets.reduce((sum, asset) => sum + Number(asset.purchase_price), 0);
+    const fixedAssetValue = fixedAssets.reduce(
+      (sum, asset) => sum + Number(asset.purchase_price),
+      0,
+    );
 
     const totalAssets = totalCash + inventoryValue + fixedAssetValue;
-    
+
     // For MVP, Liabilities = 0, Equity = Assets - Liabilities
     const totalLiabilities = 0;
     const totalEquity = totalAssets;
@@ -374,31 +460,27 @@ export class FinanceService {
       assets: [
         { name: 'Kas & Bank', amount: totalCash },
         { name: 'Persediaan Barang', amount: inventoryValue },
-        { name: 'Aset Tetap', amount: fixedAssetValue }
+        { name: 'Aset Tetap', amount: fixedAssetValue },
       ],
-      liabilities: [
-        { name: 'Hutang Dagang', amount: 0 }
-      ],
-      equity: [
-        { name: 'Modal Pemilik', amount: totalEquity }
-      ],
+      liabilities: [{ name: 'Hutang Dagang', amount: 0 }],
+      equity: [{ name: 'Modal Pemilik', amount: totalEquity }],
       totalAssets,
       totalLiabilities,
-      totalEquity
+      totalEquity,
     };
   }
 
   async getCashReconciliation(companyId: string) {
     const cashAccounts = await this.prisma.cashAccount.findMany({
       where: { company_id: companyId },
-      include: { chart_of_account: { include: { account_type: true } } }
+      include: { chart_of_account: { include: { account_type: true } } },
     });
 
     const results: any[] = [];
 
     for (const ca of cashAccounts) {
       const operationalBalance = ca.current_balance;
-      
+
       if (!ca.chart_of_account_id) {
         results.push({
           cash_account_id: ca.id,
@@ -406,7 +488,7 @@ export class FinanceService {
           operational_balance: operationalBalance,
           gl_balance: null,
           difference: null,
-          status: 'UNMAPPED'
+          status: 'UNMAPPED',
         });
         continue;
       }
@@ -417,22 +499,22 @@ export class FinanceService {
           account_id: ca.chart_of_account_id,
           journal_entry: {
             company_id: companyId,
-            status: { in: ['Posted', 'Reversed'] }
-          }
+            status: { in: ['Posted', 'Reversed'] },
+          },
         },
-        _sum: { debit: true, credit: true }
+        _sum: { debit: true, credit: true },
       });
 
       const debit = glItems._sum.debit || 0;
       const credit = glItems._sum.credit || 0;
       let glBalance = debit - credit;
       if (ca.chart_of_account?.account_type?.normal_balance === 'Credit') {
-          glBalance = credit - debit;
+        glBalance = credit - debit;
       }
       glBalance += Number(ca.opening_balance || 0);
 
       const difference = operationalBalance - glBalance;
-      
+
       let status = 'MATCHED';
       if (Math.abs(difference) > 0.0001) status = 'MISMATCH';
 
@@ -442,12 +524,10 @@ export class FinanceService {
         operational_balance: operationalBalance,
         gl_balance: glBalance,
         difference: difference,
-        status: status
+        status: status,
       });
     }
 
     return results;
   }
-
 }
-

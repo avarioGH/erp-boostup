@@ -11,14 +11,18 @@ import { Permissions } from '../../auth/permissions.decorator';
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
-  private async sendExcelResponse(res: Response, workbook: any, filename: string) {
+  private async sendExcelResponse(
+    res: Response,
+    workbook: any,
+    filename: string,
+  ) {
     res.setHeader(
       'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename=${filename}.xlsx`
+      `attachment; filename=${filename}.xlsx`,
     );
     await workbook.xlsx.write(res);
     res.end();
@@ -35,7 +39,16 @@ export class ReportsController {
     @Query('page') page?: number,
     @Query('limit') limit?: number,
   ) {
-    return this.reportsService.getMovements({ warehouseId, variantId, dateFrom, dateTo, type, referenceType, page, limit });
+    return this.reportsService.getMovements({
+      warehouseId,
+      variantId,
+      dateFrom,
+      dateTo,
+      type,
+      referenceType,
+      page,
+      limit,
+    });
   }
 
   @Get('export/movements')
@@ -48,7 +61,14 @@ export class ReportsController {
     @Query('type') type?: string,
     @Query('referenceType') referenceType?: string,
   ) {
-    const wb = await this.reportsService.exportMovements({ warehouseId, variantId, dateFrom, dateTo, type, referenceType });
+    const wb = await this.reportsService.exportMovements({
+      warehouseId,
+      variantId,
+      dateFrom,
+      dateTo,
+      type,
+      referenceType,
+    });
     return this.sendExcelResponse(res, wb, 'Movements');
   }
 
@@ -59,7 +79,12 @@ export class ReportsController {
     @Query('dateFrom') dateFrom: string,
     @Query('dateTo') dateTo: string,
   ) {
-    return this.reportsService.getStockCard(warehouseId, variantId, dateFrom, dateTo);
+    return this.reportsService.getStockCard(
+      warehouseId,
+      variantId,
+      dateFrom,
+      dateTo,
+    );
   }
 
   @Get('export/stock-card')
@@ -70,7 +95,12 @@ export class ReportsController {
     @Query('dateFrom') dateFrom: string,
     @Query('dateTo') dateTo: string,
   ) {
-    const wb = await this.reportsService.exportStockCard(warehouseId, variantId, dateFrom, dateTo);
+    const wb = await this.reportsService.exportStockCard(
+      warehouseId,
+      variantId,
+      dateFrom,
+      dateTo,
+    );
     return this.sendExcelResponse(res, wb, 'StockCard');
   }
 

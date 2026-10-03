@@ -1,4 +1,12 @@
-﻿import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+﻿import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { StockTransferService } from './stock-transfer.service';
 import { StockAdjustmentService } from './stock-adjustment.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,7 +20,7 @@ export class TimberLedgerController {
   constructor(
     private readonly transferService: StockTransferService,
     private readonly adjustmentService: StockAdjustmentService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
   ) {}
 
   @Get('timber-movements')
@@ -28,11 +36,15 @@ export class TimberLedgerController {
 
     const [items, total] = await Promise.all([
       this.prisma.timberStockMovement.findMany({
-        skip: Number(skip), take: Number(take), where,
+        skip: Number(skip),
+        take: Number(take),
+        where,
         orderBy: { createdAt: 'desc' },
-        include: { timberStock: { include: { location: true, timberVariant: true } } }
+        include: {
+          timberStock: { include: { location: true, timberVariant: true } },
+        },
       }),
-      this.prisma.timberStockMovement.count({ where })
+      this.prisma.timberStockMovement.count({ where }),
     ]);
     return { items, total, skip: Number(skip), take: Number(take) };
   }
@@ -101,4 +113,3 @@ export class TimberLedgerController {
     return this.adjustmentService.cancelAdjustment(id);
   }
 }
-

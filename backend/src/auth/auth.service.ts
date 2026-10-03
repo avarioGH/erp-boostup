@@ -7,24 +7,24 @@ import * as bcrypt from 'bcrypt';
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService
+    private jwtService: JwtService,
   ) {}
 
   async validateUser(username: string, pass: string): Promise<any> {
     const user = await this.prisma.user.findUnique({
       where: { username },
-      include: { 
-        role: true, 
+      include: {
+        role: true,
         company: true,
         warehouse_accesses: {
           include: {
-            warehouse: true
-          }
-        }
-      }
+            warehouse: true,
+          },
+        },
+      },
     });
 
-    if (user && await bcrypt.compare(pass, user.password)) {
+    if (user && (await bcrypt.compare(pass, user.password))) {
       const { password, ...result } = user;
       return result;
     }
@@ -32,13 +32,13 @@ export class AuthService {
   }
 
   async login(user: any) {
-    const payload = { 
-      username: user.username, 
-      sub: user.id, 
+    const payload = {
+      username: user.username,
+      sub: user.id,
       role: user.role?.name || 'User',
-      company_id: user.company_id 
+      company_id: user.company_id,
     };
-    
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -47,12 +47,13 @@ export class AuthService {
         name: user.name,
         role: user.role?.name || 'User',
         accessible_modules: user.accessible_modules || [],
-        accessible_warehouses: user.warehouse_accesses?.map((wa: any) => ({
-          id: wa.warehouse.id,
-          name: wa.warehouse.name,
-          code: wa.warehouse.code
-        })) || []
-      }
+        accessible_warehouses:
+          user.warehouse_accesses?.map((wa: any) => ({
+            id: wa.warehouse.id,
+            name: wa.warehouse.name,
+            code: wa.warehouse.code,
+          })) || [],
+      },
     };
   }
 }

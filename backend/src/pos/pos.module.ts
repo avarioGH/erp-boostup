@@ -9,6 +9,6 @@ import { NotificationModule } from '../notification/notification.module';
 @Module({
   imports: [PrismaModule, InventoryModule, ReportsModule, NotificationModule],
   controllers: [PosController],
-  providers: [PosService]
+  providers: [PosService],
 })
 export class PosModule {}

@@ -16,16 +16,22 @@ export class ProductionReportController {
     @Query('endDate') endDate?: string,
     @Query('shift') shift?: string,
     @Query('workCenterId') workCenterId?: string,
-    @Query('locationId') locationId?: string
+    @Query('locationId') locationId?: string,
   ) {
-    return this.reportService.getSummary({ startDate, endDate, shift, workCenterId, locationId });
+    return this.reportService.getSummary({
+      startDate,
+      endDate,
+      shift,
+      workCenterId,
+      locationId,
+    });
   }
 
   @Get('rendement')
   @Permissions('read_inventory')
   async getRendement(
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
   ) {
     return this.reportService.getRendement({ startDate, endDate });
   }
@@ -34,7 +40,7 @@ export class ProductionReportController {
   @Permissions('read_inventory')
   async getProducts(
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
   ) {
     return this.reportService.getProducts({ startDate, endDate });
   }
@@ -43,7 +49,7 @@ export class ProductionReportController {
   @Permissions('read_inventory')
   async getShifts(
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
   ) {
     return this.reportService.getShifts({ startDate, endDate });
   }
@@ -58,7 +64,7 @@ export class ProductionReportController {
   @Permissions('read_inventory')
   async getDaily(
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
   ) {
     return this.reportService.getDaily({ startDate, endDate });
   }
@@ -67,7 +73,7 @@ export class ProductionReportController {
   @Permissions('read_inventory')
   async getReconciliation(
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
   ) {
     return this.reportService.getReconciliation({ startDate, endDate });
   }
@@ -76,7 +82,7 @@ export class ProductionReportController {
   @Permissions('read_inventory')
   async getDataQuality(
     @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
+    @Query('endDate') endDate?: string,
   ) {
     return this.reportService.getDataQuality({ startDate, endDate });
   }

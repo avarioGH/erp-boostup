@@ -9,14 +9,14 @@ export class LocationService {
   async findAll(company_id: string) {
     return this.prisma.location.findMany({
       where: { warehouse: { company_id } },
-      include: { warehouse: true }
+      include: { warehouse: true },
     });
   }
 
   async findOne(id: string, company_id: string) {
     const location = await this.prisma.location.findFirst({
       where: { id, warehouse: { company_id } },
-      include: { warehouse: true }
+      include: { warehouse: true },
     });
     if (!location) {
       throw new NotFoundException(`Location with ID ${id} not found`);
@@ -30,7 +30,11 @@ export class LocationService {
     return this.prisma.location.create({ data: createData as any });
   }
 
-  async update(id: string, data: Partial<UpdateLocationDto>, company_id: string) {
+  async update(
+    id: string,
+    data: Partial<UpdateLocationDto>,
+    company_id: string,
+  ) {
     await this.findOne(id, company_id);
     const updateData = { ...data };
     delete updateData.company_id;

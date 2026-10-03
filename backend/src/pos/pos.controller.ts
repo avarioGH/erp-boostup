@@ -1,6 +1,13 @@
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
-import { Controller, Post, Body, UseGuards, Request, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  Get,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PosService } from './pos.service';
 
@@ -31,7 +38,10 @@ export class PosController {
   @Permissions('pos.view')
   @Get('shift')
   async getCurrentShift(@Request() req) {
-    return this.posService.getCurrentShift(req.user.company_id, req.user.userId || req.user.id);
+    return this.posService.getCurrentShift(
+      req.user.company_id,
+      req.user.userId || req.user.id,
+    );
   }
 
   @Permissions('pos.create')

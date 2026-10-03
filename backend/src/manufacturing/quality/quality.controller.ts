@@ -1,6 +1,15 @@
 import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
-import { Controller, Get, Post, Body, Param, Req, UseGuards, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Req,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import { QualityService } from './quality.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 
@@ -29,13 +38,31 @@ export class QualityController {
 
   @Permissions('manufacturing.create')
   @Post('checks/:id/complete')
-  async completeCheck(@Req() req: any, @Param('id') id: string, @Body() data: any) {
-    return this.qualityService.completeCheck(req.user.companyId, id, req.user.id, data);
+  async completeCheck(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
+    return this.qualityService.completeCheck(
+      req.user.companyId,
+      id,
+      req.user.id,
+      data,
+    );
   }
 
   @Permissions('manufacturing.create')
   @Post('checks/:id/disposition')
-  async addDisposition(@Req() req: any, @Param('id') id: string, @Body() data: any) {
-    return this.qualityService.addDisposition(req.user.companyId, id, req.user.id, data);
+  async addDisposition(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
+    return this.qualityService.addDisposition(
+      req.user.companyId,
+      id,
+      req.user.id,
+      data,
+    );
   }
 }

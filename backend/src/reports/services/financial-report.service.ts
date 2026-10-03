@@ -11,24 +11,30 @@ export class FinancialReportService {
       journal_entry: {
         company_id: filters.company_id,
         status: 'Posted',
-      }
+      },
     };
     if (filters.start_date || filters.end_date) {
       whereCondition.journal_entry.journal_date = {};
-      if (filters.start_date) whereCondition.journal_entry.journal_date.gte = new Date(filters.start_date);
-      if (filters.end_date) whereCondition.journal_entry.journal_date.lte = new Date(filters.end_date);
+      if (filters.start_date)
+        whereCondition.journal_entry.journal_date.gte = new Date(
+          filters.start_date,
+        );
+      if (filters.end_date)
+        whereCondition.journal_entry.journal_date.lte = new Date(
+          filters.end_date,
+        );
     }
     if (filters.branch_id) {
-       // Assuming branch can be filtered, wait, is there branch? No branch in JournalEntry
+      // Assuming branch can be filtered, wait, is there branch? No branch in JournalEntry
     }
 
     const items = await this.prisma.journalEntryItem.findMany({
       where: whereCondition,
-      include: { account: { include: { account_type: true } } }
+      include: { account: { include: { account_type: true } } },
     });
 
     const accountMap = new Map<string, any>();
-    items.forEach(item => {
+    items.forEach((item) => {
       const acc = item.account;
       if (!accountMap.has(acc.id)) {
         accountMap.set(acc.id, {
@@ -36,7 +42,7 @@ export class FinancialReportService {
           name: acc.account_name,
           normal_balance: acc.account_type.normal_balance,
           debit: 0,
-          credit: 0
+          credit: 0,
         });
       }
       const data = accountMap.get(acc.id);
@@ -63,7 +69,7 @@ export class FinancialReportService {
         account_name: acc.name,
         debit: acc.debit,
         credit: acc.credit,
-        balance
+        balance,
       });
     }
 
@@ -77,26 +83,32 @@ export class FinancialReportService {
         { header: 'Account Name', key: 'account_name' },
         { header: 'Debit', key: 'debit', type: 'currency' },
         { header: 'Credit', key: 'credit', type: 'currency' },
-        { header: 'Balance', key: 'balance', type: 'currency' }
+        { header: 'Balance', key: 'balance', type: 'currency' },
       ],
       data,
-      totals: { debit: totalDebit, credit: totalCredit }
+      totals: { debit: totalDebit, credit: totalCredit },
     };
   }
 
   async getProfitAndLoss(filters: ReportFilterDto): Promise<ReportResultDto> {
     const whereCondition: any = {
-      journal_entry: { company_id: filters.company_id, status: 'Posted' }
+      journal_entry: { company_id: filters.company_id, status: 'Posted' },
     };
     if (filters.start_date || filters.end_date) {
       whereCondition.journal_entry.journal_date = {};
-      if (filters.start_date) whereCondition.journal_entry.journal_date.gte = new Date(filters.start_date);
-      if (filters.end_date) whereCondition.journal_entry.journal_date.lte = new Date(filters.end_date);
+      if (filters.start_date)
+        whereCondition.journal_entry.journal_date.gte = new Date(
+          filters.start_date,
+        );
+      if (filters.end_date)
+        whereCondition.journal_entry.journal_date.lte = new Date(
+          filters.end_date,
+        );
     }
 
     const items = await this.prisma.journalEntryItem.findMany({
       where: whereCondition,
-      include: { account: { include: { account_type: true } } }
+      include: { account: { include: { account_type: true } } },
     });
 
     let revenue = 0;
@@ -105,11 +117,11 @@ export class FinancialReportService {
     let otherIncome = 0;
     let otherExpenses = 0;
 
-    items.forEach(item => {
+    items.forEach((item) => {
       const type = item.account.account_type.code.toUpperCase();
       const amount = item.credit - item.debit; // revenue/equity normal is credit
       const expAmount = item.debit - item.credit; // expense normal is debit
-      
+
       if (type.includes('REVENUE') || type.includes('INCOME')) {
         if (type.includes('OTHER')) otherIncome += amount;
         else revenue += amount;
@@ -128,7 +140,7 @@ export class FinancialReportService {
       title: 'Profit & Loss',
       columns: [
         { header: 'Category', key: 'category' },
-        { header: 'Amount', key: 'amount', type: 'currency' }
+        { header: 'Amount', key: 'amount', type: 'currency' },
       ],
       data: [
         { category: 'Revenue', amount: revenue },
@@ -137,9 +149,9 @@ export class FinancialReportService {
         { category: 'Operating Expenses', amount: expenses },
         { category: 'Other Income', amount: otherIncome },
         { category: 'Other Expenses', amount: otherExpenses },
-        { category: 'Net Profit', amount: netProfit }
+        { category: 'Net Profit', amount: netProfit },
       ],
-      totals: { amount: netProfit }
+      totals: { amount: netProfit },
     };
   }
 
@@ -147,20 +159,26 @@ export class FinancialReportService {
     const items = await this.prisma.journalEntryItem.findMany({
       where: {
         journal_entry: { company_id: filters.company_id, status: 'Posted' },
-        ...(filters.end_date ? { journal_entry: { journal_date: { lte: new Date(filters.end_date) } } } : {})
+        ...(filters.end_date
+          ? {
+              journal_entry: {
+                journal_date: { lte: new Date(filters.end_date) },
+              },
+            }
+          : {}),
       },
-      include: { account: { include: { account_type: true } } }
+      include: { account: { include: { account_type: true } } },
     });
 
     let assets = 0;
     let liabilities = 0;
     let equity = 0;
-    
+
     let revenue = 0;
     let cogs = 0;
     let expenses = 0;
 
-    items.forEach(item => {
+    items.forEach((item) => {
       const type = item.account.account_type.code.toUpperCase();
       const debitBal = item.debit - item.credit;
       const creditBal = item.credit - item.debit;
@@ -168,26 +186,26 @@ export class FinancialReportService {
       if (type.includes('ASSET')) assets += debitBal;
       else if (type.includes('LIABILIT')) liabilities += creditBal;
       else if (type.includes('EQUITY')) equity += creditBal;
-      else if (type.includes('REVENUE') || type.includes('INCOME')) revenue += creditBal;
+      else if (type.includes('REVENUE') || type.includes('INCOME'))
+        revenue += creditBal;
       else if (type === 'COGS') cogs += debitBal;
       else if (type.includes('EXPENSE')) expenses += debitBal;
     });
 
     // Retained Earnings from P&L is added to Equity
-    equity += (revenue - cogs - expenses);
+    equity += revenue - cogs - expenses;
 
     return {
       title: 'Balance Sheet',
       columns: [
         { header: 'Category', key: 'category' },
-        { header: 'Amount', key: 'amount', type: 'currency' }
+        { header: 'Amount', key: 'amount', type: 'currency' },
       ],
       data: [
         { category: 'Assets', amount: assets },
         { category: 'Liabilities', amount: liabilities },
-        { category: 'Equity (Including Retained Earnings)', amount: equity }
-      ]
+        { category: 'Equity (Including Retained Earnings)', amount: equity },
+      ],
     };
   }
 }
-

@@ -24,7 +24,11 @@ export class VehicleService {
     return this.prisma.vehicle.create({ data: data as any });
   }
 
-  async update(id: string, data: Partial<UpdateVehicleDto>, company_id: string) {
+  async update(
+    id: string,
+    data: Partial<UpdateVehicleDto>,
+    company_id: string,
+  ) {
     await this.findOne(id, company_id);
     return this.prisma.vehicle.update({
       where: { id },

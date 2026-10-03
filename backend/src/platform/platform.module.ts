@@ -4,6 +4,6 @@ import { PlatformService } from './platform.service';
 
 @Module({
   controllers: [PlatformController],
-  providers: [PlatformService]
+  providers: [PlatformService],
 })
 export class PlatformModule {}

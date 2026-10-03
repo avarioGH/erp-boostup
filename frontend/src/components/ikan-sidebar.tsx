@@ -56,7 +56,8 @@ const items: MenuItem[] = [
  { title: "Ikan Masuk", url: "/inventory/inflow" },
  { title: "Stok Ikan", url: "/inventory/stock" },
  { title: "Stock Movement", url: "/inventory/movements" },
- { title: "Input Stok Awal", url: "/inventory/initial-stock" }
+ { title: "Input Stok Awal", url: "/inventory/initial-stock" },
+ { title: "Pemusnahan", url: "/inventory/disposals" }
  ]
  },
  {

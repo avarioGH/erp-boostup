@@ -5,7 +5,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { createFifoLayer, consumeFifoLayers } from '../../inventory/fifo.engine';
+import {
+  createFifoLayer,
+  consumeFifoLayers,
+} from '../../inventory/fifo.engine';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InventoryValuationEvent } from '../../events/accounting.events';
 
@@ -79,14 +82,17 @@ export class MoService {
     // Calculate labor and overhead from work orders
     const workOrders = await this.prisma.manufacturingWorkOrder.findMany({
       where: { manufacturing_order_id: mo.id },
-      include: { work_center: true }
+      include: { work_center: true },
     });
 
     let laborCost = 0;
     let overheadCost = 0;
     for (const wo of workOrders) {
       if (wo.planned_start && wo.planned_end && wo.work_center?.cost_per_hour) {
-        const hours = (new Date(wo.planned_end).getTime() - new Date(wo.planned_start).getTime()) / (1000 * 60 * 60);
+        const hours =
+          (new Date(wo.planned_end).getTime() -
+            new Date(wo.planned_start).getTime()) /
+          (1000 * 60 * 60);
         laborCost += hours * wo.work_center.cost_per_hour;
       }
     }
@@ -99,7 +105,10 @@ export class MoService {
         productionCost,
         laborCost,
         overheadCost, // Currently defaults to 0 as we don't have separate overhead in DB
-        unitProductionCost: mo.produced_quantity > 0 ? (productionCost + laborCost + overheadCost) / mo.produced_quantity : 0,
+        unitProductionCost:
+          mo.produced_quantity > 0
+            ? (productionCost + laborCost + overheadCost) / mo.produced_quantity
+            : 0,
       },
     };
   }
@@ -256,15 +265,18 @@ export class MoService {
 
         if (toReserve > 0 && stock) {
           const resUpd = await tx.warehouseStock.updateMany({
-              where: { id: stock.id, available_stock: { gte: toReserve } },
-              data: {
-                reserved_stock: { increment: toReserve },
-                available_stock: { decrement: toReserve },
-              },
-           });
-           if (resUpd.count === 0) {
-             throw new BadRequestException('Concurrency conflict or insufficient stock to reserve product ' + stock.product_id);
-           }
+            where: { id: stock.id, available_stock: { gte: toReserve } },
+            data: {
+              reserved_stock: { increment: toReserve },
+              available_stock: { decrement: toReserve },
+            },
+          });
+          if (resUpd.count === 0) {
+            throw new BadRequestException(
+              'Concurrency conflict or insufficient stock to reserve product ' +
+                stock.product_id,
+            );
+          }
 
           await tx.materialReservation.create({
             data: {
@@ -514,13 +526,14 @@ export class MoService {
           productId: moItem.product_id,
           warehouseId: mo.warehouse_id,
           quantity: reqItem.quantity,
-          stockMovementId: mov.id
+          stockMovementId: mov.id,
         });
 
-        const actual_unit_cost = reqItem.quantity > 0 ? totalCogs / reqItem.quantity : 0;
+        const actual_unit_cost =
+          reqItem.quantity > 0 ? totalCogs / reqItem.quantity : 0;
         await tx.stockMovement.update({
           where: { id: mov.id },
-          data: { unit_cost: actual_unit_cost, total_cost: totalCogs }
+          data: { unit_cost: actual_unit_cost, total_cost: totalCogs },
         });
 
         if (totalCogs > 0) {
@@ -778,4 +791,3 @@ export class MoService {
     });
   }
 }
-

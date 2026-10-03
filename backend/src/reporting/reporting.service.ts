@@ -16,7 +16,7 @@ export class ReportingService {
 
   constructor(
     private prisma: PrismaService,
-    private exportQueue: ExportQueueService
+    private exportQueue: ExportQueueService,
   ) {}
 
   async requestAsyncExport(data: RequestExportDto) {
@@ -27,10 +27,12 @@ export class ReportingService {
         format: data.format,
         status: 'PENDING',
         requested_by: data.userId,
-      }
+      },
     });
 
-    this.logger.log(`Export Job Queued: [${log.id}] ${data.reportType} to ${data.format}`);
+    this.logger.log(
+      `Export Job Queued: [${log.id}] ${data.reportType} to ${data.format}`,
+    );
 
     // Delegate to true internal queue manager
     this.exportQueue.addJob({
@@ -38,12 +40,12 @@ export class ReportingService {
       companyId: data.companyId,
       reportType: data.reportType,
       format: data.format,
-      filters: data.filters
+      filters: data.filters,
     });
 
     return {
       message: 'Export request accepted and is queued for processing.',
-      trackingId: log.id
+      trackingId: log.id,
     };
   }
 }

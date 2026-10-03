@@ -1,6 +1,14 @@
 ﻿import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
-import { Controller, Get, Post, Body, Param, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { BomService } from './bom.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 
@@ -18,6 +26,9 @@ export class BomController {
   @Permissions('manufacturing.create')
   @Post()
   async createBom(@Req() req: any, @Body() data: any) {
-    return this.bomService.createBom({ ...data, company_id: req.user.companyId });
+    return this.bomService.createBom({
+      ...data,
+      company_id: req.user.companyId,
+    });
   }
 }

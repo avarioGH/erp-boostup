@@ -42,25 +42,27 @@ export class NotificationService {
       is_read: inbox.is_read,
       created_at: inbox.created_at,
       action_url: actionUrl,
-      severity: severity
+      severity: severity,
     };
   }
 
   async send(data: CreateNotificationDto) {
     try {
       const refId = `${data.actionUrl || ''}|||${data.severity || 'INFO'}|||${data.idempotencyKey || ''}`;
-      
+
       if (data.idempotencyKey) {
         // Use findFirst with string matching on the reference_id which contains our idempotency key
         const existing = await this.prisma.internalInbox.findFirst({
-          where: { 
+          where: {
             company_id: data.companyId,
             user_id: data.userId,
-            reference_id: { endsWith: '|||' + data.idempotencyKey }
-          }
+            reference_id: { endsWith: '|||' + data.idempotencyKey },
+          },
         });
         if (existing) {
-          this.logger.debug('Skipping duplicate notification: ' + data.idempotencyKey);
+          this.logger.debug(
+            'Skipping duplicate notification: ' + data.idempotencyKey,
+          );
           return this.mapToNotification(existing);
         }
       }
@@ -72,8 +74,8 @@ export class NotificationService {
           message_type: 'Notification',
           title: data.title,
           content: data.message,
-          reference_id: refId
-        }
+          reference_id: refId,
+        },
       });
 
       return this.mapToNotification(notification);
@@ -84,25 +86,39 @@ export class NotificationService {
     }
   }
 
-  async getNotifications(companyId: string, userId: string, skip = 0, take = 50) {
+  async getNotifications(
+    companyId: string,
+    userId: string,
+    skip = 0,
+    take = 50,
+  ) {
     const records = await this.prisma.internalInbox.findMany({
-      where: { company_id: companyId, user_id: userId, message_type: 'Notification' },
+      where: {
+        company_id: companyId,
+        user_id: userId,
+        message_type: 'Notification',
+      },
       orderBy: { created_at: 'desc' },
       skip,
-      take
+      take,
     });
-    return records.map(r => this.mapToNotification(r));
+    return records.map((r) => this.mapToNotification(r));
   }
 
   async getUnreadCount(companyId: string, userId: string) {
     return this.prisma.internalInbox.count({
-      where: { company_id: companyId, user_id: userId, message_type: 'Notification', is_read: false }
+      where: {
+        company_id: companyId,
+        user_id: userId,
+        message_type: 'Notification',
+        is_read: false,
+      },
     });
   }
 
   async markAsRead(companyId: string, userId: string, notificationId: string) {
     const notif = await this.prisma.internalInbox.findFirst({
-      where: { id: notificationId, company_id: companyId, user_id: userId }
+      where: { id: notificationId, company_id: companyId, user_id: userId },
     });
     if (!notif) throw new NotFoundException('Notification not found');
 
@@ -110,34 +126,45 @@ export class NotificationService {
 
     const updated = await this.prisma.internalInbox.update({
       where: { id: notificationId },
-      data: { is_read: true } // InternalInbox doesn't have read_at
+      data: { is_read: true }, // InternalInbox doesn't have read_at
     });
     return this.mapToNotification(updated);
   }
 
   async markAllAsRead(companyId: string, userId: string) {
     return this.prisma.internalInbox.updateMany({
-      where: { company_id: companyId, user_id: userId, message_type: 'Notification', is_read: false },
-      data: { is_read: true }
+      where: {
+        company_id: companyId,
+        user_id: userId,
+        message_type: 'Notification',
+        is_read: false,
+      },
+      data: { is_read: true },
     });
   }
 
-  async sendToOwners(companyId: string, data: Omit<CreateNotificationDto, 'companyId' | 'userId'>) {
+  async sendToOwners(
+    companyId: string,
+    data: Omit<CreateNotificationDto, 'companyId' | 'userId'>,
+  ) {
     try {
       const owners = await this.prisma.user.findMany({
         where: { company_id: companyId, status: true },
-        include: { role: true }
+        include: { role: true },
       });
-      const ownerUsers = owners.filter((u: any) =>
-        u.role?.name?.toLowerCase().includes('owner') ||
-        u.name?.toLowerCase().includes('ikan')
+      const ownerUsers = owners.filter(
+        (u: any) =>
+          u.role?.name?.toLowerCase().includes('owner') ||
+          u.name?.toLowerCase().includes('ikan'),
       );
       for (const owner of ownerUsers) {
         await this.send({
           ...data,
           companyId,
           userId: owner.id,
-          idempotencyKey: data.idempotencyKey ? `${data.idempotencyKey}-${owner.id}` : undefined
+          idempotencyKey: data.idempotencyKey
+            ? `${data.idempotencyKey}-${owner.id}`
+            : undefined,
         });
       }
     } catch (e) {

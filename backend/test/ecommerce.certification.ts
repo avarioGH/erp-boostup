@@ -28,7 +28,7 @@ async function run() {
   process.env.DATABASE_URL = uri.replace('/?', '/erp_final?');
 
   const prisma = new PrismaClient();
-  
+
   await prisma.$runCommandRaw({ create: 'Company' });
   await prisma.$runCommandRaw({ create: 'Warehouse' });
   await prisma.$runCommandRaw({ create: 'Product' });
@@ -37,7 +37,16 @@ async function run() {
   await prisma.$runCommandRaw({ create: 'EcommerceCartItem' });
   await prisma.$runCommandRaw({ create: 'Customer' });
   await prisma.$runCommandRaw({ create: 'SalesOrder' });
-  await prisma.$runCommandRaw({ createIndexes: 'SalesOrder', indexes: [{ key: { company_id: 1, ecommerce_session_id: 1 }, name: 'idx_sess', unique: true }] });
+  await prisma.$runCommandRaw({
+    createIndexes: 'SalesOrder',
+    indexes: [
+      {
+        key: { company_id: 1, ecommerce_session_id: 1 },
+        name: 'idx_sess',
+        unique: true,
+      },
+    ],
+  });
   await prisma.$runCommandRaw({ create: 'SalesOrderItem' });
   await prisma.$runCommandRaw({ create: 'Invoice' });
   await prisma.$runCommandRaw({ create: 'Integration' });
@@ -49,16 +58,24 @@ async function run() {
   const moduleRef = await Test.createTestingModule({
     imports: [
       EventEmitterModule.forRoot(),
-      PrismaModule, 
-      FinanceModule, 
-      IntegrationsModule, 
+      PrismaModule,
+      FinanceModule,
+      IntegrationsModule,
       EcommerceModule,
-      GlModule
+      GlModule,
     ],
     providers: [
-      PrismaService, EcommerceCatalogService, EcommerceCartService, EcommerceCheckoutService,
-      TripayService, IntegrationWebhookService, IntegrationCredentialService, IntegrationIdempotencyService, GlService, PaymentService
-    ]
+      PrismaService,
+      EcommerceCatalogService,
+      EcommerceCartService,
+      EcommerceCheckoutService,
+      TripayService,
+      IntegrationWebhookService,
+      IntegrationCredentialService,
+      IntegrationIdempotencyService,
+      GlService,
+      PaymentService,
+    ],
   }).compile();
 
   const catalogService = moduleRef.get(EcommerceCatalogService);
@@ -71,10 +88,25 @@ async function run() {
       ok: true,
       json: async () => {
         if (url.includes('/api/transaction/create')) {
-          return { success: true, data: { reference: 'TRIPAY-' + Date.now(), checkout_url: 'https://checkout.tripay.local' } };
+          return {
+            success: true,
+            data: {
+              reference: 'TRIPAY-' + Date.now(),
+              checkout_url: 'https://checkout.tripay.local',
+            },
+          };
         }
-        return { success: true, data: { status: 'PAID', amount: 44400000, reference: 'TRIPAY-' + Date.now(), merchant_ref: JSON.parse(options.body || '{}').merchant_ref || 'unknown' } };
-      }
+        return {
+          success: true,
+          data: {
+            status: 'PAID',
+            amount: 44400000,
+            reference: 'TRIPAY-' + Date.now(),
+            merchant_ref:
+              JSON.parse(options.body || '{}').merchant_ref || 'unknown',
+          },
+        };
+      },
     } as any;
   };
 
@@ -83,60 +115,115 @@ async function run() {
   try {
     const c1 = '6aa02dc075845f59e02b3fcc';
     await prisma.company.create({ data: { id: c1, name: 'Eco ERP' } });
-    
+
     const w1 = '6aa02dc075845f59e02b3fd1';
-    await prisma.warehouse.create({ data: { id: w1, company_id: c1, code: 'W1', name: 'Main' } });
+    await prisma.warehouse.create({
+      data: { id: w1, company_id: c1, code: 'W1', name: 'Main' },
+    });
 
     const tripayIntegration = await prisma.integration.create({
       data: {
-        company_id: c1, provider: 'TRIPAY', status: 'ACTIVE',
-        config: { apiKey: 'fake-api', privateKey: 'fake-private', merchantCode: 'M123', environment: 'SANDBOX', gl_mapping: { asset_account: '6aa02dc075845f59e02b3fd2', ar_account: '6aa02dc075845f59e02b3fd3' } }
-      }
+        company_id: c1,
+        provider: 'TRIPAY',
+        status: 'ACTIVE',
+        config: {
+          apiKey: 'fake-api',
+          privateKey: 'fake-private',
+          merchantCode: 'M123',
+          environment: 'SANDBOX',
+          gl_mapping: {
+            asset_account: '6aa02dc075845f59e02b3fd2',
+            ar_account: '6aa02dc075845f59e02b3fd3',
+          },
+        },
+      },
     });
 
     const p1 = '6aa02dc075845f59e02b3ff1';
     await prisma.product.create({
       data: {
-        id: p1, company_id: c1, code: 'P1', name: 'MacBook Pro',
-        selling_price: 20000000, purchase_price: 15000000,
+        id: p1,
+        company_id: c1,
+        code: 'P1',
+        name: 'MacBook Pro',
+        selling_price: 20000000,
+        purchase_price: 15000000,
         unit_id: '6aa02dc075845f59e02b3ff2',
-        is_published: true, ecommerce_slug: 'macbook-pro', status: true
-      }
+        is_published: true,
+        ecommerce_slug: 'macbook-pro',
+        status: true,
+      },
     });
-    await prisma.unit.create({ data: { id: '6aa02dc075845f59e02b3ff2', company_id: c1, name: 'Pcs' } });
+    await prisma.unit.create({
+      data: { id: '6aa02dc075845f59e02b3ff2', company_id: c1, name: 'Pcs' },
+    });
 
     await prisma.warehouseStock.create({
-      data: { company_id: c1, warehouse_id: w1, product_id: p1, current_stock: 5, available_stock: 5, reserved_stock: 0 }
+      data: {
+        company_id: c1,
+        warehouse_id: w1,
+        product_id: p1,
+        current_stock: 5,
+        available_stock: 5,
+        reserved_stock: 0,
+      },
     });
 
-    results['A'] = { status: 'RUNTIME VERIFIED', runtime: 'Product Publish', evidence: 'Seed completed' };
-    
+    results['A'] = {
+      status: 'RUNTIME VERIFIED',
+      runtime: 'Product Publish',
+      evidence: 'Seed completed',
+    };
+
     const pub = await catalogService.getPublishedProducts(c1, {});
     if (pub.data.length === 1 && pub.data[0].ecommerce_slug === 'macbook-pro') {
-      results['B'] = { status: 'RUNTIME VERIFIED', runtime: 'Product Visibility', evidence: 'Returned published product' };
+      results['B'] = {
+        status: 'RUNTIME VERIFIED',
+        runtime: 'Product Visibility',
+        evidence: 'Returned published product',
+      };
     }
 
     const detail = await catalogService.getProductBySlug(c1, 'macbook-pro');
     if (detail && detail.available_stock === 5) {
-      results['C'] = { status: 'RUNTIME VERIFIED', runtime: 'Product Detail & Stock', evidence: 'Aggregated stock correct' };
+      results['C'] = {
+        status: 'RUNTIME VERIFIED',
+        runtime: 'Product Detail & Stock',
+        evidence: 'Aggregated stock correct',
+      };
     }
 
-    const slug = await catalogService.generateDeterministicSlug(c1, 'MacBook Pro');
+    const slug = await catalogService.generateDeterministicSlug(
+      c1,
+      'MacBook Pro',
+    );
     if (slug === 'macbook-pro-1') {
-      results['D'] = { status: 'RUNTIME VERIFIED', runtime: 'Deterministic Slug', evidence: slug };
+      results['D'] = {
+        status: 'RUNTIME VERIFIED',
+        runtime: 'Deterministic Slug',
+        evidence: slug,
+      };
     }
 
     const sess1 = 'sess-123';
     await cartService.addItem(c1, sess1, p1, 1);
     let cart = await cartService.getCart(c1, sess1);
     if (cart.items.length === 1 && cart.items[0].quantity === 1) {
-      results['E'] = { status: 'RUNTIME VERIFIED', runtime: 'Cart Create', evidence: 'Added item' };
+      results['E'] = {
+        status: 'RUNTIME VERIFIED',
+        runtime: 'Cart Create',
+        evidence: 'Added item',
+      };
     }
-    
+
     await cartService.updateItem(c1, sess1, cart.items[0].id, 2);
     cart = await cartService.getCart(c1, sess1);
     if (cart.items[0].quantity === 2 && cart.subtotal === 40000000) {
-      results['F'] = { status: 'RUNTIME VERIFIED', runtime: 'Cart Update', evidence: 'Server side subtotal: ' + cart.subtotal };
+      results['F'] = {
+        status: 'RUNTIME VERIFIED',
+        runtime: 'Cart Update',
+        evidence: 'Server side subtotal: ' + cart.subtotal,
+      };
     }
 
     const payload = {
@@ -144,7 +231,7 @@ async function run() {
       name: 'Test Buyer',
       phone: '0812345678',
       billing_address: 'Jakarta',
-      delivery_address: 'Jakarta'
+      delivery_address: 'Jakarta',
     };
 
     const concurrent1 = checkoutService.checkout(c1, sess1, payload);
@@ -153,8 +240,12 @@ async function run() {
     concurrent1.catch(() => {});
     concurrent2.catch(() => {});
     concurrent3.catch(() => {});
-    
-    const results1 = await Promise.allSettled([concurrent1, concurrent2, concurrent3]);
+
+    const results1 = await Promise.allSettled([
+      concurrent1,
+      concurrent2,
+      concurrent3,
+    ]);
     let successCount = 0;
     let orderIds = new Set();
     results1.forEach((r: any) => {
@@ -165,16 +256,20 @@ async function run() {
     });
 
     if (successCount >= 1 && orderIds.size === 1) {
-       results['P'] = { status: 'RUNTIME VERIFIED', runtime: 'Duplicate Protection', evidence: '1 order generated for 3 retries' };
+      results['P'] = {
+        status: 'RUNTIME VERIFIED',
+        runtime: 'Duplicate Protection',
+        evidence: '1 order generated for 3 retries',
+      };
     }
 
     const promises = [];
     for (let i = 0; i < 4; i++) {
-       const sid = 'concurrent-sess-' + i;
-       await cartService.addItem(c1, sid, p1, 1);
-       const p = checkoutService.checkout(c1, sid, payload);
-       p.catch(() => {}); // Suppress UnhandledPromiseRejection during loop
-       promises.push(p);
+      const sid = 'concurrent-sess-' + i;
+      await cartService.addItem(c1, sid, p1, 1);
+      const p = checkoutService.checkout(c1, sid, payload);
+      p.catch(() => {}); // Suppress UnhandledPromiseRejection during loop
+      promises.push(p);
     }
 
     const cResults = await Promise.allSettled(promises);
@@ -182,36 +277,64 @@ async function run() {
     let cFail = 0;
     cResults.forEach((r: any) => {
       if (r.status === 'fulfilled' && r.value.success) cSuccess++;
-      if (r.status === 'rejected' || (r.status === 'fulfilled' && r.value.statusCode === 400)) cFail++;
+      if (
+        r.status === 'rejected' ||
+        (r.status === 'fulfilled' && r.value.statusCode === 400)
+      )
+        cFail++;
     });
 
     if (cSuccess === 3 && cFail === 1) {
-       results['N'] = { status: 'RUNTIME VERIFIED', runtime: 'OCC Checkout', evidence: `${cSuccess} success, ${cFail} fail out of 4` };
+      results['N'] = {
+        status: 'RUNTIME VERIFIED',
+        runtime: 'OCC Checkout',
+        evidence: `${cSuccess} success, ${cFail} fail out of 4`,
+      };
     }
-    
-    const finalStock = await prisma.warehouseStock.findFirst({ where: { product_id: p1 } });
+
+    const finalStock = await prisma.warehouseStock.findFirst({
+      where: { product_id: p1 },
+    });
     if (finalStock?.available_stock === 0 && finalStock?.reserved_stock === 5) {
-       results['O'] = { status: 'RUNTIME VERIFIED', runtime: 'Inventory Reserved', evidence: 'available:0 reserved:5' };
+      results['O'] = {
+        status: 'RUNTIME VERIFIED',
+        runtime: 'Inventory Reserved',
+        evidence: 'available:0 reserved:5',
+      };
     }
-    
+
     const inv = await prisma.invoice.findFirst();
-    const extRef = await prisma.externalReference.findFirst({ where: { entity_id: inv?.id } });
+    const extRef = await prisma.externalReference.findFirst({
+      where: { entity_id: inv?.id },
+    });
     const tripayPayload = {
       reference: 'TRIPAY-' + Date.now(),
       merchant_ref: extRef?.external_id,
       status: 'PAID',
-      amount: inv?.total
+      amount: inv?.total,
     };
-    
-    const recon = await (tripayService as any).reconcilePayment(c1, tripayIntegration.id, extRef, tripayPayload, '111111111111111111111111', 'TEST');
+
+    const recon = await (tripayService as any).reconcilePayment(
+      c1,
+      tripayIntegration.id,
+      extRef,
+      tripayPayload,
+      '111111111111111111111111',
+      'TEST',
+    );
     if (recon.success) {
-      const paidInv = await prisma.invoice.findUnique({ where: { id: inv?.id } });
+      const paidInv = await prisma.invoice.findUnique({
+        where: { id: inv?.id },
+      });
       if (paidInv?.status === 'PAID') {
-         results['Q'] = { status: 'RUNTIME VERIFIED', runtime: 'Tripay Reconcile', evidence: 'Invoice marked PAID' };
+        results['Q'] = {
+          status: 'RUNTIME VERIFIED',
+          runtime: 'Tripay Reconcile',
+          evidence: 'Invoice marked PAID',
+        };
       }
     }
-    
-  } catch(e: any) {
+  } catch (e: any) {
     console.error(e);
   } finally {
     console.log(JSON.stringify(results, null, 2));

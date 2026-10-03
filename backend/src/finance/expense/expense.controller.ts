@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Param, Body, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ExpenseService } from './expense.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/permissions.guard';
@@ -30,7 +39,11 @@ export class ExpenseController {
 
   @Post()
   createClaim(@Request() req: any, @Body() data: any) {
-    return this.expenseService.createClaim(req.user.company_id, req.user.id, data);
+    return this.expenseService.createClaim(
+      req.user.company_id,
+      req.user.id,
+      data,
+    );
   }
 
   @Post(':id/submit')
@@ -40,7 +53,11 @@ export class ExpenseController {
 
   @Post(':id/approve')
   approveClaim(@Request() req: any, @Param('id') id: string) {
-    return this.expenseService.approveClaim(req.user.company_id, id, req.user.id);
+    return this.expenseService.approveClaim(
+      req.user.company_id,
+      id,
+      req.user.id,
+    );
   }
 
   @Post(':id/post')

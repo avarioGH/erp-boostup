@@ -1,5 +1,4 @@
-﻿
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -24,8 +23,13 @@ export class IntegrationCredentialService {
 
   decrypt(encryptedText: string): string {
     const [ivHex, authTagHex, encrypted] = encryptedText.split(':');
-    if (!ivHex || !authTagHex || !encrypted) throw new Error('Invalid encrypted format');
-    const decipher = crypto.createDecipheriv(this.algorithm, this.secretKey, Buffer.from(ivHex, 'hex'));
+    if (!ivHex || !authTagHex || !encrypted)
+      throw new Error('Invalid encrypted format');
+    const decipher = crypto.createDecipheriv(
+      this.algorithm,
+      this.secretKey,
+      Buffer.from(ivHex, 'hex'),
+    );
     decipher.setAuthTag(Buffer.from(authTagHex, 'hex'));
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
@@ -37,11 +41,18 @@ export class IntegrationCredentialService {
     await (this.prisma as any).integrationCredential.upsert({
       where: { integration_id_key: { integration_id: integrationId, key } },
       update: { encrypted_value: encrypted },
-      create: { integration_id: integrationId, key, encrypted_value: encrypted },
+      create: {
+        integration_id: integrationId,
+        key,
+        encrypted_value: encrypted,
+      },
     });
   }
 
-  async getCredential(integrationId: string, key: string): Promise<string | null> {
+  async getCredential(
+    integrationId: string,
+    key: string,
+  ): Promise<string | null> {
     const cred = await (this.prisma as any).integrationCredential.findUnique({
       where: { integration_id_key: { integration_id: integrationId, key } },
     });
@@ -49,4 +60,3 @@ export class IntegrationCredentialService {
     return this.decrypt(cred.encrypted_value);
   }
 }
-

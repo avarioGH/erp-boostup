@@ -1,14 +1,13 @@
-
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from './notification.service';
-import { 
-  ApprovalRequestedEvent, 
-  ApprovalApprovedEvent, 
-  ApprovalRejectedEvent 
+import {
+  ApprovalRequestedEvent,
+  ApprovalApprovedEvent,
+  ApprovalRejectedEvent,
 } from '../events/approval.events';
-// Need a finance event to listen to if it exists... 
+// Need a finance event to listen to if it exists...
 // But the core principle is demonstrated here.
 
 @Injectable()
@@ -17,17 +16,17 @@ export class NotificationListener {
 
   constructor(
     private prisma: PrismaService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
   ) {}
 
   @OnEvent('approval.requested', { async: true }) // Isolated from main transaction
   async handleApprovalRequested(event: ApprovalRequestedEvent) {
     try {
       // Resolve Approvers (users with FINANCE or ADMIN role, or explicit approvers)
-      // For this foundation, we just find all users in the company. 
+      // For this foundation, we just find all users in the company.
       // In reality, this joins RolePermissions.
       const approvers = await this.prisma.user.findMany({
-        where: { company_id: event.companyId, status: true }
+        where: { company_id: event.companyId, status: true },
       });
 
       for (const approver of approvers) {
@@ -42,7 +41,8 @@ export class NotificationListener {
           severity: 'WARNING',
           entityType: 'APPROVAL_REQUEST',
           entityId: event.approvalRequestId,
-          idempotencyKey: 'notif-appreq-' + event.approvalRequestId + '-' + approver.id
+          idempotencyKey:
+            'notif-appreq-' + event.approvalRequestId + '-' + approver.id,
         });
       }
     } catch (e) {
@@ -54,7 +54,7 @@ export class NotificationListener {
   async handleApprovalApproved(event: ApprovalApprovedEvent) {
     try {
       const request = await this.prisma.approvalRequest.findUnique({
-        where: { id: event.approvalRequestId }
+        where: { id: event.approvalRequestId },
       });
       // @ts-ignore
       if (!request || !request.requested_by) return;
@@ -70,7 +70,11 @@ export class NotificationListener {
         entityType: 'APPROVAL_REQUEST',
         entityId: event.approvalRequestId,
         // @ts-ignore
-        idempotencyKey: 'notif-appapp-' + event.approvalRequestId + '-' + request.requested_by
+        idempotencyKey:
+          'notif-appapp-' +
+          event.approvalRequestId +
+          '-' +
+          request.requested_by,
       });
     } catch (e) {
       this.logger.error('Failed to process approval.approved notification', e);
@@ -81,7 +85,7 @@ export class NotificationListener {
   async handleApprovalRejected(event: ApprovalRejectedEvent) {
     try {
       const request = await this.prisma.approvalRequest.findUnique({
-        where: { id: event.approvalRequestId }
+        where: { id: event.approvalRequestId },
       });
       // @ts-ignore
       if (!request || !request.requested_by) return;
@@ -97,11 +101,14 @@ export class NotificationListener {
         entityType: 'APPROVAL_REQUEST',
         entityId: event.approvalRequestId,
         // @ts-ignore
-        idempotencyKey: 'notif-apprej-' + event.approvalRequestId + '-' + request.requested_by
+        idempotencyKey:
+          'notif-apprej-' +
+          event.approvalRequestId +
+          '-' +
+          request.requested_by,
       });
     } catch (e) {
       this.logger.error('Failed to process approval.rejected notification', e);
     }
   }
 }
-

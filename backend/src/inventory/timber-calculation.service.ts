@@ -6,7 +6,12 @@ export class TimberCalculationService {
    * Calculates the average diameter of a log.
    * Average Diameter = (D1 + D2 + D3 + D4) / 4
    */
-  calculateAverageDiameter(d1: number, d2: number, d3: number, d4: number): number {
+  calculateAverageDiameter(
+    d1: number,
+    d2: number,
+    d3: number,
+    d4: number,
+  ): number {
     return (d1 + d2 + d3 + d4) / 4;
   }
 
@@ -31,8 +36,14 @@ export class TimberCalculationService {
    * Calculates the hollow (gerowong) volume in m3.
    * Gerowong Volume = ROUND((GerowongDiameter^2 * (Length - TrimmingLength) * 0.7854) / 10000, 2)
    */
-  calculateGerowongVolume(gerowongDiameter: number, length: number, trimmingLength: number = 0): number {
-    const volume = (Math.pow(gerowongDiameter, 2) * (length - trimmingLength) * 0.7854) / 10000;
+  calculateGerowongVolume(
+    gerowongDiameter: number,
+    length: number,
+    trimmingLength: number = 0,
+  ): number {
+    const volume =
+      (Math.pow(gerowongDiameter, 2) * (length - trimmingLength) * 0.7854) /
+      10000;
     return Math.round(volume * 100) / 100;
   }
 
@@ -40,8 +51,12 @@ export class TimberCalculationService {
    * Calculates the trimming volume in m3.
    * Trimming Volume = ROUND((RoundedDiameter^2 * TrimmingLength * 0.7854) / 10000, 2)
    */
-  calculateTrimmingVolume(roundedDiameter: number, trimmingLength: number): number {
-    const volume = (Math.pow(roundedDiameter, 2) * trimmingLength * 0.7854) / 10000;
+  calculateTrimmingVolume(
+    roundedDiameter: number,
+    trimmingLength: number,
+  ): number {
+    const volume =
+      (Math.pow(roundedDiameter, 2) * trimmingLength * 0.7854) / 10000;
     return Math.round(volume * 100) / 100;
   }
 
@@ -49,15 +64,25 @@ export class TimberCalculationService {
    * Calculates the net volume for a Raw Log in m3.
    * Net Volume = GrossVolume - GerowongVolume - TrimmingVolume
    */
-  calculateRawLogNetVolume(grossVolume: number, gerowongVolume: number = 0, trimmingVolume: number = 0): number {
-    return Math.round((grossVolume - gerowongVolume - trimmingVolume) * 1000000) / 1000000; // avoid floating point errors
+  calculateRawLogNetVolume(
+    grossVolume: number,
+    gerowongVolume: number = 0,
+    trimmingVolume: number = 0,
+  ): number {
+    return (
+      Math.round((grossVolume - gerowongVolume - trimmingVolume) * 1000000) /
+      1000000
+    ); // avoid floating point errors
   }
 
   /**
    * Calculates the net volume for an Input Log in m3.
    * Input Log Net Volume = GrossVolume - GerowongVolume
    */
-  calculateInputLogNetVolume(grossVolume: number, gerowongVolume: number = 0): number {
+  calculateInputLogNetVolume(
+    grossVolume: number,
+    gerowongVolume: number = 0,
+  ): number {
     return Math.round((grossVolume - gerowongVolume) * 1000000) / 1000000;
   }
 
@@ -66,7 +91,12 @@ export class TimberCalculationService {
    * Volume = (Thickness * Width * Length * Quantity) / 1,000,000,000
    * Thickness, Width, Length are in mm.
    */
-  calculateTimberStockVolume(thickness: number, width: number, length: number, quantity: number): number {
+  calculateTimberStockVolume(
+    thickness: number,
+    width: number,
+    length: number,
+    quantity: number,
+  ): number {
     const volume = (thickness * width * length * quantity) / 1000000000;
     // We typically want to preserve 4-6 decimals for timber stock as per prompt, but exact JS division is fine
     return volume;

@@ -1,4 +1,17 @@
-import { Controller, Post, Get, Delete, Param, UseGuards, Request, UploadedFile, UseInterceptors, Body, Res, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Param,
+  UseGuards,
+  Request,
+  UploadedFile,
+  UseInterceptors,
+  Body,
+  Res,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
@@ -17,12 +30,12 @@ export class AttachmentController {
     @Request() req: any,
     @Body('entityType') entityType: string,
     @Body('entityId') entityId: string,
-    @UploadedFile() file: any
+    @UploadedFile() file: any,
   ) {
     if (!file) throw new BadRequestException('File is required');
     const companyId = req.user.company_id;
     const userId = req.user.id;
-    
+
     return this.attachmentService.uploadAttachment(
       companyId,
       userId,
@@ -30,7 +43,7 @@ export class AttachmentController {
       entityId,
       file.buffer,
       file.originalname,
-      file.mimetype
+      file.mimetype,
     );
   }
 
@@ -39,9 +52,13 @@ export class AttachmentController {
   async getByEntity(
     @Request() req: any,
     @Param('entityType') entityType: string,
-    @Param('entityId') entityId: string
+    @Param('entityId') entityId: string,
   ) {
-    return this.attachmentService.getAttachments(req.user.company_id, entityType, entityId);
+    return this.attachmentService.getAttachments(
+      req.user.company_id,
+      entityType,
+      entityId,
+    );
   }
 
   @Permissions('attachment.view')
@@ -49,19 +66,29 @@ export class AttachmentController {
   async download(
     @Request() req: any,
     @Param('id') id: string,
-    @Res() res: any
+    @Res() res: any,
   ) {
-    const { buffer, mimeType, fileName } = await this.attachmentService.downloadAttachment(req.user.company_id, req.user.id, id);
-    res.set({ 'Content-Type': mimeType, 'Content-Disposition': 'attachment; filename="' + fileName + '"', 'Content-Length': buffer.length });
+    const { buffer, mimeType, fileName } =
+      await this.attachmentService.downloadAttachment(
+        req.user.company_id,
+        req.user.id,
+        id,
+      );
+    res.set({
+      'Content-Type': mimeType,
+      'Content-Disposition': 'attachment; filename="' + fileName + '"',
+      'Content-Length': buffer.length,
+    });
     res.send(buffer);
   }
 
   @Permissions('attachment.delete')
   @Delete(':id')
-  async delete(
-    @Request() req: any,
-    @Param('id') id: string
-  ) {
-    return this.attachmentService.deleteAttachment(req.user.company_id, req.user.id, id);
+  async delete(@Request() req: any, @Param('id') id: string) {
+    return this.attachmentService.deleteAttachment(
+      req.user.company_id,
+      req.user.id,
+      id,
+    );
   }
 }

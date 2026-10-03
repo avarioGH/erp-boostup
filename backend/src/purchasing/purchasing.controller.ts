@@ -1,6 +1,15 @@
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { PurchasingService } from './purchasing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Assume standard AuthGuard
@@ -8,18 +17,27 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Assume standard AuthGu
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('purchasing')
 export class PurchasingController {
-  constructor(private service: PurchasingService, private prisma: PrismaService) {}
+  constructor(
+    private service: PurchasingService,
+    private prisma: PrismaService,
+  ) {}
 
   @Permissions('purchasing.view')
   @Get('requests')
   getPurchaseRequests(
-    @Request() req: any, 
-    @Query('page') page: string, 
+    @Request() req: any,
+    @Query('page') page: string,
     @Query('limit') limit: string,
     @Query('search') search?: string,
-    @Query('status') status?: string
+    @Query('status') status?: string,
   ) {
-    return this.service.getPurchaseRequests(req.user.companyId, +page || 1, +limit || 50, search, status);
+    return this.service.getPurchaseRequests(
+      req.user.companyId,
+      +page || 1,
+      +limit || 50,
+      search,
+      status,
+    );
   }
 
   @Permissions('purchasing.create')
@@ -55,13 +73,19 @@ export class PurchasingController {
   @Permissions('purchasing.order.view')
   @Get('orders')
   findOrders(
-    @Request() req: any, 
-    @Query('page') page: string, 
+    @Request() req: any,
+    @Query('page') page: string,
     @Query('limit') limit: string,
     @Query('search') search?: string,
-    @Query('status') status?: string
+    @Query('status') status?: string,
   ) {
-    return this.service.findOrders(req.user.companyId, +page || 1, +limit || 10, search, status);
+    return this.service.findOrders(
+      req.user.companyId,
+      +page || 1,
+      +limit || 10,
+      search,
+      status,
+    );
   }
 
   @Permissions('purchasing.order.view')
@@ -72,19 +96,31 @@ export class PurchasingController {
 
   @Permissions('purchasing.order.create')
   @Post('orders/:id/receive')
-  receiveGoods(@Request() req: any, @Param('id') id: string, @Body() data: any) {
+  receiveGoods(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.service.receiveGoods(req.user.companyId, id, data);
   }
 
   @Permissions('purchasing.order.create')
   @Post('orders/:id/bill')
-  createVendorBill(@Request() req: any, @Param('id') id: string, @Body() data: any) {
+  createVendorBill(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.service.createVendorBill(req.user.companyId, id, data);
   }
 
   @Permissions('purchasing.invoice.create')
   @Post('invoices/:id/pay')
-  payVendorBill(@Request() req: any, @Param('id') id: string, @Body() data: any) {
+  payVendorBill(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.service.payVendorBill(req.user.companyId, id, data);
   }
 
@@ -100,7 +136,7 @@ export class PurchasingController {
     const data = await this.prisma.goodsReceipt.findMany({
       where: { company_id: req.user.companyId },
       include: { supplier: true, purchase_order: true },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
     });
     return { data };
   }
@@ -110,7 +146,11 @@ export class PurchasingController {
   getReceipt(@Request() req: any, @Param('id') id: string) {
     return this.prisma.goodsReceipt.findUnique({
       where: { id, company_id: req.user.companyId },
-      include: { items: { include: { product: true } }, supplier: true, purchase_order: true }
+      include: {
+        items: { include: { product: true } },
+        supplier: true,
+        purchase_order: true,
+      },
     });
   }
 }

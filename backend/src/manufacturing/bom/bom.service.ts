@@ -19,11 +19,12 @@ export class BomService {
         unit_id: data.unit_id,
         status: data.status || 'DRAFT',
         items: {
-          create: data.items?.map((item: any) => ({
-            product_id: item.product_id,
-            quantity: item.quantity,
-            unit_id: item.unit_id,
-          })) || [],
+          create:
+            data.items?.map((item: any) => ({
+              product_id: item.product_id,
+              quantity: item.quantity,
+              unit_id: item.unit_id,
+            })) || [],
         },
       },
     });

@@ -18,14 +18,14 @@ import { PaymentModule } from '../finance/payment/payment.module';
     IntegrationIdempotencyService,
     IntegrationWebhookService,
     IntegrationLogService,
-    TripayService
+    TripayService,
   ],
   exports: [
     IntegrationsService,
     IntegrationCredentialService,
     IntegrationIdempotencyService,
     IntegrationWebhookService,
-    TripayService
-  ]
+    TripayService,
+  ],
 })
 export class IntegrationsModule {}

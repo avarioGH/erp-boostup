@@ -16,18 +16,31 @@ export class AnalyticsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.analyticsService.getSalesAnalytics(req.user.company_id || req.user.companyId, startDate, endDate);
+    return this.analyticsService.getSalesAnalytics(
+      req.user.company_id || req.user.companyId,
+      startDate,
+      endDate,
+    );
   }
 
   @Permissions('analytics.view')
   @Get('customers')
   async getCustomerAnalytics(@Request() req: any) {
-    return this.analyticsService.getCustomerAnalytics(req.user.company_id || req.user.companyId);
+    return this.analyticsService.getCustomerAnalytics(
+      req.user.company_id || req.user.companyId,
+    );
   }
 
   // Used by DashboardAPI.getKPIs on frontend root page
   @Get('dashboard')
-  async getDashboardData(@Request() req: any, @Query('timeRange') timeRange: string, @Query('warehouseId') warehouseId: string) {
-    return this.analyticsService.getDashboardKPIs(req.user.company_id || req.user.companyId, warehouseId);
+  async getDashboardData(
+    @Request() req: any,
+    @Query('timeRange') timeRange: string,
+    @Query('warehouseId') warehouseId: string,
+  ) {
+    return this.analyticsService.getDashboardKPIs(
+      req.user.company_id || req.user.companyId,
+      warehouseId,
+    );
   }
 }

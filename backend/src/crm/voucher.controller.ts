@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,7 +18,7 @@ export class VoucherController {
   async getVouchers(@Request() req) {
     return this.prisma.voucher.findMany({
       where: { company_id: req.user.company_id },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
     });
   }
 
@@ -30,7 +37,7 @@ export class VoucherController {
         valid_from: new Date(data.valid_from),
         valid_until: new Date(data.valid_until),
         status: data.status !== undefined ? data.status : true,
-      }
+      },
     });
   }
 }

@@ -12,7 +12,7 @@ export class SequenceService {
     companyId: string,
     type: string,
     prefixString: string,
-    padding: number = 5
+    padding: number = 5,
   ): Promise<string> {
     const year = new Date().getFullYear();
     const fullPrefix = `${prefixString}/${year}/`;
@@ -22,14 +22,14 @@ export class SequenceService {
         where: {
           company_id: companyId,
           type: type,
-          prefix: fullPrefix
-        }
+          prefix: fullPrefix,
+        },
       });
 
       if (sequence) {
         sequence = await (tx as any).documentSequence.update({
           where: { id: sequence.id },
-          data: { last_value: { increment: 1 } }
+          data: { last_value: { increment: 1 } },
         });
       } else {
         sequence = await (tx as any).documentSequence.create({
@@ -37,8 +37,8 @@ export class SequenceService {
             company_id: companyId,
             type: type,
             prefix: fullPrefix,
-            last_value: 1
-          }
+            last_value: 1,
+          },
         });
       }
 
@@ -48,7 +48,9 @@ export class SequenceService {
       // Fallback: DocumentSequence model not available (pending migration).
       // Use timestamp + random suffix to ensure uniqueness.
       const ts = Date.now().toString().slice(-6);
-      const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      const rand = Math.floor(Math.random() * 1000)
+        .toString()
+        .padStart(3, '0');
       return `${fullPrefix}${ts}${rand}`;
     }
   }

@@ -28,7 +28,7 @@ export class AuditService {
         entity_id: data.entity_id,
         before_data: data.before_data ? JSON.stringify(data.before_data) : null,
         after_data: data.after_data ? JSON.stringify(data.after_data) : null,
-      }
+      },
     });
   }
 }

@@ -9,6 +9,6 @@ import { GlController } from './gl.controller';
   imports: [PrismaModule],
   controllers: [GlController],
   providers: [GlService],
-  exports: [GlService]
+  exports: [GlService],
 })
 export class GlModule {}

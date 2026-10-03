@@ -1,6 +1,15 @@
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
-﻿import { Controller, Get, Post, Body, Param, Put, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { HrService } from './hr.service';
 
@@ -37,14 +46,23 @@ export class HrController {
 
   @Permissions('hr.update')
   @Put('employees/:id')
-  async updateEmployee(@Request() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateEmployee(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.hrService.updateEmployee(req.user.company_id, id, data);
   }
 
   @Permissions('hr.create')
   @Post('employees/:id/biometric')
   async registerBiometric(@Request() req: any, @Body() data: any) {
-    return this.hrService.registerBiometric(req.user.company_id, data.employeeId, data.rightThumb, data.leftThumb);
+    return this.hrService.registerBiometric(
+      req.user.company_id,
+      data.employeeId,
+      data.rightThumb,
+      data.leftThumb,
+    );
   }
 
   @Permissions('hr.view')
@@ -86,7 +104,10 @@ export class HrController {
 
   @Permissions('hr.create')
   @Post('attendance/clock')
-  async clockAttendance(@Request() req: any, @Body() data: { employee_code: string, timestamp?: string }) {
+  async clockAttendance(
+    @Request() req: any,
+    @Body() data: { employee_code: string; timestamp?: string },
+  ) {
     return this.hrService.clockAttendance(req.user.company_id, data);
   }
 
@@ -98,8 +119,16 @@ export class HrController {
 
   @Permissions('hr.create')
   @Post('payroll/:employeeId/calculate')
-  async calculatePayroll(@Request() req: any, @Param('employeeId') employeeId: string, @Body() data: { period: string }) {
-    return this.hrService.calculatePayroll(req.user.company_id, employeeId, data.period);
+  async calculatePayroll(
+    @Request() req: any,
+    @Param('employeeId') employeeId: string,
+    @Body() data: { period: string },
+  ) {
+    return this.hrService.calculatePayroll(
+      req.user.company_id,
+      employeeId,
+      data.period,
+    );
   }
 
   @Permissions('hr.create')

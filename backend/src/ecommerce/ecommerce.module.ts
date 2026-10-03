@@ -13,10 +13,12 @@ import { InventoryModule } from '../inventory/inventory.module';
   providers: [
     EcommerceCatalogService,
     EcommerceCartService,
-    EcommerceCheckoutService
+    EcommerceCheckoutService,
   ],
-  exports: [EcommerceCatalogService, EcommerceCartService, EcommerceCheckoutService]
+  exports: [
+    EcommerceCatalogService,
+    EcommerceCartService,
+    EcommerceCheckoutService,
+  ],
 })
 export class EcommerceModule {}
-
-

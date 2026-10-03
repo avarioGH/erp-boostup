@@ -14,17 +14,17 @@ export class ExportService {
     sheet.addRow([]);
 
     // Add Headers
-    const headerRow = sheet.addRow(columns.map(c => c.header));
+    const headerRow = sheet.addRow(columns.map((c) => c.header));
     headerRow.font = { bold: true };
 
     // Add Data
-    data.forEach(row => {
-      const rowData = columns.map(c => row[c.key]);
+    data.forEach((row) => {
+      const rowData = columns.map((c) => row[c.key]);
       sheet.addRow(rowData);
     });
 
     // Auto fit columns (simple)
-    sheet.columns.forEach(column => {
+    sheet.columns.forEach((column) => {
       column.width = 20;
     });
 
@@ -33,11 +33,13 @@ export class ExportService {
   }
 
   toCsv(columns: any[], data: any[]): Buffer {
-    const headers = columns.map(c => `"${c.header}"`).join(',');
-    const rows = data.map(row => {
-      return columns.map(c => `"${String(row[c.key] || '').replace(/"/g, '""')}"`).join(',');
+    const headers = columns.map((c) => `"${c.header}"`).join(',');
+    const rows = data.map((row) => {
+      return columns
+        .map((c) => `"${String(row[c.key] || '').replace(/"/g, '""')}"`)
+        .join(',');
     });
-    
+
     const csvContent = [headers, ...rows].join('\n');
     return Buffer.from(csvContent, 'utf-8');
   }

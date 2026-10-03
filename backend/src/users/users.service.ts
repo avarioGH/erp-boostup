@@ -9,7 +9,7 @@ export class UsersService {
   async createAdmin(data: any, creatorCompanyId: string) {
     // Cari role admin
     let adminRole = await this.prisma.role.findFirst({
-      where: { name: 'Admin', company_id: creatorCompanyId }
+      where: { name: 'Admin', company_id: creatorCompanyId },
     });
 
     if (!adminRole) {
@@ -18,17 +18,14 @@ export class UsersService {
           name: 'Admin',
           company_id: creatorCompanyId,
           description: 'Administrator with elevated privileges',
-        }
+        },
       });
     }
 
     const existingUser = await this.prisma.user.findFirst({
-      where: { 
-        OR: [
-          { username: data.username },
-          { email: data.email }
-        ]
-      }
+      where: {
+        OR: [{ username: data.username }, { email: data.email }],
+      },
     });
 
     if (existingUser) {
@@ -54,10 +51,10 @@ export class UsersService {
       if (data.warehouse_ids && Array.isArray(data.warehouse_ids)) {
         const accessData = data.warehouse_ids.map((wId: string) => ({
           user_id: newUser.id,
-          warehouse_id: wId
+          warehouse_id: wId,
         }));
         await tx.userWarehouseAccess.createMany({
-          data: accessData
+          data: accessData,
         });
       }
 
@@ -71,7 +68,7 @@ export class UsersService {
           role: { select: { name: true } },
           warehouse_accesses: { select: { warehouse_id: true } },
           created_at: true,
-        }
+        },
       });
     });
   }
@@ -88,10 +85,10 @@ export class UsersService {
         role: { select: { name: true } },
         warehouse_accesses: {
           select: {
-            warehouse: { select: { id: true, name: true, code: true } }
-          }
-        }
-      }
+            warehouse: { select: { id: true, name: true, code: true } },
+          },
+        },
+      },
     });
   }
 }

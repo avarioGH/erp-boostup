@@ -1,6 +1,6 @@
 import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
-﻿import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { SchedulingService } from './scheduling.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 

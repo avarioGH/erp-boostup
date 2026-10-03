@@ -11,7 +11,9 @@ export class DriverService {
   }
 
   async findOne(id: string, company_id: string) {
-    const item = await this.prisma.driver.findUnique({ where: { id, company_id } });
+    const item = await this.prisma.driver.findUnique({
+      where: { id, company_id },
+    });
     if (!item) throw new NotFoundException('Driver not found');
     return item;
   }

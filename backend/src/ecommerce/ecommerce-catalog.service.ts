@@ -6,13 +6,19 @@ export class EcommerceCatalogService {
   constructor(private prisma: PrismaService) {}
 
   async getPublishedProducts(companyId: string, query: any) {
-    const { category, search, page = 1, limit = 20, sort = 'ecommerce_sort_order' } = query;
+    const {
+      category,
+      search,
+      page = 1,
+      limit = 20,
+      sort = 'ecommerce_sort_order',
+    } = query;
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = {
       company_id: companyId,
       status: true,
-      is_published: true
+      is_published: true,
     };
 
     if (category) where.category_id = category;
@@ -38,15 +44,15 @@ export class EcommerceCatalogService {
           selling_price: true,
           image: true,
           category: { select: { name: true } },
-          images: { select: { image_url: true, is_primary: true } }
-        }
+          images: { select: { image_url: true, is_primary: true } },
+        },
       }),
-      this.prisma.product.count({ where })
+      this.prisma.product.count({ where }),
     ]);
 
     return {
       data: items,
-      meta: { total, page: Number(page), limit: Number(limit) }
+      meta: { total, page: Number(page), limit: Number(limit) },
     };
   }
 
@@ -56,7 +62,7 @@ export class EcommerceCatalogService {
         company_id: companyId,
         ecommerce_slug: slug,
         status: true,
-        is_published: true
+        is_published: true,
       },
       select: {
         id: true,
@@ -71,29 +77,38 @@ export class EcommerceCatalogService {
         weight: true,
         images: { select: { image_url: true, is_primary: true } },
         category: { select: { id: true, name: true } },
-        brand: { select: { id: true, name: true } }
-      }
+        brand: { select: { id: true, name: true } },
+      },
     });
 
     if (!product) throw new NotFoundException('Product not found');
 
     // Aggregate available stock
     const stocks = await this.prisma.warehouseStock.findMany({
-      where: { product_id: product.id }
+      where: { product_id: product.id },
     });
-    const available_stock = stocks.reduce((acc, s) => acc + s.available_stock, 0);
+    const available_stock = stocks.reduce(
+      (acc, s) => acc + s.available_stock,
+      0,
+    );
 
     return { ...product, available_stock };
   }
 
-  async generateDeterministicSlug(companyId: string, name: string): Promise<string> {
-    const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  async generateDeterministicSlug(
+    companyId: string,
+    name: string,
+  ): Promise<string> {
+    const baseSlug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
     let slug = baseSlug;
     let counter = 1;
 
     while (true) {
       const existing = await this.prisma.product.findFirst({
-        where: { company_id: companyId, ecommerce_slug: slug }
+        where: { company_id: companyId, ecommerce_slug: slug },
       });
       if (!existing) break;
       slug = `${baseSlug}-${counter}`;
@@ -102,5 +117,4 @@ export class EcommerceCatalogService {
 
     return slug;
   }
-
 }

@@ -5,6 +5,6 @@ import { ExportQueueService } from './export-queue.service';
 
 @Module({
   controllers: [ReportingController],
-  providers: [ReportingService, ExportQueueService]
+  providers: [ReportingService, ExportQueueService],
 })
 export class ReportingModule {}

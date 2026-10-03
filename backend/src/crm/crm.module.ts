@@ -11,15 +11,19 @@ import { InventoryModule } from '../inventory/inventory.module';
 import { CustomerService } from './customer.service';
 
 @Module({
-  imports: [DeliveryModule, QuotationModule, Customer360Module, InventoryModule],
+  imports: [
+    DeliveryModule,
+    QuotationModule,
+    Customer360Module,
+    InventoryModule,
+  ],
   controllers: [
-    CustomerController, 
-    OrderController, 
+    CustomerController,
+    OrderController,
     VoucherController,
-    CrmController
+    CrmController,
   ],
   providers: [CrmService, CustomerService],
-  exports: [CrmService, CustomerService]
+  exports: [CrmService, CustomerService],
 })
 export class CrmModule {}
-

@@ -5,7 +5,6 @@ import { SalesOrderController } from './sales-order.controller';
 
 @Module({
   providers: [QuotationService],
-  controllers: [QuotationController, SalesOrderController]
+  controllers: [QuotationController, SalesOrderController],
 })
 export class QuotationModule {}
-

@@ -4,15 +4,15 @@ async function preFlight() {
   console.log('==================================================');
   console.log('PRE-FLIGHT CHECK: ADJUSTMENT FORENSIC AUDIT');
   console.log('==================================================');
-  
+
   const dbUrl = process.env.DATABASE_URL || '';
   if (!dbUrl) {
     console.error('FAIL: DATABASE_URL is not set.');
     process.exit(1);
   }
-  
+
   console.log('DATABASE_URL detected (length: ' + dbUrl.length + ').');
-  
+
   const prisma = new PrismaClient();
   try {
     console.log('Testing Prisma Database Connection...');

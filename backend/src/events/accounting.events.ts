@@ -10,7 +10,7 @@ export class InvoicePostedEvent {
       type: string; // 'SALES_INVOICE' | 'VENDOR_BILL'
       totalAmount: number;
     },
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }
 
@@ -25,7 +25,7 @@ export class PaymentProcessedEvent {
       amount: number;
       accountId: string; // CashAccount ID
     },
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }
 
@@ -39,7 +39,7 @@ export class PayrollPostedEvent {
       netSalary: number;
       period: string;
     },
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }
 
@@ -52,7 +52,7 @@ export class PayrollPaymentEvent {
     public readonly payload: {
       amount: number;
     },
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }
 
@@ -63,11 +63,17 @@ export class InventoryValuationEvent {
     public readonly eventId: string,
     public readonly occurredAt: Date,
     public readonly payload: {
-      type: 'ADJUSTMENT_LOSS' | 'ADJUSTMENT_GAIN' | 'COGS' | 'GOODS_RECEIPT' | 'MANUFACTURING_CONSUMPTION' | 'MANUFACTURING_PRODUCTION';
+      type:
+        | 'ADJUSTMENT_LOSS'
+        | 'ADJUSTMENT_GAIN'
+        | 'COGS'
+        | 'GOODS_RECEIPT'
+        | 'MANUFACTURING_CONSUMPTION'
+        | 'MANUFACTURING_PRODUCTION';
       totalValue: number;
       description?: string;
     },
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }
 
@@ -80,10 +86,9 @@ export class ExpensePostedEvent {
     public readonly payload: {
       totalAmount: number;
     },
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }
-
 
 export class AssetCapitalizedEvent {
   constructor(
@@ -96,7 +101,7 @@ export class AssetCapitalizedEvent {
       assetAccountId: string;
       clearingAccountId: string;
     },
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }
 
@@ -113,7 +118,7 @@ export class AssetDepreciationPostedEvent {
       period: string;
       assetId: string;
     },
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }
 
@@ -134,6 +139,6 @@ export class AssetDisposedEvent {
       gainLossAccountId: string;
       isGain: boolean;
     },
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }

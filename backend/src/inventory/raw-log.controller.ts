@@ -1,4 +1,15 @@
-﻿import { Controller, Get, Post, Put, Delete, Body, Param, Query, Patch, UseGuards } from '@nestjs/common';
+﻿import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { RawLogService } from './raw-log.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
@@ -53,5 +64,4 @@ export class RawLogController {
   async delete(@Param('id') id: string) {
     return this.rawLogService.deleteRawLog(id);
   }
-
 }

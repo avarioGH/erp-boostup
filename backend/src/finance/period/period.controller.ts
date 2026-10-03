@@ -1,6 +1,14 @@
 import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
-﻿import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { PeriodService } from './period.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 

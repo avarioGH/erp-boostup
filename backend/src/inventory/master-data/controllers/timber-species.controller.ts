@@ -1,6 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { TimberSpeciesService } from '../services/timber-species.service';
-import { CreateTimberSpeciesDto, UpdateTimberSpeciesDto } from '../dto/master-data.dto';
+import {
+  CreateTimberSpeciesDto,
+  UpdateTimberSpeciesDto,
+} from '../dto/master-data.dto';
 import { JwtAuthGuard } from '../../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../../auth/permissions.guard';
 import { Permissions } from '../../../auth/permissions.decorator';
@@ -31,13 +43,21 @@ export class TimberSpeciesController {
 
   @Patch(':id')
   @Permissions('inventory.update')
-  update(@Request() req: any, @Param('id') id: string, @Body() data: Partial<UpdateTimberSpeciesDto>) {
+  update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: Partial<UpdateTimberSpeciesDto>,
+  ) {
     return this.service.update(id, data, req.user.company_id);
   }
 
   @Patch(':id/status')
   @Permissions('inventory.update')
-  updateStatus(@Request() req: any, @Param('id') id: string, @Body('isActive') isActive: boolean) {
+  updateStatus(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body('isActive') isActive: boolean,
+  ) {
     return this.service.updateStatus(id, isActive, req.user.company_id);
   }
 }

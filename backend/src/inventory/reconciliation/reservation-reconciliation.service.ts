@@ -31,47 +31,68 @@ export interface ReconciliationRow {
 export class ReservationReconciliationService {
   constructor(private prisma: PrismaService) {}
 
-  async reconcile(filters?: { companyId?: string; locationId?: string | null; timberVariantId?: string; status?: string }) {
+  async reconcile(filters?: {
+    companyId?: string;
+    locationId?: string | null;
+    timberVariantId?: string;
+    status?: string;
+  }) {
     const stockWhere: any = {};
     if (filters?.locationId) stockWhere.locationId = filters.locationId;
-    if (filters?.timberVariantId) stockWhere.timberVariantId = filters.timberVariantId;
+    if (filters?.timberVariantId)
+      stockWhere.timberVariantId = filters.timberVariantId;
 
     const allStock = await this.prisma.timberStock.findMany({
       where: stockWhere,
-      include: { location: true }
+      include: { location: true },
     });
 
     const resWhere: any = {};
     if (filters?.companyId) resWhere.company_id = filters.companyId;
     if (filters?.locationId) resWhere.locationId = filters.locationId;
-    if (filters?.timberVariantId) resWhere.timberVariantId = filters.timberVariantId;
+    if (filters?.timberVariantId)
+      resWhere.timberVariantId = filters.timberVariantId;
 
     const allReservations = await this.prisma.timberStockReservation.findMany({
-      where: resWhere
+      where: resWhere,
     });
 
     const soWhere: any = {
       salesOrder: {
-        status: { in: ['CONFIRMED', 'PARTIALLY_FULFILLED', 'CANCELLED', 'DRAFT'] }
-      }
+        status: {
+          in: ['CONFIRMED', 'PARTIALLY_FULFILLED', 'CANCELLED', 'DRAFT'],
+        },
+      },
     };
-    if (filters?.companyId) soWhere.salesOrder = { ...soWhere.salesOrder, customer: { company_id: filters.companyId } };
+    if (filters?.companyId)
+      soWhere.salesOrder = {
+        ...soWhere.salesOrder,
+        customer: { company_id: filters.companyId },
+      };
     if (filters?.locationId) soWhere.fulfillmentLocationId = filters.locationId;
-    if (filters?.timberVariantId) soWhere.timberVariantId = filters.timberVariantId;
+    if (filters?.timberVariantId)
+      soWhere.timberVariantId = filters.timberVariantId;
 
     const openSoItems = await this.prisma.timberSalesOrderItem.findMany({
       where: soWhere,
       include: {
-        salesOrder: { include: { customer: true } }
-      }
+        salesOrder: { include: { customer: true } },
+      },
     });
 
     const map = new Map<string, any>();
 
-    const getKey = (companyId: string, locationId: string | null, variantId: string) => 
-      companyId + '|' + (locationId || 'NULL') + '|' + variantId;
+    const getKey = (
+      companyId: string,
+      locationId: string | null,
+      variantId: string,
+    ) => companyId + '|' + (locationId || 'NULL') + '|' + variantId;
 
-    const getOrInit = (companyId: string, locationId: string | null, variantId: string) => {
+    const getOrInit = (
+      companyId: string,
+      locationId: string | null,
+      variantId: string,
+    ) => {
       const key = getKey(companyId, locationId, variantId);
       if (!map.has(key)) {
         map.set(key, {
@@ -85,7 +106,7 @@ export class ReservationReconciliationService {
           actualReservedPcs: 0,
           actualReservedM3: 0,
           openOrders: [],
-          stockBatches: []
+          stockBatches: [],
         });
       }
       return map.get(key);
@@ -94,15 +115,27 @@ export class ReservationReconciliationService {
     for (const stock of allStock) {
       const companyId = stock.location.company_id;
       if (filters?.companyId && companyId !== filters.companyId) continue;
-      
-      const entry = getOrInit(companyId, stock.locationId, stock.timberVariantId);
+
+      const entry = getOrInit(
+        companyId,
+        stock.locationId,
+        stock.timberVariantId,
+      );
       entry.physicalPcs += stock.currentPcs;
       entry.physicalM3 += stock.currentVolumeM3;
-      entry.stockBatches.push({ batch: stock.batch, pcs: stock.currentPcs, m3: stock.currentVolumeM3 });
+      entry.stockBatches.push({
+        batch: stock.batch,
+        pcs: stock.currentPcs,
+        m3: stock.currentVolumeM3,
+      });
     }
 
     for (const res of allReservations) {
-      const entry = getOrInit(res.company_id, res.locationId, res.timberVariantId);
+      const entry = getOrInit(
+        res.company_id,
+        res.locationId,
+        res.timberVariantId,
+      );
       entry.actualReservedPcs += res.reservedPcs;
       entry.actualReservedM3 += res.reservedM3;
     }
@@ -116,16 +149,18 @@ export class ReservationReconciliationService {
       const remainingM3 = Math.max(0, item.orderM3 - item.realizedM3);
 
       const entry = getOrInit(companyId, locationId, variantId);
-      
+
       entry.openOrders.push({
         soId: item.salesOrder.id,
         soNumber: item.salesOrder.orderNumber,
         status: item.salesOrder.status,
         remainingPcs,
-        remainingM3
+        remainingM3,
       });
 
-      if (['CONFIRMED', 'PARTIALLY_FULFILLED'].includes(item.salesOrder.status)) {
+      if (
+        ['CONFIRMED', 'PARTIALLY_FULFILLED'].includes(item.salesOrder.status)
+      ) {
         if (remainingPcs > 0 || remainingM3 > 0) {
           entry.expectedReservedPcs += remainingPcs;
           entry.expectedReservedM3 += remainingM3;
@@ -137,7 +172,19 @@ export class ReservationReconciliationService {
     const EPSILON = 0.0001;
 
     for (const entry of map.values()) {
-      const { companyId, locationId, timberVariantId, physicalPcs, physicalM3, expectedReservedPcs, expectedReservedM3, actualReservedPcs, actualReservedM3, openOrders, stockBatches } = entry;
+      const {
+        companyId,
+        locationId,
+        timberVariantId,
+        physicalPcs,
+        physicalM3,
+        expectedReservedPcs,
+        expectedReservedM3,
+        actualReservedPcs,
+        actualReservedM3,
+        openOrders,
+        stockBatches,
+      } = entry;
 
       const availablePcs = physicalPcs - actualReservedPcs;
       const availableM3 = physicalM3 - actualReservedM3;
@@ -157,9 +204,9 @@ export class ReservationReconciliationService {
 
       if (reservationPcsDelta === 0 && Math.abs(reservationM3Delta) < EPSILON) {
         if (expectedReservedPcs === 0 && actualReservedPcs === 0) {
-           // Empty match
+          // Empty match
         } else {
-           flags.push('MATCH');
+          flags.push('MATCH');
         }
       }
 
@@ -173,7 +220,11 @@ export class ReservationReconciliationService {
       }
 
       if (reservationPcsDelta < 0 || reservationM3Delta < -EPSILON) {
-        if (actualReservedPcs === 0 && actualReservedM3 === 0 && expectedReservedPcs > 0) {
+        if (
+          actualReservedPcs === 0 &&
+          actualReservedM3 === 0 &&
+          expectedReservedPcs > 0
+        ) {
           anomalies.push('LEGACY_UNRESERVED');
         } else {
           anomalies.push('UNDER_RESERVED');
@@ -219,7 +270,7 @@ export class ReservationReconciliationService {
         reservationM3Delta,
         statusFlags: flags,
         openOrders,
-        stockBatches
+        stockBatches,
       });
     }
 

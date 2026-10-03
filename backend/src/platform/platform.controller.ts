@@ -1,6 +1,13 @@
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
-import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PlatformService } from './platform.service';
 
@@ -35,9 +42,16 @@ export class PlatformController {
 
   @Permissions('platform.create')
   @Post('ai/ask')
-  async askAi(@Request() req, @Body() data: { prompt: string, contextData?: any }) {
+  async askAi(
+    @Request() req,
+    @Body() data: { prompt: string; contextData?: any },
+  ) {
     // Ideally use tenant_id from company, but here we can pass company_id as tenantId
-    return this.platformService.generateAiInsight(data.prompt, data.contextData || {}, req.user.company_id);
+    return this.platformService.generateAiInsight(
+      data.prompt,
+      data.contextData || {},
+      req.user.company_id,
+    );
   }
 
   @Permissions('platform.view')

@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { PartaiService } from './partai.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/permissions.guard';
@@ -45,4 +55,3 @@ export class PartaiController {
     return this.partaiService.delete(id, req.user.companyId);
   }
 }
-

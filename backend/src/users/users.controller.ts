@@ -1,6 +1,14 @@
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
-import { Controller, Get, Post, Body, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  ForbiddenException,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -20,7 +28,11 @@ export class UsersController {
   @Post('admin')
   async createAdmin(@Request() req, @Body() body: any) {
     // Hanya Owner yang boleh bikin Admin
-    if (req.user.role?.toLowerCase() !== 'owner' && req.user.username?.toLowerCase() !== 'owner' && req.user.username?.toLowerCase() !== 'julian') {
+    if (
+      req.user.role?.toLowerCase() !== 'owner' &&
+      req.user.username?.toLowerCase() !== 'owner' &&
+      req.user.username?.toLowerCase() !== 'julian'
+    ) {
       throw new ForbiddenException('Hanya Owner yang dapat membuat akun Admin');
     }
     return this.usersService.createAdmin(body, req.user.companyId);

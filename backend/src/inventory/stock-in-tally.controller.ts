@@ -1,4 +1,13 @@
-﻿import { Controller, Get, Post, Delete, Body, Param, Req, UseGuards } from '@nestjs/common';
+﻿import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { StockInTallyService } from './stock-in-tally.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
@@ -12,7 +21,11 @@ export class StockInTallyController {
   @Permissions('inventory.create')
   @Post()
   create(@Req() req: any, @Body() data: any) {
-    return this.service.create(req.user.companyId || req.user.company_id, (req.user.userId || req.user.id), data);
+    return this.service.create(
+      req.user.companyId || req.user.company_id,
+      req.user.userId || req.user.id,
+      data,
+    );
   }
 
   @Permissions('inventory.view')
@@ -24,6 +37,10 @@ export class StockInTallyController {
   @Permissions('inventory.delete')
   @Delete(':id')
   remove(@Req() req: any, @Param('id') id: string) {
-    return this.service.remove(req.user.companyId || req.user.company_id, (req.user.userId || req.user.id), id);
+    return this.service.remove(
+      req.user.companyId || req.user.company_id,
+      req.user.userId || req.user.id,
+      id,
+    );
   }
 }

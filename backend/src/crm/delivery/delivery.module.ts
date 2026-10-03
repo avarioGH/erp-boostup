@@ -7,6 +7,6 @@ import { ReportsModule } from '../../reports/reports.module';
 @Module({
   imports: [InventoryModule, ReportsModule],
   providers: [DeliveryService],
-  controllers: [DeliveryController]
+  controllers: [DeliveryController],
 })
 export class DeliveryModule {}

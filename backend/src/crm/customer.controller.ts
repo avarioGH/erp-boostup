@@ -1,4 +1,15 @@
-﻿import { Controller, Get, Post, Body, UseGuards, Request, Query, Param } from '@nestjs/common';
+﻿import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  UseGuards,
+  Request,
+  Query,
+  Param,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
@@ -8,7 +19,10 @@ import { CustomerService } from './customer.service';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('customers')
 export class CustomerController {
-  constructor(private readonly prisma: PrismaService, private readonly customerService: CustomerService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly customerService: CustomerService,
+  ) {}
 
   @Permissions('crm.customer.view')
   @Get()
@@ -16,17 +30,25 @@ export class CustomerController {
     @Request() req,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
-    @Query('search') search?: string
+    @Query('search') search?: string,
   ) {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.max(1, parseInt(limit, 10) || 10);
-    return this.customerService.getCustomersWithReceivables(req.user.company_id || req.user.companyId, search, pageNum, limitNum);
+    return this.customerService.getCustomersWithReceivables(
+      req.user.company_id || req.user.companyId,
+      search,
+      pageNum,
+      limitNum,
+    );
   }
 
   @Permissions('crm.customer.view')
   @Get(':id')
   async getCustomerDetail(@Request() req, @Param('id') id: string) {
-    return this.customerService.getCustomerWithFinancials(req.user.company_id || req.user.companyId, id);
+    return this.customerService.getCustomerWithFinancials(
+      req.user.company_id || req.user.companyId,
+      id,
+    );
   }
 
   @Permissions('crm.customer.create')
@@ -39,9 +61,34 @@ export class CustomerController {
         name: data.name,
         phone: data.phone,
         email: data.email,
-        address: data.address
-      }
+        address: data.address,
+      },
+    });
+  }
+
+  @Permissions('crm.customer.update')
+  @Put(':id')
+  async updateCustomer(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
+    return this.prisma.customer.update({
+      where: { id, company_id: req.user.company_id || req.user.companyId },
+      data: {
+        name: data.name,
+        phone: data.phone,
+        email: data.email,
+        address: data.address,
+      },
+    });
+  }
+
+  @Permissions('crm.customer.delete')
+  @Delete(':id')
+  async deleteCustomer(@Request() req, @Param('id') id: string) {
+    return this.prisma.customer.delete({
+      where: { id, company_id: req.user.company_id || req.user.companyId },
     });
   }
 }
-

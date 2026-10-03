@@ -14,11 +14,16 @@ export class ReservationReconciliationController {
     @Req() req: any,
     @Query('locationId') locationId?: string,
     @Query('timberVariantId') timberVariantId?: string,
-    @Query('status') status?: string
+    @Query('status') status?: string,
   ) {
     const companyId = req.user?.company_id || req.user?.companyId;
     if (!companyId) throw new Error('Company context is missing');
-    const results = await this.service.reconcile({ companyId, locationId, timberVariantId, status });
+    const results = await this.service.reconcile({
+      companyId,
+      locationId,
+      timberVariantId,
+      status,
+    });
     return { data: results, count: results.length };
   }
 
@@ -27,15 +32,15 @@ export class ReservationReconciliationController {
   async getDetail(
     @Req() req: any,
     @Query('locationId') locationId: string,
-    @Query('timberVariantId') timberVariantId: string
+    @Query('timberVariantId') timberVariantId: string,
   ) {
     const companyId = req.user?.company_id || req.user?.companyId;
     if (!companyId) throw new Error('Company context is missing');
     // locationId can be 'NULL' string in our filter logic for legacy orders, but let's handle the query
-    const results = await this.service.reconcile({ 
-      companyId, 
-      locationId: locationId === 'NULL' ? null : locationId, 
-      timberVariantId 
+    const results = await this.service.reconcile({
+      companyId,
+      locationId: locationId === 'NULL' ? null : locationId,
+      timberVariantId,
     });
 
     if (results.length === 0) {
@@ -43,7 +48,7 @@ export class ReservationReconciliationController {
     }
 
     const row = results[0];
-    
+
     // Format exactly as requested in Phase 37
     return {
       data: {
@@ -66,9 +71,9 @@ export class ReservationReconciliationController {
         reservationSummary: {
           actualReservedPcs: row.actualReservedPcs,
           expectedReservedPcs: row.expectedReservedPcs,
-          differencePcs: row.reservationPcsDelta
-        }
-      }
+          differencePcs: row.reservationPcsDelta,
+        },
+      },
     };
   }
 }

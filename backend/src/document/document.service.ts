@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as crypto from 'crypto';
 
@@ -29,9 +33,9 @@ export class DocumentService {
           company_id_document_no: {
             company_id: data.companyId,
             document_no: data.documentNo,
-          }
+          },
         },
-        include: { versions: true }
+        include: { versions: true },
       });
 
       let nextVersion = 1;
@@ -48,7 +52,7 @@ export class DocumentService {
             status: 'ACTIVE',
             uploaded_by: data.userId,
           },
-          include: { versions: true }
+          include: { versions: true },
         });
       } else {
         // Jika sudah ada, naikkan versi
@@ -64,7 +68,7 @@ export class DocumentService {
           file_size: data.fileSize,
           mime_type: data.mimeType,
           uploaded_by: data.userId,
-        }
+        },
       });
 
       // 3. Audit Log
@@ -75,8 +79,8 @@ export class DocumentService {
           action: 'DOCUMENT_UPLOADED',
           entity: 'DocumentMaster',
           entity_id: master.id,
-          after_data: { version: nextVersion, file_url: data.fileUrl } as any
-        }
+          after_data: { version: nextVersion, file_url: data.fileUrl } as any,
+        },
       });
 
       return { master, version };
@@ -86,15 +90,26 @@ export class DocumentService {
   /**
    * Share Link Generator (Secure & Expiring)
    */
-  async generateShareLink(companyId: string, documentMasterId: string, userId: string, validDays: number, password?: string) {
-    const doc = await this.prisma.documentMaster.findUnique({ where: { id: documentMasterId } });
-    if (!doc || doc.company_id !== companyId) throw new NotFoundException('Document not found');
+  async generateShareLink(
+    companyId: string,
+    documentMasterId: string,
+    userId: string,
+    validDays: number,
+    password?: string,
+  ) {
+    const doc = await this.prisma.documentMaster.findUnique({
+      where: { id: documentMasterId },
+    });
+    if (!doc || doc.company_id !== companyId)
+      throw new NotFoundException('Document not found');
     const token = crypto.randomBytes(32).toString('hex');
     const expiredAt = new Date();
     expiredAt.setDate(expiredAt.getDate() + validDays);
 
     // Placeholder untuk Hashing Password jika dikirim
-    const passwordHash = password ? crypto.createHash('sha256').update(password).digest('hex') : null;
+    const passwordHash = password
+      ? crypto.createHash('sha256').update(password).digest('hex')
+      : null;
 
     const link = await this.prisma.documentShareLink.create({
       data: {
@@ -103,7 +118,7 @@ export class DocumentService {
         expired_at: expiredAt,
         password_hash: passwordHash,
         created_by: userId,
-      }
+      },
     });
 
     // Audit Log
@@ -114,7 +129,7 @@ export class DocumentService {
         action: 'SHARE_LINK_GENERATED',
         entity: 'DocumentShareLink',
         entity_id: link.id,
-      }
+      },
     });
 
     // Mengembalikan public URL format

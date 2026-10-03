@@ -10,4 +10,3 @@ import { ReportsModule } from '../../reports/reports.module';
   providers: [ShopeeService],
 })
 export class ShopeeModule {}
-

@@ -11,7 +11,11 @@ export interface StorageUploadResult {
 }
 
 export abstract class StorageProvider {
-  abstract upload(buffer: Buffer, originalName: string, companyId: string): Promise<StorageUploadResult>;
+  abstract upload(
+    buffer: Buffer,
+    originalName: string,
+    companyId: string,
+  ): Promise<StorageUploadResult>;
   abstract download(key: string): Promise<Buffer>;
   abstract delete(key: string): Promise<void>;
   abstract exists(key: string): Promise<boolean>;
@@ -24,7 +28,8 @@ export class LocalStorageProvider extends StorageProvider {
   constructor() {
     super();
     // Default to a persistent volume path in production
-    this.basePath = process.env.STORAGE_BASE_PATH || path.join(process.cwd(), 'uploads');
+    this.basePath =
+      process.env.STORAGE_BASE_PATH || path.join(process.cwd(), 'uploads');
     this.init();
   }
 
@@ -36,25 +41,29 @@ export class LocalStorageProvider extends StorageProvider {
     }
   }
 
-  async upload(buffer: Buffer, originalName: string, companyId: string): Promise<StorageUploadResult> {
+  async upload(
+    buffer: Buffer,
+    originalName: string,
+    companyId: string,
+  ): Promise<StorageUploadResult> {
     const ext = path.extname(originalName);
     const checksum = crypto.createHash('sha256').update(buffer).digest('hex');
     const safeName = crypto.randomBytes(16).toString('hex') + ext;
-    
+
     // Store in company-specific subfolder to prevent traversal/mixing
     const companyPath = path.join(this.basePath, companyId);
     await fs.mkdir(companyPath, { recursive: true });
-    
+
     const key = path.join(companyId, safeName);
     const fullPath = path.join(this.basePath, key);
-    
+
     await fs.writeFile(fullPath, buffer);
-    
+
     return {
       provider: 'LOCAL',
       key: key.replace(/\\\\/g, '/'),
       size: buffer.length,
-      checksum
+      checksum,
     };
   }
 

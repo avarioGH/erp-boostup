@@ -1,5 +1,8 @@
-﻿
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+﻿import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -9,14 +12,16 @@ export class MaintenanceService {
   // 1. Trigger Preventive Maintenance
   async triggerPreventiveMaintenance(companyId: string) {
     const today = new Date();
-    
-    const dueSchedules = await (this.prisma.maintenanceSchedule as any).findMany({
+
+    const dueSchedules = await (
+      this.prisma.maintenanceSchedule as any
+    ).findMany({
       where: {
         company_id: companyId as any,
         status: 'ACTIVE',
         next_schedule: { lte: today },
       },
-      include: { asset: true }
+      include: { asset: true },
     });
 
     const createdWorkOrders: any[] = [];
@@ -31,9 +36,11 @@ export class MaintenanceService {
             title: `Preventive Maintenance - ${schedule.asset.asset_name}`,
             maintenance_type: 'PREVENTIVE',
             priority: 'MEDIUM',
-            created_by: (await this.prisma.user.findFirst({where:{company_id:schedule.company_id}}))!.id,
+            created_by: (await this.prisma.user.findFirst({
+              where: { company_id: schedule.company_id },
+            }))!.id,
             status: 'OPEN',
-          }
+          },
         });
 
         let nextDate = new Date(schedule.next_schedule);
@@ -48,22 +55,22 @@ export class MaintenanceService {
           data: {
             last_schedule: new Date(),
             next_schedule: nextDate,
-          }
+          },
         });
 
         // Add Maintenance Log for the asset history
         await tx.maintenanceLog.create({
-           data: {
-             // @ts-ignore
-             company_id: companyId,
-             asset_id: schedule.asset_id,
-             maintenance_type: 'PREVENTIVE',
-             service_date: new Date(),
-             status: 'SCHEDULED',
-             description: `System auto-generated WO: ${wo.wo_number}`,
-             // Using placeholder since system generated
-             created_by: schedule.asset_id // Hack for foreign key on User if strictly required, wait we need to check User relation.
-           }
+          data: {
+            // @ts-ignore
+            company_id: companyId,
+            asset_id: schedule.asset_id,
+            maintenance_type: 'PREVENTIVE',
+            service_date: new Date(),
+            status: 'SCHEDULED',
+            description: `System auto-generated WO: ${wo.wo_number}`,
+            // Using placeholder since system generated
+            created_by: schedule.asset_id, // Hack for foreign key on User if strictly required, wait we need to check User relation.
+          },
         });
 
         createdWorkOrders.push(wo);
@@ -87,37 +94,43 @@ export class MaintenanceService {
         status: 'OPEN',
         planned_start: data.planned_start ? new Date(data.planned_start) : null,
         planned_end: data.planned_end ? new Date(data.planned_end) : null,
-      }
+      },
     });
   }
 
   // 3. Start Maintenance
   async startMaintenance(companyId: string, id: string, userId: string) {
     const wo = await this.prisma.workOrder.findUnique({ where: { id } });
-    if (!wo || wo.company_id !== companyId) throw new NotFoundException('Work Order not found');
-    if (wo.status !== 'OPEN' && wo.status !== 'ASSIGNED') throw new BadRequestException('Invalid status for starting');
+    if (!wo || wo.company_id !== companyId)
+      throw new NotFoundException('Work Order not found');
+    if (wo.status !== 'OPEN' && wo.status !== 'ASSIGNED')
+      throw new BadRequestException('Invalid status for starting');
 
     return (this.prisma.workOrder as any).update({
       where: { id },
       data: {
         status: 'IN_PROGRESS',
         started_at: new Date(),
-        assigned_to: userId
-      }
+        assigned_to: userId,
+      },
     });
   }
 
   // 4. Complete Maintenance
   async completeMaintenance(companyId: string, id: string, data: any) {
     const wo = await this.prisma.workOrder.findUnique({ where: { id } });
-    if (!wo || wo.company_id !== companyId) throw new NotFoundException('Work Order not found');
-    if (wo.status !== 'IN_PROGRESS') throw new BadRequestException('Cannot complete unless IN_PROGRESS');
+    if (!wo || wo.company_id !== companyId)
+      throw new NotFoundException('Work Order not found');
+    if (wo.status !== 'IN_PROGRESS')
+      throw new BadRequestException('Cannot complete unless IN_PROGRESS');
 
     const completedAt = new Date();
     const startedAt = wo.started_at || completedAt;
-    
+
     // Downtime calculation in minutes
-    const downtimeMinutes = Math.floor((completedAt.getTime() - startedAt.getTime()) / 60000);
+    const downtimeMinutes = Math.floor(
+      (completedAt.getTime() - startedAt.getTime()) / 60000,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       const updatedWo = await tx.workOrder.update({
@@ -129,22 +142,22 @@ export class MaintenanceService {
           // @ts-ignore
           downtime_minutes: downtimeMinutes,
           root_cause: data.root_cause,
-          resolution: data.resolution
-        }
+          resolution: data.resolution,
+        },
       });
 
       // Record to maintenance log
       await tx.maintenanceLog.create({
         data: {
-           // @ts-ignore
-           company_id: companyId,
-           asset_id: wo.asset_id,
-           maintenance_type: wo.maintenance_type,
-           service_date: completedAt,
-           status: 'COMPLETED',
-           description: `WO ${wo.wo_number} Completed. Root cause: ${data.root_cause}.`,
-           created_by: wo.assigned_to || data.userId // Assumes User ID
-        }
+          // @ts-ignore
+          company_id: companyId,
+          asset_id: wo.asset_id,
+          maintenance_type: wo.maintenance_type,
+          service_date: completedAt,
+          status: 'COMPLETED',
+          description: `WO ${wo.wo_number} Completed. Root cause: ${data.root_cause}.`,
+          created_by: wo.assigned_to || data.userId, // Assumes User ID
+        },
       });
 
       return updatedWo;
@@ -159,17 +172,17 @@ export class MaintenanceService {
         status: { in: ['OPEN', 'ASSIGNED', 'IN_PROGRESS'] },
         planned_start: { not: null },
         planned_end: { not: null },
-        asset: { work_center_id: { not: null } }
+        asset: { work_center_id: { not: null } },
       },
-      include: { asset: true }
+      include: { asset: true },
     });
 
-    return activeWo.map(wo => ({
+    return activeWo.map((wo) => ({
       workCenterId: wo.asset.work_center_id,
       start: wo.planned_start,
       end: wo.planned_end,
-      type: "MAINTENANCE",
-      maintenanceId: wo.id
+      type: 'MAINTENANCE',
+      maintenanceId: wo.id,
     }));
   }
 
@@ -178,11 +191,15 @@ export class MaintenanceService {
     // We calculate based on COMPLETED WorkOrders for this asset
     const wos = await (this.prisma.workOrder as any).findMany({
       where: { company_id: companyId, asset_id: assetId, status: 'COMPLETED' },
-      orderBy: { completed_at: 'asc' }
+      orderBy: { completed_at: 'asc' },
     });
 
     if (wos.length < 2) {
-      return { mtbf_hours: 'N/A', mttr_hours: 'N/A', downtime_total_minutes: 0 };
+      return {
+        mtbf_hours: 'N/A',
+        mttr_hours: 'N/A',
+        downtime_total_minutes: 0,
+      };
     }
 
     let totalRepairMins = 0;
@@ -198,22 +215,22 @@ export class MaintenanceService {
       }
       if (previousCompletion && wo.started_at) {
         // operating time between last repair completion and next repair start
-        totalOperatingMins += Math.floor((wo.started_at.getTime() - previousCompletion.getTime()) / 60000);
+        totalOperatingMins += Math.floor(
+          (wo.started_at.getTime() - previousCompletion.getTime()) / 60000,
+        );
       }
       previousCompletion = wo.completed_at;
     }
 
-    const mtbf = failureCount > 1 ? (totalOperatingMins / (failureCount - 1)) / 60 : 'N/A';
-    const mttr = failureCount > 0 ? (totalRepairMins / failureCount) / 60 : 'N/A';
+    const mtbf =
+      failureCount > 1 ? totalOperatingMins / (failureCount - 1) / 60 : 'N/A';
+    const mttr = failureCount > 0 ? totalRepairMins / failureCount / 60 : 'N/A';
 
     return {
       mtbf_hours: mtbf !== 'N/A' ? (mtbf as number).toFixed(2) : 'N/A',
       mttr_hours: mttr !== 'N/A' ? (mttr as number).toFixed(2) : 'N/A',
       downtime_total_minutes: totalRepairMins,
-      failure_count: failureCount
+      failure_count: failureCount,
     };
   }
 }
-
-
-

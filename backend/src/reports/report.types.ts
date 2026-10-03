@@ -26,4 +26,3 @@ export interface ReportResultDto {
   data: any[];
   totals?: Record<string, number>;
 }
-

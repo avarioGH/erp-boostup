@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { CreateTimberSpeciesDto, UpdateTimberSpeciesDto } from '../dto/master-data.dto';
+import {
+  CreateTimberSpeciesDto,
+  UpdateTimberSpeciesDto,
+} from '../dto/master-data.dto';
 
 @Injectable()
 export class TimberSpeciesService {
@@ -11,7 +14,9 @@ export class TimberSpeciesService {
   }
 
   async findOne(id: string, company_id: string) {
-    const item = await this.prisma.timberSpecies.findUnique({ where: { id, company_id } });
+    const item = await this.prisma.timberSpecies.findUnique({
+      where: { id, company_id },
+    });
     if (!item) throw new NotFoundException('TimberSpecies not found');
     return item;
   }

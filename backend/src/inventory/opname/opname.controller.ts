@@ -1,4 +1,13 @@
-import { Controller, Post, Param, Body, UseGuards, Req, Put, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+  Put,
+  Get,
+} from '@nestjs/common';
 import { OpnameService } from './opname.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/permissions.guard';
@@ -19,7 +28,12 @@ export class OpnameController {
   @Put(':id/counts')
   updateCounts(
     @Param('id') id: string,
-    @Body('items') items: { itemId: string; physicalQuantityPcs: number; physicalVolumeM3: number }[]
+    @Body('items')
+    items: {
+      itemId: string;
+      physicalQuantityPcs: number;
+      physicalVolumeM3: number;
+    }[],
   ) {
     return this.opnameService.updateCounts(id, items);
   }

@@ -12,7 +12,7 @@ describe('AdjustmentAuditService - Forensic Classification Logic', () => {
     },
     timberStockMovement: {
       findMany: jest.fn(),
-    }
+    },
   };
 
   beforeEach(async () => {
@@ -32,13 +32,29 @@ describe('AdjustmentAuditService - Forensic Classification Logic', () => {
   });
 
   it('TEST A - Historical ADJUSTMENT_IN + old REVERSAL -> NOT AFFECTED', async () => {
-    mockPrisma.stockAdjustment.findMany.mockResolvedValue([{
-      id: 'adj1', status: 'CANCELLED', locationId: 'loc1',
-      items: [{ timberVariantId: 'tv1', differencePcs: 10, batch: 'B1' }]
-    }]);
+    mockPrisma.stockAdjustment.findMany.mockResolvedValue([
+      {
+        id: 'adj1',
+        status: 'CANCELLED',
+        locationId: 'loc1',
+        items: [{ timberVariantId: 'tv1', differencePcs: 10, batch: 'B1' }],
+      },
+    ]);
     mockPrisma.timberStockMovement.findMany.mockResolvedValue([
-      { referenceId: 'adj1', referenceType: 'ADJUSTMENT_IN', timberVariantId: 'tv1', quantityPcs: 10, batch: 'B1' },
-      { referenceId: 'adj1', referenceType: 'REVERSAL', timberVariantId: 'tv1', quantityPcs: 10, batch: 'B1' },
+      {
+        referenceId: 'adj1',
+        referenceType: 'ADJUSTMENT_IN',
+        timberVariantId: 'tv1',
+        quantityPcs: 10,
+        batch: 'B1',
+      },
+      {
+        referenceId: 'adj1',
+        referenceType: 'REVERSAL',
+        timberVariantId: 'tv1',
+        quantityPcs: 10,
+        batch: 'B1',
+      },
     ]);
 
     const result = await service.runForensicAudit('comp1');
@@ -47,13 +63,29 @@ describe('AdjustmentAuditService - Forensic Classification Logic', () => {
   });
 
   it('TEST B - Historical ADJUSTMENT_OUT + old REVERSAL -> CONFIRMED AFFECTED', async () => {
-    mockPrisma.stockAdjustment.findMany.mockResolvedValue([{
-      id: 'adj2', status: 'CANCELLED', locationId: 'loc1',
-      items: [{ timberVariantId: 'tv1', differencePcs: -20, batch: 'B2' }]
-    }]);
+    mockPrisma.stockAdjustment.findMany.mockResolvedValue([
+      {
+        id: 'adj2',
+        status: 'CANCELLED',
+        locationId: 'loc1',
+        items: [{ timberVariantId: 'tv1', differencePcs: -20, batch: 'B2' }],
+      },
+    ]);
     mockPrisma.timberStockMovement.findMany.mockResolvedValue([
-      { referenceId: 'adj2', referenceType: 'ADJUSTMENT_OUT', timberVariantId: 'tv1', quantityPcs: 20, batch: 'B2' },
-      { referenceId: 'adj2', referenceType: 'REVERSAL', timberVariantId: 'tv1', quantityPcs: 20, batch: 'B2' },
+      {
+        referenceId: 'adj2',
+        referenceType: 'ADJUSTMENT_OUT',
+        timberVariantId: 'tv1',
+        quantityPcs: 20,
+        batch: 'B2',
+      },
+      {
+        referenceId: 'adj2',
+        referenceType: 'REVERSAL',
+        timberVariantId: 'tv1',
+        quantityPcs: 20,
+        batch: 'B2',
+      },
     ]);
 
     const result = await service.runForensicAudit('comp1');
@@ -62,13 +94,29 @@ describe('AdjustmentAuditService - Forensic Classification Logic', () => {
   });
 
   it('TEST C - Correct new ADJUSTMENT_IN cancellation -> NOT AFFECTED', async () => {
-    mockPrisma.stockAdjustment.findMany.mockResolvedValue([{
-      id: 'adj3', status: 'CANCELLED', locationId: 'loc1',
-      items: [{ timberVariantId: 'tv1', differencePcs: 10, batch: 'B3' }]
-    }]);
+    mockPrisma.stockAdjustment.findMany.mockResolvedValue([
+      {
+        id: 'adj3',
+        status: 'CANCELLED',
+        locationId: 'loc1',
+        items: [{ timberVariantId: 'tv1', differencePcs: 10, batch: 'B3' }],
+      },
+    ]);
     mockPrisma.timberStockMovement.findMany.mockResolvedValue([
-      { referenceId: 'adj3', referenceType: 'ADJUSTMENT_IN', timberVariantId: 'tv1', quantityPcs: 10, batch: 'B3' },
-      { referenceId: 'adj3', referenceType: 'ADJUSTMENT_OUT', timberVariantId: 'tv1', quantityPcs: 10, batch: 'B3' },
+      {
+        referenceId: 'adj3',
+        referenceType: 'ADJUSTMENT_IN',
+        timberVariantId: 'tv1',
+        quantityPcs: 10,
+        batch: 'B3',
+      },
+      {
+        referenceId: 'adj3',
+        referenceType: 'ADJUSTMENT_OUT',
+        timberVariantId: 'tv1',
+        quantityPcs: 10,
+        batch: 'B3',
+      },
     ]);
 
     const result = await service.runForensicAudit('comp1');
@@ -76,13 +124,29 @@ describe('AdjustmentAuditService - Forensic Classification Logic', () => {
   });
 
   it('TEST D - Correct new ADJUSTMENT_OUT cancellation -> NOT AFFECTED', async () => {
-    mockPrisma.stockAdjustment.findMany.mockResolvedValue([{
-      id: 'adj4', status: 'CANCELLED', locationId: 'loc1',
-      items: [{ timberVariantId: 'tv1', differencePcs: -10, batch: 'B4' }]
-    }]);
+    mockPrisma.stockAdjustment.findMany.mockResolvedValue([
+      {
+        id: 'adj4',
+        status: 'CANCELLED',
+        locationId: 'loc1',
+        items: [{ timberVariantId: 'tv1', differencePcs: -10, batch: 'B4' }],
+      },
+    ]);
     mockPrisma.timberStockMovement.findMany.mockResolvedValue([
-      { referenceId: 'adj4', referenceType: 'ADJUSTMENT_OUT', timberVariantId: 'tv1', quantityPcs: 10, batch: 'B4' },
-      { referenceId: 'adj4', referenceType: 'ADJUSTMENT_IN', timberVariantId: 'tv1', quantityPcs: 10, batch: 'B4' },
+      {
+        referenceId: 'adj4',
+        referenceType: 'ADJUSTMENT_OUT',
+        timberVariantId: 'tv1',
+        quantityPcs: 10,
+        batch: 'B4',
+      },
+      {
+        referenceId: 'adj4',
+        referenceType: 'ADJUSTMENT_IN',
+        timberVariantId: 'tv1',
+        quantityPcs: 10,
+        batch: 'B4',
+      },
     ]);
 
     const result = await service.runForensicAudit('comp1');
@@ -90,12 +154,22 @@ describe('AdjustmentAuditService - Forensic Classification Logic', () => {
   });
 
   it('TEST E - Missing cancellation linkage -> INSUFFICIENT DATA', async () => {
-    mockPrisma.stockAdjustment.findMany.mockResolvedValue([{
-      id: 'adj5', status: 'CANCELLED', locationId: 'loc1',
-      items: [{ timberVariantId: 'tv1', differencePcs: -10, batch: 'B5' }]
-    }]);
+    mockPrisma.stockAdjustment.findMany.mockResolvedValue([
+      {
+        id: 'adj5',
+        status: 'CANCELLED',
+        locationId: 'loc1',
+        items: [{ timberVariantId: 'tv1', differencePcs: -10, batch: 'B5' }],
+      },
+    ]);
     mockPrisma.timberStockMovement.findMany.mockResolvedValue([
-      { referenceId: 'adj5', referenceType: 'ADJUSTMENT_OUT', timberVariantId: 'tv1', quantityPcs: 10, batch: 'B5' },
+      {
+        referenceId: 'adj5',
+        referenceType: 'ADJUSTMENT_OUT',
+        timberVariantId: 'tv1',
+        quantityPcs: 10,
+        batch: 'B5',
+      },
       // MISSING REVERSAL
     ]);
 

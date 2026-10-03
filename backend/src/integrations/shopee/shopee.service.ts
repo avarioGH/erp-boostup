@@ -5,11 +5,16 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class ShopeeService {
-  constructor(private prisma: PrismaService, private sequenceService: SequenceService) {}
+  constructor(
+    private prisma: PrismaService,
+    private sequenceService: SequenceService,
+  ) {}
 
   async getStatus(companyId: string) {
     const integration = await this.prisma.marketplaceIntegration.findUnique({
-      where: { company_id_platform: { company_id: companyId, platform: 'SHOPEE' } }
+      where: {
+        company_id_platform: { company_id: companyId, platform: 'SHOPEE' },
+      },
     });
     return {
       isConfigured: !!integration?.partner_id,
@@ -19,27 +24,35 @@ export class ShopeeService {
     };
   }
 
-  async saveCredentials(companyId: string, partnerId: string, partnerKey: string) {
+  async saveCredentials(
+    companyId: string,
+    partnerId: string,
+    partnerKey: string,
+  ) {
     await this.prisma.marketplaceIntegration.upsert({
-      where: { company_id_platform: { company_id: companyId, platform: 'SHOPEE' } },
+      where: {
+        company_id_platform: { company_id: companyId, platform: 'SHOPEE' },
+      },
       create: {
         company_id: companyId,
         platform: 'SHOPEE',
         partner_id: partnerId,
         partner_key: partnerKey,
-        status: 'INACTIVE'
+        status: 'INACTIVE',
       },
       update: {
         partner_id: partnerId,
         partner_key: partnerKey,
-      }
+      },
     });
     return { success: true, message: 'Shopee credentials saved' };
   }
 
   async generateAuthUrl(companyId: string) {
     const integration = await this.prisma.marketplaceIntegration.findUnique({
-      where: { company_id_platform: { company_id: companyId, platform: 'SHOPEE' } }
+      where: {
+        company_id_platform: { company_id: companyId, platform: 'SHOPEE' },
+      },
     });
 
     if (!integration || !integration.partner_id || !integration.partner_key) {
@@ -59,21 +72,25 @@ export class ShopeeService {
     // In a real scenario, make API call to /api/v2/auth/token/get
     // Here we mock the success response since there is no real app approved yet.
     await this.prisma.marketplaceIntegration.update({
-      where: { company_id_platform: { company_id: companyId, platform: 'SHOPEE' } },
+      where: {
+        company_id_platform: { company_id: companyId, platform: 'SHOPEE' },
+      },
       data: {
         shop_id: shopId,
         access_token: 'mock_access_token_123',
         refresh_token: 'mock_refresh_token_456',
         status: 'ACTIVE',
-        token_expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
-      }
+        token_expiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      },
     });
     return { success: true };
   }
 
   async syncOrders(companyId: string) {
     const integration = await this.prisma.marketplaceIntegration.findUnique({
-      where: { company_id_platform: { company_id: companyId, platform: 'SHOPEE' } }
+      where: {
+        company_id_platform: { company_id: companyId, platform: 'SHOPEE' },
+      },
     });
 
     if (!integration || integration.status !== 'ACTIVE') {
@@ -82,11 +99,16 @@ export class ShopeeService {
 
     // Mocking an order fetch from Shopee and saving to Finance
     const mockOrderAmount = 150000;
-    const mockOrderNo = await this.sequenceService.generateNumber(this.prisma as any, companyId, 'SHOPEE_ORDER', 'SHP');
+    const mockOrderNo = await this.sequenceService.generateNumber(
+      this.prisma as any,
+      companyId,
+      'SHOPEE_ORDER',
+      'SHP',
+    );
 
     // Get default cash account for Shopee
     let shopeeAccount = await this.prisma.cashAccount.findFirst({
-      where: { company_id: companyId, code: 'SHOPEE-01' }
+      where: { company_id: companyId, code: 'SHOPEE-01' },
     });
 
     if (!shopeeAccount) {
@@ -96,7 +118,7 @@ export class ShopeeService {
           name: 'Saldo Shopee',
           code: 'SHOPEE-INC',
           account_type: 'Digital Wallet',
-        }
+        },
       });
     }
 
@@ -114,7 +136,7 @@ export class ShopeeService {
         description: `Penjualan dari Shopee (${mockOrderNo})`,
         total_amount: mockOrderAmount,
         created_by: '000000000000000000000000', // Need to handle created_by properly in a real cron
-      }
+      },
     });
 
     // CashAccount.current_balance is now synchronized via GL event pipeline.
@@ -124,5 +146,3 @@ export class ShopeeService {
     return { success: true, synced_orders: 1, total_amount: mockOrderAmount };
   }
 }
-
-

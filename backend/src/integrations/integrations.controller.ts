@@ -1,6 +1,15 @@
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
-import { Controller, Get, Post, Body, Param, Patch, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { IntegrationsService } from './integrations.service';
 
@@ -26,28 +35,51 @@ export class IntegrationsController {
   @Permissions('integrations.create')
   @Post()
   async create(@Request() req: any, @Body() data: any) {
-    return this.integrationsService.create(req.user.company_id, req.user.id, data);
+    return this.integrationsService.create(
+      req.user.company_id,
+      req.user.id,
+      data,
+    );
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('integrations.update')
   @Patch(':id')
-  async update(@Request() req: any, @Param('id') id: string, @Body() data: any) {
-    return this.integrationsService.update(req.user.company_id, req.user.id, id, data);
+  async update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
+    return this.integrationsService.update(
+      req.user.company_id,
+      req.user.id,
+      id,
+      data,
+    );
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('integrations.create')
   @Post(':id/activate')
   async activate(@Request() req: any, @Param('id') id: string) {
-    return this.integrationsService.toggleStatus(req.user.company_id, req.user.id, id, true);
+    return this.integrationsService.toggleStatus(
+      req.user.company_id,
+      req.user.id,
+      id,
+      true,
+    );
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @Permissions('integrations.create')
   @Post(':id/deactivate')
   async deactivate(@Request() req: any, @Param('id') id: string) {
-    return this.integrationsService.toggleStatus(req.user.company_id, req.user.id, id, false);
+    return this.integrationsService.toggleStatus(
+      req.user.company_id,
+      req.user.id,
+      id,
+      false,
+    );
   }
 
   // Generic Webhook Receiver

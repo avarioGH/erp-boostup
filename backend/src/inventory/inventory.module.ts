@@ -32,13 +32,17 @@ import { ReservationReconciliationService } from './reconciliation/reservation-r
 import { ReservationReconciliationController } from './reconciliation/reservation-reconciliation.controller';
 import { ReportsModule } from '../reports/reports.module';
 
+import { DisposalController } from './disposal/disposal.controller';
+import { DisposalService } from './disposal/disposal.service';
+
 @Module({
   imports: [ReportsModule],
-  controllers: [StockInTallyController, 
+  controllers: [
+    StockInTallyController,
     BatchAuditController,
     AdjustmentAuditController,
-    InventoryController, 
-    RawLogController, 
+    InventoryController,
+    RawLogController,
     TrimmedLogController,
     InputLogController,
     SawnTimberController,
@@ -47,13 +51,15 @@ import { ReportsModule } from '../reports/reports.module';
     ReportController,
     SawmillProductionController,
     ProductionReportController,
-    ReservationReconciliationController
+    ReservationReconciliationController,
+    DisposalController,
   ],
-  providers: [StockInTallyService, 
+  providers: [
+    StockInTallyService,
     BatchAuditService,
     AdjustmentAuditService,
-    InventoryService, 
-    RawLogService, 
+    InventoryService,
+    RawLogService,
     TrimmedLogService,
     InputLogService,
     SawnTimberService,
@@ -65,13 +71,14 @@ import { ReportsModule } from '../reports/reports.module';
     TimberCalculationService,
     SawmillProductionService,
     ProductionReportService,
-    ReservationReconciliationService
+    ReservationReconciliationService,
+    DisposalService,
   ],
   exports: [
     BatchAuditService,
     AdjustmentAuditService,
-    InventoryService, 
-    RawLogService, 
+    InventoryService,
+    RawLogService,
     TrimmedLogService,
     InputLogService,
     SawnTimberService,
@@ -82,10 +89,8 @@ import { ReportsModule } from '../reports/reports.module';
     ReportService,
     TimberCalculationService,
     SawmillProductionService,
-    ReservationReconciliationService
-  ]
+    ReservationReconciliationService,
+    DisposalService,
+  ],
 })
 export class InventoryModule {}
-
-
-

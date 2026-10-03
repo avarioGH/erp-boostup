@@ -1,6 +1,14 @@
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
-import { Controller, Post, Get, Body, UseGuards, Request, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Request,
+  Param,
+} from '@nestjs/common';
 import { FinanceService, FinanceTransactionDto } from './finance.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,7 +18,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class FinanceController {
   constructor(
     private readonly financeService: FinanceService,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
   ) {}
 
   @Permissions('finance.category.view')
@@ -25,15 +33,18 @@ export class FinanceController {
     const companyId = req.user.company_id;
     // 1. Total Cash from all Cash Accounts
     const cashAccounts = await this.prisma.cashAccount.findMany({
-      where: { company_id: companyId }
+      where: { company_id: companyId },
     });
-    
-    const totalCash = cashAccounts.reduce((sum, acc) => sum + Number(acc.current_balance), 0);
-    
+
+    const totalCash = cashAccounts.reduce(
+      (sum, acc) => sum + Number(acc.current_balance),
+      0,
+    );
+
     // 2. Month-to-Date (MTD) calculations
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    
+
     // Previous Month calculations
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
@@ -42,12 +53,12 @@ export class FinanceController {
       where: {
         company_id: companyId,
         transaction_date: {
-          gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) // 30 days ago for chart
+          gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days ago for chart
         },
         status: {
-          in: ['Approved', 'COMPLETED']
-        }
-      }
+          in: ['Approved', 'COMPLETED'],
+        },
+      },
     });
 
     let totalIncomeMtd = 0;
@@ -56,8 +67,11 @@ export class FinanceController {
     let totalExpensesLastMonth = 0;
 
     // Chart Data Generation (Last 30 days)
-    const chartMap = new Map<string, { date: string, income: number, expenses: number }>();
-    
+    const chartMap = new Map<
+      string,
+      { date: string; income: number; expenses: number }
+    >();
+
     let iterateDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     while (iterateDate <= now) {
       const dateKey = `${iterateDate.getDate().toString().padStart(2, '0')}/${(iterateDate.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -68,10 +82,11 @@ export class FinanceController {
     }
 
     for (const tx of transactions) {
-      const isIncome = tx.transaction_type === 'Cash In' || tx.transaction_type === 'Income';
+      const isIncome =
+        tx.transaction_type === 'Cash In' || tx.transaction_type === 'Income';
       const val = Number(tx.total_amount);
       const txDate = new Date(tx.transaction_date);
-      
+
       // MTD Check
       if (txDate >= startOfMonth) {
         if (isIncome) totalIncomeMtd += val;
@@ -104,7 +119,10 @@ export class FinanceController {
     };
 
     const incomeGrowth = calculateGrowth(totalIncomeMtd, totalIncomeLastMonth);
-    const expensesGrowth = calculateGrowth(totalExpensesMtd, totalExpensesLastMonth);
+    const expensesGrowth = calculateGrowth(
+      totalExpensesMtd,
+      totalExpensesLastMonth,
+    );
     const profitGrowth = calculateGrowth(netProfitMtd, netProfitLastMonth);
     const cashGrowth = calculateGrowth(totalCash, totalCashLastMonth);
 
@@ -124,7 +142,7 @@ export class FinanceController {
       expensesGrowth,
       netProfitMtd,
       profitGrowth,
-      chartData
+      chartData,
     };
   }
 
@@ -137,8 +155,8 @@ export class FinanceController {
       take: 100,
       include: {
         cash_account: true,
-        user_created: { select: { name: true } }
-      }
+        user_created: { select: { name: true } },
+      },
     });
   }
 
@@ -149,7 +167,9 @@ export class FinanceController {
       companyId: req.user.company_id,
       userId: req.user.userId,
       transactionNo: data.transactionNo || `CI-${Date.now()}`,
-      transactionDate: data.transactionDate ? new Date(data.transactionDate) : new Date(),
+      transactionDate: data.transactionDate
+        ? new Date(data.transactionDate)
+        : new Date(),
       amount: Number(data.amount),
       description: data.description,
       cashAccountId: data.cashAccountId,
@@ -167,7 +187,9 @@ export class FinanceController {
       companyId: req.user.company_id,
       userId: req.user.userId,
       transactionNo: data.transactionNo || `CO-${Date.now()}`,
-      transactionDate: data.transactionDate ? new Date(data.transactionDate) : new Date(),
+      transactionDate: data.transactionDate
+        ? new Date(data.transactionDate)
+        : new Date(),
       amount: Number(data.amount),
       description: data.description,
       cashAccountId: data.cashAccountId,
@@ -200,5 +222,4 @@ export class FinanceController {
   async getCashReconciliation(@Request() req: any) {
     return this.financeService.getCashReconciliation(req.user.company_id);
   }
-
 }

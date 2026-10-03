@@ -1,4 +1,14 @@
-﻿import { Controller, Post, Body, Param, Put, Get, UseGuards, Request, Delete } from '@nestjs/common';
+﻿import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  Put,
+  Get,
+  UseGuards,
+  Request,
+  Delete,
+} from '@nestjs/common';
 import { PurchaseService } from './purchase.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/permissions.guard';
@@ -14,7 +24,9 @@ export class PurchaseController {
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string) { return this.purchaseService.deletePurchase(id); }
+  async delete(@Param('id') id: string) {
+    return this.purchaseService.deletePurchase(id);
+  }
   constructor(private readonly purchaseService: PurchaseService) {}
 
   @Post()
@@ -55,7 +67,17 @@ export class PurchaseController {
 
   @Put(':id/log-items/:itemId')
   @Permissions('inventory.create')
-  updateLogItem(@Param('id') id: string, @Param('itemId') itemId: string, @Body() data: any, @Request() req) {
-    return this.purchaseService.updateLogItem(id, itemId, req.user.companyId, data);
+  updateLogItem(
+    @Param('id') id: string,
+    @Param('itemId') itemId: string,
+    @Body() data: any,
+    @Request() req,
+  ) {
+    return this.purchaseService.updateLogItem(
+      id,
+      itemId,
+      req.user.companyId,
+      data,
+    );
   }
 }

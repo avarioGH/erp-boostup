@@ -15,23 +15,28 @@ export class BatchAuditController {
     } catch (e) {
       return {
         auditStatus: 'DATA_UNAVAILABLE',
-        error: e.message
+        error: e.message,
       };
     }
   }
 
-    @Get('detail')
+  @Get('detail')
   async getDetail(
     @Request() req: any,
     @Query('page') page: string,
     @Query('limit') limit: string,
-    @Query('canonicalBatch') canonicalBatch?: string
+    @Query('canonicalBatch') canonicalBatch?: string,
   ) {
     const companyId = req.user.company_id || req.user.companyId;
     const p = page ? parseInt(page, 10) : 1;
     const l = limit ? parseInt(limit, 10) : 50;
     if (canonicalBatch) {
-      return this.batchAuditService.getDrillDown(companyId, canonicalBatch, p, l);
+      return this.batchAuditService.getDrillDown(
+        companyId,
+        canonicalBatch,
+        p,
+        l,
+      );
     }
     return this.batchAuditService.getDetail(companyId, p, l);
   }

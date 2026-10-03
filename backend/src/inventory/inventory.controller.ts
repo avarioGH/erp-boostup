@@ -1,6 +1,18 @@
 ﻿import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
-import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards, Request, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Put,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+  UseInterceptors,
+  UploadedFiles,
+} from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -27,7 +39,11 @@ export class InventoryController {
 
   @Permissions('inventory.category.update')
   @Put('categories/:id')
-  async updateCategory(@Request() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateCategory(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.inventoryService.updateCategory(req.user.company_id, id, data);
   }
 
@@ -45,33 +61,49 @@ export class InventoryController {
 
   @Permissions('inventory.product.create')
   @Post('products')
-  @UseInterceptors(FilesInterceptor('images', 8, {
-    storage: diskStorage({
-      destination: (req, file, cb) => { const fs = require('fs'); const dir = './uploads/products'; if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); cb(null, dir); },
-      filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = extname(file.originalname);
-        cb(null, `${uniqueSuffix}${ext}`);
-      }
-    })
-  }))
+  @UseInterceptors(
+    FilesInterceptor('images', 8, {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const fs = require('fs');
+          const dir = './uploads/products';
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          cb(null, dir);
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, `${uniqueSuffix}${ext}`);
+        },
+      }),
+    }),
+  )
   async createProduct(
-    @Request() req, 
+    @Request() req,
     @Body() data: any,
-    @UploadedFiles() files: Express.Multer.File[]
+    @UploadedFiles() files: Express.Multer.File[],
   ) {
     try {
       // Add files array and company_id to data
       data.companyId = req.user.company_id || req.user.companyId;
       if (files && files.length > 0) {
-        data.images = files.map(file => `/uploads/products/${file.filename}`);
+        data.images = files.map((file) => `/uploads/products/${file.filename}`);
       }
       return await this.inventoryService.createProduct(data);
     } catch (error: any) {
       console.error('Error creating product:', error);
       const { HttpException, HttpStatus } = require('@nestjs/common');
-      if (error.code === 'P2002') { throw new HttpException('SKU atau Barcode sudah terpakai oleh produk lain', HttpStatus.BAD_REQUEST); }
-        throw new HttpException(error.message || 'Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+      if (error.code === 'P2002') {
+        throw new HttpException(
+          'SKU atau Barcode sudah terpakai oleh produk lain',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      throw new HttpException(
+        error.message || 'Internal Server Error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -90,7 +122,11 @@ export class InventoryController {
 
   @Permissions('inventory.warehouse.update')
   @Put('warehouses/:id')
-  async updateWarehouse(@Request() req: any, @Param('id') id: string, @Body() data: any) {
+  async updateWarehouse(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
     return this.inventoryService.updateWarehouse(req.user.company_id, id, data);
   }
 
@@ -164,25 +200,50 @@ export class InventoryController {
   @Permissions('inventory.create')
   @Post('transfer/:id/validate')
   async validateTransfer(@Request() req: any, @Param('id') id: string) {
-    return this.inventoryService.validateTransfer(req.user.company_id, id, req.user.id);
+    return this.inventoryService.validateTransfer(
+      req.user.company_id,
+      id,
+      req.user.id,
+    );
   }
 
   @Permissions('inventory.create')
   @Post('adjustment/:id/validate')
   async validateAdjustment(@Request() req: any, @Param('id') id: string) {
-    return this.inventoryService.validateAdjustment(req.user.company_id, id, req.user.id);
+    return this.inventoryService.validateAdjustment(
+      req.user.company_id,
+      id,
+      req.user.id,
+    );
   }
 
   @Permissions('inventory.create')
   @Post('stock-opname')
-  async createStockOpname(@Request() req: any, @Body() data: { warehouseId: string, productIds?: string[] }) {
-    return this.inventoryService.createStockOpname(req.user.company_id, data.warehouseId, req.user.id, data.productIds);
+  async createStockOpname(
+    @Request() req: any,
+    @Body() data: { warehouseId: string; productIds?: string[] },
+  ) {
+    return this.inventoryService.createStockOpname(
+      req.user.company_id,
+      data.warehouseId,
+      req.user.id,
+      data.productIds,
+    );
   }
 
   @Permissions('inventory.create')
   @Post('stock-opname/:id/approve')
-  async approveStockOpname(@Request() req: any, @Param('id') id: string, @Body() data: { counts: { productId: string, countedQty: number }[] }) {
-    return this.inventoryService.approveStockOpname(req.user.company_id, id, req.user.id, data.counts);
+  async approveStockOpname(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: { counts: { productId: string; countedQty: number }[] },
+  ) {
+    return this.inventoryService.approveStockOpname(
+      req.user.company_id,
+      id,
+      req.user.id,
+      data.counts,
+    );
   }
 
   @Permissions('inventory.view')
@@ -191,11 +252,7 @@ export class InventoryController {
     return this.inventoryService['prisma'].stockMovement.findMany({
       where: { company_id: req.user.company_id },
       include: { product: true, warehouse: true },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
     });
   }
 }
-
-
-
-

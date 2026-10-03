@@ -1,6 +1,13 @@
 import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
-import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { ShopeeService } from './shopee.service';
 
@@ -17,8 +24,15 @@ export class ShopeeController {
 
   @Permissions('shopee.create')
   @Post('save-credentials')
-  async saveCredentials(@Request() req, @Body() body: { partnerId: string, partnerKey: string }) {
-    return this.shopeeService.saveCredentials(req.user.company_id, body.partnerId, body.partnerKey);
+  async saveCredentials(
+    @Request() req,
+    @Body() body: { partnerId: string; partnerKey: string },
+  ) {
+    return this.shopeeService.saveCredentials(
+      req.user.company_id,
+      body.partnerId,
+      body.partnerKey,
+    );
   }
 
   @Permissions('shopee.create')
@@ -31,8 +45,15 @@ export class ShopeeController {
   // Usually this doesn't use JwtAuthGuard, but we'll mock it for now
   @Permissions('shopee.create')
   @Post('callback')
-  async handleCallback(@Request() req, @Body() body: { code: string, shop_id: string }) {
-    return this.shopeeService.exchangeToken(req.user.company_id, body.code, body.shop_id);
+  async handleCallback(
+    @Request() req,
+    @Body() body: { code: string; shop_id: string },
+  ) {
+    return this.shopeeService.exchangeToken(
+      req.user.company_id,
+      body.code,
+      body.shop_id,
+    );
   }
 
   @Permissions('shopee.order.create')

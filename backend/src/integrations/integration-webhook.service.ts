@@ -7,7 +7,14 @@ export class IntegrationWebhookService {
 
   constructor(private prisma: PrismaService) {}
 
-  async recordIncoming(companyId: string, integrationId: string, provider: string, reference: string, status: string, payload: any) {
+  async recordIncoming(
+    companyId: string,
+    integrationId: string,
+    provider: string,
+    reference: string,
+    status: string,
+    payload: any,
+  ) {
     return this.prisma.integrationWebhookEvent.create({
       data: {
         company_id: companyId,
@@ -15,26 +22,26 @@ export class IntegrationWebhookService {
         provider,
         reference,
         status: 'RECEIVED',
-        payload
-      }
+        payload,
+      },
     });
   }
 
   async markProcessed(id: string) {
     await this.prisma.integrationWebhookEvent.updateMany({
       where: { id },
-      data: { status: 'PROCESSED' }
+      data: { status: 'PROCESSED' },
     });
   }
 
   async markFailed(id: string, error: string, retryCount: number) {
     await this.prisma.integrationWebhookEvent.update({
       where: { id },
-      data: { 
+      data: {
         status: 'FAILED',
         error_message: error,
-        retry_count: retryCount
-      }
+        retry_count: retryCount,
+      },
     });
   }
 }

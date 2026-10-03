@@ -35,7 +35,7 @@ export class AssetService {
           purchase_price: data.purchasePrice,
           condition: data.condition,
           status: 'ACTIVE',
-        }
+        },
       });
 
       // Record History
@@ -45,7 +45,7 @@ export class AssetService {
           action: 'REGISTERED',
           after_data: asset as any,
           performed_by: data.userId,
-        }
+        },
       });
 
       return asset;
@@ -54,8 +54,10 @@ export class AssetService {
 
   async requestBorrow(data: BorrowAssetDto, requestedBy: string) {
     return this.prisma.$transaction(async (tx) => {
-      const asset = await tx.assetMaster.findUnique({ where: { id: data.assetId } });
-      
+      const asset = await tx.assetMaster.findUnique({
+        where: { id: data.assetId },
+      });
+
       if (!asset || asset.status !== 'ACTIVE') {
         throw new BadRequestException('Asset is not available for borrowing.');
       }
@@ -69,7 +71,7 @@ export class AssetService {
           return_date: data.returnDate,
           status: 'PENDING',
           notes: data.notes,
-        }
+        },
       });
 
       // Record History
@@ -79,7 +81,7 @@ export class AssetService {
           action: 'BORROW_REQUESTED',
           after_data: borrowing as any,
           performed_by: requestedBy,
-        }
+        },
       });
 
       return borrowing;
@@ -88,7 +90,9 @@ export class AssetService {
 
   async approveBorrow(borrowingId: string, approverId: string) {
     return this.prisma.$transaction(async (tx) => {
-      const borrowing = await tx.assetBorrowing.findUnique({ where: { id: borrowingId } });
+      const borrowing = await tx.assetBorrowing.findUnique({
+        where: { id: borrowingId },
+      });
       if (!borrowing || borrowing.status !== 'PENDING') {
         throw new BadRequestException('Invalid borrowing request.');
       }
@@ -99,13 +103,13 @@ export class AssetService {
         data: {
           status: 'BORROWED',
           approved_by: approverId,
-        }
+        },
       });
 
       // Update Asset Status
       const asset = await tx.assetMaster.update({
         where: { id: borrowing.asset_id },
-        data: { status: 'BORROWED' }
+        data: { status: 'BORROWED' },
       });
 
       // Record History
@@ -114,7 +118,7 @@ export class AssetService {
           asset_id: asset.id,
           action: 'BORROW_APPROVED',
           performed_by: approverId,
-        }
+        },
       });
 
       return updatedBorrow;

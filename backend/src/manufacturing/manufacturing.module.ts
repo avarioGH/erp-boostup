@@ -11,7 +11,12 @@ import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [QualityController, MoController, SchedulingController, BomController],
+  controllers: [
+    QualityController,
+    MoController,
+    SchedulingController,
+    BomController,
+  ],
   providers: [QualityService, MoService, SchedulingService, BomService],
 })
 export class ManufacturingModule {}

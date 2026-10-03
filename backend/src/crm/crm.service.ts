@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -12,14 +16,14 @@ export class CrmService {
     return this.prisma.lead.findMany({
       where: { company_id: companyId },
       orderBy: { created_at: 'desc' },
-      include: { opportunities: true, activities: true }
+      include: { opportunities: true, activities: true },
     });
   }
 
   async getLead(companyId: string, id: string) {
     const lead = await this.prisma.lead.findFirst({
       where: { id, company_id: companyId },
-      include: { opportunities: true, activities: true }
+      include: { opportunities: true, activities: true },
     });
     if (!lead) throw new NotFoundException('Lead not found');
     return lead;
@@ -27,7 +31,9 @@ export class CrmService {
 
   async createLead(companyId: string, data: any) {
     if (data.idempotency_key) {
-      const existing = await this.prisma.lead.findFirst({ where: { company_id: companyId } });
+      const existing = await this.prisma.lead.findFirst({
+        where: { company_id: companyId },
+      });
       if (existing) return existing;
     }
     return this.prisma.lead.create({
@@ -44,24 +50,26 @@ export class CrmService {
         expected_value: data.expected_value ? Number(data.expected_value) : 0,
         notes: data.notes,
         // idempotency_key: data.idempotency_key
-      }
+      },
     });
   }
 
   async updateLead(companyId: string, id: string, data: any) {
     return this.prisma.lead.update({
       where: { id, company_id: companyId },
-      data
+      data,
     });
   }
 
   async convertLead(companyId: string, id: string) {
-    const lead = await this.prisma.lead.findFirst({ where: { id, company_id: companyId } });
+    const lead = await this.prisma.lead.findFirst({
+      where: { id, company_id: companyId },
+    });
     if (!lead) throw new NotFoundException('Lead not found');
 
     const updateRes = await this.prisma.lead.updateMany({
       where: { id, company_id: companyId, status: { not: 'CONVERTED' } },
-      data: { status: 'CONVERTED' }
+      data: { status: 'CONVERTED' },
     });
 
     if (updateRes.count === 0) {
@@ -78,9 +86,9 @@ export class CrmService {
             company_id: companyId,
             OR: [
               { email: lead.email || 'non-existent' },
-              { phone: lead.phone || 'non-existent' }
-            ]
-          }
+              { phone: lead.phone || 'non-existent' },
+            ],
+          },
         });
       }
 
@@ -95,7 +103,7 @@ export class CrmService {
             email: lead.email,
             phone: lead.phone,
             address: '',
-          }
+          },
         });
         customerId = newCust.id;
       }
@@ -107,14 +115,18 @@ export class CrmService {
           customer_id: customerId,
           lead_id: lead.id,
           expected_value: lead.expected_value,
-          probability: 20, 
+          probability: 20,
           stage: 'QUALIFICATION',
           assigned_user: lead.assigned_user,
           // source: lead.source
-        }
+        },
       });
 
-      return { lead: await tx.lead.findFirst({ where: { id } }), opportunity: opp, existingCustomerFound: !!existingCustomer };
+      return {
+        lead: await tx.lead.findFirst({ where: { id } }),
+        opportunity: opp,
+        existingCustomerFound: !!existingCustomer,
+      };
     });
   }
 
@@ -125,20 +137,22 @@ export class CrmService {
     return this.prisma.opportunity.findMany({
       where: { company_id: companyId },
       include: { customer: true, lead: true },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
     });
   }
 
   async getOpportunity(companyId: string, id: string) {
     return this.prisma.opportunity.findFirst({
       where: { id, company_id: companyId },
-      include: { customer: true, activities: true, lead: true }
+      include: { customer: true, activities: true, lead: true },
     });
   }
 
   async createOpportunity(companyId: string, data: any) {
     if (data.idempotency_key) {
-      const existing = await this.prisma.opportunity.findFirst({ where: { company_id: companyId } });
+      const existing = await this.prisma.opportunity.findFirst({
+        where: { company_id: companyId },
+      });
       if (existing) return existing;
     }
     return this.prisma.opportunity.create({
@@ -149,30 +163,43 @@ export class CrmService {
         lead_id: data.lead_id,
         expected_value: Number(data.expected_value || 0),
         probability: Number(data.probability || 0),
-        expected_close_date: data.expected_close_date ? new Date(data.expected_close_date) : null,
+        expected_close_date: data.expected_close_date
+          ? new Date(data.expected_close_date)
+          : null,
         assigned_user: data.assigned_user,
         stage: data.stage || 'NEW',
         notes: data.notes,
         // source: data.source || 'MANUAL',
         // idempotency_key: data.idempotency_key
-      }
+      },
     });
   }
 
   async updateOpportunity(companyId: string, id: string, data: any) {
     const res = await this.prisma.opportunity.update({
       where: { id, company_id: companyId },
-      data
+      data,
     });
     return { success: true, opportunity: res };
   }
 
-  async createQuotationFromOpportunity(companyId: string, opportunityId: string) {
+  async createQuotationFromOpportunity(
+    companyId: string,
+    opportunityId: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
-      const opp = await tx.opportunity.findFirst({ where: { id: opportunityId, company_id: companyId } });
+      const opp = await tx.opportunity.findFirst({
+        where: { id: opportunityId, company_id: companyId },
+      });
       if (!opp) throw new NotFoundException('Opportunity not found');
-      if (!opp.customer_id) throw new BadRequestException('Opportunity must be linked to a customer first');
-      if (false) throw new BadRequestException('Opportunity already has an active quotation');
+      if (!opp.customer_id)
+        throw new BadRequestException(
+          'Opportunity must be linked to a customer first',
+        );
+      if (false)
+        throw new BadRequestException(
+          'Opportunity already has an active quotation',
+        );
 
       const quotation = await tx.quotation.create({
         data: {
@@ -182,17 +209,19 @@ export class CrmService {
           quotation_number: `QUO-${Date.now()}`,
           quotation_date: new Date(),
           status: 'DRAFT',
-          total_amount: opp.expected_value || 0
-        }
+          total_amount: opp.expected_value || 0,
+        },
       });
 
       const updateRes = await tx.opportunity.updateMany({
-        where: { id: opp.id, title: { not: "" } },
-        data: {  }
+        where: { id: opp.id, title: { not: '' } },
+        data: {},
       });
 
       if (updateRes.count === 0) {
-        throw new BadRequestException('Opportunity was concurrently modified and already has a quotation');
+        throw new BadRequestException(
+          'Opportunity was concurrently modified and already has a quotation',
+        );
       }
 
       return quotation;
@@ -206,13 +235,15 @@ export class CrmService {
     return this.prisma.crmActivity.findMany({
       where: { company_id: companyId },
       orderBy: { created_at: 'desc' },
-      include: { lead: true, opportunity: true, customer: true }
+      include: { lead: true, opportunity: true, customer: true },
     });
   }
 
   async createActivity(companyId: string, data: any) {
     if (data.idempotency_key) {
-      const existing = await this.prisma.crmActivity.findFirst({ where: { company_id: companyId } });
+      const existing = await this.prisma.crmActivity.findFirst({
+        where: { company_id: companyId },
+      });
       if (existing) return existing;
     }
     return this.prisma.crmActivity.create({
@@ -228,14 +259,14 @@ export class CrmService {
         // opportunity_id: data.opportunity_id,
         customer_id: data.customer_id,
         // idempotency_key: data.idempotency_key
-      }
+      },
     });
   }
 
   async updateActivity(companyId: string, id: string, data: any) {
     return this.prisma.crmActivity.update({
       where: { id, company_id: companyId },
-      data
+      data,
     });
   }
 
@@ -244,74 +275,85 @@ export class CrmService {
   // ============================
   async getCustomer360(companyId: string, customerId: string) {
     const customer = await this.prisma.customer.findFirst({
-      where: { id: customerId, company_id: companyId }
+      where: { id: customerId, company_id: companyId },
     });
 
     if (!customer) throw new NotFoundException('Customer not found');
 
-    const salesOrders = await this.prisma.salesOrder.findMany({ include: { allocations: true },
+    const salesOrders = await this.prisma.salesOrder.findMany({
+      include: { allocations: true },
       where: { customer_id: customerId, company_id: companyId },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
     });
 
     const quotations = await this.prisma.quotation.findMany({
       where: { customer_id: customerId, company_id: companyId },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
     });
 
     const invoices = await this.prisma.invoice.findMany({
       where: { customer_id: customerId, company_id: companyId },
       include: { sales_order: true },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
     });
 
     const opportunities = await this.prisma.opportunity.findMany({
       where: { customer_id: customerId, company_id: companyId },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
     });
 
     const activities = await this.prisma.crmActivity.findMany({
       where: { customer_id: customerId, company_id: companyId },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
     });
 
     const leads = await this.prisma.lead.findMany({
-      where: { opportunities: { some: { customer_id: customerId } }, company_id: companyId },
-      orderBy: { created_at: 'desc' }
+      where: {
+        opportunities: { some: { customer_id: customerId } },
+        company_id: companyId,
+      },
+      orderBy: { created_at: 'desc' },
     });
 
     const deliveries = await this.prisma.deliveryOrder.findMany({
-      where: { sales_order: { customer_id: customerId }, company_id: companyId },
-      orderBy: { created_at: 'desc' }
+      where: {
+        sales_order: { customer_id: customerId },
+        company_id: companyId,
+      },
+      orderBy: { created_at: 'desc' },
     });
 
     const payments = await this.prisma.payment.findMany({
       where: { invoice: { customer_id: customerId }, company_id: companyId },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
     });
 
     let totalSales = 0;
-      let outstandingInvoices = 0;
+    let outstandingInvoices = 0;
 
-      // Old invoice logic
-      invoices.forEach(inv => {
-        if (inv.status !== 'PAID') {
-          outstandingInvoices += inv.remaining_amount || 0;
-        }
-        if (inv.status === 'POSTED' && inv.type === 'AR' && (!inv.sales_order || !inv.sales_order.pos_shift_id)) {
-          totalSales += inv.total;
-        }
-      });
+    // Old invoice logic
+    invoices.forEach((inv) => {
+      if (inv.status !== 'PAID') {
+        outstandingInvoices += inv.remaining_amount || 0;
+      }
+      if (
+        inv.status === 'POSTED' &&
+        inv.type === 'AR' &&
+        (!inv.sales_order || !inv.sales_order.pos_shift_id)
+      ) {
+        totalSales += inv.total;
+      }
+    });
 
-      // New SalesOrder Piutang logic
-      salesOrders.forEach(so => {
-         if (so.status !== "CANCELLED") {
-             totalSales += so.total_amount;
-             const paid = so.allocations?.reduce((acc, a) => acc + a.amount, 0) || 0;
-             const outst = so.total_amount - paid;
-             if (outst > 0) outstandingInvoices += outst;
-         }
-      });
+    // New SalesOrder Piutang logic
+    salesOrders.forEach((so) => {
+      if (so.status !== 'CANCELLED') {
+        totalSales += so.total_amount;
+        const paid = so.allocations?.reduce((acc, a) => acc + a.amount, 0) || 0;
+        const outst = so.total_amount - paid;
+        if (outst > 0) outstandingInvoices += outst;
+      }
+    });
 
     return {
       profile: customer,
@@ -320,24 +362,36 @@ export class CrmService {
         orderCount: salesOrders.length,
         orders: salesOrders,
         quotations,
-        deliveries
+        deliveries,
       },
       finance: {
         outstandingAmount: outstandingInvoices,
         invoiceCount: invoices.length,
         invoices,
-        payments
+        payments,
       },
       crm: {
         leads,
         opportunities,
-        activities
+        activities,
       },
       timeline: [
-        ...salesOrders.map(so => ({ type: 'ORDER', date: so.created_at, ref: so.id })),
-        ...invoices.map(inv => ({ type: 'INVOICE', date: inv.created_at, ref: inv.id })),
-        ...opportunities.map(opp => ({ type: 'OPPORTUNITY', date: opp.created_at, ref: opp.id }))
-      ].sort((a, b) => b.date.getTime() - a.date.getTime())
+        ...salesOrders.map((so) => ({
+          type: 'ORDER',
+          date: so.created_at,
+          ref: so.id,
+        })),
+        ...invoices.map((inv) => ({
+          type: 'INVOICE',
+          date: inv.created_at,
+          ref: inv.id,
+        })),
+        ...opportunities.map((opp) => ({
+          type: 'OPPORTUNITY',
+          date: opp.created_at,
+          ref: opp.id,
+        })),
+      ].sort((a, b) => b.date.getTime() - a.date.getTime()),
     };
   }
 }

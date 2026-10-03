@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Query, Patch, UseGuards, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  Patch,
+  UseGuards,
+  Delete,
+} from '@nestjs/common';
 import { TrimmedLogService } from './trimmed-log.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
@@ -8,7 +18,9 @@ import { Permissions } from '../auth/permissions.decorator';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class TrimmedLogController {
   @Delete(':id')
-  async delete(@Param('id') id: string) { return this.trimService.deleteTrimmedLog(id); }
+  async delete(@Param('id') id: string) {
+    return this.trimService.deleteTrimmedLog(id);
+  }
   constructor(private readonly trimService: TrimmedLogService) {}
 
   @Get('trimming')
@@ -41,4 +53,3 @@ export class TrimmedLogController {
     return this.trimService.cancelTrimmedLog(id);
   }
 }
-

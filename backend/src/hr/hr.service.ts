@@ -1,13 +1,23 @@
 import { NotificationService } from '../notification/notification.service';
-﻿import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PayrollPostedEvent, PayrollPaymentEvent } from '../events/accounting.events';
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  PayrollPostedEvent,
+  PayrollPaymentEvent,
+} from '../events/accounting.events';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class HrService {
-  constructor(private prisma: PrismaService,
-    private notificationService: NotificationService, private eventEmitter: EventEmitter2) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationService: NotificationService,
+    private eventEmitter: EventEmitter2,
+  ) {}
 
   // Departments
   async getDepartments(companyId: string) {
@@ -42,7 +52,7 @@ export class HrService {
       data: {
         company_id: data.companyId,
         department_id: data.departmentId,
-        employee_code: data.employeeCode || ('EMP-' + Date.now()),
+        employee_code: data.employeeCode || 'EMP-' + Date.now(),
         first_name: data.firstName,
         last_name: data.lastName,
         email: data.email,
@@ -67,22 +77,26 @@ export class HrService {
         position: data.position,
         status: data.status,
         basic_salary: data.basicSalary ? Number(data.basicSalary) : undefined,
-      }
+      },
     });
   }
 
-  
-  async registerBiometric(companyId: string, employeeId: string, rightThumb: string, leftThumb: string) {
+  async registerBiometric(
+    companyId: string,
+    employeeId: string,
+    rightThumb: string,
+    leftThumb: string,
+  ) {
     const employee = await this.prisma.employee.findFirst({
-      where: { id: employeeId, company_id: companyId }
+      where: { id: employeeId, company_id: companyId },
     });
-    if (!employee) throw new NotFoundException("Employee not found");
+    if (!employee) throw new NotFoundException('Employee not found');
     return this.prisma.employee.update({
       where: { id: employeeId },
       data: {
         fingerprint_right_thumb: rightThumb,
-        fingerprint_left_thumb: leftThumb
-      }
+        fingerprint_left_thumb: leftThumb,
+      },
     });
   }
 
@@ -98,27 +112,28 @@ export class HrService {
   async createLeave(data: any) {
     return this.prisma.leaveRequest.create({
       data: {
-        company_id: data.companyId, employee_id: data.employeeId,
+        company_id: data.companyId,
+        employee_id: data.employeeId,
         leave_type: data.leaveType,
         start_date: new Date(data.startDate),
         end_date: new Date(data.endDate),
         reason: data.reason,
         status: 'SUBMITTED',
-      }
+      },
     });
   }
 
   async approveLeave(companyId: string, id: string) {
     return this.prisma.leaveRequest.update({
       where: { id, company_id: companyId },
-      data: { status: 'APPROVED' }
+      data: { status: 'APPROVED' },
     });
   }
 
   async rejectLeave(companyId: string, id: string) {
     return this.prisma.leaveRequest.update({
       where: { id, company_id: companyId },
-      data: { status: 'REJECTED' }
+      data: { status: 'REJECTED' },
     });
   }
 
@@ -134,7 +149,8 @@ export class HrService {
   async createAttendance(data: any) {
     const _att = await this.prisma.attendance.create({
       data: {
-        company_id: data.companyId, employee_id: data.employeeId,
+        company_id: data.companyId,
+        employee_id: data.employeeId,
         date: new Date(data.date),
         status: data.status,
         check_in: data.checkIn ? new Date(data.checkIn) : null,
@@ -144,34 +160,47 @@ export class HrService {
     });
   }
 
-  async clockAttendance(companyId: string, data: { employee_code: string, timestamp?: string }) {
+  async clockAttendance(
+    companyId: string,
+    data: { employee_code: string; timestamp?: string },
+  ) {
     const employee = await this.prisma.employee.findFirst({
-      where: { company_id: companyId, employee_code: data.employee_code }
+      where: { company_id: companyId, employee_code: data.employee_code },
     });
 
-    if (!employee) throw new NotFoundException("Employee not found");
+    if (!employee) throw new NotFoundException('Employee not found');
 
     const clockTime = data.timestamp ? new Date(data.timestamp) : new Date();
     const todayStr = clockTime.toISOString().split('T')[0];
-    const startDate = new Date(todayStr + "T00:00:00.000Z");
-    const endDate = new Date(todayStr + "T23:59:59.999Z");
+    const startDate = new Date(todayStr + 'T00:00:00.000Z');
+    const endDate = new Date(todayStr + 'T23:59:59.999Z');
 
     const existingAttendance = await this.prisma.attendance.findFirst({
-      where: { employee_id: employee.id, date: { gte: startDate, lte: endDate } }
+      where: {
+        employee_id: employee.id,
+        date: { gte: startDate, lte: endDate },
+      },
     });
 
     if (existingAttendance) {
-      if (existingAttendance.check_out) throw new BadRequestException('Already checked out for today');
+      if (existingAttendance.check_out)
+        throw new BadRequestException('Already checked out for today');
       if (clockTime <= (existingAttendance.check_in || clockTime)) {
-         throw new BadRequestException('Check-out must be after check-in');
+        throw new BadRequestException('Check-out must be after check-in');
       }
       return this.prisma.attendance.update({
         where: { id: existingAttendance.id },
-        data: { check_out: clockTime, status: 'PRESENT' }
+        data: { check_out: clockTime, status: 'PRESENT' },
       });
     } else {
       return this.prisma.attendance.create({
-        data: { company_id: companyId, employee_id: employee.id, date: clockTime, status: 'PRESENT', check_in: clockTime }
+        data: {
+          company_id: companyId,
+          employee_id: employee.id,
+          date: clockTime,
+          status: 'PRESENT',
+          check_in: clockTime,
+        },
       });
     }
   }
@@ -185,26 +214,40 @@ export class HrService {
     });
   }
 
-  async calculatePayroll(companyId: string, employeeId: string, period: string, txClient?: any) {
+  async calculatePayroll(
+    companyId: string,
+    employeeId: string,
+    period: string,
+    txClient?: any,
+  ) {
     const run = async (tx: any) => {
       const employee = await tx.employee.findUnique({
-        where: { id: employeeId, company_id: companyId }
+        where: { id: employeeId, company_id: companyId },
       });
       if (!employee) throw new NotFoundException('Employee not found');
-      if (employee.status === 'TERMINATED') throw new BadRequestException('Cannot calculate payroll for terminated employee');
+      if (employee.status === 'TERMINATED')
+        throw new BadRequestException(
+          'Cannot calculate payroll for terminated employee',
+        );
 
       // Check if Draft payroll already exists
       let payroll = await tx.payroll.findFirst({
-        where: { company_id: companyId, employee_id: employeeId, period: period }
+        where: {
+          company_id: companyId,
+          employee_id: employeeId,
+          period: period,
+        },
       });
 
       if (payroll && payroll.status !== 'DRAFT') {
-         throw new BadRequestException('Payroll already calculated/approved for this period');
+        throw new BadRequestException(
+          'Payroll already calculated/approved for this period',
+        );
       }
 
       // Cleanup existing draft items
       if (payroll) {
-         await tx.payrollItem.deleteMany({ where: { payroll_id: payroll.id } });
+        await tx.payrollItem.deleteMany({ where: { payroll_id: payroll.id } });
       }
 
       // Base Calculation logic
@@ -216,21 +259,29 @@ export class HrService {
       // For simplicity, we just count absent days in the DB for that period.
       // E.g. period = "2026-09"
       const absents = await tx.attendance.count({
-         where: { 
-           employee_id: employeeId, 
-           status: 'ABSENT',
-           date: {
-             gte: new Date(period + '-01T00:00:00.000Z'),
-             lt: new Date(new Date(period + '-01T00:00:00.000Z').setMonth(new Date(period + '-01T00:00:00.000Z').getMonth() + 1))
-           }
-         }
+        where: {
+          employee_id: employeeId,
+          status: 'ABSENT',
+          date: {
+            gte: new Date(period + '-01T00:00:00.000Z'),
+            lt: new Date(
+              new Date(period + '-01T00:00:00.000Z').setMonth(
+                new Date(period + '-01T00:00:00.000Z').getMonth() + 1,
+              ),
+            ),
+          },
+        },
       });
 
       if (absents > 0) {
-         const dailyDeduction = (basicSalary / 22); // Assuming 22 working days
-         const deductionAmount = dailyDeduction * absents;
-         totalDeduction += deductionAmount;
-         items.push({ type: 'DEDUCTION', name: 'Absent Deduction', amount: deductionAmount });
+        const dailyDeduction = basicSalary / 22; // Assuming 22 working days
+        const deductionAmount = dailyDeduction * absents;
+        totalDeduction += deductionAmount;
+        items.push({
+          type: 'DEDUCTION',
+          name: 'Absent Deduction',
+          amount: deductionAmount,
+        });
       }
 
       if (!payroll) {
@@ -255,41 +306,69 @@ export class HrService {
             total_deduction: totalDeduction,
             net_salary: basicSalary - totalDeduction,
             status: 'CALCULATED',
-          }
+          },
         });
       }
 
       if (items.length > 0) {
-         await tx.payrollItem.createMany({
-            data: items.map(i => ({ ...i, payroll_id: payroll!.id }))
-         });
+        await tx.payrollItem.createMany({
+          data: items.map((i) => ({ ...i, payroll_id: payroll!.id })),
+        });
       }
 
-      return tx.payroll.findUnique({ where: { id: payroll.id }, include: { items: true } });
+      return tx.payroll.findUnique({
+        where: { id: payroll.id },
+        include: { items: true },
+      });
     };
     return txClient ? run(txClient) : this.prisma.$transaction(run);
   }
 
   async approvePayroll(companyId: string, id: string) {
-    const p = await this.prisma.payroll.findFirst({ where: { id, company_id: companyId } });
+    const p = await this.prisma.payroll.findFirst({
+      where: { id, company_id: companyId },
+    });
     if (!p) throw new NotFoundException('Payroll not found');
-    if (p.status !== 'CALCULATED') throw new BadRequestException('Can only approve CALCULATED payroll');
-    return this.prisma.payroll.update({ where: { id }, data: { status: 'APPROVED' } });
+    if (p.status !== 'CALCULATED')
+      throw new BadRequestException('Can only approve CALCULATED payroll');
+    return this.prisma.payroll.update({
+      where: { id },
+      data: { status: 'APPROVED' },
+    });
   }
 
   async postPayroll(companyId: string, id: string, txClient?: any) {
     const run = async (tx: any) => {
-      const p = await tx.payroll.findFirst({ where: { id, company_id: companyId }, include: { employee: true } });
+      const p = await tx.payroll.findFirst({
+        where: { id, company_id: companyId },
+        include: { employee: true },
+      });
       if (!p) throw new NotFoundException('Payroll not found');
-      if (p.status !== 'APPROVED') throw new BadRequestException('Can only post APPROVED payroll');
+      if (p.status !== 'APPROVED')
+        throw new BadRequestException('Can only post APPROVED payroll');
 
       // FinanceTransaction is deferred to payPayroll. Only accounting liability via event here.
-const updatedRes = await tx.payroll.updateMany({ where: { id, status: 'APPROVED' }, data: { status: 'POSTED' } });
-        if (updatedRes.count === 0) {
-          throw new BadRequestException('Concurrency conflict or Payroll is no longer APPROVED');
-        }
-        const updated = await tx.payroll.findUnique({ where: { id } });
-      await this.eventEmitter.emitAsync('payroll.posted', new PayrollPostedEvent(companyId, p.id, 'EVT-' + Date.now(), new Date(), { netSalary: p.net_salary, period: p.period }, tx as any));
+      const updatedRes = await tx.payroll.updateMany({
+        where: { id, status: 'APPROVED' },
+        data: { status: 'POSTED' },
+      });
+      if (updatedRes.count === 0) {
+        throw new BadRequestException(
+          'Concurrency conflict or Payroll is no longer APPROVED',
+        );
+      }
+      const updated = await tx.payroll.findUnique({ where: { id } });
+      await this.eventEmitter.emitAsync(
+        'payroll.posted',
+        new PayrollPostedEvent(
+          companyId,
+          p.id,
+          'EVT-' + Date.now(),
+          new Date(),
+          { netSalary: p.net_salary, period: p.period },
+          tx as any,
+        ),
+      );
       return updated;
     };
     return txClient ? run(txClient) : this.prisma.$transaction(run);
@@ -297,15 +376,24 @@ const updatedRes = await tx.payroll.updateMany({ where: { id, status: 'APPROVED'
 
   async payPayroll(companyId: string, id: string, txClient?: any) {
     const run = async (tx: any) => {
-      const p = await tx.payroll.findFirst({ where: { id, company_id: companyId } });
+      const p = await tx.payroll.findFirst({
+        where: { id, company_id: companyId },
+      });
       if (!p) throw new NotFoundException('Payroll not found');
-      if (p.status !== 'POSTED') throw new BadRequestException('Can only pay POSTED payroll');
+      if (p.status !== 'POSTED')
+        throw new BadRequestException('Can only pay POSTED payroll');
 
       // Enforce zero or negative protection
-      if (p.net_salary < 0) throw new BadRequestException('Net salary cannot be negative');
+      if (p.net_salary < 0)
+        throw new BadRequestException('Net salary cannot be negative');
 
-      const account = await tx.cashAccount.findFirst({ where: { company_id: companyId } });
-      if (!account) throw new BadRequestException('No default cash account mapped for company');
+      const account = await tx.cashAccount.findFirst({
+        where: { company_id: companyId },
+      });
+      if (!account)
+        throw new BadRequestException(
+          'No default cash account mapped for company',
+        );
 
       // Create actual Cash Out transaction
       const f = await tx.financeTransaction.create({
@@ -319,20 +407,31 @@ const updatedRes = await tx.payroll.updateMany({ where: { id, status: 'APPROVED'
           reference_type: 'PAYROLL_PAYMENT',
           reference_id: p.id,
           description: 'Payroll Payment for ' + p.period,
-          
-          status: 'COMPLETED',
-          created_by: (await tx.user.findFirst({where:{company_id:companyId}}))!.id
-        }
-      });
-      
-      
 
-      const updated = await tx.payroll.update({ where: { id }, data: { status: 'PAID', paid_date: new Date() } });
-      await this.eventEmitter.emitAsync('payroll.payment', new PayrollPaymentEvent(companyId, p.id, 'EVT-' + Date.now(), new Date(), { amount: p.net_salary }, tx as any));
+          status: 'COMPLETED',
+          created_by: (await tx.user.findFirst({
+            where: { company_id: companyId },
+          }))!.id,
+        },
+      });
+
+      const updated = await tx.payroll.update({
+        where: { id },
+        data: { status: 'PAID', paid_date: new Date() },
+      });
+      await this.eventEmitter.emitAsync(
+        'payroll.payment',
+        new PayrollPaymentEvent(
+          companyId,
+          p.id,
+          'EVT-' + Date.now(),
+          new Date(),
+          { amount: p.net_salary },
+          tx as any,
+        ),
+      );
       return updated;
     };
     return txClient ? run(txClient) : this.prisma.$transaction(run);
   }
 }
-
-

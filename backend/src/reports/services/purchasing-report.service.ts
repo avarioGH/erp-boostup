@@ -6,11 +6,13 @@ import { ReportFilterDto, ReportResultDto } from '../report.types';
 export class PurchasingReportService {
   constructor(private prisma: PrismaService) {}
 
-  async getPurchasingReport(filters: ReportFilterDto): Promise<ReportResultDto> {
+  async getPurchasingReport(
+    filters: ReportFilterDto,
+  ): Promise<ReportResultDto> {
     const where: any = { company_id: filters.company_id, type: 'AP' };
     const invoices = await this.prisma.invoice.findMany({
       where,
-      include: { supplier: true }
+      include: { supplier: true },
     });
 
     return {
@@ -18,14 +20,13 @@ export class PurchasingReportService {
       columns: [
         { header: 'Invoice Number', key: 'invoice_number' },
         { header: 'Supplier', key: 'supplier' },
-        { header: 'Total', key: 'total', type: 'currency' }
+        { header: 'Total', key: 'total', type: 'currency' },
       ],
-      data: invoices.map(i => ({
+      data: invoices.map((i) => ({
         invoice_number: i.invoice_number,
         supplier: i.supplier?.name || '-',
-        total: i.total
-      }))
+        total: i.total,
+      })),
     };
   }
 }
-

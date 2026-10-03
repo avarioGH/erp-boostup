@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryLedgerService } from '../inventory-ledger.service';
 
@@ -11,20 +15,30 @@ export class PurchaseService {
 
   async create(companyId: string, data: any) {
     const { logItems = [] } = data;
-    const { purchaseNumber, purchaseDate, sourceId, warehouseId, notes, items, partaiId } = data;
+    const {
+      purchaseNumber,
+      purchaseDate,
+      sourceId,
+      warehouseId,
+      notes,
+      items,
+      partaiId,
+    } = data;
 
     // Validate if purchaseNumber exists
     const existing = await this.prisma.timberPurchase.findUnique({
-      where: { purchaseNumber }
+      where: { purchaseNumber },
     });
     if (existing) {
-      throw new BadRequestException(`Purchase with number ${purchaseNumber} already exists`);
+      throw new BadRequestException(
+        `Purchase with number ${purchaseNumber} already exists`,
+      );
     }
 
     let totalPcs = 0;
     let totalVolumeM3 = 0;
-    
-    for (const item of (items || [])) {
+
+    for (const item of items || []) {
       totalPcs += item.quantityPcs;
       totalVolumeM3 += item.volumeM3;
     }
@@ -51,8 +65,8 @@ export class PurchaseService {
             purchaseLength: item.purchaseLength,
             unitPrice: item.unitPrice,
             notes: item.notes,
-            batch: item.batch || 'UNKNOWN'
-          }))
+            batch: item.batch || 'UNKNOWN',
+          })),
         },
         logItems: {
           create: logItems.map((li: any) => ({
@@ -65,12 +79,12 @@ export class PurchaseService {
             purchaseDiameter3: li.purchaseDiameter3 || 0,
             purchaseDiameter4: li.purchaseDiameter4 || 0,
             purchaseVolume: li.purchaseVolume || 0,
-          }))
-        }
+          })),
+        },
       },
       include: {
-        items: true
-      }
+        items: true,
+      },
     });
 
     return purchase;
@@ -80,8 +94,10 @@ export class PurchaseService {
     return this.prisma.$transaction(async (tx) => {
       const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
       const purchase = await tx.timberPurchase.findFirst({
-        where: isObjectId ? { id, company_id: companyId } : { purchaseNumber: id, company_id: companyId },
-        include: { items: true }
+        where: isObjectId
+          ? { id, company_id: companyId }
+          : { purchaseNumber: id, company_id: companyId },
+        include: { items: true },
       });
 
       if (!purchase) {
@@ -95,7 +111,7 @@ export class PurchaseService {
       // Update status
       const confirmed = await tx.timberPurchase.update({
         where: { id },
-        data: { status: 'CONFIRMED' }
+        data: { status: 'CONFIRMED' },
       });
 
       // Stock mutations
@@ -108,7 +124,7 @@ export class PurchaseService {
           'TIMBER_PURCHASE',
           purchase.id,
           item.quantityPcs,
-          item.volumeM3
+          item.volumeM3,
         );
       }
 
@@ -120,8 +136,10 @@ export class PurchaseService {
     return this.prisma.$transaction(async (tx) => {
       const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
       const purchase = await tx.timberPurchase.findFirst({
-        where: isObjectId ? { id, company_id: companyId } : { purchaseNumber: id, company_id: companyId },
-        include: { items: true }
+        where: isObjectId
+          ? { id, company_id: companyId }
+          : { purchaseNumber: id, company_id: companyId },
+        include: { items: true },
       });
 
       if (!purchase) {
@@ -129,13 +147,15 @@ export class PurchaseService {
       }
 
       if (purchase.status !== 'CONFIRMED') {
-        throw new BadRequestException('Only CONFIRMED purchase can be cancelled');
+        throw new BadRequestException(
+          'Only CONFIRMED purchase can be cancelled',
+        );
       }
 
       // Update status
       const cancelled = await tx.timberPurchase.update({
         where: { id },
-        data: { status: 'CANCELLED' }
+        data: { status: 'CANCELLED' },
       });
 
       // Stock mutations (reversal)
@@ -146,13 +166,15 @@ export class PurchaseService {
             locationId_timberVariantId_batch: {
               locationId: purchase.warehouseId,
               timberVariantId: item.timberVariantId,
-                batch: 'UNKNOWN'
-            }
-          }
+              batch: 'UNKNOWN',
+            },
+          },
         });
 
         if (!stock || stock.currentPcs < item.quantityPcs) {
-          throw new BadRequestException(`Insufficient stock to cancel purchase for variant ${item.timberVariantId}`);
+          throw new BadRequestException(
+            `Insufficient stock to cancel purchase for variant ${item.timberVariantId}`,
+          );
         }
 
         await this.inventoryLedgerService.createMovement(
@@ -163,7 +185,7 @@ export class PurchaseService {
           'TIMBER_PURCHASE_REVERSAL',
           purchase.id,
           item.quantityPcs,
-          item.volumeM3
+          item.volumeM3,
         );
       }
 
@@ -177,25 +199,31 @@ export class PurchaseService {
       include: {
         source: true,
         warehouse: true,
-        items: { include: { timberVariant: true } }, logItems: true
+        items: { include: { timberVariant: true } },
+        logItems: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string, companyId: string) {
-    if (id === 'undefined' || !id) throw new NotFoundException('Purchase not found');
-    if (companyId === 'undefined' || !companyId) throw new BadRequestException('Invalid company ID');
-    
+    if (id === 'undefined' || !id)
+      throw new NotFoundException('Purchase not found');
+    if (companyId === 'undefined' || !companyId)
+      throw new BadRequestException('Invalid company ID');
+
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
     const purchase = await this.prisma.timberPurchase.findFirst({
-        where: isObjectId ? { id, company_id: companyId } : { purchaseNumber: id, company_id: companyId },
-        include: {
-          source: true,
-          warehouse: true,
-          items: { include: { timberVariant: true } }, logItems: true
-        }
-      });
+      where: isObjectId
+        ? { id, company_id: companyId }
+        : { purchaseNumber: id, company_id: companyId },
+      include: {
+        source: true,
+        warehouse: true,
+        items: { include: { timberVariant: true } },
+        logItems: true,
+      },
+    });
 
     if (!purchase) {
       throw new NotFoundException('Timber purchase not found');
@@ -209,10 +237,10 @@ export class PurchaseService {
   // ==========================================
   async addLogItem(purchaseId: string, companyId: string, data: any) {
     const purchase = await this.prisma.timberPurchase.findFirst({
-      where: { id: purchaseId, company_id: companyId }
+      where: { id: purchaseId, company_id: companyId },
     });
     if (!purchase) throw new NotFoundException('Purchase not found');
-    
+
     return this.prisma.timberPurchaseLogItem.create({
       data: {
         timberPurchaseId: purchaseId,
@@ -225,16 +253,23 @@ export class PurchaseService {
         purchaseDiameter3: data.purchaseDiameter3 || 0,
         purchaseDiameter4: data.purchaseDiameter4 || 0,
         purchaseVolume: data.purchaseVolume,
-      }
+      },
     });
   }
 
-  async updateLogItem(purchaseId: string, itemId: string, companyId: string, data: any) {
+  async updateLogItem(
+    purchaseId: string,
+    itemId: string,
+    companyId: string,
+    data: any,
+  ) {
     const item = await this.prisma.timberPurchaseLogItem.findUnique({
-      where: { id: itemId }
+      where: { id: itemId },
     });
-    if (!item || item.timberPurchaseId !== purchaseId) throw new NotFoundException('Log Item not found');
-    if (item.status === 'RECEIVED') throw new BadRequestException('Cannot edit received log item');
+    if (!item || item.timberPurchaseId !== purchaseId)
+      throw new NotFoundException('Log Item not found');
+    if (item.status === 'RECEIVED')
+      throw new BadRequestException('Cannot edit received log item');
 
     return this.prisma.timberPurchaseLogItem.update({
       where: { id: itemId },
@@ -248,20 +283,18 @@ export class PurchaseService {
         purchaseDiameter3: data.purchaseDiameter3 || 0,
         purchaseDiameter4: data.purchaseDiameter4 || 0,
         purchaseVolume: data.purchaseVolume,
-      }
+      },
     });
   }
 
-
-  
-  
   async updatePurchase(id: string, data: any) {
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
     const purchase = await this.prisma.timberPurchase.findFirst({
-      where: isObjectId ? { id } : { purchaseNumber: id }
+      where: isObjectId ? { id } : { purchaseNumber: id },
     });
     if (!purchase) throw new Error('Purchase not found');
-    if (purchase.status !== 'DRAFT') throw new Error('Can only edit DRAFT purchases');
+    if (purchase.status !== 'DRAFT')
+      throw new Error('Can only edit DRAFT purchases');
     const actualId = purchase.id;
 
     // Update main purchase
@@ -271,14 +304,18 @@ export class PurchaseService {
         warehouseId: data.warehouseId || purchase.warehouseId,
         sourceId: data.sourceId || purchase.sourceId,
         notes: data.notes || purchase.notes,
-        purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : purchase.purchaseDate
-      }
+        purchaseDate: data.purchaseDate
+          ? new Date(data.purchaseDate)
+          : purchase.purchaseDate,
+      },
     });
 
     // We skip updating nested items for now to keep it simple, unless we fully recreate them
     if (data.items && data.items.length > 0) {
       // Recreate items
-      await this.prisma.timberPurchaseItem.deleteMany({ where: { timberPurchaseId: actualId } });
+      await this.prisma.timberPurchaseItem.deleteMany({
+        where: { timberPurchaseId: actualId },
+      });
       let totalPcs = 0;
       let totalVolume = 0;
       for (const item of data.items) {
@@ -290,20 +327,32 @@ export class PurchaseService {
             timberVariantId: item.variantId,
             quantityPcs: Number(item.quantityPcs),
             volumeM3: Number(item.volumeM3),
-            unitPrice: Number(item.unitPrice || 0)
-          }
+            unitPrice: Number(item.unitPrice || 0),
+          },
         });
       }
       await this.prisma.timberPurchase.update({
         where: { id: actualId },
-        data: { totalPcs, totalVolumeM3: totalVolume }
+        data: { totalPcs, totalVolumeM3: totalVolume },
       });
     }
 
     if (data.logItems && data.logItems.length > 0) {
-      await this.prisma.timberPurchaseLogItem.deleteMany({ where: { timberPurchaseId: actualId } });
-      await this.prisma.rawLog.deleteMany({ where: { purchaseLogItemId: { in: (await this.prisma.timberPurchaseLogItem.findMany({ where: { timberPurchaseId: actualId } })).map(x => x.id) } } }); // Wait, actually I just deleted them above. This is tricky. Let's just avoid complex nested log updates for now and let the user re-create or we just wipe and recreate.
-      
+      await this.prisma.timberPurchaseLogItem.deleteMany({
+        where: { timberPurchaseId: actualId },
+      });
+      await this.prisma.rawLog.deleteMany({
+        where: {
+          purchaseLogItemId: {
+            in: (
+              await this.prisma.timberPurchaseLogItem.findMany({
+                where: { timberPurchaseId: actualId },
+              })
+            ).map((x) => x.id),
+          },
+        },
+      }); // Wait, actually I just deleted them above. This is tricky. Let's just avoid complex nested log updates for now and let the user re-create or we just wipe and recreate.
+
       // Let's do a simple wipe and recreate for logItems
       for (const item of data.logItems) {
         await this.prisma.timberPurchaseLogItem.create({
@@ -316,8 +365,8 @@ export class PurchaseService {
             purchaseDiameter2: Number(item.purchaseDiameter2 || 0),
             purchaseDiameter3: Number(item.purchaseDiameter3 || 0),
             purchaseDiameter4: Number(item.purchaseDiameter4 || 0),
-            purchaseVolume: Number(item.purchaseVolume || 0)
-          }
+            purchaseVolume: Number(item.purchaseVolume || 0),
+          },
         });
       }
     }
@@ -330,36 +379,42 @@ export class PurchaseService {
       where: { id },
       include: {
         items: true,
-        logItems: true
-      }
+        logItems: true,
+      },
     });
     if (!purchase) throw new Error('Purchase not found');
 
     // Check if any RawLog has been processed (status != AVAILABLE)
-    const logItemIds = purchase.logItems.map(li => li.id);
+    const logItemIds = purchase.logItems.map((li) => li.id);
     if (logItemIds.length > 0) {
       const rawLogs = await this.prisma.rawLog.findMany({
-        where: { purchaseLogItemId: { in: logItemIds } }
+        where: { purchaseLogItemId: { in: logItemIds } },
       });
       for (const rawLog of rawLogs) {
         if (rawLog.status !== 'AVAILABLE') {
-          throw new Error('Cannot delete purchase because some logs have already been processed (Trimming/Input).');
+          throw new Error(
+            'Cannot delete purchase because some logs have already been processed (Trimming/Input).',
+          );
         }
       }
-      
+
       // Delete RawLogs
-      await this.prisma.rawLog.deleteMany({ where: { purchaseLogItemId: { in: logItemIds } } });
+      await this.prisma.rawLog.deleteMany({
+        where: { purchaseLogItemId: { in: logItemIds } },
+      });
     }
 
     // Delete Log Items
-    await this.prisma.timberPurchaseLogItem.deleteMany({ where: { timberPurchaseId: id } });
+    await this.prisma.timberPurchaseLogItem.deleteMany({
+      where: { timberPurchaseId: id },
+    });
 
     // Delete Items
-    await this.prisma.timberPurchaseItem.deleteMany({ where: { timberPurchaseId: id } });
+    await this.prisma.timberPurchaseItem.deleteMany({
+      where: { timberPurchaseId: id },
+    });
 
     // Delete Purchase
     return this.prisma.timberPurchase.delete({ where: { id } });
   }
-
 }
-

@@ -1,6 +1,14 @@
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
-import { Controller, Get, Post, Body, Request, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Request,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { AssetService } from './asset.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -14,7 +22,9 @@ export class AssetController {
 
   @Get()
   getAssets(@Request() req: any) {
-    return this.prisma.assetMaster.findMany({ where: { company_id: req.user.company_id } });
+    return this.prisma.assetMaster.findMany({
+      where: { company_id: req.user.company_id },
+    });
   }
 
   @Post()

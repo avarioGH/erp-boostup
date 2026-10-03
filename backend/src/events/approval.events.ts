@@ -7,7 +7,7 @@ export class ApprovalRequestedEvent {
     public readonly referenceId: string,
     public readonly approvalRequestId: string,
     public readonly actor: string,
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }
 
@@ -19,7 +19,7 @@ export class ApprovalApprovedEvent {
     public readonly approvalRequestId: string,
     public readonly actor: string,
     public readonly note: string,
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }
 
@@ -31,7 +31,7 @@ export class ApprovalRejectedEvent {
     public readonly approvalRequestId: string,
     public readonly actor: string,
     public readonly note: string,
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }
 
@@ -42,6 +42,6 @@ export class ApprovalCancelledEvent {
     public readonly referenceId: string,
     public readonly approvalRequestId: string,
     public readonly actor: string,
-    public readonly tx?: Prisma.TransactionClient
+    public readonly tx?: Prisma.TransactionClient,
   ) {}
 }

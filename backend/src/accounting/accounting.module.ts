@@ -7,6 +7,6 @@ import { GlModule } from '../gl/gl.module';
 @Module({
   imports: [GlModule],
   controllers: [AccountingController],
-  providers: [AccountingService, AccountingListener]
+  providers: [AccountingService, AccountingListener],
 })
 export class AccountingModule {}

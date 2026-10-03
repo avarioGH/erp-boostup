@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
@@ -7,15 +11,26 @@ export class QuotationService {
   constructor(private prisma: PrismaService) {}
 
   async create(companyId: string, data: any) {
-    const { customerId, quotationDate, expirationDate, items, notes, billingAddress, deliveryAddress, paymentTerms } = data;
-    
-    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    const {
+      customerId,
+      quotationDate,
+      expirationDate,
+      items,
+      notes,
+      billingAddress,
+      deliveryAddress,
+      paymentTerms,
+    } = data;
+
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: customerId },
+    });
     if (!customer || customer.company_id !== companyId) {
       throw new BadRequestException('Invalid customer');
     }
 
-    const quotationNumber = "QTN-${Date.now()}";
-    
+    const quotationNumber = 'QTN-${Date.now()}';
+
     let total = 0;
     const itemsData = items.map((item: any) => {
       const sub = item.qty * item.price;
@@ -29,7 +44,7 @@ export class QuotationService {
         unit_price: item.price,
         discount: discount,
         tax: tax,
-        subtotal: lineTotal
+        subtotal: lineTotal,
       };
     });
 
@@ -47,10 +62,10 @@ export class QuotationService {
         delivery_address: deliveryAddress,
         payment_terms: paymentTerms,
         items: {
-          create: itemsData
-        }
+          create: itemsData,
+        },
       },
-      include: { items: true, customer: true }
+      include: { items: true, customer: true },
     });
   }
 
@@ -62,9 +77,9 @@ export class QuotationService {
         include: { customer: true },
         skip,
         take: limit,
-        orderBy: { created_at: 'desc' }
+        orderBy: { created_at: 'desc' },
       }),
-      this.prisma.quotation.count({ where: { company_id: companyId } })
+      this.prisma.quotation.count({ where: { company_id: companyId } }),
     ]);
     return { data, total, page, limit };
   }
@@ -72,7 +87,11 @@ export class QuotationService {
   async findOne(companyId: string, id: string) {
     const q = await this.prisma.quotation.findFirst({
       where: { id, company_id: companyId },
-      include: { items: { include: { product: true } }, customer: true, sales_orders: true }
+      include: {
+        items: { include: { product: true } },
+        customer: true,
+        sales_orders: true,
+      },
     });
     if (!q) throw new NotFoundException('Quotation not found');
     return q;
@@ -82,22 +101,26 @@ export class QuotationService {
     return this.prisma.$transaction(async (tx) => {
       const q = await tx.quotation.findFirst({
         where: { id, company_id: companyId },
-        include: { items: true }
+        include: { items: true },
       });
       if (!q) throw new NotFoundException('Quotation not found');
-      if (q.status === 'CONFIRMED') throw new BadRequestException('Quotation already confirmed');
+      if (q.status === 'CONFIRMED')
+        throw new BadRequestException('Quotation already confirmed');
 
       const existingSo = await tx.salesOrder.findFirst({
-        where: { quotation_id: q.id }
+        where: { quotation_id: q.id },
       });
-      if (existingSo) throw new BadRequestException('Sales order already generated for this quotation');
+      if (existingSo)
+        throw new BadRequestException(
+          'Sales order already generated for this quotation',
+        );
 
       await tx.quotation.update({
         where: { id: q.id },
-        data: { status: 'CONFIRMED' }
+        data: { status: 'CONFIRMED' },
       });
 
-      const soNo = "SO-${Date.now()}";
+      const soNo = 'SO-${Date.now()}';
       const so = await tx.salesOrder.create({
         data: {
           company_id: companyId,
@@ -112,17 +135,17 @@ export class QuotationService {
           notes: q.notes,
           billing_address: q.billing_address,
           delivery_address: q.delivery_address,
-          payment_method: 'TERM', 
+          payment_method: 'TERM',
           payment_status: 'UNPAID',
           items: {
-            create: q.items.map(item => ({
+            create: q.items.map((item) => ({
               product_id: item.product_id,
               qty: item.qty,
               unit_price: item.unit_price,
-              subtotal: item.subtotal
-            }))
-          }
-        }
+              subtotal: item.subtotal,
+            })),
+          },
+        },
       });
 
       return so;

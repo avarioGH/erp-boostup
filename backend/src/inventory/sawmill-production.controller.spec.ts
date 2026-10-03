@@ -22,15 +22,17 @@ describe('SawmillProductionController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SawmillProductionController],
-      providers: [
-        { provide: SawmillProductionService, useValue: service },
-      ],
+      providers: [{ provide: SawmillProductionService, useValue: service }],
     })
-    .overrideGuard(JwtAuthGuard).useValue({ canActivate: () => true })
-    .overrideGuard(PermissionsGuard).useValue({ canActivate: () => true })
-    .compile();
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(PermissionsGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
-    controller = module.get<SawmillProductionController>(SawmillProductionController);
+    controller = module.get<SawmillProductionController>(
+      SawmillProductionController,
+    );
   });
 
   it('should be defined', () => {
@@ -40,17 +42,23 @@ describe('SawmillProductionController', () => {
   it('should create draft', async () => {
     const data: any = { companyId: 'comp1', productionDate: '2026-09-12' };
     const req = { user: { company_id: 'comp1' } };
-    expect(await controller.createProductionRun(data, req)).toEqual({ id: '123' });
+    expect(await controller.createProductionRun(data, req)).toEqual({
+      id: '123',
+    });
     expect(service.createProductionRun).toHaveBeenCalledWith(data);
   });
 
   it('should list runs', async () => {
-    expect(await controller.listProductionRuns({ shift: '1' })).toEqual({ items: [] });
+    expect(await controller.listProductionRuns({ shift: '1' })).toEqual({
+      items: [],
+    });
     expect(service.listProductionRuns).toHaveBeenCalledWith({ shift: '1' });
   });
 
   it('should get run detail', async () => {
-    expect(await controller.getProductionRunDetail('123')).toEqual({ id: '123' });
+    expect(await controller.getProductionRunDetail('123')).toEqual({
+      id: '123',
+    });
   });
 
   it('should list available input logs', async () => {
@@ -58,14 +66,20 @@ describe('SawmillProductionController', () => {
   });
 
   it('should update draft', async () => {
-    expect(await controller.updateProductionRun('123', { notes: 'test' })).toEqual({ id: '123' });
+    expect(
+      await controller.updateProductionRun('123', { notes: 'test' }),
+    ).toEqual({ id: '123' });
   });
 
   it('should post run', async () => {
-    expect(await controller.postProductionRun('123', 'loc1')).toEqual({ status: 'POSTED' });
+    expect(await controller.postProductionRun('123', 'loc1')).toEqual({
+      status: 'POSTED',
+    });
   });
 
   it('should cancel run', async () => {
-    expect(await controller.cancelProductionRun('123', 'loc1')).toEqual({ status: 'CANCELLED' });
+    expect(await controller.cancelProductionRun('123', 'loc1')).toEqual({
+      status: 'CANCELLED',
+    });
   });
 });

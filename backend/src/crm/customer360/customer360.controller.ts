@@ -1,6 +1,6 @@
 import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
-﻿import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { Customer360Service } from './customer360.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 

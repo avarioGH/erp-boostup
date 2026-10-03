@@ -9,14 +9,14 @@ export class ExportShipmentService {
     return this.prisma.exportShipment.findMany({
       where: { company_id: companyId },
       include: { items: true },
-      orderBy: { exportDate: 'desc' }
+      orderBy: { exportDate: 'desc' },
     });
   }
 
   async findOne(id: string, companyId: string) {
     return this.prisma.exportShipment.findFirst({
       where: { id, company_id: companyId },
-      include: { items: true }
+      include: { items: true },
     });
   }
 
@@ -29,21 +29,21 @@ export class ExportShipmentService {
         vehicleNo: dto.vehicleNo,
         exportDate: new Date(dto.exportDate),
         items: {
-          create: dto.items.map(i => ({
+          create: dto.items.map((i) => ({
             groupName: i.groupName,
             productName: i.productName,
             qtyKg: parseFloat(i.qtyKg) || 0,
             qtyMc: parseInt(i.qtyMc) || 0,
             qtySak: parseInt(i.qtySak) || 0,
-          }))
-        }
-      }
+          })),
+        },
+      },
     });
   }
 
   async update(id: string, companyId: string, dto: any) {
     await this.prisma.exportShipmentItem.deleteMany({
-      where: { exportId: id }
+      where: { exportId: id },
     });
 
     return this.prisma.exportShipment.update({
@@ -54,21 +54,21 @@ export class ExportShipmentService {
         vehicleNo: dto.vehicleNo,
         exportDate: new Date(dto.exportDate),
         items: {
-          create: dto.items.map(i => ({
+          create: dto.items.map((i) => ({
             groupName: i.groupName,
             productName: i.productName,
             qtyKg: parseFloat(i.qtyKg) || 0,
             qtyMc: parseInt(i.qtyMc) || 0,
             qtySak: parseInt(i.qtySak) || 0,
-          }))
-        }
-      }
+          })),
+        },
+      },
     });
   }
 
   async delete(id: string, companyId: string) {
     return this.prisma.exportShipment.delete({
-      where: { id }
+      where: { id },
     });
   }
 }

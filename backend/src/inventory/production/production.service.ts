@@ -6,11 +6,19 @@ import { InventoryLedgerService } from '../inventory-ledger.service';
 export class ProductionService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly inventoryLedgerService: InventoryLedgerService
+    private readonly inventoryLedgerService: InventoryLedgerService,
   ) {}
 
   async createProcess(data: any) {
-    const { company_id, processType, processDate, notes, createdBy, inputs, outputs } = data;
+    const {
+      company_id,
+      processType,
+      processDate,
+      notes,
+      createdBy,
+      inputs,
+      outputs,
+    } = data;
 
     // Calculate volumes
     let inputVolumeM3 = 0;
@@ -28,12 +36,13 @@ export class ProductionService {
       }
     });
 
-    const yieldPercentage = inputVolumeM3 > 0 ? (outputVolumeM3 / inputVolumeM3) * 100 : 0;
+    const yieldPercentage =
+      inputVolumeM3 > 0 ? (outputVolumeM3 / inputVolumeM3) * 100 : 0;
 
     // Generate processNo
     const dateStr = new Date().toISOString().slice(2, 4); // yy
     const count = await this.prisma.productionProcess.count({
-      where: { company_id }
+      where: { company_id },
     });
     const processNo = `PRD-${dateStr}-${(count + 1).toString().padStart(3, '0')}`;
 
@@ -55,8 +64,8 @@ export class ProductionService {
             timberStockId: input.timberStockId,
             variantId: input.variantId,
             quantityPCS: input.quantityPCS,
-            volumeM3: input.volumeM3
-          }))
+            volumeM3: input.volumeM3,
+          })),
         },
         outputs: {
           create: outputs.map((output: any) => ({
@@ -64,14 +73,14 @@ export class ProductionService {
             outputType: output.outputType,
             quantityPCS: output.quantityPCS,
             volumeM3: output.volumeM3,
-            warehouseId: output.warehouseId
-          }))
-        }
+            warehouseId: output.warehouseId,
+          })),
+        },
       },
       include: {
         inputs: true,
-        outputs: true
-      }
+        outputs: true,
+      },
     });
   }
 
@@ -79,19 +88,23 @@ export class ProductionService {
     return this.prisma.$transaction(async (tx) => {
       const process = await tx.productionProcess.findUnique({
         where: { id },
-        include: { inputs: true, outputs: true }
+        include: { inputs: true, outputs: true },
       });
 
       if (!process) throw new BadRequestException('Process not found');
-      if (process.status !== 'DRAFT') throw new BadRequestException('Process must be in DRAFT status');
+      if (process.status !== 'DRAFT')
+        throw new BadRequestException('Process must be in DRAFT status');
 
       // Process inputs
       let defaultWarehouseId: string | null = null;
       for (const input of process.inputs) {
         const stock = await tx.timberStock.findUnique({
-          where: { id: input.timberStockId }
+          where: { id: input.timberStockId },
         });
-        if (!stock) throw new BadRequestException(`Timber stock ${input.timberStockId} not found`);
+        if (!stock)
+          throw new BadRequestException(
+            `Timber stock ${input.timberStockId} not found`,
+          );
         if (!defaultWarehouseId) defaultWarehouseId = stock.locationId;
 
         await this.inventoryLedgerService.createMovement(
@@ -102,16 +115,25 @@ export class ProductionService {
           'PRODUCTION_PROCESS_INPUT',
           process.id,
           input.quantityPCS,
-          input.volumeM3
+          input.volumeM3,
         );
       }
 
       // Process outputs
       for (const output of process.outputs) {
-        if (output.outputType === 'PRODUCT' || output.outputType === 'BYPRODUCT') {
+        if (
+          output.outputType === 'PRODUCT' ||
+          output.outputType === 'BYPRODUCT'
+        ) {
           const targetWarehouseId = output.warehouseId || defaultWarehouseId;
-          if (!targetWarehouseId) throw new BadRequestException('Warehouse ID is required for outputs');
-          if (!output.variantId) throw new BadRequestException('Variant ID is required for product outputs');
+          if (!targetWarehouseId)
+            throw new BadRequestException(
+              'Warehouse ID is required for outputs',
+            );
+          if (!output.variantId)
+            throw new BadRequestException(
+              'Variant ID is required for product outputs',
+            );
 
           await this.inventoryLedgerService.createMovement(
             tx,
@@ -121,7 +143,7 @@ export class ProductionService {
             'PRODUCTION_PROCESS_OUTPUT',
             process.id,
             output.quantityPCS,
-            output.volumeM3
+            output.volumeM3,
           );
         }
       }
@@ -129,7 +151,7 @@ export class ProductionService {
       return tx.productionProcess.update({
         where: { id },
         data: { status: 'CONFIRMED' },
-        include: { inputs: true, outputs: true }
+        include: { inputs: true, outputs: true },
       });
     });
   }
@@ -138,17 +160,18 @@ export class ProductionService {
     return this.prisma.$transaction(async (tx) => {
       const process = await tx.productionProcess.findUnique({
         where: { id },
-        include: { inputs: true, outputs: true }
+        include: { inputs: true, outputs: true },
       });
 
       if (!process) throw new BadRequestException('Process not found');
-      if (process.status !== 'CONFIRMED') throw new BadRequestException('Process must be in CONFIRMED status');
+      if (process.status !== 'CONFIRMED')
+        throw new BadRequestException('Process must be in CONFIRMED status');
 
       // Determine defaultWarehouseId from inputs
       let defaultWarehouseId: string | null = null;
       for (const input of process.inputs) {
         const stock = await tx.timberStock.findUnique({
-          where: { id: input.timberStockId }
+          where: { id: input.timberStockId },
         });
         if (stock && !defaultWarehouseId) {
           defaultWarehouseId = stock.locationId;
@@ -160,19 +183,27 @@ export class ProductionService {
       for (const output of process.outputs) {
         if (output.outputType === 'PRODUCT') {
           const targetWarehouseId = output.warehouseId || defaultWarehouseId;
-          if (!targetWarehouseId) throw new BadRequestException('Warehouse ID is required for outputs');
-          if (!output.variantId) throw new BadRequestException('Variant ID is required for product outputs');
+          if (!targetWarehouseId)
+            throw new BadRequestException(
+              'Warehouse ID is required for outputs',
+            );
+          if (!output.variantId)
+            throw new BadRequestException(
+              'Variant ID is required for product outputs',
+            );
 
           const stock = await tx.timberStock.findFirst({
             where: {
               locationId: targetWarehouseId,
-              timberVariantId: output.variantId
-            }
+              timberVariantId: output.variantId,
+            },
           });
 
           const currentPcs = stock ? stock.currentPcs : 0;
           if (currentPcs < output.quantityPCS) {
-            throw new BadRequestException(`Cannot cancel this production. Output has already been consumed. Variant ID: ${output.variantId}, Produced: ${output.quantityPCS}, Remaining: ${currentPcs}`);
+            throw new BadRequestException(
+              `Cannot cancel this production. Output has already been consumed. Variant ID: ${output.variantId}, Produced: ${output.quantityPCS}, Remaining: ${currentPcs}`,
+            );
           }
         }
       }
@@ -180,9 +211,12 @@ export class ProductionService {
       // Reverse inputs
       for (const input of process.inputs) {
         const stock = await tx.timberStock.findUnique({
-          where: { id: input.timberStockId }
+          where: { id: input.timberStockId },
         });
-        if (!stock) throw new BadRequestException(`Timber stock ${input.timberStockId} not found`);
+        if (!stock)
+          throw new BadRequestException(
+            `Timber stock ${input.timberStockId} not found`,
+          );
 
         await this.inventoryLedgerService.createMovement(
           tx,
@@ -192,16 +226,25 @@ export class ProductionService {
           'PRODUCTION_PROCESS_REVERSAL',
           process.id,
           input.quantityPCS,
-          input.volumeM3
+          input.volumeM3,
         );
       }
 
       // Reverse outputs
       for (const output of process.outputs) {
-        if (output.outputType === 'PRODUCT' || output.outputType === 'BYPRODUCT') {
+        if (
+          output.outputType === 'PRODUCT' ||
+          output.outputType === 'BYPRODUCT'
+        ) {
           const targetWarehouseId = output.warehouseId || defaultWarehouseId;
-          if (!targetWarehouseId) throw new BadRequestException('Warehouse ID is required for outputs');
-          if (!output.variantId) throw new BadRequestException('Variant ID is required for product outputs');
+          if (!targetWarehouseId)
+            throw new BadRequestException(
+              'Warehouse ID is required for outputs',
+            );
+          if (!output.variantId)
+            throw new BadRequestException(
+              'Variant ID is required for product outputs',
+            );
 
           await this.inventoryLedgerService.createMovement(
             tx,
@@ -211,14 +254,14 @@ export class ProductionService {
             'PRODUCTION_PROCESS_REVERSAL',
             process.id,
             output.quantityPCS,
-            output.volumeM3
+            output.volumeM3,
           );
         }
       }
 
       return tx.productionProcess.update({
         where: { id },
-        data: { status: 'CANCELLED' }
+        data: { status: 'CANCELLED' },
       });
     });
   }

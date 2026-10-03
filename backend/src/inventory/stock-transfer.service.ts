@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InventoryLedgerService } from './inventory-ledger.service';
 import { AuditService } from '../core/audit.service';
@@ -8,33 +12,51 @@ export class StockTransferService {
   constructor(
     private prisma: PrismaService,
     private ledgerService: InventoryLedgerService,
-    private audit: AuditService
+    private audit: AuditService,
   ) {}
 
-  async listTransfers(params: { 
-    skip?: number; take?: number; search?: string; status?: string; 
-    fromLocationId?: string; toLocationId?: string;
-    startDate?: string; endDate?: string;
-    fromLocationCodePrefix?: string; toLocationCodePrefix?: string;
+  async listTransfers(params: {
+    skip?: number;
+    take?: number;
+    search?: string;
+    status?: string;
+    fromLocationId?: string;
+    toLocationId?: string;
+    startDate?: string;
+    endDate?: string;
+    fromLocationCodePrefix?: string;
+    toLocationCodePrefix?: string;
   }) {
-    const { skip = 0, take = 50, search, status, fromLocationId, toLocationId, startDate, endDate, fromLocationCodePrefix, toLocationCodePrefix } = params;
+    const {
+      skip = 0,
+      take = 50,
+      search,
+      status,
+      fromLocationId,
+      toLocationId,
+      startDate,
+      endDate,
+      fromLocationCodePrefix,
+      toLocationCodePrefix,
+    } = params;
     const where: any = {};
-    if (search) where.transferNumber = { contains: search, mode: 'insensitive' };
+    if (search)
+      where.transferNumber = { contains: search, mode: 'insensitive' };
     if (status) where.status = status;
     if (fromLocationId) where.fromLocationId = fromLocationId;
     if (toLocationId) where.toLocationId = toLocationId;
-    
+
     if (startDate || endDate) {
       where.transferDate = {};
       if (startDate) where.transferDate.gte = new Date(startDate);
       if (endDate) where.transferDate.lte = new Date(endDate);
     }
-    
+
     if (fromLocationCodePrefix || toLocationCodePrefix) {
       if (fromLocationCodePrefix && toLocationCodePrefix) {
         where.OR = [
           { fromLocation: { code: { startsWith: fromLocationCodePrefix } } },
-          { toLocation: { code: { startsWith: toLocationCodePrefix } } }
+          { toLocation: { code: { startsWith: toLocationCodePrefix } } },
         ];
       } else if (fromLocationCodePrefix) {
         where.fromLocation = { code: { startsWith: fromLocationCodePrefix } };
@@ -45,11 +67,17 @@ export class StockTransferService {
 
     const [items, total] = await Promise.all([
       this.prisma.stockTransfer.findMany({
-        skip: Number(skip), take: Number(take), where,
+        skip: Number(skip),
+        take: Number(take),
+        where,
         orderBy: { createdAt: 'desc' },
-        include: { fromLocation: true, toLocation: true, items: { include: { timberVariant: true } } }
+        include: {
+          fromLocation: true,
+          toLocation: true,
+          items: { include: { timberVariant: true } },
+        },
       }),
-      this.prisma.stockTransfer.count({ where })
+      this.prisma.stockTransfer.count({ where }),
     ]);
     return { items, total, skip: Number(skip), take: Number(take) };
   }
@@ -57,7 +85,11 @@ export class StockTransferService {
   async getTransfer(id: string) {
     const t = await this.prisma.stockTransfer.findUnique({
       where: { id },
-      include: { fromLocation: true, toLocation: true, items: { include: { timberVariant: true } } }
+      include: {
+        fromLocation: true,
+        toLocation: true,
+        items: { include: { timberVariant: true } },
+      },
     });
     if (!t) throw new NotFoundException('Transfer not found');
     return t;
@@ -65,17 +97,28 @@ export class StockTransferService {
 
   async createTransfer(data: any) {
     return this.prisma.$transaction(async (tx) => {
-      const { transferDate, fromLocationId, toLocationId, notes, items, createdBy } = data;
-      
-      if (!items || items.length === 0) throw new BadRequestException('Transfer must contain items');
-      if (fromLocationId === toLocationId) throw new BadRequestException('Source and destination cannot be the same');
+      const {
+        transferDate,
+        fromLocationId,
+        toLocationId,
+        notes,
+        items,
+        createdBy,
+      } = data;
+
+      if (!items || items.length === 0)
+        throw new BadRequestException('Transfer must contain items');
+      if (fromLocationId === toLocationId)
+        throw new BadRequestException(
+          'Source and destination cannot be the same',
+        );
 
       const dateObj = transferDate ? new Date(transferDate) : new Date();
       const YY = String(dateObj.getFullYear()).slice(2);
       const MM = String(dateObj.getMonth() + 1).padStart(2, '0');
-      
+
       const count = await tx.stockTransfer.count({
-        where: { transferNumber: { startsWith: `TRF-${YY}${MM}` } }
+        where: { transferNumber: { startsWith: `TRF-${YY}${MM}` } },
       });
       const seq = String(count + 1).padStart(4, '0');
       const transferNumber = `TRF-${YY}${MM}-${seq}`;
@@ -88,8 +131,8 @@ export class StockTransferService {
           toLocationId,
           notes,
           createdBy,
-          status: 'DRAFT'
-        }
+          status: 'DRAFT',
+        },
       });
 
       for (const item of items) {
@@ -98,12 +141,19 @@ export class StockTransferService {
             transferId: transfer.id,
             timberVariantId: item.timberVariantId,
             quantityPcs: item.quantityPcs,
-            volumeM3: item.volumeM3
-          }
+            volumeM3: item.volumeM3,
+          },
         });
       }
 
-      await tx.auditLog.create({ data: { action: 'CREATE', entity: 'STOCK_TRANSFER', entity_id: transfer.id, after_data: { status: transfer.status } } });
+      await tx.auditLog.create({
+        data: {
+          action: 'CREATE',
+          entity: 'STOCK_TRANSFER',
+          entity_id: transfer.id,
+          after_data: { status: transfer.status },
+        },
+      });
       return transfer;
     });
   }
@@ -112,12 +162,16 @@ export class StockTransferService {
     return this.prisma.$transaction(async (tx) => {
       const transfer = await tx.stockTransfer.findUnique({
         where: { id },
-        include: { items: true }
+        include: { items: true },
       });
       if (!transfer) throw new NotFoundException('Transfer not found');
-      if (transfer.status !== 'DRAFT') throw new BadRequestException('Only DRAFT transfers can be posted');
+      if (transfer.status !== 'DRAFT')
+        throw new BadRequestException('Only DRAFT transfers can be posted');
 
-      await tx.stockTransfer.update({ where: { id }, data: { status: 'POSTED' } });
+      await tx.stockTransfer.update({
+        where: { id },
+        data: { status: 'POSTED' },
+      });
 
       for (const item of transfer.items) {
         // 1. OUT from source
@@ -130,8 +184,8 @@ export class StockTransferService {
           transfer.id,
           item.quantityPcs,
           item.volumeM3,
-            item.batch
-          );
+          item.batch,
+        );
         // 2. IN to destination
         await this.ledgerService.createMovement(
           tx as any,
@@ -142,11 +196,19 @@ export class StockTransferService {
           transfer.id,
           item.quantityPcs,
           item.volumeM3,
-            item.batch
-          );
+          item.batch,
+        );
       }
 
-      await tx.auditLog.create({ data: { action: 'POST', entity: 'STOCK_TRANSFER', entity_id: id, before_data: { status: 'DRAFT' }, after_data: { status: 'POSTED' } } });
+      await tx.auditLog.create({
+        data: {
+          action: 'POST',
+          entity: 'STOCK_TRANSFER',
+          entity_id: id,
+          before_data: { status: 'DRAFT' },
+          after_data: { status: 'POSTED' },
+        },
+      });
       return transfer;
     });
   }
@@ -155,10 +217,11 @@ export class StockTransferService {
     return this.prisma.$transaction(async (tx) => {
       const transfer = await tx.stockTransfer.findUnique({
         where: { id },
-        include: { items: true }
+        include: { items: true },
       });
       if (!transfer) throw new NotFoundException('Transfer not found');
-      if (transfer.status === 'CANCELLED') throw new BadRequestException('Already cancelled');
+      if (transfer.status === 'CANCELLED')
+        throw new BadRequestException('Already cancelled');
 
       if (transfer.status === 'POSTED') {
         for (const item of transfer.items) {
@@ -171,7 +234,7 @@ export class StockTransferService {
             'REVERSAL',
             transfer.id,
             item.quantityPcs,
-            item.volumeM3
+            item.volumeM3,
           );
           // Reverse OUT from source (IN)
           await this.ledgerService.createMovement(
@@ -182,13 +245,24 @@ export class StockTransferService {
             'REVERSAL',
             transfer.id,
             item.quantityPcs,
-            item.volumeM3
+            item.volumeM3,
           );
         }
       }
 
-      await tx.stockTransfer.update({ where: { id }, data: { status: 'CANCELLED' } });
-      await tx.auditLog.create({ data: { action: 'CANCEL', entity: 'STOCK_TRANSFER', entity_id: id, before_data: { status: transfer.status }, after_data: { status: 'CANCELLED' } } });
+      await tx.stockTransfer.update({
+        where: { id },
+        data: { status: 'CANCELLED' },
+      });
+      await tx.auditLog.create({
+        data: {
+          action: 'CANCEL',
+          entity: 'STOCK_TRANSFER',
+          entity_id: id,
+          before_data: { status: transfer.status },
+          after_data: { status: 'CANCELLED' },
+        },
+      });
       return transfer;
     });
   }
