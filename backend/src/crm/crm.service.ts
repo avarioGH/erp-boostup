@@ -323,6 +323,7 @@ export class CrmService {
       orderBy: { created_at: 'desc' },
     });
 
+    const nettings = await this.prisma.netting.findMany({ where: { partner_id: customerId, company_id: companyId }, orderBy: { date: 'desc' }});
     const payments = await this.prisma.payment.findMany({
       where: { invoice: { customer_id: customerId }, company_id: companyId },
       orderBy: { created_at: 'desc' },
@@ -330,11 +331,16 @@ export class CrmService {
 
     let totalSales = 0;
     let outstandingInvoices = 0;
+    let outstandingAp = 0;
 
-    // Old invoice logic
+    // Separate invoices
     invoices.forEach((inv) => {
-      if (inv.status !== 'PAID') {
-        outstandingInvoices += inv.remaining_amount || 0;
+      if (inv.status !== 'PAID' && inv.status !== 'CANCELLED') {
+        if (inv.type === 'AP') {
+          outstandingAp += inv.remaining_amount || 0;
+        } else {
+          outstandingInvoices += inv.remaining_amount || 0;
+        }
       }
       if (
         inv.status === 'POSTED' &&
@@ -366,9 +372,12 @@ export class CrmService {
       },
       finance: {
         outstandingAmount: outstandingInvoices,
+        outstandingAp,
+        netBalance: outstandingInvoices - outstandingAp,
         invoiceCount: invoices.length,
         invoices,
         payments,
+        nettings,
       },
       crm: {
         leads,

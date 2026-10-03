@@ -166,10 +166,7 @@ export default function Customer360Page() {
  );
  if (!data?.profile) return <div className="p-4 md:p-8 text-center text-red-500">Customer not found.</div>;
 
- const { customer: profile, summary, salesOrders, invoices, payments, nettings, opportunities, activities, timeline } = data;
-  const finance = { outstandingAmount: summary?.outstanding || 0, outstandingAp: summary?.outstanding_ap || 0, netBalance: summary?.net_balance || 0, invoices: invoices || [], payments: payments || [], nettings: nettings || [] };
-  const sales = { orderCount: salesOrders?.length || 0, totalInvoiced: summary?.total_invoiced || 0, totalPurchased: summary?.total_purchased || 0 };
-  const crm = { activeOpportunities: opportunities?.length || 0, activities: activities?.today || [] };
+ const { profile, sales, finance, crm, timeline } = data;
   const quotations = data.quotations || [];
   const deliveries = data.deliveries || [];
 
@@ -186,7 +183,7 @@ export default function Customer360Page() {
 
  // Add more from actual arrays if not in timeline
  const allEvents = [
- ...(activities?.today || activities || []).map((a:any) => ({ id: a.id, type: 'ACTIVITY', date: new Date(a.created_at), title: `Activity: ${a.title} (${a.type})` })),
+ ...crm.activities.map((a:any) => ({ id: a.id, type: 'ACTIVITY', date: new Date(a.created_at), title: `Activity: ${a.title} (${a.type})` })),
  ...quotations.map((q:any) => ({ id: q.id, type: 'QUOTATION', date: new Date(q.created_at), title: `Quotation ${q.quotation_number} created` })),
  ...deliveries.map((d:any) => ({ id: d.id, type: 'DELIVERY', date: new Date(d.created_at), title: `Delivery ${d.delivery_number} processed` })),
  ...finance.payments.map((p:any) => ({ id: p.id, type: 'PAYMENT', date: new Date(p.created_at), title: `Payment received: ${formatCurrency(p.amount)}` })),
@@ -229,7 +226,7 @@ export default function Customer360Page() {
  <CardTitle className="text-sm font-medium text-muted-foreground">Total Invoiced (LTV)</CardTitle>
  </CardHeader>
  <CardContent>
- <div className="text-2xl font-bold">{formatCurrency(sales.totalInvoiced || 0)}</div>
+ <div className="text-2xl font-bold">{formatCurrency(sales.totalSales || 0)}</div>
  </CardContent>
  </Card>
  <Card className="shadow-sm">
@@ -346,7 +343,7 @@ export default function Customer360Page() {
  </tr>
  </thead>
  <tbody>
- {(opportunities || []).map((o: any) => (
+ {crm.opportunities.map((o: any) => (
  <tr key={o.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-medium">{o.title}</td>
  <td className="px-4 py-3"><Badge variant="outline">{o.stage}</Badge></td>
@@ -375,7 +372,7 @@ export default function Customer360Page() {
  </tr>
  </thead>
  <tbody>
- {(activities?.today || activities || []).map((act: any) => (
+ {crm.activities.map((act: any) => (
  <tr key={act.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3"><Badge variant="secondary">{act.type}</Badge></td>
  <td className="px-4 py-3">{act.title}</td>
@@ -408,7 +405,7 @@ export default function Customer360Page() {
  </tr>
  </thead>
  <tbody>
- {(quotations || []).map((q: any) => (
+ {sales.quotations.map((q: any) => (
  <tr key={q.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{q.quotation_number}</td>
  <td className="px-4 py-3">{new Date(q.quotation_date || q.created_at).toLocaleDateString()}</td>
@@ -416,7 +413,7 @@ export default function Customer360Page() {
  <td className="px-4 py-3 text-right">{formatCurrency(q.total_amount)}</td>
  </tr>
  ))}
- {(quotations || []).length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No quotations found.</td></tr>}
+ {sales.quotations.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No quotations found.</td></tr>}
  </tbody>
  </table>
  </CardContent>
@@ -441,7 +438,7 @@ export default function Customer360Page() {
  </tr>
  </thead>
  <tbody>
- {(salesOrders || []).map((so: any) => {
+ {sales.orders.map((so: any) => {
    const paid = so.paid_amount !== undefined ? so.paid_amount : (so.total_amount || 0);
    const sisa = Math.max(0, (so.total_amount || 0) - paid);
    return (
@@ -466,7 +463,7 @@ export default function Customer360Page() {
  </tr>
    );
  })}
- {(salesOrders || []).length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Belum ada transaksi.</td></tr>}
+ {sales.orders.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Belum ada transaksi.</td></tr>}
  </tbody>
  </table>
  </CardContent>
@@ -490,14 +487,14 @@ export default function Customer360Page() {
  </tr>
  </thead>
  <tbody>
- {(deliveries || []).map((d: any) => (
+ {sales.deliveries.map((d: any) => (
  <tr key={d.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{d.delivery_number}</td>
  <td className="px-4 py-3">{new Date(d.delivery_date || d.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{d.status}</Badge></td>
  </tr>
  ))}
- {(deliveries || []).length === 0 && <tr><td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">No deliveries found.</td></tr>}
+ {sales.deliveries.length === 0 && <tr><td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">No deliveries found.</td></tr>}
  </tbody>
  </table>
  </CardContent>
