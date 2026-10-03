@@ -18,10 +18,11 @@ export default function PrintExportPage({ params }: { params: Promise<{ id: stri
 
   // Group items by groupName safely
   const groupedItems = (data.items || []).reduce((acc: any, item: any) => {
-    if (!acc[item.groupName]) acc[item.groupName] = []
-    acc[item.groupName].push(item)
-    return acc
-  }, {})
+    const gName = (item.groupName || "-").trim().toUpperCase();
+    if (!acc[gName]) acc[gName] = [];
+    acc[gName].push(item);
+    return acc;
+  }, {});
 
   let grandTotalKg = 0
   let grandTotalMc = 0
