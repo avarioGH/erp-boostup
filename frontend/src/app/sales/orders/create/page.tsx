@@ -38,8 +38,8 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled = fa
     }
     return text;
   };
-  const selectedOption = options?.find((o: any) => o.id === value || o._id === value)
-  const displayValue = open ? search : getDisplay(selectedOption)
+  const selectedOption = options?.find((o: any) => o.id === value || o._id === value) || (typeof value === 'object' ? value : null)
+  const displayValue = open ? search : (selectedOption ? getDisplay(selectedOption) : '')
 
   const filteredOptions = (options || []).filter((o: any) => 
     (o.name || '').toLowerCase().includes(search.toLowerCase()) || 
