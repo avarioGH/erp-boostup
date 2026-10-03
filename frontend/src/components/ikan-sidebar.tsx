@@ -44,7 +44,7 @@ const items: MenuItem[] = [
  subItems: [
  { title: "Produk Ikan", url: "/inventory/products" },
             { title: "Lokasi Gudang", url: "/inventory/warehouses" },
- { title: "Daftar Pelanggan", url: "/crm/customers" }
+ { title: "Daftar Pelanggan", url: "/crm/partners" }
  ]
  },
  {
@@ -53,6 +53,8 @@ const items: MenuItem[] = [
  icon: Box,
  id: "ikan_inventory",
  subItems: [
+ { title: "Pembelian Ikan (Nelayan)", url: "/inventory/purchase-fish/create" },
+ { title: "Pengolahan Stok (Repacking)", url: "/inventory/fish-processing/create" },
  { title: "Ikan Masuk", url: "/inventory/inflow" },
  { title: "Stok Ikan", url: "/inventory/stock" },
  { title: "Stock Movement", url: "/inventory/movements" },
@@ -197,11 +199,11 @@ const items: MenuItem[] = [
  },
  { 
  title: "Pelanggan & CRM", 
- url: "/crm/customers", 
+ url: "/crm/partners", 
  icon: Users,
  id: "crm",
  subItems: [
- { title: "Daftar Pelanggan", url: "/crm/customers" },
+ { title: "Daftar Pelanggan", url: "/crm/partners" },
  { title: "Pipeline & Leads", url: "/crm/pipeline" },
  { title: "Loyalty & Poin", url: "/customers/loyalty" },
  { title: "Voucher", url: "/customers/voucher" }
@@ -304,7 +306,11 @@ export function IkanSidebar() {
     } else {
       const hiddenForIkan = ['inventory', 'production', 'sales', 'pos', 'crm', 'finance'];
       if (item.id && hiddenForIkan.includes(item.id)) return false;
-      return true; // Bypass accessible modules for Ikan
+      if (!item.id || user?.role === 'Owner') return true;
+      const idMap: any = { ikan_master_data: 'inventory', ikan_inventory: 'inventory', ikan_reports: 'reports', ikan_sales: 'pos' };
+      const reqId = idMap[item.id] || item.id;
+      if (!user?.accessible_modules) return false;
+      return user.accessible_modules.includes(reqId);
     }
  }).map((item) => {
  const active = isActive(item.url)
@@ -375,7 +381,7 @@ export function IkanSidebar() {
  const userName = user?.name?.toLowerCase() || "";
  const isKayu = false;
  const isIkan = true;
- if (isIkan) return true;
+ if (user?.role !== 'Owner') return false; // Settings only for owner in this simplified RBAC
 
  if (!item.id || user?.role === 'Owner') return true;
  return user?.accessible_modules?.includes(item.id);
