@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Search } from "lucide-react"
+import { Search, ArrowLeft, Plus, X } from 'lucide-react'
 import { useRef } from "react"
 
 function SearchableSelect({ options, value, onChange, placeholder, disabled = false }: any) {
@@ -196,7 +196,7 @@ export default function CreateSalesOrderPage() {
               <div className="flex justify-between items-center mb-1">
                 <Label>Pelanggan (Customer)</Label>
                 <Dialog open={newCustomerOpen} onOpenChange={setNewCustomerOpen}>
-                  <DialogTrigger asChild>
+                  <DialogTrigger>
                     <Button variant="outline" size="sm" className="h-6 text-xs px-2"><Plus className="w-3 h-3 mr-1"/> Baru</Button>
                   </DialogTrigger>
                   <DialogContent>
