@@ -169,7 +169,9 @@ export default function Customer360Page() {
  const { customer: profile, summary, salesOrders, invoices, payments, nettings, opportunities, activities, timeline } = data;
   const finance = { outstandingAmount: summary?.outstanding || 0, outstandingAp: summary?.outstanding_ap || 0, netBalance: summary?.net_balance || 0, invoices: invoices || [], payments: payments || [], nettings: nettings || [] };
   const sales = { orderCount: salesOrders?.length || 0, totalInvoiced: summary?.total_invoiced || 0, totalPurchased: summary?.total_purchased || 0 };
-  const crm = { activeOpportunities: opportunities?.length || 0 };
+  const crm = { activeOpportunities: opportunities?.length || 0, activities: activities?.today || [] };
+  const quotations = data.quotations || [];
+  const deliveries = data.deliveries || [];
 
  // Enhance timeline with unified data if backend timeline is incomplete
  let unifiedTimeline = [...(timeline || [])];
@@ -184,9 +186,9 @@ export default function Customer360Page() {
 
  // Add more from actual arrays if not in timeline
  const allEvents = [
- ...crm.activities.map((a:any) => ({ id: a.id, type: 'ACTIVITY', date: new Date(a.created_at), title: `Activity: ${a.title} (${a.type})` })),
- ...sales.quotations.map((q:any) => ({ id: q.id, type: 'QUOTATION', date: new Date(q.created_at), title: `Quotation ${q.quotation_number} created` })),
- ...sales.deliveries.map((d:any) => ({ id: d.id, type: 'DELIVERY', date: new Date(d.created_at), title: `Delivery ${d.delivery_number} processed` })),
+ ...(activities?.today || activities || []).map((a:any) => ({ id: a.id, type: 'ACTIVITY', date: new Date(a.created_at), title: `Activity: ${a.title} (${a.type})` })),
+ ...quotations.map((q:any) => ({ id: q.id, type: 'QUOTATION', date: new Date(q.created_at), title: `Quotation ${q.quotation_number} created` })),
+ ...deliveries.map((d:any) => ({ id: d.id, type: 'DELIVERY', date: new Date(d.created_at), title: `Delivery ${d.delivery_number} processed` })),
  ...finance.payments.map((p:any) => ({ id: p.id, type: 'PAYMENT', date: new Date(p.created_at), title: `Payment received: ${formatCurrency(p.amount)}` })),
  ...feed
  ].sort((a, b) => b.date.getTime() - a.date.getTime());
