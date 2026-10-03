@@ -238,7 +238,7 @@ export default function PosReports() {
               </div>
               <div className="space-y-2">
                 <Label>Metode</Label>
-                <UISelect value={payMethod} onValueChange={setPayMethod}>
+                <UISelect value={payMethod} onValueChange={(v) => setPayMethod(v || "")}>
                   <SelectTrigger><SelectValue/></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Transfer">Transfer Bank</SelectItem>
