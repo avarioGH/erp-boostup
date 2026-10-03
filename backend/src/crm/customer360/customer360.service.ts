@@ -103,7 +103,7 @@ export class Customer360Service {
       where: { company_id: companyId, customer_id: customerId },
       orderBy: { order_date: 'desc' },
       take: 20,
-      include: { pos_shift: true },
+      include: { pos_shift: true, allocations: true },
     });
 
     const lastOrder = salesOrders.length > 0 ? salesOrders[0].order_date : null;
