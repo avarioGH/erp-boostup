@@ -15,6 +15,8 @@ import { PaymentModule } from './payment/payment.module';
 
 import { ExpenseController } from './expense/expense.controller';
 import { AssetFinanceController } from './asset/asset-finance.controller';
+import { NettingController } from './netting/netting.controller';
+import { NettingService } from './netting/netting.service';
 
 @Module({
   imports: [PrismaModule, GlModule, InvoiceModule, PaymentModule],
@@ -24,6 +26,7 @@ import { AssetFinanceController } from './asset/asset-finance.controller';
     BankReconciliationController,
     ExpenseController,
     AssetFinanceController,
+    NettingController,
   ],
   providers: [
     ExpenseService,
@@ -31,6 +34,7 @@ import { AssetFinanceController } from './asset/asset-finance.controller';
     FinanceService,
     PeriodService,
     BankReconciliationService,
+    NettingService,
   ],
   exports: [FinanceService],
 })

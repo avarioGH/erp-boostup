@@ -1,19 +1,15 @@
 const fs = require('fs');
+
 let schema = fs.readFileSync('backend/prisma/schema.prisma', 'utf8');
 
-schema = schema.replace(
-  '  // RBAC Warehouse Access',
-  '  created_disposals  InventoryDisposal[] @relation("DisposalCreator")\n  approved_disposals InventoryDisposal[] @relation("DisposalApprover")\n  // RBAC Warehouse Access'
-);
+// Replace any remaining "Supplier?" or "Supplier[]" or "Supplier "
+schema = schema.replace(/suppliers\s+Supplier\[\]/g, 'suppliers       Customer[]');
+schema = schema.replace(/supplier\s+Supplier\?/g, 'supplier                  Customer?');
+schema = schema.replace(/supplier\s+Supplier\b/g, 'supplier          Customer');
 
-schema = schema.replace(
-  '  user_accesses UserWarehouseAccess[]',
-  '  disposals      InventoryDisposal[]\n  user_accesses UserWarehouseAccess[]'
-);
-
-schema = schema.replace(
-  '  purchase_request_items    PurchaseRequestItem[]',
-  '  disposalItems             InventoryDisposalItem[]\n  purchase_request_items    PurchaseRequestItem[]'
-);
+// Let's use a more robust regex for all 'Supplier' as type:
+// This looks for any field type declaration of Supplier, Supplier?, or Supplier[]
+schema = schema.replace(/(\w+\s+)Supplier(\[\]|\?|)(.*?)/g, '$1Customer$2$3');
 
 fs.writeFileSync('backend/prisma/schema.prisma', schema);
+console.log('Fixed remaining Supplier references.');

@@ -26,7 +26,6 @@ model Company {
   roles           Role[]
   users           User[]
   warehouses      Warehouse[]
-  suppliers       Supplier[]
   categories      Category[]
   units           Unit[]
   brands          Brand[]
@@ -324,33 +323,6 @@ model UserWarehouseAccess {
   @@unique([user_id, warehouse_id])
 }
 
-model Supplier {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
-  company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  code       String
-  name       String
-  phone      String?
-  email      String?
-  address    String?
-  pic        String?
-  tax_number String?
-  notes      String?
-  status     Boolean @default(true)
-
-  products        Product[]
-  purchase_orders PurchaseOrder[]
-  invoices        Invoice[]
-  goods_receipts  GoodsReceipt[]
-
-  created_at      DateTime          @default(now())
-  updated_at      DateTime          @updatedAt
-  deleted_at      DateTime?
-  SupplierProduct SupplierProduct[]
-
-  @@unique([company_id, code])
-}
-
 model Category {
   id         String     @id @default(auto()) @map("_id") @db.ObjectId
   company_id String     @db.ObjectId
@@ -414,7 +386,7 @@ model Product {
   unit_id                   String                   @db.ObjectId
   unit                      Unit                     @relation(fields: [unit_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   supplier_id               String?                  @db.ObjectId
-  supplier                  Supplier?                @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  supplier                  Customer?                @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   code           String
   barcode        String?
@@ -1581,6 +1553,7 @@ model InstalledPlugin {
 // =======================
 
 model Customer {
+  roles        String[]   @default(["CUSTOMER"])
   id           String     @id @default(auto()) @map("_id") @db.ObjectId
   company_id   String     @db.ObjectId
   company      Company    @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -1601,17 +1574,22 @@ model Customer {
   delivery_address String?
   tax_id           String?
 
-  orders            SalesOrder[]
-  quotations        Quotation[]
-  invoices          Invoice[]
-  timberSalesOrders TimberSalesOrder[]
+  orders               SalesOrder[]
+  quotations           Quotation[]
+  invoices_as_customer Invoice[]          @relation("InvoiceCustomer")
+  invoices_as_supplier Invoice[]          @relation("InvoiceSupplier")
+  timberSalesOrders    TimberSalesOrder[]
 
-  created_at      DateTime         @default(now())
-  updated_at      DateTime         @updatedAt
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
   deleted_at      DateTime?
   Opportunity     Opportunity[]
   CrmActivity     CrmActivity[]
   timberShipments TimberShipment[]
+  Product         Product[]
+  PurchaseOrder   PurchaseOrder[]
+  GoodsReceipt    GoodsReceipt[]
+  SupplierProduct SupplierProduct[]
 
   @@unique([company_id, code])
 }
@@ -1957,12 +1935,12 @@ model Invoice {
   sales_order_id String?     @db.ObjectId
   sales_order    SalesOrder? @relation(fields: [sales_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   customer_id    String?     @db.ObjectId
-  customer       Customer?   @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customer       Customer?   @relation("InvoiceCustomer", fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   purchase_order_id String?        @db.ObjectId
   purchase_order    PurchaseOrder? @relation(fields: [purchase_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   supplier_id       String?        @db.ObjectId
-  supplier          Supplier?      @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  supplier          Customer?      @relation("InvoiceSupplier", fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   invoice_number String
   invoice_date   DateTime
@@ -2044,7 +2022,7 @@ model PurchaseOrder {
   company_id       String    @db.ObjectId
   company          Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   supplier_id      String    @db.ObjectId
-  supplier         Supplier  @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  supplier         Customer  @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   order_number     String
   order_date       DateTime
   expected_receipt DateTime?
@@ -2093,7 +2071,7 @@ model GoodsReceipt {
   purchase_order_id String        @db.ObjectId
   purchase_order    PurchaseOrder @relation(fields: [purchase_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   supplier_id       String        @db.ObjectId
-  supplier          Supplier      @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  supplier          Customer      @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   warehouse_id      String        @db.ObjectId
   warehouse         Warehouse     @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   receipt_number    String
@@ -2628,7 +2606,7 @@ model SupplierProduct {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
   company_id        String   @db.ObjectId
   supplier_id       String   @db.ObjectId
-  supplier          Supplier @relation(fields: [supplier_id], references: [id], onDelete: Cascade)
+  supplier          Customer @relation(fields: [supplier_id], references: [id], onDelete: Cascade)
   product_id        String   @db.ObjectId
   unit_price        Float
   minimum_order_qty Float    @default(1)
