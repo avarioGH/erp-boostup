@@ -57,12 +57,12 @@ export class NotificationListener {
         where: { id: event.approvalRequestId },
       });
       // @ts-ignore
-      if (!request || !request.requested_by) return;
+      if (!request || !(request as any).requested_by) return;
 
       await this.notificationService.send({
         companyId: event.companyId,
         // @ts-ignore
-        userId: request.requested_by,
+        userId: (request as any).requested_by,
         type: 'APPROVAL_APPROVED',
         title: 'Request Approved',
         message: 'Your ' + event.moduleType + ' request has been approved.',
@@ -74,7 +74,7 @@ export class NotificationListener {
           'notif-appapp-' +
           event.approvalRequestId +
           '-' +
-          request.requested_by,
+          (request as any).requested_by,
       });
     } catch (e) {
       this.logger.error('Failed to process approval.approved notification', e);
@@ -88,12 +88,12 @@ export class NotificationListener {
         where: { id: event.approvalRequestId },
       });
       // @ts-ignore
-      if (!request || !request.requested_by) return;
+      if (!request || !(request as any).requested_by) return;
 
       await this.notificationService.send({
         companyId: event.companyId,
         // @ts-ignore
-        userId: request.requested_by,
+        userId: (request as any).requested_by,
         type: 'APPROVAL_REJECTED',
         title: 'Request Rejected',
         message: 'Your ' + event.moduleType + ' request has been rejected.',
@@ -105,7 +105,7 @@ export class NotificationListener {
           'notif-apprej-' +
           event.approvalRequestId +
           '-' +
-          request.requested_by,
+          (request as any).requested_by,
       });
     } catch (e) {
       this.logger.error('Failed to process approval.rejected notification', e);

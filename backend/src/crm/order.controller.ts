@@ -73,7 +73,7 @@ export class OrderController {
           order_number: orderNumber,
           order_date: new Date(),
           status: 'COMPLETED',
-          total_amount: totalAmount,
+          total_amount: totalAmount, ecommerce_session_id: MANUAL__,
           notes: data.notes,
           items: {
             create: orderItems,
