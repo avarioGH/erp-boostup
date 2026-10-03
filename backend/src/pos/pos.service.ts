@@ -117,7 +117,7 @@ export class PosService {
         let resolvedWarehouseId = warehouseId;
         if (!resolvedWarehouseId) {
           const defaultWh = await tx.warehouse.findFirst({
-            where: { company_id: companyId },
+            where: { company_id: companyId, ...(warehouseId ? { warehouse_id: warehouseId } : {}) },
           });
           resolvedWarehouseId = defaultWh?.id;
         }
@@ -140,7 +140,7 @@ export class PosService {
 
       // 3. Payment & Finance Transaction
       const cashAccount = await tx.cashAccount.findFirst({
-        where: { company_id: companyId },
+        where: { company_id: companyId, ...(warehouseId ? { warehouse_id: warehouseId } : {}) },
       });
 
       if (paidAmount > 0) {
@@ -254,9 +254,9 @@ export class PosService {
     return _posResult;
   }
 
-  async getHistory(companyId: string) {
+  async getHistory(companyId: string, warehouseId?: string) {
     return this.prisma.salesOrder.findMany({
-      where: { company_id: companyId },
+      where: { company_id: companyId, ...(warehouseId ? { warehouse_id: warehouseId } : {}) },
       include: {
         customer: true,
         allocations: true,

@@ -139,11 +139,7 @@ export class AnalyticsService {
     };
   }
 
-  async getSalesAnalytics(
-    companyId: string,
-    startDate?: string,
-    endDate?: string,
-  ) {
+  async getSalesAnalytics(companyId: string, startDate?: string, endDate?: string, warehouseId?: string) {
     const whereClause: any = {
       company_id: companyId,
       status: { notIn: ['CANCELLED', 'DRAFT'] },

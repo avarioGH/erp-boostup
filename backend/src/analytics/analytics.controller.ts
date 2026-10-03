@@ -15,11 +15,13 @@ export class AnalyticsController {
     @Request() req: any,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('warehouseId') warehouseId?: string,
   ) {
     return this.analyticsService.getSalesAnalytics(
       req.user.company_id || req.user.companyId,
       startDate,
       endDate,
+      warehouseId,
     );
   }
 

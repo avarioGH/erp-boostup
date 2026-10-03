@@ -6,7 +6,7 @@ import {
   Body,
   UseGuards,
   Request,
-  Get,
+  Get, Query,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PosService } from './pos.service';
@@ -31,8 +31,8 @@ export class PosController {
 
   @Permissions('pos.view')
   @Get('history')
-  async getHistory(@Request() req) {
-    return this.posService.getHistory(req.user.company_id);
+  async getHistory(@Request() req, @Query('warehouseId') warehouseId?: string) {
+    return this.posService.getHistory(req.user.company_id, warehouseId);
   }
 
   @Permissions('pos.view')

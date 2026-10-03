@@ -29,6 +29,7 @@ export class TimberSalesController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
     @Query('status') status?: string,
     @Query('customerId') customerId?: string,
+      @Query('warehouseId') warehouseId?: string,
   ) {
     return this.service.findAllOrders(page, limit, status, customerId);
   }
