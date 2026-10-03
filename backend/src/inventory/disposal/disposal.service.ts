@@ -45,13 +45,13 @@ export class DisposalService {
 
   async create(dto: CreateDisposalDto, userId: string) {
     const nextNum = await this.prisma.inventoryDisposal.count({
-      where: { company_id: dto.companyId },
+      where: { company_id: dto.companyId as string },
     });
     const disposalNo = `DSP-${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, '0')}-${String(nextNum + 1).padStart(4, '0')}`;
 
     return this.prisma.inventoryDisposal.create({
       data: {
-        company_id: dto.companyId,
+        company_id: dto.companyId as string,
         warehouse_id: dto.warehouseId,
         disposal_number: disposalNo,
         disposal_date: new Date(),
