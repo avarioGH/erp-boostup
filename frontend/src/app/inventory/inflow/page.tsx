@@ -69,7 +69,7 @@ export default function InflowPage() {
                   <th className="px-6 py-4 font-medium text-muted-foreground">Tanggal</th>
                   <th className="px-6 py-4 font-medium text-muted-foreground">Gudang</th>
                     <th className="px-6 py-4 font-medium text-muted-foreground">Keterangan</th>
-                  <th className="px-6 py-4 font-medium text-muted-foreground">Total Item</th>
+                  <th className="px-6 py-4 font-medium text-muted-foreground">Rincian Ikan</th>
                   <th className="px-6 py-4 font-medium text-muted-foreground text-right">Aksi</th>
                 </tr>
               </thead>
@@ -85,7 +85,19 @@ export default function InflowPage() {
                       <td className="px-6 py-4">{new Date(item.tally_date).toLocaleDateString('id-ID')}</td>
                       <td className="px-6 py-4">{item.warehouse?.name || '-'}</td>
                         <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">{item.notes || '-'}</td>
-                      <td className="px-6 py-4">{item.items?.length || 0} Barang</td>
+                      <td className="px-6 py-4">
+                        {item.items && item.items.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-[250px]">
+                            {item.items.map((it: any, idx: number) => (
+                              <span key={idx} className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                {it.product?.name || 'Ikan'} <strong className="ml-1">x{it.qty}</strong>
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-right">
                         <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(item.id)}>
                           <Trash2 className="w-4 h-4" />
