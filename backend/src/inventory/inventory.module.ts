@@ -35,9 +35,10 @@ import { ReportsModule } from '../reports/reports.module';
 import { DisposalController } from './disposal/disposal.controller';
 import { DisposalService } from './disposal/disposal.service';
 import { FishPurchaseModule } from './fish-purchase/fish-purchase.module';
+import { FishProcessingModule } from './fish-processing/fish-processing.module';
 
 @Module({
-  imports: [ReportsModule, FishPurchaseModule],
+  imports: [ReportsModule, FishPurchaseModule, FishProcessingModule],
   controllers: [
     StockInTallyController,
     BatchAuditController,

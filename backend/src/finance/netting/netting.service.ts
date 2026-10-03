@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { PrismaService } from 'nestjs-prisma';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class NettingService {
@@ -35,7 +35,7 @@ export class NettingService {
 
       // Calculate total outstanding AP and AR
       let outstandingAP = 0;
-      const apList = [];
+      const apList: any[] = [];
       for (const ap of apInvoices) {
         const paidAP = await tx.paymentAllocation.aggregate({
           where: { invoice_id: ap.id },
@@ -49,7 +49,7 @@ export class NettingService {
       }
 
       let outstandingAR = 0;
-      const arList = [];
+      const arList: any[] = [];
       for (const ar of arInvoices) {
         const paidAR = await tx.paymentAllocation.aggregate({
           where: { invoice_id: ar.id },

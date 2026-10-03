@@ -45,7 +45,7 @@ export default function PosReports() {
     setIsPaying(true)
     try {
       await FinanceAPI.createPayment({
-        customerId: selectedOrder.customer_id,
+        partnerId: selectedOrder.partner_id,
         amount: Number(payAmount),
         paymentMethod: payMethod,
         paymentDate: payDate,

@@ -195,7 +195,7 @@ export default function SalesOrdersPage() {
  </div>
  )}
  <div className="pt-4 border-t">
- <Button className="w-full" variant="outline" onClick={() => router.push("/crm/customers")}>View Customer 360</Button>
+ <Button className="w-full" variant="outline" onClick={() => router.push("/crm/partners")}>View Customer 360</Button>
  </div>
  </CardContent>
  </Card>

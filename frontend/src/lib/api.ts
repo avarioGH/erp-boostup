@@ -180,11 +180,11 @@ export const UserAPI: any = {
 };
 
 export const CRMAPI: any = {
-  getCustomers: async () => (await api.get('/crm/customers')).data,
+  getPartners: async () => (await api.get('/crm/partners')).data,
   getLeads: async () => (await api.get('/crm/leads')).data,
   getOpportunities: async () => (await api.get('/crm/opportunities')).data,
   convertLead: async (id: string) => (await api.post('/crm/leads/' + id + '/convert')).data,
-  getCustomer360: async (id: string) => (await api.get('/crm/customers/' + id + '/360')).data,
+  getPartner360: async (id: string) => (await api.get('/crm/partners/' + id + '/360')).data,
   createActivity: async (data: any) => (await api.post('/crm/activities', data)).data,
 };
 

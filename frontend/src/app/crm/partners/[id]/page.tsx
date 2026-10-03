@@ -553,7 +553,7 @@ export default function Customer360Page() {
             </div>
             <div className="space-y-2">
               <Label>Metode Pembayaran</Label>
-              <Select value={payMethod} onValueChange={(val: string) => setPayMethod(val)}>
+              <Select value={payMethod} onValueChange={(val: any) => setPayMethod(val || "")}>
                 <SelectTrigger><SelectValue placeholder="Pilih Metode" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Tunai">Tunai</SelectItem>

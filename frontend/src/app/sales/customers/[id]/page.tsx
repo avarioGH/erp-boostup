@@ -90,7 +90,7 @@ export default function CustomerDetailPage() {
       }
 
       await FinanceAPI.createPayment({
-        customerId: id,
+        partnerId: id,
         amount: Number(payAmount),
         paymentMethod: payMethod,
         paymentDate: payDate,

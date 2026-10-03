@@ -434,7 +434,7 @@ export default function PosTransaction() {
  warehouseId: selectedWarehouse || undefined,
  paymentMethod,
  idempotency_key: idempotencyKey,
-   customerId: !isNewCustomer ? selectedCustomerId : undefined,
+   partnerId: !isNewCustomer ? selectedCustomerId : undefined,
    newCustomerName: isNewCustomer ? newCustomerName : undefined,
    newCustomerPhone: isNewCustomer ? newCustomerPhone : undefined,
    newCustomerAddress: isNewCustomer ? newCustomerAddress : undefined,

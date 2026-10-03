@@ -124,7 +124,7 @@ export default function PurchasingOverviewPage() {
  <ResponsiveContainer width="100%" height="100%">
  <BarChart data={data.top_suppliers} margin={{ top: 0, right: 10, left: 20, bottom: 0 }}>
  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
- <XAxis dataKey="supplierId" tick={{ fontSize: 12 }} />
+ <XAxis dataKey="partnerId" tick={{ fontSize: 12 }} />
  <YAxis tickFormatter={(v) => `${(v/1000000).toFixed(0)}M`} tick={{ fontSize: 12 }} />
  <Tooltip formatter={(value: any) => [`Rp ${Number(value).toLocaleString('id-ID')}`, 'Total Spend']} />
  <Bar dataKey="total" fill="#4f46e5" radius={[4, 4, 0, 0]} />

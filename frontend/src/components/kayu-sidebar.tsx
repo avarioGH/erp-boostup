@@ -44,7 +44,7 @@ const items: MenuItem[] = [
  subItems: [
  { title: "Produk Ikan", url: "/inventory/products" },
             { title: "Lokasi Gudang", url: "/inventory/warehouses" },
- { title: "Daftar Pelanggan", url: "/crm/customers" }
+ { title: "Daftar Pelanggan", url: "/crm/partners" }
  ]
  },
  {
@@ -196,11 +196,11 @@ const items: MenuItem[] = [
  },
  { 
  title: "Pelanggan & CRM", 
- url: "/crm/customers", 
+ url: "/crm/partners", 
  icon: Users,
  id: "crm",
  subItems: [
- { title: "Daftar Pelanggan", url: "/crm/customers" },
+ { title: "Daftar Pelanggan", url: "/crm/partners" },
  { title: "Pipeline & Leads", url: "/crm/pipeline" },
  { title: "Loyalty & Poin", url: "/customers/loyalty" },
  { title: "Voucher", url: "/customers/voucher" }

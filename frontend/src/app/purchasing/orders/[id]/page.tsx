@@ -118,7 +118,7 @@ export default function PurchaseOrderDetailPage() {
  <div>
  <h1 className="text-[28px] font-bold tracking-tight text-foreground">{po.order_number}</h1>
  <p className="text-[14px] text-muted-foreground mt-1">
- Supplier: <Link href="/crm/customers" className="text-primary hover:underline">{po.supplier?.name}</Link> | Date: {new Date(po.order_date).toLocaleDateString()}
+ Supplier: <Link href="/crm/partners" className="text-primary hover:underline">{po.supplier?.name}</Link> | Date: {new Date(po.order_date).toLocaleDateString()}
  </p>
  </div>
  <div className="flex flex-wrap gap-2 mt-4 md:mt-0">

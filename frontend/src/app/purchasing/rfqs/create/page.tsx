@@ -20,7 +20,7 @@ export default function CreateRFQPage() {
   const [warehouses, setWarehouses] = useState<any[]>([])
 
   const [form, setForm] = useState({
-    supplierId: "",
+    partnerId: "",
     warehouseId: "",
     orderDate: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
     expectedReceipt: "",
@@ -46,7 +46,7 @@ export default function CreateRFQPage() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
-    if (!form.supplierId) return toast({ title: "Pilih Supplier", variant: "destructive" })
+    if (!form.partnerId) return toast({ title: "Pilih Supplier", variant: "destructive" })
     if (items.length === 0) return toast({ title: "Tambah minimal 1 item", variant: "destructive" })
     
     setLoading(true)
@@ -91,7 +91,7 @@ export default function CreateRFQPage() {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Supplier</Label>
-              <Select value={form.supplierId} onValueChange={(v: any) => setForm({...form, supplierId: v})}>
+              <Select value={form.partnerId} onValueChange={(v: any) => setForm({...form, partnerId: v})}>
                 <SelectTrigger><SelectValue placeholder="Pilih Supplier" /></SelectTrigger>
                 <SelectContent>
                   {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}

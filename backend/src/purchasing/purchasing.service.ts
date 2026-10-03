@@ -130,7 +130,7 @@ export class PurchasingService {
       warehouseId,
     } = data;
 
-    const supplier = await this.prisma.supplier.findUnique({
+    const supplier = await this.prisma.customer.findUnique({
       where: { id: supplierId },
     });
     if (!supplier || supplier.company_id !== companyId)

@@ -114,7 +114,7 @@ export default function CreateSalesOrderPage() {
         // Refetch customers
         api.get('/customers?limit=1000').then(c => {
           setCustomers(c?.data?.data || c?.data || [])
-          setForm(prev => ({...prev, customer_id: res.data.id || res.data._id}))
+          setForm(prev => ({...prev, partner_id: res.data.id || res.data._id}))
         })
         setNewCustomer({ name: "", phone: "" })
       }
@@ -128,7 +128,7 @@ export default function CreateSalesOrderPage() {
   const [products, setProducts] = useState<any[]>([])
 
   const [form, setForm] = useState({
-    customer_id: "",
+    partner_id: "",
     order_date: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0],
     notes: "",
     payment_method: "Transfer"
@@ -156,7 +156,7 @@ export default function CreateSalesOrderPage() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
-    if (!form.customer_id) return toast({ title: "Pilih Pelanggan", variant: "destructive" })
+    if (!form.partner_id) return toast({ title: "Pilih Pelanggan", variant: "destructive" })
     if (items.length === 0) return toast({ title: "Tambah minimal 1 barang", variant: "destructive" })
     
     setLoading(true)
@@ -221,8 +221,8 @@ export default function CreateSalesOrderPage() {
               </div>
               <SearchableSelect 
                 options={customers} 
-                value={form.customer_id} 
-                onChange={(v: any) => setForm({...form, customer_id: v})} 
+                value={form.partner_id} 
+                onChange={(v: any) => setForm({...form, partner_id: v})} 
                 placeholder="Pilih Pelanggan..." 
               />
             </div>

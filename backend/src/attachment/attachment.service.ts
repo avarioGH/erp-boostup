@@ -248,7 +248,7 @@ export class AttachmentService {
         }));
         break;
       case 'SUPPLIER':
-        exists = !!(await this.prisma.supplier.findFirst({
+        exists = !!(await this.prisma.customer.findFirst({
           where: { id: entityId, company_id: companyId },
         }));
         break;

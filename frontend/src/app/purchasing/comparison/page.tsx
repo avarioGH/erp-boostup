@@ -36,13 +36,13 @@ export default function SupplierComparisonPage() {
  .finally(() => setLoading(false));
  }, [productId, toast]);
 
- const awardSupplier = async (supplierId: string, unitPrice: number) => {
+ const awardSupplier = async (partnerId: string, unitPrice: number) => {
  if (!prId) return;
  setConverting(true);
  try {
  // Create an RFQ (DRAFT PO) for the selected supplier
  const payload = {
- supplierId,
+ partnerId,
  orderDate: new Date().toISOString(),
  items: [{ productId, qty, price: unitPrice }],
  notes: `Converted from PR ${prId}`
@@ -102,7 +102,7 @@ export default function SupplierComparisonPage() {
  <Button 
  size="sm" 
  disabled={converting || !c.active || qty < c.minimum_order_qty}
- onClick={() => awardSupplier(c.supplier_id, c.unit_price)}
+ onClick={() => awardSupplier(c.partner_id, c.unit_price)}
  className=""
  >
  <CheckCircle2 className="w-4 h-4 mr-2" /> Award & Create RFQ
