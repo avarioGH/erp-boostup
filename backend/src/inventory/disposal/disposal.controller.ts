@@ -28,6 +28,8 @@ export class DisposalController {
 
   @Post()
   async create(@Body() dto: CreateDisposalDto, @Request() req: any) {
+    dto.companyId = req.user.companyId || req.user.company_id;
+    dto.reason = dto.reason || dto.notes || "Pemusnahan (Disposal)";
     return this.disposalService.create(dto, req.user.id);
   }
 

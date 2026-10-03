@@ -22,17 +22,17 @@ export class CreateDisposalItemDto {
 }
 
 export class CreateDisposalDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  companyId: string;
+  companyId?: string;
 
   @IsString()
   @IsNotEmpty()
   warehouseId: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  reason: string;
+  reason?: string;
 
   @IsOptional()
   @IsString()
