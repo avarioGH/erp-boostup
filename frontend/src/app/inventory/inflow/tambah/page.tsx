@@ -39,7 +39,7 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled = fa
           value={displayValue}
           onChange={e => { setSearch(e.target.value); if (!open) setOpen(true); }}
           onFocus={() => { setOpen(true); setSearch(""); }}
-          placeholder={selectedOption ? selectedOption.name : `Pilih Ikan... (Total: ${options?.length || 0})`}
+          placeholder={selectedOption ? selectedOption.name : placeholder || `Pilih... (Total: ${options?.length || 0})`}
           className="w-full pr-8 cursor-pointer bg-accent/30"
           readOnly={!open}
         />
@@ -108,8 +108,16 @@ export default function CreateInflowPage() {
       if (typeof window !== 'undefined') {
         const active = localStorage.getItem('active_warehouse')
         if (active && active !== 'all') {
-          setLockedWarehouse(true)
-          setForm(prev => ({ ...prev, warehouse_id: active }))
+          try {
+            const parsed = JSON.parse(active);
+            if (parsed && parsed.id) {
+              setLockedWarehouse(true);
+              setForm(prev => ({ ...prev, warehouse_id: parsed.id }));
+            }
+          } catch(e) {
+            setLockedWarehouse(true);
+            setForm(prev => ({ ...prev, warehouse_id: active }));
+          }
         }
       }
     })
