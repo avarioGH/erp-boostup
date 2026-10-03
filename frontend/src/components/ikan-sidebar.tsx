@@ -301,12 +301,22 @@ export function IkanSidebar() {
  if (isKayu) {
       const allowedForKayu = ['inventory', 'production', 'dashboard', 'settings', 'ai', 'sales', 'pos', 'crm', 'finance', 'hr'];
       if (item.id && !allowedForKayu.includes(item.id)) return false;
-      if (!item.id || user?.role === 'Owner') return true;
+      
+      
+      const role = (user?.role || '').toLowerCase();
+      if (!item.id || role === 'owner' || role === 'admin') return true;
+
+
       return user?.accessible_modules?.includes(item.id);
     } else {
       const hiddenForIkan = ['inventory', 'production', 'sales', 'pos', 'crm', 'finance', 'purchasing', 'manufacturing'];
       if (item.id && hiddenForIkan.includes(item.id)) return false;
-      if (!item.id || user?.role === 'Owner') return true;
+      
+      
+      const role = (user?.role || '').toLowerCase();
+      if (!item.id || role === 'owner' || role === 'admin') return true;
+
+
       const idMap: any = { ikan_master_data: 'inventory', ikan_inventory: 'inventory', ikan_reports: 'reports', ikan_sales: 'pos' };
       const reqId = idMap[item.id] || item.id;
       if (!user?.accessible_modules) return false;
@@ -381,9 +391,17 @@ export function IkanSidebar() {
  const userName = user?.name?.toLowerCase() || "";
  const isKayu = false;
  const isIkan = true;
- if (user?.role !== 'Owner') return false; // Settings only for owner in this simplified RBAC
+ 
+      const ur = (user?.role || '').toLowerCase();
+      if (ur !== 'owner' && ur !== 'admin') return false;
+ // Settings only for owner in this simplified RBAC
 
- if (!item.id || user?.role === 'Owner') return true;
+ 
+      
+      const role = (user?.role || '').toLowerCase();
+      if (!item.id || role === 'owner' || role === 'admin') return true;
+
+
  return user?.accessible_modules?.includes(item.id);
  }).map((item) => {
  const active = isActive(item.url)
