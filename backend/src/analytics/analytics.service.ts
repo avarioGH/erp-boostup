@@ -51,7 +51,8 @@ export class AnalyticsService {
     const cashFlow = monthlyRevenue * 0.8; // Approximation since Finance doesn't have warehouse_id
 
     // Inventory Value
-    const inventoryValue = 0;
+    const stocks = await this.prisma.warehouseStock.findMany({ where: warehouseId && warehouseId !== 'all' ? { company_id: companyId, warehouse_id: warehouseId } : { company_id: companyId }, include: { product: true } });
+    const inventoryValue = stocks.reduce((sum, s) => sum + ((s.current_stock || 0) * (s.product?.purchase_price || 0)), 0);
 
     // Top Customers
     const topCustAgg = await this.prisma.salesOrder.groupBy({
@@ -77,7 +78,7 @@ export class AnalyticsService {
     ).then((res) => res.filter((x) => x !== null));
 
     // Chart Data (Last 7 days)
-    const chartData: any[] = [];
+    const chartDataArray: any[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -89,7 +90,7 @@ export class AnalyticsService {
         where: { ...whereBase, order_date: { gte: d, lt: nextD } },
         _sum: { total_amount: true },
       });
-      chartData.push({
+      chartDataArray.push({
         date: d.toLocaleDateString('id-ID', { month: 'short', day: 'numeric' }),
         revenue: dayAgg._sum.total_amount || 0,
         profit: (dayAgg._sum.total_amount || 0) * 0.2,
@@ -99,7 +100,7 @@ export class AnalyticsService {
     return {
       currentRevenue,
       netProfit,
-      cashFlow,
+      cashPosition: cashFlow,
       inventoryValue,
       comparison: {
         revenuePercentage: 100,
@@ -107,7 +108,7 @@ export class AnalyticsService {
         cashFlowPercentage: 100,
         inventoryPercentage: 0,
       },
-      chartData,
+      chartData: { sales: chartDataArray.map(d => ({ date: d.date, sales: d.revenue, profit: d.profit })), cashflow: chartDataArray.map(d => ({ name: d.date, income: d.revenue, expense: d.profit })) },
       topProducts: [],
       lowStock: [],
       topCustomers,
