@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import {   Search , ArrowLeft , Plus } from 'lucide-react'
+import { Search, ArrowLeft, Plus, X } from 'lucide-react'
 import { useRef } from "react"
 
 function SearchableSelect({ options, value, onChange, placeholder, disabled = false }: any) {
