@@ -410,16 +410,7 @@ export default function Customer360Page() {
  <td className="px-4 py-3 font-mono text-xs">{q.quotation_number}</td>
  <td className="px-4 py-3">{new Date(q.quotation_date || q.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{q.status}</Badge></td>
- <td className="px-4 py-3 text-right space-x-2">
-     {so.invoice_status !== 'INVOICED' && (
-        <Button variant="outline" size="sm" onClick={() => handleCreateInvoice(so.id)} disabled={isCreatingInv === so.id}>
-          {isCreatingInv === so.id ? '...' : 'Buat Faktur'}
-        </Button>
-     )}
-     {sisa > 0 && (
-        <Button variant="default" size="sm" onClick={() => { setPayAmount(sisa); setPayModalOpen(true); }}>Bayar</Button>
-     )}
-   </td>
+ <td className="px-4 py-3 text-right">{formatCurrency(q.total_amount)}</td>
  </tr>
  ))}
  {sales.quotations.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No quotations found.</td></tr>}
