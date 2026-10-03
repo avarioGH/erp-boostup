@@ -71,13 +71,37 @@ export class AnalyticsService {
         });
         return {
           name: c?.name || 'Unknown',
-          revenue: tc._sum.total_amount || 0,
+          spent: tc._sum.total_amount || 0,
           orders: 0,
         };
       }),
     ).then((res) => res.filter((x) => x !== null));
 
+
+    const topProdAgg = await this.prisma.salesOrderItem.groupBy({
+      by: ['product_id'],
+      where: { sales_order: whereBase },
+      _sum: { qty: true, subtotal: true },
+      orderBy: { _sum: { subtotal: 'desc' } },
+      take: 5,
+    });
+
+    const topProducts = await Promise.all(
+      topProdAgg.map(async (p) => {
+        if (!p.product_id) return null;
+        const prod = await this.prisma.product.findUnique({
+          where: { id: p.product_id },
+        });
+        return {
+          name: prod?.name || 'Unknown',
+          qty: p._sum.qty || 0,
+          revenue: p._sum.subtotal || 0,
+        };
+      })
+    ).then((res) => res.filter((x) => x !== null));
+
     // Chart Data (Last 7 days)
+
     const chartDataArray: any[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -109,7 +133,7 @@ export class AnalyticsService {
         inventoryPercentage: 0,
       },
       chartData: { sales: chartDataArray.map(d => ({ date: d.date, sales: d.revenue, profit: d.profit })), cashflow: chartDataArray.map(d => ({ name: d.date, income: d.revenue, expense: d.profit })) },
-      topProducts: [],
+      topProducts,
       lowStock: [],
       topCustomers,
     };
