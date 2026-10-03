@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Delete,
   Param,
   Body,
   Request,
@@ -60,5 +62,19 @@ export class DisposalController {
   @Post(':id/cancel')
   async cancel(@Param('id') id: string, @Request() req: any) {
     return this.disposalService.cancel(id, req.user.companyId);
+  }
+
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateDisposalDto>,
+    @Request() req: any,
+  ) {
+    return this.disposalService.update(id, dto, req.user.companyId);
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string, @Request() req: any) {
+    return this.disposalService.delete(id, req.user.companyId);
   }
 }

@@ -159,4 +159,54 @@ export class DisposalService {
       return updated;
     });
   }
+
+  async update(id: string, dto: Partial<CreateDisposalDto>, companyId: string) {
+    const disposal = await this.detail(id, companyId);
+    if (disposal.status !== 'DRAFT') {
+      throw new BadRequestException('Only DRAFT disposal can be updated');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.items) {
+        await tx.inventoryDisposalItem.deleteMany({
+          where: { disposal_id: id }
+        });
+      }
+
+      return tx.inventoryDisposal.update({
+        where: { id },
+        data: {
+          warehouse_id: dto.warehouseId,
+          reason: dto.reason,
+          notes: dto.notes,
+          ...(dto.items && {
+            items: {
+              create: dto.items.map(item => ({
+                product_id: item.productId,
+                qty: item.quantity,
+                notes: item.reason,
+              }))
+            }
+          })
+        },
+        include: { items: true }
+      });
+    });
+  }
+
+  async delete(id: string, companyId: string) {
+    const disposal = await this.detail(id, companyId);
+    if (disposal.status !== 'DRAFT') {
+      throw new BadRequestException('Only DRAFT disposal can be deleted');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.inventoryDisposalItem.deleteMany({
+        where: { disposal_id: id }
+      });
+      return tx.inventoryDisposal.delete({
+        where: { id }
+      });
+    });
+  }
 }

@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { InventoryDisposalAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Trash2, Eye } from "lucide-react"
+import { Loader2, Trash2, Eye, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
@@ -56,16 +56,32 @@ export default function DisposalsPage() {
                 ) : (
                   data.map((item, i) => (
                     <tr key={i} className="hover:bg-muted/30 transition-colors">
-                      <td className="p-4 px-6 font-bold text-foreground">{item.disposal_no}</td>
+                      <td className="p-4 px-6 font-bold text-foreground">{item.disposal_number || item.disposal_no || '-'}</td>
                       <td className="p-4 px-6 text-foreground">{new Date(item.disposal_date || item.created_at).toLocaleDateString('id-ID')}</td>
                       <td className="p-4 px-6 text-muted-foreground">{item.notes || '-'}</td>
                       <td className="p-4 px-6 text-center">
-                        <Badge variant={item.status === 'Approved' ? 'default' : item.status === 'Draft' ? 'secondary' : item.status === 'Submitted' ? 'outline' : 'destructive'}>{item.status}</Badge>
+                        <Badge variant={item.status === 'APPROVED' ? 'default' : item.status === 'DRAFT' ? 'secondary' : item.status === 'PENDING' ? 'outline' : 'destructive'}>{item.status}</Badge>
                       </td>
-                      <td className="p-4 px-6 text-center">
+                      <td className="p-4 px-6 text-center flex justify-center gap-2">
                         <Link href={`/inventory/disposals/${item.id}`}>
-                          <Button variant="ghost" size="sm"><Eye className="w-4 h-4 mr-1"/> Detail</Button>
+                          <Button variant="ghost" size="sm" title="Detail"><Eye className="w-4 h-4" /></Button>
                         </Link>
+                        {item.status === 'DRAFT' && (
+                          <>
+                            <Link href={`/inventory/disposals/${item.id}/edit`}>
+                              <Button variant="ghost" size="sm" title="Edit"><Pencil className="w-4 h-4" /></Button>
+                            </Link>
+                            <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-500" title="Delete" onClick={() => {
+                              if(confirm('Hapus dokumen ini?')) {
+                                InventoryDisposalAPI.deleteDisposal(item.id).then(() => {
+                                  window.location.reload();
+                                })
+                              }
+                            }}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))

@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation"
 import { InventoryDisposalAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, ArrowLeft, CheckCircle, XCircle, Send } from "lucide-react"
+import { Loader2, ArrowLeft, CheckCircle, XCircle, Send, Trash2, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
@@ -67,18 +67,31 @@ export default function DisposalDetailPage() {
             <Button variant="outline" size="icon"><ArrowLeft className="w-4 h-4" /></Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Detail Pemusnahan {data.disposal_no}</h1>
+            <h1 className="text-2xl font-bold text-foreground">Detail Pemusnahan {data.disposal_number || data.disposal_no || '-'}</h1>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant={data.status === 'Approved' ? 'default' : data.status === 'Draft' ? 'secondary' : data.status === 'Submitted' ? 'outline' : 'destructive'}>{data.status}</Badge>
+              <Badge variant={data.status === 'APPROVED' ? 'default' : data.status === 'DRAFT' ? 'secondary' : data.status === 'PENDING' ? 'outline' : 'destructive'}>{data.status}</Badge>
               <span className="text-sm text-muted-foreground">{new Date(data.disposal_date || data.created_at).toLocaleDateString('id-ID')}</span>
             </div>
           </div>
         </div>
         <div className="flex gap-2">
-          {data.status === 'Draft' && (
-            <Button onClick={() => handleAction('submit')} disabled={actionLoading} className="gap-2"><Send className="w-4 h-4" /> Submit</Button>
+          {data.status === 'DRAFT' && (
+            <>
+              <Link href={`/inventory/disposals/${id}/edit`}>
+                <Button variant="outline" className="gap-2"><Pencil className="w-4 h-4" /> Edit</Button>
+              </Link>
+              <Button onClick={() => {
+                  if(confirm('Hapus dokumen ini?')) {
+                    InventoryDisposalAPI.deleteDisposal(id).then(() => {
+                      toast({ title: "Success", description: "Disposal deleted." })
+                      router.push('/inventory/disposals')
+                    })
+                  }
+                }} disabled={actionLoading} variant="destructive" className="gap-2"><Trash2 className="w-4 h-4" /> Delete</Button>
+              <Button onClick={() => handleAction('submit')} disabled={actionLoading} className="gap-2"><Send className="w-4 h-4" /> Submit</Button>
+            </>
           )}
-          {data.status === 'Submitted' && (
+          {data.status === 'PENDING' && (
             <>
               <Button onClick={() => handleAction('reject')} disabled={actionLoading} variant="destructive" className="gap-2"><XCircle className="w-4 h-4" /> Tolak</Button>
               <Button onClick={() => handleAction('approve')} disabled={actionLoading} className="bg-green-600 hover:bg-green-700 gap-2"><CheckCircle className="w-4 h-4" /> Setujui</Button>
@@ -120,7 +133,7 @@ export default function DisposalDetailPage() {
               {data.items?.length > 0 ? data.items.map((it: any, i: number) => (
                 <tr key={i} className="hover:bg-muted/30">
                   <td className="p-4">{it.product?.name || it.product_id}</td>
-                  <td className="p-4">{it.quantity}</td>
+                  <td className="p-4">{it.qty || it.quantity}</td>
                   <td className="p-4 text-muted-foreground">{it.notes || '-'}</td>
                 </tr>
               )) : (
