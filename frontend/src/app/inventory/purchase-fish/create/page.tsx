@@ -28,7 +28,7 @@ export default function PurchaseFishForm() {
     const fetchData = async () => {
       try {
         const [pRes, wRes, prRes] = await Promise.all([
-          api.get('/crm/customers'), // using customers endpoint for partners
+          api.get('/customers'), // using customers endpoint for partners
           api.get('/inventory/warehouses'),
           api.get('/inventory/products')
         ])
