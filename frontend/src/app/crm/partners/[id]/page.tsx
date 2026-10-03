@@ -346,7 +346,7 @@ export default function Customer360Page() {
  </tr>
  </thead>
  <tbody>
- {crm.opportunities.map((o: any) => (
+ {(opportunities || []).map((o: any) => (
  <tr key={o.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-medium">{o.title}</td>
  <td className="px-4 py-3"><Badge variant="outline">{o.stage}</Badge></td>
