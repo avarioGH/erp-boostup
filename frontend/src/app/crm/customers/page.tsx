@@ -82,9 +82,13 @@ export default function CustomersPage() {
     setShowForm(true);
   }
 
-  const filteredCustomers = customers
-
- return (
+  const filteredCustomers = [...customers].sort((a, b) => {
+    const outA = a.totalOutstanding || 0;
+    const outB = b.totalOutstanding || 0;
+    if (outA > 0 || outB > 0) return outB - outA;
+    return 0;
+  });
+return (
  <div className="space-y-6">
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
  <div>
@@ -176,6 +180,7 @@ export default function CustomersPage() {
  <th className="p-3 px-4 text-left font-medium text-muted-foreground">Code</th>
  <th className="p-3 px-4 text-left font-medium text-muted-foreground">Customer</th>
  <th className="p-3 px-4 text-left font-medium text-muted-foreground">Contact</th>
+ <th className="p-3 px-4 text-left font-medium text-muted-foreground">Piutang</th>
  <th className="p-3 px-4 text-left font-medium text-muted-foreground">Status</th>
  <th className="p-3 px-4 text-right font-medium text-muted-foreground">Actions</th>
  </tr>
@@ -190,6 +195,13 @@ export default function CustomersPage() {
  <span>{c.email || '-'}</span>
  <span className="text-xs">{c.phone || '-'}</span>
  </div>
+ </td>
+ <td className="p-3 px-4">
+   {(c.totalOutstanding || 0) > 0 ? (
+     <span className="text-red-600 font-bold whitespace-nowrap bg-red-50 px-2 py-1 rounded">Rp {(c.totalOutstanding).toLocaleString('id-ID')}</span>
+   ) : (
+     <span className="text-muted-foreground text-sm">-</span>
+   )}
  </td>
  <td className="p-3 px-4">
  <Badge variant="secondary" className="bg-emerald-100 text-primary hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-primary">Active</Badge>
