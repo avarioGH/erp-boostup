@@ -20,13 +20,19 @@ export default function MovementsPage() {
  }, [])
 
  const getBadgeType = (type: string, movType: string) => {
+   if (movType === 'TRANSFORMATION_IN') return <Badge className="bg-cyan-100 text-cyan-800 border-none">Hasil Repacking</Badge>
+   if (movType === 'TRANSFORMATION_OUT') return <Badge className="bg-orange-100 text-orange-800 border-none">Bahan Repacking</Badge>
+   if (movType === 'PURCHASE_IN') return <Badge className="bg-blue-100 text-blue-800 border-none">Beli Nelayan</Badge>
+   
    if (type === 'POS_SALE' || movType === 'POS_SALE') return <Badge className="bg-emerald-100 text-emerald-800 border-none">Penjualan POS</Badge>
    if (type === 'DELIVERY' || movType === 'DELIVERY') return <Badge className="bg-blue-100 text-blue-800 border-none">Pengiriman Sales</Badge>
-   if (type === 'IN' || movType === 'IN') return <Badge className="bg-indigo-100 text-indigo-800 border-none">Ikan Masuk</Badge>
-   if (type === 'OUT' || movType === 'OUT') return <Badge className="bg-amber-100 text-amber-800 border-none">Stok Keluar</Badge>
    if (type === 'ADJUSTMENT' || movType === 'ADJUSTMENT_PLUS' || movType === 'ADJUSTMENT_MINUS') return <Badge className="bg-rose-100 text-rose-800 border-none">Penyesuaian Stok</Badge>
    if (type === 'TRANSFER' || movType === 'TRANSFER') return <Badge className="bg-purple-100 text-purple-800 border-none">Transfer Gudang</Badge>
    if (type === 'DISPOSAL' || movType === 'DISPOSAL') return <Badge className="bg-red-100 text-red-800 border-none">Pemusnahan</Badge>
+   
+   if (type === 'IN' || movType === 'IN') return <Badge className="bg-indigo-100 text-indigo-800 border-none">Ikan Masuk</Badge>
+   if (type === 'OUT' || movType === 'OUT') return <Badge className="bg-amber-100 text-amber-800 border-none">Stok Keluar</Badge>
+   
    return <Badge variant="outline">{type || movType}</Badge>
  }
 
