@@ -32,7 +32,7 @@ export class GlService {
   ) {
     // 1. Validate Balance (Debit must equal Credit)
 
-    const period = await tx.accountingPeriod.findFirst({
+    let period = await tx.accountingPeriod.findFirst({
       where: {
         company_id: data.companyId,
         start_date: { lte: data.entryDate },
@@ -42,9 +42,22 @@ export class GlService {
     });
 
     if (!period) {
-      throw new Error(
-        'NO_ACCOUNTING_PERIOD: Cannot post without an open accounting period.',
-      );
+      const entryDate = new Date(data.entryDate);
+      const year = entryDate.getFullYear();
+      const month = entryDate.getMonth() + 1;
+      const start_date = new Date(year, month - 1, 1);
+      const end_date = new Date(year, month, 0, 23, 59, 59, 999);
+      
+      period = await tx.accountingPeriod.create({
+        data: {
+          company_id: data.companyId,
+          year,
+          month,
+          start_date,
+          end_date,
+          status: 'OPEN'
+        }
+      });
     }
     if (period.status === 'CLOSED') {
       throw new Error(
