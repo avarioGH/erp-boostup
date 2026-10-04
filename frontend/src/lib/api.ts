@@ -151,6 +151,7 @@ export const B2BApi: any = {
 };
 
 export const PurchasingAPI: any = {
+  getSuppliers: async (params?: any) => (await api.get('/customers', { params })).data,
   getRequests: async (params?: any) => (await api.get('/purchasing/requests', { params })).data,
   createRequest: async (data: any) => (await api.post('/purchasing/requests', data)).data,
   getRFQs: async () => (await api.get('/purchasing/orders', { params: { page: 1, limit: 100 } })).data,
