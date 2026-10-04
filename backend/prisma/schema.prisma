@@ -816,7 +816,7 @@ model InventoryTransactionItem {
   qty            Float
   system_qty     Float?
   counted_qty    Float?
-  difference     Int?
+  difference     Float?
   unit_cost      Float                @default(0)
   subtotal       Float                @default(0)
   batch_number   String?
@@ -841,9 +841,9 @@ model StockMovement {
   transaction_id   String? @db.ObjectId
   movement_type    String // IN, OUT, TRANSFER_IN, TRANSFER_OUT, ADJUSTMENT_PLUS, ADJUSTMENT_MINUS, OPNAME, RETURN
 
-  qty_in        Int @default(0)
-  qty_out       Int @default(0)
-  balance_after Int @default(0)
+  qty_in        Float @default(0)
+  qty_out       Float @default(0)
+  balance_after Float @default(0)
 
   unit_cost  Float @default(0)
   total_cost Float @default(0)
@@ -1929,19 +1929,19 @@ model QuotationItem {
 }
 
 model DeliveryOrder {
-  idempotency_key String?
-  id              String     @id @default(auto()) @map("_id") @db.ObjectId
-  company_id      String     @db.ObjectId
-  company         Company    @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  sales_order_id  String     @db.ObjectId
-  sales_order     SalesOrder @relation(fields: [sales_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  delivery_number String
-  delivery_date   DateTime
-  status          String // WAITING, READY, DELIVERED, CANCELLED
-  driver_name     String?
-  vehicle_plate   String?
+  idempotency_key  String?
+  id               String     @id @default(auto()) @map("_id") @db.ObjectId
+  company_id       String     @db.ObjectId
+  company          Company    @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sales_order_id   String     @db.ObjectId
+  sales_order      SalesOrder @relation(fields: [sales_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  delivery_number  String
+  delivery_date    DateTime
+  status           String // WAITING, READY, DELIVERED, CANCELLED
+  driver_name      String?
+  vehicle_plate    String?
   container_number String?
-  notes           String?
+  notes            String?
 
   items DeliveryOrderItem[]
 
