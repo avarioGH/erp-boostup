@@ -15,13 +15,23 @@ export default function PurchaseOrdersPage() {
  const [loading, setLoading] = useState(true)
  const [searchTerm, setSearchTerm] = useState("")
  const [selectedDoc, setSelectedDoc] = useState<any | null>(null)
+ const [isKayu, setIsKayu] = useState(false)
  
  // detail state
  const [docLoading, setDocLoading] = useState(false)
  const [docDetails, setDocDetails] = useState<any | null>(null)
 
  useEffect(() => {
- fetchOrders()
+   if (typeof window !== 'undefined') {
+     const stored = localStorage.getItem("erp_user")
+     if (stored) {
+       try {
+         const u = JSON.parse(stored)
+         if (u?.name?.toLowerCase().includes('kayu')) setIsKayu(true)
+       } catch(e) {}
+     }
+   }
+   fetchOrders()
  }, [])
 
  const fetchOrders = async () => {
@@ -258,7 +268,7 @@ export default function PurchaseOrdersPage() {
  <h1 className="text-[28px] font-bold tracking-tight text-foreground">Purchase Orders</h1>
  <p className="text-muted-foreground mt-1">Manage confirmed procurement orders and track fulfillment.</p>
  </div>
- <Link href="/purchasing/orders/create"><Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New Order</Button></Link>
+ <Button className="shadow-sm" onClick={() => router.push(isKayu ? "/purchasing/orders/create" : "/inventory/purchase-fish/create")}><Plus className="w-4 h-4 mr-2" /> New Order</Button>
  </div>
 
  <Card className="shadow-sm">
