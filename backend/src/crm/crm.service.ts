@@ -333,29 +333,36 @@ export class CrmService {
     let outstandingInvoices = 0;
     let outstandingAp = 0;
 
-    // Separate invoices
+    // 1. Process Standalone Invoices (NO SO)
     invoices.forEach((inv) => {
-      if (inv.status !== 'PAID' && inv.status !== 'CANCELLED') {
-        if (inv.type === 'AP') {
-          outstandingAp += inv.remaining_amount || 0;
-        } else {
-          outstandingInvoices += inv.remaining_amount || 0;
+      if (!inv.sales_order_id && !inv.sales_order) {
+        if (inv.status !== 'PAID' && inv.status !== 'CANCELLED') {
+          if (inv.type === 'AP') {
+            outstandingAp += inv.remaining_amount || 0;
+          } else {
+            outstandingInvoices += inv.remaining_amount || 0;
+          }
         }
-      }
-      if (
-        inv.status === 'POSTED' &&
-        inv.type === 'AR' &&
-        (!inv.sales_order || !inv.sales_order.pos_shift_id)
-      ) {
-        totalSales += inv.total;
+        if (inv.status === 'POSTED' && inv.type === 'AR') {
+          totalSales += inv.total;
+        }
       }
     });
 
-    // New SalesOrder Piutang logic
+    // 2. Process Sales Orders (which handles SO debt AND its linked invoices)
     salesOrders.forEach((so) => {
       if (so.status !== 'CANCELLED') {
         totalSales += so.total_amount;
-        const paid = so.allocations?.reduce((acc, a) => acc + a.amount, 0) || 0;
+        
+        // Paid via SO allocations
+        let paid = so.allocations?.reduce((acc, a) => acc + (a.amount || 0), 0) || 0;
+        
+        // Paid via linked invoices allocations
+        const linkedInvs = invoices.filter(i => i.sales_order_id === so.id);
+        linkedInvs.forEach(inv => {
+          paid += inv.paid_amount || 0;
+        });
+
         const outst = so.total_amount - paid;
         if (outst > 0) outstandingInvoices += outst;
       }

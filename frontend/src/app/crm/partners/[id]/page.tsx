@@ -440,7 +440,9 @@ export default function Customer360Page() {
  </thead>
  <tbody>
  {sales.orders.map((so: any) => {
-   const paid = so.allocations?.reduce((sum: number, a: any) => sum + Number(a.amount || 0), 0) || 0;
+   let paid = so.allocations?.reduce((sum: number, a: any) => sum + Number(a.amount || 0), 0) || 0;
+   const linkedInvs = (data?.finance?.invoices || []).filter((i: any) => i.sales_order_id === so.id);
+   linkedInvs.forEach((inv: any) => { paid += Number(inv.paid_amount || 0) });
    const sisa = Math.max(0, (so.total_amount || 0) - paid);
    return (
  <tr key={so.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
@@ -671,5 +673,7 @@ export default function Customer360Page() {
 </div>
  );
 }
+
+
 
 
