@@ -1938,6 +1938,9 @@ model DeliveryOrder {
   delivery_number String
   delivery_date   DateTime
   status          String // WAITING, READY, DELIVERED, CANCELLED
+  driver_name     String?
+  vehicle_plate   String?
+  container_number String?
   notes           String?
 
   items DeliveryOrderItem[]

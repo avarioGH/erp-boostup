@@ -186,7 +186,7 @@ export default function DeliveriesPage() {
  <h1 className="text-[28px] font-bold tracking-tight text-foreground">Deliveries</h1>
  <p className="text-muted-foreground mt-1">Manage outbound shipments and delivery orders (Surat Jalan).</p>
  </div>
- <Button className="shadow-sm"><Plus className="w-4 h-4 mr-2" /> New Delivery</Button>
+ <Button className="shadow-sm" onClick={() => router.push('/sales/deliveries/create')}><Plus className="w-4 h-4 mr-2" /> New Delivery</Button>
  </div>
 
  <Card className="shadow-sm">

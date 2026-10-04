@@ -91,6 +91,9 @@ export class DeliveryService {
           delivery_date: data.delivery_date
             ? new Date(data.delivery_date)
             : new Date(),
+          driver_name: data.driver_name || data.driverName || null,
+          vehicle_plate: data.vehicle_plate || data.vehiclePlate || null,
+          container_number: data.container_number || data.containerNumber || null,
           status: 'WAITING',
           items: {
             create: deliveryItems,

@@ -1,33 +1,66 @@
 const fs = require('fs');
-let content = fs.readFileSync('frontend/src/app/inventory/dashboard/FishDashboard.tsx', 'utf8');
+const path = 'frontend/src/app/page.tsx';
+let content = fs.readFileSync(path, 'utf8');
 
-if (!content.includes('AlertTriangle')) {
-  content = content.replace(/import\s+{([^}]+)}\s+from\s+['"]lucide-react['"]/, (match, p1) => {
-    return `import {${p1}, AlertTriangle} from "lucide-react"`;
-  });
-}
+content = content.replace(
+    /useEffect\(\(\) => \{\s*async function loadAuxData\(\) \{[\s\S]*?loadAuxData\(\)\s*\}, \[\]\)/,
+    `useEffect(() => {
+   async function loadAuxData() {
+   try {
+   const [whs, prods, txs] = await Promise.all([
+   InventoryAPI.getWarehouses().catch(() => []),
+   InventoryAPI.getProducts().catch(() => []),
+   InventoryAPI.getTransactions().catch(() => [])
+   ])
+   setWarehouses(whs)
+   
+   // Low stocks calculation strictly from actual data
+   const lows = prods.filter((p: any) => {
+     let totalStock = 0;
+     if (warehouse && warehouse !== 'all') {
+       const ws = p.warehouse_stocks?.find((w: any) => w.warehouse_id === warehouse);
+       totalStock = ws ? ws.current_stock : 0;
+     } else {
+       totalStock = p.warehouse_stocks?.reduce((acc: number, ws: any) => acc + ws.current_stock, 0) || 0;
+     }
+     return totalStock < (p.minimum_stock || 20);
+   }).slice(0, 5).map((p: any) => {
+     let totalStock = 0;
+     let loc = "Pusat";
+     if (warehouse && warehouse !== 'all') {
+       const ws = p.warehouse_stocks?.find((w: any) => w.warehouse_id === warehouse);
+       totalStock = ws ? ws.current_stock : 0;
+       loc = whs.find((w: any) => w.id === warehouse)?.name || "Pusat";
+     } else {
+       totalStock = p.warehouse_stocks?.reduce((acc: number, ws: any) => acc + ws.current_stock, 0) || 0;
+       loc = p.warehouse_stocks?.[0]?.warehouse?.name || "Pusat";
+     }
+     return {
+       name: p.name,
+       stock: totalStock,
+       min: p.minimum_stock || 20,
+       loc
+     }
+   })
+   setLowStocks(lows)
+  
+   // Recent Activities strictly from actual transactions
+   const filteredTxs = (warehouse && warehouse !== 'all') ? txs.filter((tx: any) => tx.warehouse_id === warehouse) : txs;
+   const acts = filteredTxs.slice(0, 5).map((tx: any) => {
+   return {
+   time: timeAgo(tx.transaction_date),
+   title: tx.transaction_type === 'IN' ? 'Barang Masuk' : tx.transaction_type === 'OUT' ? 'Barang Keluar' : 'Transfer Gudang',
+   desc: tx.notes || \`Transaksi \${tx.reference_number}\`,
+   color: tx.transaction_type === 'IN' ? 'bg-success' : tx.transaction_type === 'OUT' ? 'bg-warning' : 'bg-primary'
+   }
+   })
+   setRecentActivities(acts)
+   } catch (e) {
+   console.error(e)
+   }
+   }
+   loadAuxData()
+   }, [warehouse])`
+);
 
-const keluarStartIndex = content.indexOf('<Card className="shadow-sm">', content.indexOf('Ikan Keluar Hari Ini') - 200);
-const keluarEndIndex = content.indexOf('</Card>', content.indexOf('Ikan Keluar Hari Ini')) + 7;
-const keluarCard = content.substring(keluarStartIndex, keluarEndIndex);
-
-const deadstockCard = `
-        <Card className="shadow-sm cursor-pointer hover:border-primary transition-colors" onClick={() => window.location.href = '/inventory/disposals'}>
-          <CardHeader className="pb-2 pt-4 px-4 md:px-5">
-            <CardTitle className="text-xs md:text-sm font-semibold text-muted-foreground uppercase flex justify-between">
-              Deadstock / Pemusnahan
-              <AlertTriangle className="w-4 h-4 text-orange-500 opacity-70" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 md:px-5 pb-4 md:pb-5">
-            <div className="text-xl md:text-3xl font-bold text-orange-500">
-              {Number(kpi.deadstock || 0).toLocaleString()} <span className="text-xs md:text-sm font-medium text-muted-foreground">Item</span>
-            </div>
-          </CardContent>
-        </Card>`;
-
-content = content.replace('className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 mb-5 md:mb-6"', 'className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 mb-5 md:mb-6"');
-
-content = content.replace(keluarCard, keluarCard + '\n' + deadstockCard);
-
-fs.writeFileSync('frontend/src/app/inventory/dashboard/FishDashboard.tsx', content);
+fs.writeFileSync(path, content);

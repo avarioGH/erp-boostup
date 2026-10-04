@@ -1,0 +1,12 @@
+const fs = require('fs');
+let c = fs.readFileSync('frontend/src/app/crm/partners/[id]/page.tsx', 'utf8');
+c = c.replace(/sales\.quotations\.map/g, '(quotations || []).map');
+c = c.replace(/sales\.salesOrders\.map/g, '(salesOrders || []).map');
+c = c.replace(/sales\.deliveries\.map/g, '(deliveries || []).map');
+c = c.replace(/crm\.activities\.map/g, '(activities?.today || activities || []).map');
+c = c.replace(/crm\.opportunities\.length/g, '(opportunities || []).length');
+c = c.replace(/crm\.opportunities/g, '(opportunities || [])');
+c = c.replace(/sales\.quotations\.length/g, '(quotations || []).length');
+c = c.replace(/sales\.salesOrders\.length/g, '(salesOrders || []).length');
+c = c.replace(/sales\.deliveries\.length/g, '(deliveries || []).length');
+fs.writeFileSync('frontend/src/app/crm/partners/[id]/page.tsx', c);

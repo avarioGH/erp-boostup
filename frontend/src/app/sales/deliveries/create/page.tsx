@@ -17,6 +17,7 @@ export default function CreateDeliveryPage() {
   const [loading, setLoading] = useState(false)
   const [driverName, setDriverName] = useState('')
   const [vehiclePlate, setVehiclePlate] = useState('')
+  const [containerNumber, setContainerNumber] = useState('')
 
   useEffect(() => {
     fetchOrders()
@@ -91,7 +92,8 @@ export default function CreateDeliveryPage() {
       await B2BApi.createDelivery(selectedSoId, { 
         items: finalItems,
         driverName,
-        vehiclePlate
+        vehiclePlate,
+        containerNumber
       })
       alert('Surat Jalan berhasil dibuat!')
       router.push('/sales/deliveries')
@@ -131,7 +133,7 @@ export default function CreateDeliveryPage() {
             </select>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Nama Supir / Pengirim (Opsional)</label>
               <Input value={driverName} onChange={e => setDriverName(e.target.value)} placeholder="Misal: Budi" />
@@ -139,6 +141,10 @@ export default function CreateDeliveryPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Plat Kendaraan (Opsional)</label>
               <Input value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value)} placeholder="Misal: B 1234 CD" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nomor Kontainer (Opsional)</label>
+              <Input value={containerNumber} onChange={e => setContainerNumber(e.target.value)} placeholder="Misal: CONT-999" />
             </div>
           </div>
         </CardContent>
