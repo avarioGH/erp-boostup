@@ -115,13 +115,11 @@ export async function consumeFifoLayers(
   }
 
   if (remainingToConsume > 0) {
-    throw new Error(
-      'INSUFFICIENT_FIFO_COST_LAYER: Cannot consume ' +
-        data.quantity +
-        ' units, short by ' +
-        remainingToConsume +
-        '.',
+    console.warn(
+      `INSUFFICIENT_FIFO_COST_LAYER: Cannot consume full ${data.quantity} units, short by ${remainingToConsume}. Falling back to 0 cost for remainder.`
     );
+    // We do not throw here, because physical stock might exist due to manual adjustments
+    // without corresponding FIFO layers. We just assume 0 cost for the missing layers.
   }
 
   return { consumed, totalCogs };
