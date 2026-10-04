@@ -8,7 +8,7 @@ export class FishProcessingService {
   async processStock(data: any, reqUser: any) {
     const { date, notes, inputs, outputs } = data;
     const company_id = (reqUser.company_id || reqUser.companyId);
-    const created_by = reqUser.id;
+    const created_by = reqUser.userId || reqUser.id;
 
     if (!inputs || inputs.length === 0 || !outputs || outputs.length === 0) {
       throw new BadRequestException('Inputs and outputs are required');
