@@ -19,11 +19,11 @@ export class FishProcessingService {
       
       const transformation = await tx.stockTransformation.create({
         data: {
-          company_id,
+          company: { connect: { id: company_id } },
           transform_no: transformNo,
           date: new Date(date || new Date()),
           notes,
-          created_by,
+          user: { connect: { id: created_by } },
           status: 'COMPLETED'
         }
       });
