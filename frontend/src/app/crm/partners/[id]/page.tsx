@@ -249,7 +249,7 @@ export default function Customer360Page() {
  </Card>
   <Card className="shadow-sm">
     <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-      <CardTitle className="text-sm font-medium text-muted-foreground">Total Hutang</CardTitle>
+      <CardTitle className="text-sm font-medium text-muted-foreground">Hutang Perusahaan</CardTitle>
     </CardHeader>
     <CardContent>
       <div className="text-2xl font-bold text-orange-600">{formatCurrency(finance.outstandingAp || 0)}</div>
@@ -284,7 +284,8 @@ export default function Customer360Page() {
  <TabsList className="bg-card border w-max md:w-full justify-start md:justify-center">
  <TabsTrigger value="overview">Ringkasan & Riwayat</TabsTrigger>
  <TabsTrigger value="crm">CRM</TabsTrigger>
- <TabsTrigger value="sales">Penjualan & Penawaran</TabsTrigger>
+ <TabsTrigger value="sales">Penjualan</TabsTrigger>
+ <TabsTrigger value="purchases">Pembelian</TabsTrigger>
  <TabsTrigger value="deliveries">Pengiriman</TabsTrigger>
  <TabsTrigger value="finance">Keuangan</TabsTrigger>
  </TabsList>
@@ -569,9 +570,45 @@ export default function Customer360Page() {
  </table>
  </CardContent>
  </Card>
- </TabsContent>
+  </TabsContent>
 
- </Tabs>
+ {/* PURCHASES */}
+ <TabsContent value="purchases" className="space-y-4 mt-4">
+ <Card className="shadow-sm">
+ <CardHeader className="flex flex-row items-center justify-between">
+ <CardTitle className="text-[16px] font-semibold">Riwayat Pembelian</CardTitle>
+ <Link href="/purchasing/orders"><Button variant="outline" size="sm">Kelola <Navigation className="w-3 h-3 ml-1" /></Button></Link>
+ </CardHeader>
+ <CardContent className="overflow-x-auto">
+ <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
+ <thead className="bg-muted/50 border-b">
+ <tr>
+ <th className="px-4 py-3 font-medium">Order #</th>
+ <th className="px-4 py-3 font-medium">Tanggal</th>
+ <th className="px-4 py-3 font-medium">Status Order</th>
+ <th className="px-4 py-3 font-medium">Status Pembayaran</th>
+ <th className="px-4 py-3 font-medium text-right">Total</th>
+ </tr>
+ </thead>
+ <tbody>
+ {data?.purchases?.orders?.map((po: any) => (
+ <tr key={po.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+ <td className="px-4 py-3 font-mono text-xs">{po.order_number}</td>
+ <td className="px-4 py-3">{new Date(po.order_date || po.created_at).toLocaleDateString()}</td>
+ <td className="px-4 py-3"><Badge variant="outline">{po.status}</Badge></td>
+ <td className="px-4 py-3">
+   <Badge variant={po.payment_status === 'PAID' ? 'default' : 'secondary'}>{po.payment_status === 'PAID' ? 'LUNAS' : po.payment_status === 'PARTIALLY_PAID' ? 'SEBAGIAN' : 'BELUM BAYAR'}</Badge>
+ </td>
+ <td className="px-4 py-3 text-right font-medium">{formatCurrency(po.total_amount)}</td>
+ </tr>
+ ))}
+ {(!data?.purchases?.orders || data.purchases.orders.length === 0) && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Tidak ada riwayat pembelian.</td></tr>}
+ </tbody>
+ </table>
+ </CardContent>
+ </Card>
+ </TabsContent>
+</Tabs>
  
       {/* PAYMENT MODAL */}
       <Dialog open={payModalOpen} onOpenChange={setPayModalOpen}>
@@ -673,6 +710,9 @@ export default function Customer360Page() {
 </div>
  );
 }
+
+
+
 
 
 

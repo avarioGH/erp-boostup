@@ -286,6 +286,11 @@ export class CrmService {
       orderBy: { created_at: 'desc' },
     });
 
+    const purchaseOrders = await this.prisma.purchaseOrder.findMany({
+      where: { supplier_id: customerId, company_id: companyId },
+      orderBy: { created_at: 'desc' },
+    });
+
     const quotations = await this.prisma.quotation.findMany({
       where: { customer_id: customerId, company_id: companyId },
       orderBy: { created_at: 'desc' },
@@ -376,6 +381,9 @@ export class CrmService {
         orders: salesOrders,
         quotations,
         deliveries,
+      },
+      purchases: {
+        orders: purchaseOrders,
       },
       finance: {
         outstandingAmount: outstandingInvoices,
