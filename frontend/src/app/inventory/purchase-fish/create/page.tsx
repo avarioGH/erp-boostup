@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import api from '@/lib/api'
-import { Plus, Trash2, Save, Users, Building, Calendar, ShoppingCart } from 'lucide-react'
+import { Plus, Trash2, Save, Users, Building, Calendar, ShoppingCart, Printer } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function PurchaseFishForm() {
@@ -25,6 +26,8 @@ export default function PurchaseFishForm() {
 
   const [items, setItems] = useState<any[]>([{ product_id: "", qty: 1, unit_price: 0 }])
   const [processing, setProcessing] = useState(false)
+  const [showNota, setShowNota] = useState(false)
+  const [notaData, setNotaData] = useState<any>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,11 +71,28 @@ export default function PurchaseFishForm() {
         unit_price: parseFloat(i.unit_price)
       }))
 
-      await api.post('/inventory/fish-purchase/atomic', {
+      const res = await api.post('/inventory/fish-purchase/atomic', {
         ...formData,
         items: payloadItems
       })
       toast.success("Pembelian ikan berhasil! Stok & tagihan langsung terupdate otomatis.")
+      
+      const partner = partners.find(p => (p.id || p._id) === formData.partner_id)
+      const populatedItems = payloadItems.map(i => {
+         const product = products.find(pr => (pr.id || pr._id) === i.product_id)
+         return { ...i, product_name: product?.name || 'Ikan' }
+      })
+
+      setNotaData({
+        order_number: res.data?.order_number || `FP-${Date.now()}`,
+        date: formData.date,
+        partner_name: partner?.name || 'Nelayan',
+        items: populatedItems,
+        totalAmount,
+        paid_amount: formData.paid_amount
+      })
+      setShowNota(true)
+
       // Reset form
       setFormData({ ...formData, paid_amount: 0 })
       setItems([{ product_id: "", qty: 1, unit_price: 0 }])
@@ -80,6 +100,17 @@ export default function PurchaseFishForm() {
       toast.error("Gagal: " + (err.response?.data?.message || err.message))
     } finally {
       setProcessing(false)
+    }
+  }
+
+  const handlePrint = () => {
+    const printContent = document.getElementById('nota-print-area')
+    if (printContent) {
+      const originalContents = document.body.innerHTML
+      document.body.innerHTML = printContent.innerHTML
+      window.print()
+      document.body.innerHTML = originalContents
+      window.location.reload() // reload to restore react event listeners
     }
   }
 
@@ -230,6 +261,69 @@ export default function PurchaseFishForm() {
           </Button>
         </div>
       </form>
+
+      <Dialog open={showNota} onOpenChange={setShowNota}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nota Pembelian Nelayan</DialogTitle>
+          </DialogHeader>
+          {notaData && (
+            <div id="nota-print-area" className="p-4 bg-white text-black rounded border">
+              <div className="text-center border-b pb-4 mb-4">
+                <h2 className="text-xl font-bold">NOTA PEMBELIAN</h2>
+                <p className="text-sm">No: {notaData.order_number}</p>
+                <p className="text-sm">Tgl: {new Date(notaData.date).toLocaleDateString('id-ID')}</p>
+              </div>
+              <div className="mb-4">
+                <p className="font-semibold">Nelayan: {notaData.partner_name}</p>
+              </div>
+              <table className="w-full text-sm mb-4">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-1">Item</th>
+                    <th className="text-right py-1">Qty</th>
+                    <th className="text-right py-1">Harga</th>
+                    <th className="text-right py-1">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {notaData.items.map((i: any, idx: number) => (
+                    <tr key={idx} className="border-b border-dashed">
+                      <td className="py-1">{i.product_name}</td>
+                      <td className="text-right py-1">{i.qty}</td>
+                      <td className="text-right py-1">{i.unit_price.toLocaleString()}</td>
+                      <td className="text-right py-1">{(i.qty * i.unit_price).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="space-y-1 text-sm font-semibold">
+                <div className="flex justify-between">
+                  <span>TOTAL:</span>
+                  <span>Rp {notaData.totalAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-green-700">
+                  <span>DIBAYAR:</span>
+                  <span>Rp {notaData.paid_amount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-red-600 border-t pt-1">
+                  <span>SISA TAGIHAN / UTANG:</span>
+                  <span>Rp {Math.max(0, notaData.totalAmount - notaData.paid_amount).toLocaleString()}</span>
+                </div>
+              </div>
+              <div className="mt-8 text-center text-xs">
+                <p>Terima kasih atas kerjasamanya.</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNota(false)}>Tutup</Button>
+            <Button onClick={handlePrint} className="flex items-center gap-2">
+              <Printer className="w-4 h-4" /> Cetak Nota
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
