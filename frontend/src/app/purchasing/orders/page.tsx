@@ -36,15 +36,17 @@ export default function PurchaseOrdersPage() {
 
  const fetchOrders = async () => {
  try {
- const res = await api.get('/purchasing/orders', { params: { page: 1, limit: 100 } })
- // Filter out RFQs if backend uses the same model. DRAFT is RFQ, CONFIRMED/CANCELLED is PO.
- // But let's just display all or rely on backend. For this view, we want POs (CONFIRMED mostly, but could be DRAFT PO).
- const allOrders = res?.data || []
- setData(allOrders.filter((o: any) => o.status !== 'DRAFT')) // DRAFT belongs to RFQ page
+   const res = await api.get('/purchasing/orders', { params: { page: 1, limit: 100 } })
+   const allOrders = res?.data?.data || res?.data || []
+   if (Array.isArray(allOrders)) {
+     setData(allOrders.filter((o: any) => o.status !== 'DRAFT')) 
+   } else {
+     setData([])
+   }
  } catch (error) {
- console.error(error)
+   console.error(error)
  } finally {
- setLoading(false)
+   setLoading(false)
  }
  }
 
