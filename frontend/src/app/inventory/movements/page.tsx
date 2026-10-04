@@ -5,18 +5,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, History } from "lucide-react"
 
+import { Input } from "@/components/ui/input"
+
 export default function MovementsPage() {
  const [data, setData] = useState<any[]>([])
+ const [warehouses, setWarehouses] = useState<any[]>([])
  const [loading, setLoading] = useState(true)
+ 
+ const [filterDate, setFilterDate] = useState("")
+ const [filterWarehouse, setFilterWarehouse] = useState("")
 
  useEffect(() => {
-   api.get('/inventory/movements')
-     .then((res: any) => {
-       const items = res.data?.items || res.data || [];
+   // Initial fetch
+   Promise.all([
+     api.get('/inventory/movements'),
+     api.get('/inventory/warehouses')
+   ]).then(([movRes, whRes]) => {
+       const items = movRes.data?.items || movRes.data || [];
        setData(Array.isArray(items) ? items : []);
-     })
-     .catch(console.error)
-     .finally(() => setLoading(false))
+       setWarehouses(whRes.data || []);
+       
+       // Default filter to global active warehouse if set
+       const activeWarehouseJSON = localStorage.getItem("active_warehouse")
+       if (activeWarehouseJSON && activeWarehouseJSON !== "null" && activeWarehouseJSON !== "undefined") {
+         const activeWh = JSON.parse(activeWarehouseJSON)
+         if (activeWh && activeWh.id) {
+           setFilterWarehouse(activeWh.id)
+         }
+       }
+   }).catch(console.error).finally(() => setLoading(false))
  }, [])
 
  const getBadgeType = (type: string, movType: string) => {
@@ -36,11 +53,48 @@ export default function MovementsPage() {
    return <Badge variant="outline">{type || movType}</Badge>
  }
 
+ const filteredData = data.filter(m => {
+   let match = true;
+   if (filterDate) {
+     const mDate = new Date(m.created_at || Date.now()).toISOString().split('T')[0];
+     if (mDate !== filterDate) match = false;
+   }
+   if (filterWarehouse) {
+     if (m.warehouse_id !== filterWarehouse) match = false;
+   }
+   return match;
+ })
+
  return (
    <div className="space-y-6 pb-10">
      <div>
        <h1 className="text-3xl font-bold tracking-tight text-foreground mb-1">Pergerakan Stok</h1>
        <p className="text-muted-foreground">Laporan riwayat keluar masuk stok (Stock Ledger) per produk ikan.</p>
+     </div>
+
+     <div className="flex flex-col md:flex-row gap-4 bg-muted/30 p-4 rounded-lg border border-border">
+       <div className="flex-1 space-y-1">
+         <label className="text-sm font-medium text-muted-foreground">Filter Tanggal</label>
+         <Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} className="bg-background" />
+       </div>
+       <div className="flex-1 space-y-1">
+         <label className="text-sm font-medium text-muted-foreground">Asal Gudang / Lokasi</label>
+         <select 
+           value={filterWarehouse} 
+           onChange={e => setFilterWarehouse(e.target.value)}
+           className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+         >
+           <option value="">Semua Gudang</option>
+           {warehouses.map(w => (
+             <option key={w.id || w._id} value={w.id || w._id}>{w.name}</option>
+           ))}
+         </select>
+       </div>
+       <div className="flex items-end">
+         <button onClick={() => { setFilterDate(""); setFilterWarehouse("") }} className="h-10 px-4 text-sm font-medium text-muted-foreground hover:text-foreground">
+           Reset Filter
+         </button>
+       </div>
      </div>
 
      <Card className="shadow-sm">
@@ -67,9 +121,9 @@ export default function MovementsPage() {
                  </tr>
                </thead>
                <tbody>
-                 {data.length === 0 ? (
+                 {filteredData.length === 0 ? (
                    <tr><td colSpan={7} className="text-center p-12 text-muted-foreground">Tidak ada riwayat pergerakan stok.</td></tr>
-                 ) : data.map((m, i) => {
+                 ) : filteredData.map((m, i) => {
                   const qtyIn = m.qty_in || 0;
                   const qtyOut = m.qty_out || 0;
                   const balance = m.balance_after || 0;
