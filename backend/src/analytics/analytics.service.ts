@@ -16,19 +16,7 @@ export class AnalyticsService {
       status: { notIn: ['CANCELLED'] },
     };
     if (warehouseId && warehouseId !== 'all') {
-      whereBase.OR = [
-        { pos_shift: { warehouse_id: warehouseId } },
-        { customer: { warehouse_id: warehouseId } },
-        {
-          items: {
-            some: {
-              product: {
-                warehouse_stocks: { some: { warehouse_id: warehouseId } },
-              },
-            },
-          },
-        },
-      ];
+      whereBase.warehouse_id = warehouseId;
     }
 
     // Revenue Today
@@ -45,10 +33,31 @@ export class AnalyticsService {
     });
     const monthlyRevenue = monthlyOrders._sum.total_amount || 0;
 
-    // For Finance, filter by warehouse if possible (might not exist, so we skip exact filtering for finance if it crashes, wait FinanceTransaction has no warehouse_id? Let's assume company-wide for now or just use Revenue * 0.2)
-    // Actually, FinanceTransaction has no warehouse_id, so we'll approximate net profit for the warehouse as 20% of its revenue.
-    const netProfit = monthlyRevenue * 0.2;
-    const cashFlow = monthlyRevenue * 0.8; // Approximation since Finance doesn't have warehouse_id
+    const financeWhere: any = {
+      company_id: companyId,
+      status: { in: ['Approved', 'COMPLETED', 'POSTED'] },
+      transaction_date: { gte: firstDayOfMonth },
+    };
+    if (warehouseId && warehouseId !== 'all') {
+      financeWhere.warehouse_id = warehouseId;
+    }
+
+    const financeTransactions = await this.prisma.financeTransaction.findMany({
+      where: financeWhere
+    });
+
+    let realCashIn = 0;
+    let realCashOut = 0;
+    financeTransactions.forEach(ft => {
+      if (['Cash In', 'Income'].includes(ft.transaction_type)) {
+        realCashIn += ft.total_amount;
+      } else if (['Cash Out', 'Expense', 'Payment'].includes(ft.transaction_type)) {
+        realCashOut += ft.total_amount;
+      }
+    });
+
+    const netProfit = realCashIn - realCashOut;
+    const cashFlow = realCashIn;
 
     // Inventory Value
     const stocks = await this.prisma.warehouseStock.findMany({ where: warehouseId && warehouseId !== 'all' ? { company_id: companyId, warehouse_id: warehouseId } : { company_id: companyId }, include: { product: true } });
@@ -103,6 +112,23 @@ export class AnalyticsService {
     // Chart Data (Last 7 days)
 
     const chartDataArray: any[] = [];
+    
+    // Fetch last 7 days finance transactions
+    const d7 = new Date();
+    d7.setDate(d7.getDate() - 6);
+    d7.setHours(0, 0, 0, 0);
+    
+    const weekFinanceWhere: any = {
+      company_id: companyId,
+      status: { in: ['Approved', 'COMPLETED', 'POSTED'] },
+      transaction_date: { gte: d7 },
+    };
+    if (warehouseId && warehouseId !== 'all') weekFinanceWhere.warehouse_id = warehouseId;
+    
+    const weekFinanceTransactions = await this.prisma.financeTransaction.findMany({
+      where: weekFinanceWhere
+    });
+    
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -114,10 +140,22 @@ export class AnalyticsService {
         where: { ...whereBase, order_date: { gte: d, lt: nextD } },
         _sum: { total_amount: true },
       });
+      
+      let dayCashIn = 0;
+      let dayCashOut = 0;
+      weekFinanceTransactions.forEach(ft => {
+        if (ft.transaction_date >= d && ft.transaction_date < nextD) {
+           if (['Cash In', 'Income'].includes(ft.transaction_type)) dayCashIn += ft.total_amount;
+           else if (['Cash Out', 'Expense', 'Payment'].includes(ft.transaction_type)) dayCashOut += ft.total_amount;
+        }
+      });
+
       chartDataArray.push({
         date: d.toLocaleDateString('id-ID', { month: 'short', day: 'numeric' }),
         revenue: dayAgg._sum.total_amount || 0,
-        profit: (dayAgg._sum.total_amount || 0) * 0.2,
+        profit: dayCashIn - dayCashOut,
+        cashIn: dayCashIn,
+        cashOut: dayCashOut
       });
     }
 
@@ -132,7 +170,10 @@ export class AnalyticsService {
         cashFlowPercentage: 100,
         inventoryPercentage: 0,
       },
-      chartData: { sales: chartDataArray.map(d => ({ date: d.date, sales: d.revenue, profit: d.profit })), cashflow: chartDataArray.map(d => ({ name: d.date, income: d.revenue, expense: d.profit })) },
+      chartData: { 
+        sales: chartDataArray.map(d => ({ date: d.date, sales: d.revenue, profit: d.profit })), 
+        cashflow: chartDataArray.map(d => ({ name: d.date, income: d.cashIn, expense: d.cashOut })) 
+      },
       topProducts,
       lowStock: [],
       topCustomers,
