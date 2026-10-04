@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from"@/components/ui/tabs";
 import { formatCurrency } from '@/lib/utils';
 import { User, Activity, FileText, ShoppingCart, Truck, CreditCard, CheckCircle, AlertTriangle, ArrowLeft, Building2, MapPin, Phone, Mail, FileClock, Navigation } from 'lucide-react';
 import { Button } from"@/components/ui/button";
+import { toast } from 'sonner';
 import { Badge } from"@/components/ui/badge";
 import Link from 'next/link';
 
@@ -40,18 +41,18 @@ export default function Customer360Page() {
     setIsCreatingInv(soId);
     try {
       await FinanceAPI.createInvoiceFromSO({ salesOrderId: soId });
-      alert('Faktur berhasil dibuat!');
+      toast.success('Faktur berhasil dibuat!');
       const res = await CRMAPI.getPartner360(partnerId);
       setData(res); // Refresh all data to update the invoices table
     } catch(err: any) {
-      alert('Gagal membuat faktur: ' + (err.response?.data?.message || err.message));
+      toast.error('Gagal membuat faktur: ' + (err.response?.data?.message || err.message));
     } finally {
       setIsCreatingInv(null);
     }
   };
 
   const handleSaveActivity = async () => {
-    if (!actTitle) return alert('Judul aktivitas wajib diisi');
+    if (!actTitle) return toast.error('Judul aktivitas wajib diisi');
     setIsSavingAct(true);
     try {
       await CRMAPI.createActivity({
@@ -60,7 +61,7 @@ export default function Customer360Page() {
         title: actTitle,
         description: actDesc,
       });
-      alert('Aktivitas berhasil dicatat!');
+      toast.success('Aktivitas berhasil dicatat!');
       setActivityModalOpen(false);
       setActTitle('');
       setActDesc('');
@@ -68,7 +69,7 @@ export default function Customer360Page() {
       const res = await CRMAPI.getPartner360(partnerId);
       setData(res);
     } catch(err: any) {
-      alert('Gagal: ' + (err.response?.data?.message || err.message));
+      toast.error('Gagal: ' + (err.response?.data?.message || err.message));
     } finally {
       setIsSavingAct(false);
     }
@@ -76,19 +77,19 @@ export default function Customer360Page() {
 
   const handleNetting = async () => {
     try {
-      if(!nettingAmount || Number(nettingAmount) <= 0) return alert('Nominal invalid');
+      if(!nettingAmount || Number(nettingAmount) <= 0) return toast.error('Nominal invalid');
       await api.post('/finance/netting', { partner_id: partnerId, amount: Number(nettingAmount), notes: nettingNotes });
       setNettingModalOpen(false);
       setNettingAmount('');
       const res = await CRMAPI.getPartner360(partnerId);
       setData(res);
-      alert('Kompensasi berhasil!');
+      toast.success('Kompensasi berhasil!');
     } catch(err:any) {
-      alert('Gagal: ' + (err.response?.data?.message || err.message));
+      toast.error('Gagal: ' + (err.response?.data?.message || err.message));
     }
   };
   const handlePay = async () => {
-    if (!payAmount || Number(payAmount) <= 0) return alert('Nominal tidak valid');
+    if (!payAmount || Number(payAmount) <= 0) return toast.error('Nominal tidak valid');
     setIsPaying(true);
     try {
       const unpaidOrders: any[] = [];
@@ -119,7 +120,7 @@ export default function Customer360Page() {
         allowUnallocated: true
       });
 
-      alert('Pembayaran berhasil!');
+      toast.success('Pembayaran berhasil!');
       setPayModalOpen(false);
       setPayAmount('');
       setPayRef('');
@@ -127,7 +128,7 @@ export default function Customer360Page() {
       const res = await CRMAPI.getPartner360(partnerId);
       setData(res);
     } catch(err: any) {
-      alert('Gagal: ' + (err.response?.data?.message || err.message));
+      toast.error('Gagal: ' + (err.response?.data?.message || err.message));
     } finally {
       setIsPaying(false);
     }
@@ -670,3 +671,4 @@ export default function Customer360Page() {
 </div>
  );
 }
+
