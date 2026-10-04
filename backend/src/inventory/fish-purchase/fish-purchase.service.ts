@@ -6,7 +6,13 @@ export class FishPurchaseService {
   constructor(private prisma: PrismaService) {}
 
   async createAtomicPurchase(data: any, reqUser: any) {
-    const { partner_id, warehouse_id, date, items, paid_amount, payment_method } = data;
+    let { partner_id, warehouse_id, date, items, paid_amount, payment_method } = data;
+    items = items.map((i: any) => ({
+      ...i,
+      qty: Number(i.qty || 0),
+      unit_price: Number(i.unit_price || 0)
+    }));
+    paid_amount = Number(paid_amount || 0);
     const company_id = reqUser.company_id;
     const created_by = reqUser.id; // user ID
 
