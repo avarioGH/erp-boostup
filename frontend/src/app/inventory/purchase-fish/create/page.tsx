@@ -61,9 +61,15 @@ export default function PurchaseFishForm() {
 
     setProcessing(true)
     try {
+      const payloadItems = items.map(i => ({
+        ...i,
+        qty: parseFloat(i.qty),
+        unit_price: parseFloat(i.unit_price)
+      }))
+
       await api.post('/inventory/fish-purchase/atomic', {
         ...formData,
-        items
+        items: payloadItems
       })
       alert("Pembelian ikan berhasil! Stok & tagihan langsung terupdate otomatis.")
       // Reset form
@@ -99,7 +105,7 @@ export default function PurchaseFishForm() {
                         </SelectTrigger>
                         <SelectContent searchable>
                           {partners.map(p => (
-                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                            <SelectItem key={p.id || p._id} value={p.id || p._id}>{p.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -112,7 +118,7 @@ export default function PurchaseFishForm() {
                         </SelectTrigger>
                         <SelectContent>
                           {warehouses.map(w => (
-                            <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                            <SelectItem key={w.id || w._id} value={w.id || w._id}>{w.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -150,7 +156,7 @@ export default function PurchaseFishForm() {
                           </SelectTrigger>
                           <SelectContent searchable>
                             {products.map(pr => (
-                              <SelectItem key={pr.id} value={pr.id}>{pr.name}</SelectItem>
+                              <SelectItem key={pr.id || pr._id} value={pr.id || pr._id}>{pr.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

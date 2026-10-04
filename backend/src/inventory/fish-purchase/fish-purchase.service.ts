@@ -13,8 +13,8 @@ export class FishPurchaseService {
       unit_price: Number(i.unit_price || 0)
     }));
     paid_amount = Number(paid_amount || 0);
-    const company_id = reqUser.company_id;
-    const created_by = reqUser.id; // user ID
+    const company_id = reqUser.company_id || reqUser.companyId;
+    const created_by = reqUser.userId || reqUser.id; // user ID
 
     if (!partner_id || !warehouse_id || !items || items.length === 0) {
       throw new BadRequestException('Missing required fields for Fish Purchase');
