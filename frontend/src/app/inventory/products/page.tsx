@@ -47,6 +47,7 @@ export default function ProductInventory() {
  const [isError, setIsError] = useState(false)
  const [products, setProducts] = useState<any[]>([])
  const [warehouses, setWarehouses] = useState<any[]>([])
+  const [activeWarehouse, setActiveWarehouse] = useState<any>(null)
  const [categories, setCategories] = useState<any[]>([])
 
  // Column Visibility
@@ -59,11 +60,35 @@ export default function ProductInventory() {
  })
 
  useEffect(() => {
- async function fetchData() {
+    const handleWarehouseChange = () => {
+      const storedActive = localStorage.getItem("active_warehouse");
+      if (storedActive && storedActive !== "null" && storedActive !== "undefined") {
+        setActiveWarehouse(JSON.parse(storedActive));
+      } else {
+        setActiveWarehouse(null);
+      }
+    };
+    
+    // Initial load
+    handleWarehouseChange();
+    
+    window.addEventListener("warehouse_changed", handleWarehouseChange);
+    return () => window.removeEventListener("warehouse_changed", handleWarehouseChange);
+  }, []);
+
+  useEffect(() => {
+   async function fetchData() {
  try {
  setLoading(true)
  setIsError(false)
- const [dbProducts, whs, cats] = await Promise.all([
+ const storedActive = localStorage.getItem("active_warehouse");
+      if (storedActive && storedActive !== "null" && storedActive !== "undefined") {
+        setActiveWarehouse(JSON.parse(storedActive));
+      } else {
+        setActiveWarehouse(null);
+      }
+      
+      const [dbProducts, whs, cats] = await Promise.all([
  InventoryAPI.getProducts(),
  InventoryAPI.getWarehouses(),
  InventoryAPI.getCategories()
@@ -557,7 +582,7 @@ export default function ProductInventory() {
                   {visibleColumns.weight && <TableHead className="font-semibold">Berat</TableHead>}
  {visibleColumns.category && <TableHead className="font-semibold">Kategori</TableHead>}
  {visibleColumns.price && <TableHead className="text-right font-semibold">Harga Jual</TableHead>}
- {warehouses.map((wh) => (
+ {warehouses.filter(wh => !activeWarehouse || activeWarehouse.id === wh.id).map((wh) => (
  <TableHead key={wh.id} className="text-center font-semibold bg-indigo-50/50 dark:bg-indigo-900/10 border-l border-r border-indigo-100 dark:border-indigo-900/30">
  <div className="flex flex-col items-center">
  <span className="text-xs text-primary dark:text-primary font-bold tracking-widest mb-1">{wh.name}</span>
@@ -565,14 +590,14 @@ export default function ProductInventory() {
  </div>
  </TableHead>
  ))}
- {visibleColumns.totalStock && <TableHead className="text-center font-bold">Total Stok</TableHead>}
+ {visibleColumns.totalStock && !activeWarehouse && <TableHead className="text-center font-bold">Total Stok</TableHead>}
  <TableHead className="text-right font-semibold">Aksi</TableHead>
  </TableRow>
  </TableHeader>
  <TableBody>
  {filteredProducts.length === 0 ? (
  <TableRow>
- <TableCell colSpan={5 + warehouses.length} className="h-32 text-center text-muted-foreground">
+ <TableCell colSpan={5 + warehouses.filter(wh => !activeWarehouse || activeWarehouse.id === wh.id).length} className="h-32 text-center text-muted-foreground">
  Tidak ada produk yang ditemukan.
  </TableCell>
  </TableRow>
@@ -593,7 +618,7 @@ export default function ProductInventory() {
  )}
  {visibleColumns.price && <TableCell className="text-right font-medium">{formatIDR(p.price)}</TableCell>}
  
- {warehouses.map((wh) => {
+ {warehouses.filter(wh => !activeWarehouse || activeWarehouse.id === wh.id).map((wh) => {
  const stock = p.stockMap[wh.id] || 0;
  return (
  <TableCell key={wh.id} className="text-center border-l border-r border-indigo-50 dark:border-indigo-900/20 bg-indigo-50/30 dark:bg-indigo-900/5 group-hover:bg-indigo-50/80 dark:group-hover:bg-indigo-900/20">
