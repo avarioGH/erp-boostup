@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useEffect, useState } from 'react'
 import { InventoryAPI } from '@/lib/api'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -20,7 +20,18 @@ export default function InflowPage() {
   const fetchTallies = async () => {
     try {
       const res = await InventoryAPI.getStockInTallies()
-      setData(res?.data || res || [])
+      let fetchedData = res?.data || res || []
+      
+      // Filter by active warehouse if any
+      const activeWarehouseJSON = localStorage.getItem("active_warehouse")
+      if (activeWarehouseJSON && activeWarehouseJSON !== "null" && activeWarehouseJSON !== "undefined") {
+        const activeWh = JSON.parse(activeWarehouseJSON)
+        if (activeWh && activeWh.id) {
+          fetchedData = fetchedData.filter((item: any) => item.warehouse_id === activeWh.id)
+        }
+      }
+      
+      setData(fetchedData)
     } catch (e) {
       console.error(e)
     } finally {
