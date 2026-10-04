@@ -93,7 +93,7 @@ export default function PurchaseFishForm() {
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label className="flex items-center gap-2"><Users className="w-4 h-4"/> Nelayan / Mitra</Label>
-              <Select value={formData.partner_id} onValueChange={(val) => setFormData({...formData, partner_id: val})}>
+              <Select value={formData.partner_id} onValueChange={(val) => setFormData({...formData, partner_id: val || ""})}>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="-- Pilih Nelayan --" />
                         </SelectTrigger>
@@ -106,7 +106,7 @@ export default function PurchaseFishForm() {
             </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2"><Building className="w-4 h-4"/> Gudang Penerimaan</Label>
-              <Select value={formData.warehouse_id} onValueChange={(val) => setFormData({...formData, warehouse_id: val})}>
+              <Select value={formData.warehouse_id} onValueChange={(val) => setFormData({...formData, warehouse_id: val || ""})}>
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="-- Pilih Gudang --" />
                         </SelectTrigger>
