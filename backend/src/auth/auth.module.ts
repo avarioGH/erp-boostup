@@ -14,7 +14,7 @@ import { JwtStrategy } from './jwt.strategy';
     PrismaModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'fallback_super_secret_key',
-      signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN || '1d') as any },
+      signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN || '8h') as any },
     }),
   ],
   providers: [AuthService, JwtStrategy],
