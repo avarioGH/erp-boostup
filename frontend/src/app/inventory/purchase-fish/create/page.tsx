@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import api from '@/lib/api'
 import { Plus, Trash2, Save, Users, Building, Calendar, ShoppingCart } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function PurchaseFishForm() {
   const [partners, setPartners] = useState<any[]>([])
@@ -56,8 +57,8 @@ export default function PurchaseFishForm() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
-    if (!formData.partner_id || !formData.warehouse_id) return alert("Pilih Nelayan & Gudang!")
-    if (items.some(i => !i.product_id || i.qty <= 0)) return alert("Lengkapi data ikan!")
+    if (!formData.partner_id || !formData.warehouse_id) return toast.error("Pilih Nelayan & Gudang!")
+    if (items.some(i => !i.product_id || i.qty <= 0)) return toast.error("Lengkapi data ikan!")
 
     setProcessing(true)
     try {
@@ -71,12 +72,12 @@ export default function PurchaseFishForm() {
         ...formData,
         items: payloadItems
       })
-      alert("Pembelian ikan berhasil! Stok & tagihan langsung terupdate otomatis.")
+      toast.success("Pembelian ikan berhasil! Stok & tagihan langsung terupdate otomatis.")
       // Reset form
       setFormData({ ...formData, paid_amount: 0 })
       setItems([{ product_id: "", qty: 1, unit_price: 0 }])
     } catch (err: any) {
-      alert("Gagal: " + (err.response?.data?.message || err.message))
+      toast.error("Gagal: " + (err.response?.data?.message || err.message))
     } finally {
       setProcessing(false)
     }
