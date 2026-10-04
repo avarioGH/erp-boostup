@@ -117,7 +117,7 @@ export class PosService {
         let resolvedWarehouseId = warehouseId;
         if (!resolvedWarehouseId) {
           const defaultWh = await tx.warehouse.findFirst({
-            where: { company_id: companyId, ...(warehouseId ? { warehouse_id: warehouseId } : {}) },
+            where: { company_id: companyId },
           });
           resolvedWarehouseId = defaultWh?.id;
         }
@@ -140,7 +140,7 @@ export class PosService {
 
       // 3. Payment & Finance Transaction
       const cashAccount = await tx.cashAccount.findFirst({
-        where: { company_id: companyId, ...(warehouseId ? { warehouse_id: warehouseId } : {}) },
+        where: { company_id: companyId },
       });
 
       if (paidAmount > 0) {
