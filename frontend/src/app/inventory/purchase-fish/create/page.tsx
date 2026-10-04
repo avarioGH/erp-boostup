@@ -101,7 +101,9 @@ export default function PurchaseFishForm() {
               <Label className="flex items-center gap-2"><Users className="w-4 h-4"/> Nelayan / Mitra</Label>
               <Select value={formData.partner_id} onValueChange={(val) => setFormData({...formData, partner_id: val || ""})}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="-- Pilih Nelayan --" />
+                          <SelectValue placeholder="-- Pilih Nelayan --">
+                            {partners.find(p => (p.id || p._id) === formData.partner_id)?.name || "-- Pilih Nelayan --"}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent searchable>
                           {partners.map(p => (
@@ -114,7 +116,9 @@ export default function PurchaseFishForm() {
               <Label className="flex items-center gap-2"><Building className="w-4 h-4"/> Gudang Penerimaan</Label>
               <Select value={formData.warehouse_id} onValueChange={(val) => setFormData({...formData, warehouse_id: val || ""})}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="-- Pilih Gudang --" />
+                          <SelectValue placeholder="-- Pilih Gudang --">
+                            {warehouses.find(w => (w.id || w._id) === formData.warehouse_id)?.name || "-- Pilih Gudang --"}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {warehouses.map(w => (
@@ -152,7 +156,9 @@ export default function PurchaseFishForm() {
                     <TableCell>
                       <Select value={item.product_id} onValueChange={(val) => handleItemChange(index, 'product_id', val)}>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="-- Pilih Ikan --" />
+                            <SelectValue placeholder="-- Pilih Ikan --">
+                              {products.find(pr => (pr.id || pr._id) === item.product_id)?.name || "-- Pilih Ikan --"}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent searchable>
                             {products.map(pr => (
