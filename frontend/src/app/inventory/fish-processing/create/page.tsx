@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import api from '@/lib/api'
 import { Plus, Trash2, Save, ArrowRightLeft } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function FishProcessingForm() {
   const [warehouses, setWarehouses] = useState<any[]>([])
@@ -46,8 +47,8 @@ export default function FishProcessingForm() {
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
-    if (inputs.some(i => !i.warehouse_id || !i.product_id || i.qty <= 0)) return alert("Lengkapi data bahan baku (Input)!")
-    if (outputs.some(o => !o.warehouse_id || !o.product_id || o.qty <= 0)) return alert("Lengkapi data hasil produksi (Output)!")
+    if (inputs.some(i => !i.warehouse_id || !i.product_id || i.qty <= 0)) return toast.error("Lengkapi data bahan baku (Input)!")
+    if (outputs.some(o => !o.warehouse_id || !o.product_id || o.qty <= 0)) return toast.error("Lengkapi data hasil produksi (Output)!")
 
     setProcessing(true)
     try {
@@ -56,12 +57,12 @@ export default function FishProcessingForm() {
         inputs,
         outputs
       })
-      alert("Pengolahan stok (Repacking) berhasil disimpan!")
+      toast.success("Pengolahan stok (Repacking) berhasil disimpan!")
       setInputs([{ warehouse_id: "", product_id: "", qty: 1 }])
       setOutputs([{ warehouse_id: "", product_id: "", qty: 1 }])
       setFormData({...formData, notes: ""})
     } catch (err: any) {
-      alert("Gagal: " + (err.response?.data?.message || err.message))
+      toast.error("Gagal: " + (err.response?.data?.message || err.message))
     } finally {
       setProcessing(false)
     }
