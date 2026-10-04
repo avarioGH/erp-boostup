@@ -54,6 +54,7 @@ const items: MenuItem[] = [
  id: "ikan_inventory",
  subItems: [
  { title: "Pembelian Ikan (Nelayan)", url: "/inventory/purchase-fish/create" },
+ { title: "Riwayat Pembelian", url: "/purchasing/orders" },
  { title: "Pengolahan Stok (Repacking)", url: "/inventory/fish-processing/create" },
  { title: "Ikan Masuk", url: "/inventory/inflow" },
  { title: "Stok Ikan", url: "/inventory/stock" },
