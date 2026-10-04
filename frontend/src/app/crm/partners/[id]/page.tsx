@@ -423,7 +423,7 @@ export default function Customer360Page() {
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
  <CardTitle className="text-[16px] font-semibold">Sales Orders</CardTitle>
- <Link href="/sales/orders"><Button variant="outline" size="sm">Kelola <Navigation className="w-3 h-3 ml-1" /></Button></Link>
+ <div className="flex gap-2"><Link href={`/pos/new-transaction?customer_id=${partnerId}`}><Button size="sm" className="bg-primary text-primary-foreground">+ Tambah Order</Button></Link><Link href="/sales/orders"><Button variant="outline" size="sm">Kelola <Navigation className="w-3 h-3 ml-1" /></Button></Link></div>
  </CardHeader>
  <CardContent className="overflow-x-auto">
  <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
@@ -671,4 +671,5 @@ export default function Customer360Page() {
 </div>
  );
 }
+
 

@@ -35,9 +35,14 @@ export default function PosTransaction() {
  const [cart, setCart] = useState<CartItem[]>([])
  const [isPaymentOpen, setIsPaymentOpen] = useState(false)
  const [paymentMethod, setPaymentMethod] = useState("CASH")
-  const [paidAmount, setPaidAmount] = useState<number | "">(0)
-   const [customers, setCustomers] = useState<any[]>([])
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("")
+ const [paidAmount, setPaidAmount] = useState<number | "">(0)
+ const [customers, setCustomers] = useState<any[]>([])
+ const [selectedCustomerId, setSelectedCustomerId] = useState<string>(() => {
+   if (typeof window !== 'undefined') {
+     return new URLSearchParams(window.location.search).get('customer_id') || ""
+   }
+   return ""
+ })
   const [isNewCustomer, setIsNewCustomer] = useState(false)
   const [newCustomerName, setNewCustomerName] = useState("")
   const [newCustomerPhone, setNewCustomerPhone] = useState("")
