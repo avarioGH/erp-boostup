@@ -133,9 +133,11 @@ export default function PurchaseFishForm() {
               <Label className="flex items-center gap-2"><Users className="w-4 h-4"/> Nelayan / Mitra</Label>
               <Select value={formData.partner_id} onValueChange={(val) => setFormData({...formData, partner_id: val || ""})}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="-- Pilih Nelayan --">
-                            {partners.find(p => (p.id || p._id) === formData.partner_id)?.name || "-- Pilih Nelayan --"}
-                          </SelectValue>
+                          <span className="flex flex-1 text-left">
+                            {formData.partner_id 
+                              ? (partners.find(p => (p.id || p._id) === formData.partner_id)?.name || formData.partner_id)
+                              : <span className="text-muted-foreground">-- Pilih Nelayan --</span>}
+                          </span>
                         </SelectTrigger>
                         <SelectContent searchable>
                           {partners.map(p => (
@@ -148,9 +150,11 @@ export default function PurchaseFishForm() {
               <Label className="flex items-center gap-2"><Building className="w-4 h-4"/> Gudang Penerimaan</Label>
               <Select value={formData.warehouse_id} onValueChange={(val) => setFormData({...formData, warehouse_id: val || ""})}>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="-- Pilih Gudang --">
-                            {warehouses.find(w => (w.id || w._id) === formData.warehouse_id)?.name || "-- Pilih Gudang --"}
-                          </SelectValue>
+                          <span className="flex flex-1 text-left">
+                            {formData.warehouse_id 
+                              ? (warehouses.find(w => (w.id || w._id) === formData.warehouse_id)?.name || formData.warehouse_id)
+                              : <span className="text-muted-foreground">-- Pilih Gudang --</span>}
+                          </span>
                         </SelectTrigger>
                         <SelectContent>
                           {warehouses.map(w => (
@@ -188,9 +192,11 @@ export default function PurchaseFishForm() {
                     <TableCell>
                       <Select value={item.product_id} onValueChange={(val) => handleItemChange(index, 'product_id', val)}>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="-- Pilih Ikan --">
-                              {products.find(pr => (pr.id || pr._id) === item.product_id)?.name || "-- Pilih Ikan --"}
-                            </SelectValue>
+                            <span className="flex flex-1 text-left">
+                              {item.product_id 
+                                ? (products.find(pr => (pr.id || pr._id) === item.product_id)?.name || item.product_id)
+                                : <span className="text-muted-foreground">-- Pilih Ikan --</span>}
+                            </span>
                           </SelectTrigger>
                           <SelectContent searchable>
                             {products.map(pr => (
