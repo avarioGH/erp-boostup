@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import api from '@/lib/api'
 import { Plus, Trash2, Save, Users, Building, Calendar, ShoppingCart } from 'lucide-react'
 
@@ -92,31 +93,29 @@ export default function PurchaseFishForm() {
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label className="flex items-center gap-2"><Users className="w-4 h-4"/> Nelayan / Mitra</Label>
-              <select 
-                className="w-full border p-2 rounded-md" 
-                value={formData.partner_id} 
-                onChange={e => setFormData({...formData, partner_id: e.target.value})}
-                required
-              >
-                <option value="">-- Pilih Nelayan --</option>
-                {partners.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} {p.code ? `(${p.code})` : ''}</option>
-                ))}
-              </select>
+              <Select value={formData.partner_id} onValueChange={(val) => setFormData({...formData, partner_id: val})}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="-- Pilih Nelayan --" />
+                        </SelectTrigger>
+                        <SelectContent searchable>
+                          {partners.map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
             </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2"><Building className="w-4 h-4"/> Gudang Penerimaan</Label>
-              <select 
-                className="w-full border p-2 rounded-md" 
-                value={formData.warehouse_id} 
-                onChange={e => setFormData({...formData, warehouse_id: e.target.value})}
-                required
-              >
-                <option value="">-- Pilih Gudang --</option>
-                {warehouses.map(w => (
-                  <option key={w.id} value={w.id}>{w.name}</option>
-                ))}
-              </select>
+              <Select value={formData.warehouse_id} onValueChange={(val) => setFormData({...formData, warehouse_id: val})}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="-- Pilih Gudang --" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {warehouses.map(w => (
+                            <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
             </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2"><Calendar className="w-4 h-4"/> Tanggal Pembelian</Label>
@@ -145,17 +144,16 @@ export default function PurchaseFishForm() {
                 {items.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell>
-                      <select 
-                        className="w-full border p-2 rounded-md" 
-                        value={item.product_id} 
-                        onChange={e => handleItemChange(index, 'product_id', e.target.value)}
-                        required
-                      >
-                        <option value="">-- Pilih Ikan --</option>
-                        {products.map(pr => (
-                          <option key={pr.id} value={pr.id}>{pr.name}</option>
-                        ))}
-                      </select>
+                      <Select value={item.product_id} onValueChange={(val) => handleItemChange(index, 'product_id', val)}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="-- Pilih Ikan --" />
+                          </SelectTrigger>
+                          <SelectContent searchable>
+                            {products.map(pr => (
+                              <SelectItem key={pr.id} value={pr.id}>{pr.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                     </TableCell>
                     <TableCell>
                       <Input type="number" min="0.1" step="0.1" value={item.qty} onChange={e => handleItemChange(index, 'qty', e.target.value)} required />
