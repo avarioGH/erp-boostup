@@ -61,7 +61,7 @@ export default function VendorBillsPage() {
  <th className="p-4 text-left font-medium">Nomor Tagihan</th>
  <th className="p-4 text-left font-medium">Referensi PO</th>
  <th className="p-4 text-left font-medium">Total</th>
- <th className="p-4 text-left font-medium">Sisa Hutang</th>
+ <th className="p-4 text-left font-medium">Sisa Hutang / Kredit</th>
  <th className="p-4 text-left font-medium">Status</th>
  <th className="p-4 text-right font-medium">Aksi</th>
  </tr>
@@ -82,7 +82,13 @@ export default function VendorBillsPage() {
  ) : '-'}
  </td>
  <td className="p-4">Rp {bill.total.toLocaleString()}</td>
- <td className="p-4">Rp {bill.remaining_amount.toLocaleString()}</td>
+ <td className="p-4">
+    {bill.remaining_amount < 0 ? (
+      <span className="text-green-600 font-semibold">Kredit Rp {Math.abs(bill.remaining_amount).toLocaleString()}</span>
+    ) : (
+      <span>Rp {bill.remaining_amount.toLocaleString()}</span>
+    )}
+  </td>
  <td className="p-4">
  <Badge variant={bill.status === 'DRAFT' ? 'outline' : bill.status === 'PAID' ? 'default' : 'secondary'}>
  {bill.status}

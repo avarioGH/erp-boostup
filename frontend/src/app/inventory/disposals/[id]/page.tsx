@@ -1,148 +1,115 @@
-"use client"
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { InventoryDisposalAPI } from "@/lib/api"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Loader2, ArrowLeft, CheckCircle, XCircle, Send, Trash2, Pencil } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { useToast } from "@/hooks/use-toast"
+'use client';
 
-export default function DisposalDetailPage() {
-  const params = useParams()
-  const router = useRouter()
-  const { toast } = useToast()
-  const [data, setData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [actionLoading, setActionLoading] = useState(false)
-  const id = params?.id as string
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { DisposalAPI } from '@/lib/api';
 
-  const fetchDetail = () => {
-    setLoading(true)
-    InventoryDisposalAPI.getDisposal(id)
-      .then((res: any) => setData(res))
-      .catch((err: any) => toast({ title: "Error", description: "Failed to load detail", variant: "destructive" }))
-      .finally(() => setLoading(false))
-  }
+export default function DisposalDetailPage({ params }: { params: { id: string } }) {
+  const [disposal, setDisposal] = useState<any>(null);
 
   useEffect(() => {
-    if (id) fetchDetail()
-  }, [id])
+    DisposalAPI.getById(params.id).then(setDisposal).catch(console.error);
+  }, [params.id]);
 
-  const handleAction = async (action: string) => {
-    setActionLoading(true)
+  const handleReverse = async () => {
     try {
-      if (action === 'submit') {
-        await InventoryDisposalAPI.submitDisposal(id)
-        toast({ title: "Success", description: "Disposal submitted for approval." })
-      } else if (action === 'approve') {
-        await InventoryDisposalAPI.approveDisposal(id)
-        toast({ title: "Success", description: "Disposal approved." })
-      } else if (action === 'reject') {
-        await InventoryDisposalAPI.rejectDisposal(id)
-        toast({ title: "Success", description: "Disposal rejected." })
-      }
-      fetchDetail()
-    } catch (err: any) {
-      toast({ title: "Error", description: err?.response?.data?.message || "Failed to perform action.", variant: "destructive" })
-    } finally {
-      setActionLoading(false)
+      await DisposalAPI.reverse(params.id);
+      const updated = await DisposalAPI.getById(params.id);
+      setDisposal(updated);
+    } catch (error) {
+      console.error(error);
     }
-  }
+  };
 
-  if (loading) {
-    return <div className="flex h-64 items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
-  }
+  const handlePrint = () => {
+    window.print();
+  };
 
-  if (!data) {
-    return <div className="p-8 text-center text-muted-foreground">Data tidak ditemukan.</div>
-  }
+  if (!disposal) return <div className="p-8">Loading...</div>;
 
   return (
-    <div className="space-y-6 pb-10 p-4 md:p-8 dark">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Link href="/inventory/disposals">
-            <Button variant="outline" size="icon"><ArrowLeft className="w-4 h-4" /></Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Detail Pemusnahan {data.disposal_number || data.disposal_no || '-'}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant={data.status === 'APPROVED' ? 'default' : data.status === 'DRAFT' ? 'secondary' : data.status === 'PENDING' ? 'outline' : 'destructive'}>{data.status}</Badge>
-              <span className="text-sm text-muted-foreground">{new Date(data.disposal_date || data.created_at).toLocaleDateString('id-ID')}</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          {data.status === 'DRAFT' && (
-            <>
-              <Link href={`/inventory/disposals/${id}/edit`}>
-                <Button variant="outline" className="gap-2"><Pencil className="w-4 h-4" /> Edit</Button>
-              </Link>
-              <Button onClick={() => {
-                  if(confirm('Hapus dokumen ini?')) {
-                    InventoryDisposalAPI.deleteDisposal(id).then(() => {
-                      toast({ title: "Success", description: "Disposal deleted." })
-                      router.push('/inventory/disposals')
-                    })
-                  }
-                }} disabled={actionLoading} variant="destructive" className="gap-2"><Trash2 className="w-4 h-4" /> Delete</Button>
-              <Button onClick={() => handleAction('submit')} disabled={actionLoading} className="gap-2"><Send className="w-4 h-4" /> Submit</Button>
-            </>
-          )}
-          {data.status === 'PENDING' && (
-            <>
-              <Button onClick={() => handleAction('reject')} disabled={actionLoading} variant="destructive" className="gap-2"><XCircle className="w-4 h-4" /> Tolak</Button>
-              <Button onClick={() => handleAction('approve')} disabled={actionLoading} className="bg-green-600 hover:bg-green-700 gap-2"><CheckCircle className="w-4 h-4" /> Setujui</Button>
-            </>
+    <div className="container mx-auto p-8">
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          aside, nav, .sidebar { display: none !important; }
+          .no-print { display: none !important; }
+        }
+      `}} />
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Disposal Detail: {disposal.id}</h1>
+        <div className="flex gap-2 no-print">
+          <Button variant="outline" onClick={handlePrint}>Print</Button>
+          {disposal.status === 'APPROVED' && (
+            <Button variant="destructive" onClick={handleReverse}>Reverse</Button>
           )}
         </div>
       </div>
-
-      <Card className="shadow-sm border-border">
-        <CardHeader className="bg-muted/30 border-b border-border/50">
-          <CardTitle className="text-lg">Informasi</CardTitle>
+      
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Disposal Information</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-          <div>
-            <p className="text-sm text-muted-foreground">Gudang</p>
-            <p className="font-medium">{data.warehouse?.name || '-'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Keterangan</p>
-            <p className="font-medium">{data.notes || '-'}</p>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-500">Date</p>
+              <p className="font-medium">{disposal.date}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Status</p>
+              <p className="font-medium">{disposal.status}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Reason</p>
+              <p className="font-medium">{disposal.reason}</p>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm border-border mt-6">
-        <CardHeader className="bg-muted/30 border-b border-border/50">
-          <CardTitle className="text-lg">Barang Dimusnahkan</CardTitle>
+      <Card>
+        <CardHeader>
+          <CardTitle>Items</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40">
-              <tr className="border-b border-border">
-                <th className="p-4 text-left font-semibold">Produk</th>
-                <th className="p-4 text-left font-semibold">Qty</th>
-                <th className="p-4 text-left font-semibold">Catatan</th>
+        <CardContent>
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b">
+                <th className="py-2">Item ID</th>
+                <th className="py-2">Quantity</th>
+                <th className="py-2">Cost</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/50">
-              {data.items?.length > 0 ? data.items.map((it: any, i: number) => (
-                <tr key={i} className="hover:bg-muted/30">
-                  <td className="p-4">{it.product?.name || it.product_id}</td>
-                  <td className="p-4">{it.qty || it.quantity}</td>
-                  <td className="p-4 text-muted-foreground">{it.notes || '-'}</td>
+            <tbody>
+              {disposal.items?.map((item: any, index: number) => (
+                <tr key={index} className="border-b">
+                  <td className="py-2">{item.itemId}</td>
+                  <td className="py-2">{item.quantity}</td>
+                  <td className="py-2">
+                    {item.cost ? item.cost : (disposal.total_cost ? disposal.total_cost : "Cost available in Journal")}
+                  </td>
                 </tr>
-              )) : (
-                <tr><td colSpan={3} className="p-8 text-center text-muted-foreground">Tidak ada barang</td></tr>
+              ))}
+              {!disposal.items?.length && (
+                <tr>
+                  <td colSpan={3} className="py-4 text-center text-gray-500">No items found</td>
+                </tr>
               )}
             </tbody>
+            {disposal.items?.length > 0 && (
+              <tfoot>
+                <tr className="font-bold border-t">
+                  <td className="py-2" colSpan={2}>Total FIFO Cost</td>
+                  <td className="py-2">
+                    {disposal.total_cost ? disposal.total_cost : "Cost available in Journal"}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

@@ -317,7 +317,15 @@ export class PurchasingService {
       let tax = 0;
       let allFullyBilled = true;
 
-      for (const bItem of billData.items) {
+      // Auto-fill billData if empty (e.g. fast bill)
+        if (!billData.items || billData.items.length === 0) {
+          billData.items = po.items.map((i: any) => ({
+            productId: i.product_id,
+            qty: i.qty - (i.billed_qty || 0),
+          })).filter((i: any) => i.qty > 0);
+        }
+
+        for (const bItem of billData.items) {
         const poItem = po.items.find(
           (i: any) => i.product_id === bItem.productId,
         );

@@ -19,6 +19,17 @@ export default function PurchaseOrdersPage() {
  
  // detail state
  const [docLoading, setDocLoading] = useState(false)
+  const searchParams = useSearchParams()
+  const poId = searchParams.get('id')
+  
+  useEffect(() => {
+    if (poId && data.length > 0) {
+      const doc = data.find((d: any) => d.id === poId)
+      if (doc && !selectedDoc) {
+        viewDetails(doc)
+      }
+    }
+  }, [poId, data])
  const [docDetails, setDocDetails] = useState<any | null>(null)
 
  useEffect(() => {
@@ -81,7 +92,7 @@ export default function PurchaseOrdersPage() {
  const getStatusBadge = (status: string) => {
  switch (status) {
  case 'DRAFT': return <Badge variant="secondary" className="bg-muted/50 text-foreground">Draft (RFQ)</Badge>
- case 'CONFIRMED': return <Badge className="">Confirmed</Badge>
+ case 'CONFIRMED': return <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-transparent">Confirmed</Badge>
  case 'CANCELLED': return <Badge variant="destructive">Cancelled</Badge>
  default: return <Badge variant="outline">{status}</Badge>
  }
@@ -89,17 +100,26 @@ export default function PurchaseOrdersPage() {
 
  const getReceiptBadge = (status: string) => {
  switch(status) {
- case 'PENDING': return <Badge variant="outline" className="text-amber-600 border-amber-200">Pending Receipt</Badge>
- case 'PARTIAL': return <Badge variant="outline" className="text-blue-600 border-blue-200">Partially Received</Badge>
- case 'RECEIVED': return <Badge className="">Fully Received</Badge>
+ case 'PENDING': return <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent">Menunggu Barang</Badge>
+ case 'PARTIAL': return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-transparent">Diterima Sebagian</Badge>
+ case 'RECEIVED': return <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-transparent">Diterima Penuh</Badge>
  default: return null
  }
  }
 
- const getBillBadge = (status: string) => {
+ const getPaymentBadge = (status: string) => {
+  switch(status) {
+    case 'UNPAID': return <Badge variant="secondary" className="bg-rose-100 text-rose-800 hover:bg-rose-100 border-transparent">Belum Dibayar</Badge>;
+    case 'PARTIAL': return <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent">Dibayar Sebagian</Badge>;
+    case 'PAID': return <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-transparent">Lunas</Badge>;
+    default: return <Badge variant="outline">{status}</Badge>;
+  }
+}
+
+const getBillBadge = (status: string) => {
  switch(status) {
- case 'PENDING': return <Badge variant="outline" className="text-amber-600 border-amber-200">Unbilled</Badge>
- case 'BILLED': return <Badge className="">Billed</Badge>
+ case 'PENDING': return <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100 border-transparent">Belum Ditagih</Badge>
+ case 'BILLED': return <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-transparent">Ditagih</Badge>
  default: return null
  }
  }
@@ -130,23 +150,26 @@ export default function PurchaseOrdersPage() {
  </div>
  
  <div className="flex items-center gap-2">
- <Button variant="outline"><Download className="w-4 h-4 mr-2" /> Export PDF</Button>
+ <Button variant="outline" onClick={() => {
+        const token = localStorage.getItem("erp_token");
+        window.open(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/documents/purchase-orders/${details.id}/pdf?token=${token}`, "_blank");
+      }}><Download className="w-4 h-4 mr-2" /> Export PDF</Button>
  
  {details.status === 'CONFIRMED' && details.receipt_status !== 'RECEIVED' && (
  <Button onClick={() => router.push(`/purchasing/receipts?po=${details.id}`)} className="">
- <Truck className="w-4 h-4 mr-2" /> Receive Goods
+ <Truck className="w-4 h-4 mr-2" /> Terima Barang
  </Button>
  )}
  
  {details.status === 'CONFIRMED' && details.receipt_status !== 'PENDING' && details.bill_status !== 'BILLED' && (
  <Button onClick={createVendorBill} variant="outline" className="border-emerald-200 text-primary hover:bg-emerald-50">
- <FileOutput className="w-4 h-4 mr-2" /> Create Vendor Bill
+ <FileOutput className="w-4 h-4 mr-2" /> Buat Tagihan Vendor
  </Button>
  )}
 
  {details.bill_status === 'BILLED' && (
  <Button onClick={() => router.push("/finance/vendor-bills")} variant="outline" className="border-border text-foreground hover:bg-muted/30">
- <FileText className="w-4 h-4 mr-2" /> View Bill
+ <FileText className="w-4 h-4 mr-2" /> Lihat Tagihan
  </Button>
  )}
  </div>
@@ -177,24 +200,24 @@ export default function PurchaseOrdersPage() {
  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
  <Card className="md:col-span-2 shadow-sm">
  <CardHeader className="border-b bg-muted/10 pb-4">
- <CardTitle className="text-[16px] font-semibold">Order Lines (Three-Way Match)</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Rincian Pesanan (Three-Way Match)</CardTitle>
  </CardHeader>
  <CardContent className="p-0">
  <div className="overflow-x-auto">
  <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted/30">
  <tr>
- <th className="p-4 text-left font-medium text-muted-foreground">Product</th>
- <th className="p-4 text-center font-medium text-muted-foreground">Ordered</th>
- <th className="p-4 text-center font-medium text-muted-foreground">Received</th>
- <th className="p-4 text-center font-medium text-muted-foreground">Billed</th>
+ <th className="p-4 text-left font-medium text-muted-foreground">Produk</th>
+ <th className="p-4 text-center font-medium text-muted-foreground">Dipesan</th>
+ <th className="p-4 text-center font-medium text-muted-foreground">Diterima</th>
+ <th className="p-4 text-center font-medium text-muted-foreground">Ditagih</th>
  <th className="p-4 text-right font-medium text-muted-foreground">Unit Price</th>
  <th className="p-4 text-right font-medium text-muted-foreground">Subtotal</th>
  </tr>
  </thead>
  <tbody>
  {(details.items || []).length === 0 ? (
- <tr><td colSpan={6} className="text-center p-4 md:p-8 text-muted-foreground">No lines available.</td></tr>
+ <tr><td colSpan={6} className="text-center p-4 md:p-8 text-muted-foreground">Tidak ada rincian barang.</td></tr>
  ) : (
  details.items.map((line: any, i: number) => (
  <tr key={i} className="border-b last:border-0 hover:bg-muted/60 transition-colors">
@@ -215,7 +238,7 @@ export default function PurchaseOrdersPage() {
  
  <div className="border-t bg-muted/10 p-6 flex flex-col items-end space-y-2">
  <div className="flex justify-between w-full sm:w-64 text-base font-bold pt-2">
- <span>Grand Total</span>
+ <span>Total Akhir</span>
  <span>Rp {Number(details.total_amount || 0).toLocaleString('id-ID')}</span>
  </div>
  </div>
@@ -224,7 +247,7 @@ export default function PurchaseOrdersPage() {
 
  <Card className="shadow-sm h-fit">
  <CardHeader className="border-b bg-muted/10 pb-4">
- <CardTitle className="text-[16px] font-semibold">Procurement Details</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Informasi Pembelian</CardTitle>
  </CardHeader>
  <CardContent className="space-y-4 pt-6">
  <div>
@@ -233,26 +256,26 @@ export default function PurchaseOrdersPage() {
  <p className="text-sm text-muted-foreground">{details.supplier?.email || ''}</p>
  </div>
  <div>
- <p className="text-sm font-medium text-muted-foreground mb-1">Order Date</p>
+ <p className="text-sm font-medium text-muted-foreground mb-1">Tanggal Order</p>
  <p className="font-medium">{new Date(details.order_date || details.createdAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
  </div>
  <div>
- <p className="text-sm font-medium text-muted-foreground mb-1">Expected Receipt</p>
+ <p className="text-sm font-medium text-muted-foreground mb-1">Estimasi Diterima</p>
  <p className="font-medium">{details.expected_receipt ? new Date(details.expected_receipt).toLocaleDateString('id-ID') : '-'}</p>
  </div>
  
  <div className="pt-4 border-t space-y-2">
  <div className="flex justify-between items-center text-sm">
- <span className="text-muted-foreground">Receipt Status:</span>
+ <span className="text-muted-foreground">Status Penerimaan:</span>
  {getReceiptBadge(details.receipt_status)}
  </div>
  <div className="flex justify-between items-center text-sm">
- <span className="text-muted-foreground">Billing Status:</span>
+ <span className="text-muted-foreground">Status Tagihan:</span>
  {getBillBadge(details.bill_status)}
  </div>
  <div className="flex justify-between items-center text-sm">
- <span className="text-muted-foreground">Payment Status:</span>
- <Badge variant="outline">{details.payment_status}</Badge>
+ <span className="text-muted-foreground">Status Pembayaran:</span>
+ {getPaymentBadge(details.payment_status)}
  </div>
  </div>
  </CardContent>
@@ -267,22 +290,22 @@ export default function PurchaseOrdersPage() {
  <div className="space-y-6">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <div>
- <h1 className="text-[28px] font-bold tracking-tight text-foreground">Purchase Orders</h1>
- <p className="text-muted-foreground mt-1">Manage confirmed procurement orders and track fulfillment.</p>
+ <h1 className="text-[28px] font-bold tracking-tight text-foreground">Order Pembelian</h1>
+ <p className="text-muted-foreground mt-1">Kelola pesanan pembelian dan lacak penerimaan barang.</p>
  </div>
- <Button className="shadow-sm" onClick={() => router.push(isKayu ? "/purchasing/orders/create" : "/inventory/purchase-fish/create")}><Plus className="w-4 h-4 mr-2" /> New Order</Button>
+ <Button className="shadow-sm" onClick={() => router.push(isKayu ? "/purchasing/orders/create" : "/inventory/purchase-fish/create")}><Plus className="w-4 h-4 mr-2" /> Order Baru</Button>
  </div>
 
  <Card className="shadow-sm">
  <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
- <CardTitle className="text-[16px] font-semibold">Purchase Order Database</CardTitle>
+ <CardTitle className="text-[16px] font-semibold">Data Order Pembelian</CardTitle>
  <div className="flex items-center gap-2">
  <div className="relative w-full sm:w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input 
  type="search" 
- placeholder="Search PO or Supplier..." 
+ placeholder="Cari PO atau Supplier..." 
  className="pl-8" 
  value={searchTerm}
  onChange={(e) => setSearchTerm(e.target.value)}
@@ -302,18 +325,18 @@ export default function PurchaseOrdersPage() {
  <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
  <tr>
- <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">PO Number</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">No. Order</th>
  <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Supplier</th>
- <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Date</th>
+ <th className="p-4 px-6 text-left text-[#526174] font-semibold text-[13px] tracking-wide">Tanggal</th>
  <th className="p-4 px-6 text-right text-[#526174] font-semibold text-[13px] tracking-wide">Total</th>
- <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Receipt</th>
- <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Billing</th>
- <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Action</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Penerimaan</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Tagihan</th>
+ <th className="p-4 px-6 text-center text-[#526174] font-semibold text-[13px] tracking-wide">Aksi</th>
  </tr>
  </thead>
  <tbody>
  {filtered.length === 0 ? (
- <tr><td colSpan={7} className="text-center p-12 text-muted-foreground">No purchase orders found.</td></tr>
+ <tr><td colSpan={7} className="text-center p-12 text-muted-foreground">Tidak ada order pembelian ditemukan.</td></tr>
  ) : filtered.map((item) => (
  <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => viewDetails(item)}>
  <td className="py-3.5 px-6 font-semibold text-primary text-[13px] dark:text-primary">{item.order_number}</td>
@@ -323,9 +346,9 @@ export default function PurchaseOrdersPage() {
  <td className="py-3.5 px-6 text-center text-[13px]">{getReceiptBadge(item.receipt_status)}</td>
  <td className="py-3.5 px-6 text-center text-[13px]">{getBillBadge(item.bill_status)}</td>
  <td className="py-3.5 px-6 text-center text-[13px]">
- <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
- View
- </Button>
+ <Button variant="ghost" size="sm" className="bg-primary/5 text-primary hover:bg-primary/10 transition-colors">
+ Lihat
+  </Button>
  </td>
  </tr>
  ))}

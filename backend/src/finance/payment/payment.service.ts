@@ -152,6 +152,23 @@ export class PaymentService {
               status: newStatus,
             },
           });
+          
+          if (inv.purchase_order_id) {
+            const allInvs = await tx.invoice.findMany({
+              where: { purchase_order_id: inv.purchase_order_id, type: { in: ['AP', 'VENDOR_BILL'] } },
+            });
+            // We need to account for the current update since the transaction hasn't committed? 
+            // Wait, Prisma tx will see the updated row if we await. We did await above.
+            const allPaid = allInvs.every((i: any) => i.status === 'PAID');
+            const anyPaid = allInvs.some((i: any) => i.paid_amount > 0);
+            
+            await tx.purchaseOrder.update({
+              where: { id: inv.purchase_order_id },
+              data: {
+                payment_status: allPaid ? 'PAID' : anyPaid ? 'PARTIAL' : 'UNPAID',
+              },
+            });
+          }
         }
       }
 

@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   BadRequestException,
   NotFoundException,
@@ -96,7 +96,7 @@ export class InvoiceService {
           'EVT-' + Date.now(),
           new Date(),
           {
-            type: invoice.type || 'SALES_INVOICE',
+            type: (invoice.type || 'SALES_INVOICE') as any,
             totalAmount: invoice.total,
           },
           tx as any,

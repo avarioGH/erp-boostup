@@ -1,4 +1,4 @@
-﻿import { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 export class InvoicePostedEvent {
   constructor(
@@ -7,7 +7,7 @@ export class InvoicePostedEvent {
     public readonly eventId: string,
     public readonly occurredAt: Date,
     public readonly payload: {
-      type: string; // 'SALES_INVOICE' | 'VENDOR_BILL'
+      type: string;
       totalAmount: number;
     },
     public readonly tx?: Prisma.TransactionClient,
@@ -69,7 +69,13 @@ export class InventoryValuationEvent {
         | 'COGS'
         | 'GOODS_RECEIPT'
         | 'MANUFACTURING_CONSUMPTION'
-        | 'MANUFACTURING_PRODUCTION';
+        | 'MANUFACTURING_PRODUCTION'
+        | 'DISPOSAL_LOSS'
+        | 'DISPOSAL_LOSS_REVERSAL'
+        | 'PURCHASE_RETURN'
+        | 'PURCHASE_RETURN_REVERSAL'
+        | 'SALES_RETURN_COGS'
+        | 'SALES_RETURN_COGS_REVERSAL';
       totalValue: number;
       description?: string;
     },

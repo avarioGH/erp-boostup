@@ -1,5 +1,6 @@
 "use client"
 import React, { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,8 +17,11 @@ export default function PurchaseFishForm() {
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
 
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const initialPartnerId = searchParams?.get('partner_id') || "";
+
   const [formData, setFormData] = useState({
-    partner_id: "",
+    partner_id: initialPartnerId,
     warehouse_id: "",
     date: new Date().toISOString().slice(0, 10),
     paid_amount: 0,

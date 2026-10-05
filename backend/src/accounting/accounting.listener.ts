@@ -1,4 +1,4 @@
-﻿import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { SalesCompletedEvent } from '../events/sales-completed.event';
 import {
@@ -396,6 +396,36 @@ export class AccountingListener {
           },
         ],
       });
+    } else if (event.payload.type === 'SALES_RETURN_REVENUE') {
+      const arAccount = await this.resolveAccount(tx, event.companyId, ['1-1200', '1200'], ['Piutang Usaha', 'Accounts Receivable']);
+      const salesReturnAccount = await this.resolveAccount(tx, event.companyId, ['4-1100', '4100', '4-1000', '4000'], ['Retur Penjualan', 'Sales Return', 'Sales Revenue']);
+
+      await this.glService.createJournalEntryWithinTx(tx as any, {
+        companyId: event.companyId,
+        entryDate: event.occurredAt,
+        referenceType: event.payload.type,
+        referenceId: event.sourceEntityId,
+        description: `Sales Return Revenue Reversal`,
+        items: [
+          { accountId: salesReturnAccount, debit: event.payload.totalAmount, credit: 0 },
+          { accountId: arAccount, debit: 0, credit: event.payload.totalAmount },
+        ],
+      });
+    } else if (event.payload.type === 'SALES_RETURN_REVENUE_REVERSAL') {
+      const arAccount = await this.resolveAccount(tx, event.companyId, ['1-1200', '1200'], ['Piutang Usaha', 'Accounts Receivable']);
+      const salesReturnAccount = await this.resolveAccount(tx, event.companyId, ['4-1100', '4100', '4-1000', '4000'], ['Retur Penjualan', 'Sales Return', 'Sales Revenue']);
+
+      await this.glService.createJournalEntryWithinTx(tx as any, {
+        companyId: event.companyId,
+        entryDate: event.occurredAt,
+        referenceType: event.payload.type,
+        referenceId: event.sourceEntityId,
+        description: `Sales Return Revenue Reversal Void`,
+        items: [
+          { accountId: arAccount, debit: event.payload.totalAmount, credit: 0 },
+          { accountId: salesReturnAccount, debit: 0, credit: event.payload.totalAmount },
+        ],
+      });
     } else if (event.payload.type === 'VENDOR_BILL') {
       const debitAccount = await this.resolveAccount(
         tx,
@@ -624,6 +654,14 @@ export class AccountingListener {
         );
         debitAccount = cogsAccount;
         creditAccount = inventoryAsset;
+      } else if (event.payload.type === 'SALES_RETURN_COGS') {
+        const cogsAccount = await this.resolveAccount(tx, event.companyId, ['5-1000', '5000'], ['Harga Pokok Penjualan', 'COGS']);
+        debitAccount = inventoryAsset; // Dr Inventory
+        creditAccount = cogsAccount; // Cr COGS
+      } else if (event.payload.type === 'SALES_RETURN_COGS_REVERSAL') {
+        const cogsAccount = await this.resolveAccount(tx, event.companyId, ['5-1000', '5000'], ['Harga Pokok Penjualan', 'COGS']);
+        debitAccount = cogsAccount; // Dr COGS
+        creditAccount = inventoryAsset; // Cr Inventory
       } else if (event.payload.type === 'MANUFACTURING_CONSUMPTION') {
         const wipAccount = await this.resolveAccount(
           tx,
@@ -664,6 +702,42 @@ export class AccountingListener {
         );
         debitAccount = inventoryAsset;
         creditAccount = gainAccount;
+      } else if (event.payload.type === 'DISPOSAL_LOSS') {
+        const disposalLossAccount = await this.resolveAccount(
+          tx,
+          event.companyId,
+          ['6150', '6000', '6100'],
+          ['Inventory Disposal Loss', 'Waste Expense', 'Stock Adjustment Loss'],
+        );
+        debitAccount = disposalLossAccount;
+        creditAccount = inventoryAsset;
+      } else if (event.payload.type === 'DISPOSAL_LOSS_REVERSAL') {
+        const disposalLossAccount = await this.resolveAccount(
+          tx,
+          event.companyId,
+          ['6150', '6000', '6100'],
+          ['Inventory Disposal Loss', 'Waste Expense', 'Stock Adjustment Loss'],
+        );
+        debitAccount = inventoryAsset;
+        creditAccount = disposalLossAccount;
+      } else if (event.payload.type === 'PURCHASE_RETURN') {
+        const apAccount = await this.resolveAccount(
+          tx,
+          event.companyId,
+          ['2-1100', '2100'],
+          ['Hutang Usaha', 'Accounts Payable'],
+        );
+        debitAccount = apAccount;
+        creditAccount = inventoryAsset;
+      } else if (event.payload.type === 'PURCHASE_RETURN_REVERSAL') {
+        const apAccount = await this.resolveAccount(
+          tx,
+          event.companyId,
+          ['2-1100', '2100'],
+          ['Hutang Usaha', 'Accounts Payable'],
+        );
+        debitAccount = inventoryAsset;
+        creditAccount = apAccount;
       } else if (event.payload.type === 'GOODS_RECEIPT') {
         // In this specific architecture, Goods Receipt isn't directly creating AP, Vendor Bill does.
         // Or maybe it does? The user said "If the existing system recognizes inventory only at Vendor Bill posting: preserve that behavior."

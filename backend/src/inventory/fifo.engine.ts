@@ -114,12 +114,10 @@ export async function consumeFifoLayers(
     remainingToConsume -= qtyToTake;
   }
 
-  if (remainingToConsume > 0) {
-    console.warn(
-      `INSUFFICIENT_FIFO_COST_LAYER: Cannot consume full ${data.quantity} units, short by ${remainingToConsume}. Falling back to 0 cost for remainder.`
+  if (remainingToConsume > 0.0001) {
+    throw new Error(
+      `INSUFFICIENT_INVENTORY_COST_LAYER: Inventory quantity exists but historical cost layers are insufficient for this quantity (short by ${remainingToConsume}). Inventory valuation reconciliation is required before this transaction can be posted.`,
     );
-    // We do not throw here, because physical stock might exist due to manual adjustments
-    // without corresponding FIFO layers. We just assume 0 cost for the missing layers.
   }
 
   return { consumed, totalCogs };

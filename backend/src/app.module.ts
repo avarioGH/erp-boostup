@@ -48,8 +48,11 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { ReportsModule as InventoryReportsModule } from './inventory/reports/reports.module';
 
+import { SalesReturnModule } from './sales/sales-return/sales-return.module';
+
 @Module({
   imports: [
+    SalesReturnModule,
     TimberSalesModule,
     ApprovalModule,
     EcommerceModule,

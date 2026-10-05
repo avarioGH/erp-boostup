@@ -1,3 +1,4 @@
+import { PaymentService } from '../../finance/payment/payment.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
@@ -16,7 +17,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('sales/orders')
 export class SalesOrderController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private paymentService: PaymentService,
+  ) {}
 
   @Permissions('quotation.view')
   @Get()
@@ -28,10 +32,7 @@ export class SalesOrderController {
         customer: true,
         allocations: true,
       },
-      orderBy: [
-        { order_date: 'desc' },
-        { created_at: 'desc' }
-      ],
+      orderBy: [{ order_date: 'desc' }, { created_at: 'desc' }],
     });
     return { data };
   }
@@ -64,7 +65,8 @@ export class SalesOrderController {
       const order = await tx.salesOrder.create({
         data: {
           company_id: compId,
-          ecommerce_session_id: "MANUAL_" + Date.now() + Math.random().toString(36).substring(7),
+          ecommerce_session_id:
+            'MANUAL_' + Date.now() + Math.random().toString(36).substring(7),
           customer_id: body.customer_id,
           order_number: orderNo,
           order_date: new Date(body.order_date || new Date()),
@@ -87,53 +89,30 @@ export class SalesOrderController {
           },
         });
       }
-
-      if (paidAmount > 0) {
-        // Create Payment and Allocation for CRM
-        const cashAccount = await tx.cashAccount.findFirst({
-          where: { company_id: compId },
-        });
-        const payment = await tx.payment.create({
-          data: {
-            company_id: compId,
-            customer_id: body.customer_id,
-            payment_number: `PAY-${Date.now()}`,
-            payment_date: new Date(),
-            amount: paidAmount,
-            payment_method: body.payment_method || 'Transfer',
-            reference: orderNo,
-          },
-        });
-
-        await tx.paymentAllocation.create({
-          data: {
-            payment_id: payment.id,
-            sales_order_id: order.id,
-            amount: paidAmount,
-          },
-        });
-
-        if (cashAccount) {
-          await tx.financeTransaction.create({
-            data: {
-              company_id: compId,
-              cash_account_id: cashAccount.id,
-              transaction_no: `TRX-${Date.now()}`,
-              transaction_type: 'Income',
-              transaction_date: new Date(),
-              total_amount: paidAmount,
-              reference_type: 'SALES_ORDER',
-              reference_id: order.id,
-              description: `Pembayaran ${orderNo}`,
-              status: 'COMPLETED',
-              created_by: req.user.id,
-            },
-          });
-        }
-      }
-
       return order;
-    });
+    }); // End of SO transaction
+
+    // Delegate B2B Upfront Payment to Canonical PaymentService
+    if (paidAmount > 0) {
+      await this.paymentService.create(
+        compId,
+        {
+          salesOrderId: so.id,
+          customerId: body.customer_id,
+          amount: paidAmount,
+          paymentMethod: body.payment_method || 'Transfer',
+          reference: orderNo,
+          notes: `Upfront B2B Payment ${orderNo}`,
+          allowUnallocated: true, // Allow just SO allocation
+        },
+        req.user.id,
+      );
+      // Refresh SO state to reflect updated payment status from PaymentService
+      const refreshedSO = await this.prisma.salesOrder.findUnique({
+        where: { id: so.id },
+      });
+      if (refreshedSO) so.payment_status = refreshedSO.payment_status;
+    }
 
     return so;
   }

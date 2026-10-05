@@ -1,4 +1,4 @@
-﻿import { PermissionsGuard } from '../auth/permissions.guard';
+import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
 import {
   Controller,
@@ -236,7 +236,10 @@ export class InventoryController {
   async approveStockOpname(
     @Request() req: any,
     @Param('id') id: string,
-    @Body() data: { counts: { productId: string; countedQty: number }[] },
+    @Body()
+    data: {
+      counts: { productId: string; countedQty: number; unitCost?: number }[];
+    },
   ) {
     return this.inventoryService.approveStockOpname(
       req.user.company_id,
@@ -254,5 +257,11 @@ export class InventoryController {
       include: { product: true, warehouse: true },
       orderBy: { created_at: 'desc' },
     });
+  }
+
+  @Permissions('inventory.view')
+  @Get('fifo/diagnostic')
+  async getFifoDiagnostic(@Request() req) {
+    return this.inventoryService.getFifoDiagnostic(req.user.companyId);
   }
 }

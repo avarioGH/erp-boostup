@@ -3,15 +3,18 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryService } from '../inventory.service';
 import { CreateDisposalDto } from './disposal.dto';
+import { InventoryValuationEvent } from '../../events/accounting.events';
 
 @Injectable()
 export class DisposalService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly inventoryService: InventoryService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async list(companyId: string) {
@@ -118,7 +121,16 @@ export class DisposalService {
       throw new BadRequestException('Only PENDING disposal can be approved');
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Update status
+      // 1. Atomic Guard
+      const check = await (tx as any).inventoryDisposal.updateMany({
+        where: { id, status: 'PENDING' },
+        data: { status: 'PROCESSING' }
+      });
+      if (check.count === 0) {
+        throw new BadRequestException('Disposal not pending or already processed');
+      }
+
+      // 2. Update status to APPROVED
       const updated = await tx.inventoryDisposal.update({
         where: { id },
         data: {
@@ -128,9 +140,10 @@ export class DisposalService {
         },
       });
 
-      // 2. Issue stock
+      // 3. Issue stock and calculate consumed cost
+      let totalConsumedCost = 0;
       for (const item of disposal.items) {
-        await this.inventoryService.issueStock(tx, {
+        const issueResult = await this.inventoryService.issueStock(tx, {
           companyId,
           warehouseId: disposal.warehouse_id,
           productId: item.product_id,
@@ -141,9 +154,30 @@ export class DisposalService {
           description: `Disposal ${disposal.disposal_number}`,
           allowNegative: false,
         });
+        if (issueResult.consumedCost) {
+          totalConsumedCost += issueResult.consumedCost;
+        }
       }
 
-      // 3. Log Audit
+      if (totalConsumedCost > 0) {
+        this.eventEmitter.emit(
+          'inventory.valuation',
+          new InventoryValuationEvent(
+            companyId,
+            id,
+            `DSP_VAL_${Date.now()}`,
+            new Date(),
+            {
+              type: 'DISPOSAL_LOSS',
+              totalValue: totalConsumedCost,
+              description: `Disposal ${disposal.disposal_number}`,
+            },
+            tx,
+          ),
+        );
+      }
+
+      // 4. Log Audit
       await tx.auditLog.create({
         data: {
           company_id: companyId,
@@ -207,6 +241,114 @@ export class DisposalService {
       return tx.inventoryDisposal.delete({
         where: { id }
       });
+    });
+  }
+
+  async reverse(id: string, companyId: string, userId: string) {
+    const disposal = await this.detail(id, companyId);
+    if (disposal.status !== 'APPROVED') {
+      throw new BadRequestException('Only APPROVED disposal can be reversed');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Atomic Guard
+      const check = await (tx as any).inventoryDisposal.updateMany({
+        where: { id, status: 'APPROVED' },
+        data: { status: 'PROCESSING_REVERSAL' }
+      });
+      if (check.count === 0) {
+        throw new BadRequestException('Disposal not approved or already processing reversal');
+      }
+
+      // 2. Fetch Stock Movements and Cost Layers to calculate unit cost
+      const stockMovements = await tx.stockMovement.findMany({
+        where: {
+          transaction_id: id,
+          transaction_type: 'DISPOSAL'
+        },
+        include: {
+          CostLayerConsumption: true
+        }
+      });
+
+      let totalConsumedCost = 0;
+
+      // 3. Receive stock for each item using calculated unit cost
+      for (const item of disposal.items) {
+        // Find the corresponding stock movement for this product
+        const movement = stockMovements.find(sm => sm.product_id === item.product_id);
+        let unitCost = 0;
+        
+        if (movement) {
+          // Sum the cost from CostLayerConsumption
+          const itemTotalCost = movement.CostLayerConsumption.reduce((sum, layer) => sum + layer.total_cost, 0);
+          const itemTotalQty = movement.CostLayerConsumption.reduce((sum, layer) => sum + layer.quantity, 0);
+          
+          if (itemTotalQty > 0) {
+            unitCost = itemTotalCost / itemTotalQty;
+            totalConsumedCost += itemTotalCost;
+          }
+        } else {
+           // Fallback to purchase price if no movement found
+           unitCost = item.product.purchase_price;
+           totalConsumedCost += (unitCost * item.qty);
+        }
+
+        await this.inventoryService.receiveStock(tx, {
+          companyId,
+          warehouseId: disposal.warehouse_id,
+          productId: item.product_id,
+          quantity: item.qty,
+          unitCost: unitCost,
+          referenceType: 'DISPOSAL_REVERSAL',
+          referenceId: id,
+          userId,
+          description: `Reversal of Disposal ${disposal.disposal_number}`,
+        });
+      }
+
+      // 4. Emit Reversal Event
+      if (totalConsumedCost > 0) {
+        this.eventEmitter.emit(
+          'inventory.valuation',
+          new InventoryValuationEvent(
+            companyId,
+            id,
+            `DSP_REV_VAL_${Date.now()}`,
+            new Date(),
+            {
+              type: 'DISPOSAL_LOSS_REVERSAL',
+              totalValue: totalConsumedCost,
+              description: `Reversal of Disposal ${disposal.disposal_number}`,
+            },
+            tx,
+          ),
+        );
+      }
+
+      // 5. Update status to REVERSED
+      const updated = await tx.inventoryDisposal.update({
+        where: { id },
+        data: {
+          status: 'REVERSED',
+          // could clear approved_by or keep it for record
+        },
+      });
+
+      // 6. Log Audit
+      await tx.auditLog.create({
+        data: {
+          company_id: companyId,
+          user_id: userId,
+          action: 'REVERSE',
+          entity: 'InventoryDisposal',
+          entity_id: id,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          after_data: updated as any,
+        },
+      });
+
+      return updated;
     });
   }
 }

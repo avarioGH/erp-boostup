@@ -383,3 +383,17 @@ export const PartaiAPI: any = {
 
 
 export const InventoryDisposalAPI: any = { getDisposals: async (params?: any) => (await api.get('/inventory/disposals', { params })).data, getDisposal: async (id: string) => (await api.get('/inventory/disposals/' + id)).data, createDisposal: async (data: any) => (await api.post('/inventory/disposals', data)).data, submitDisposal: async (id: string) => (await api.post('/inventory/disposals/' + id + '/submit')).data, approveDisposal: async (id: string, note?: string) => (await api.post('/inventory/disposals/' + id + '/approve', { note })).data, rejectDisposal: async (id: string, note?: string) => (await api.post('/inventory/disposals/' + id + '/reject', { note })).data, cancelDisposal: async (id: string) => (await api.post('/inventory/disposals/' + id + '/cancel')).data, deleteDisposal: async (id: string) => (await api.delete('/inventory/disposals/' + id)).data, updateDisposal: async (id: string, data: any) => (await api.put('/inventory/disposals/' + id, data)).data };
+
+export const DisposalAPI = {
+  list: async () => (await api.get('/inventory/disposals')).data,
+  create: async (data: any) => (await api.post('/inventory/disposals', data)).data,
+  getById: async (id: string) => (await api.get('/inventory/disposals/' + id)).data,
+  reverse: async (id: string) => (await api.post('/inventory/disposals/' + id + '/reverse')).data,
+};
+export const SalesReturnAPI: any = {
+  list: async (params?: any) => (await api.get('/sales/returns', { params })).data,
+  detail: async (id: string) => (await api.get('/sales/returns/' + id)).data,
+  create: async (data: any) => (await api.post('/sales/returns', data)).data,
+  approve: async (id: string) => (await api.post('/sales/returns/' + id + '/approve')).data,
+  reverse: async (id: string) => (await api.post('/sales/returns/' + id + '/reverse')).data
+};

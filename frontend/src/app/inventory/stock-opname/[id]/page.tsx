@@ -40,8 +40,12 @@ export default function OpnameDetailsPage() {
 
   const handlePhysicalChange = (index: number, field: string, value: string) => {
     const newItems = [...items]
-    const numValue = parseFloat(value) || 0
-    newItems[index] = { ...newItems[index], [field]: value === "" ? "" : numValue }
+    if (field === 'costSource') {
+      newItems[index] = { ...newItems[index], [field]: value }
+    } else {
+      const numValue = parseFloat(value) || 0
+      newItems[index] = { ...newItems[index], [field]: value === "" ? "" : numValue }
+    }
     
     // Recalculate variances
     const sysQty = newItems[index].systemQuantityPcs || 0
@@ -63,6 +67,8 @@ export default function OpnameDetailsPage() {
         productId: item.productId,
         physicalQuantityPcs: item.physicalQuantityPcs || 0,
         physicalVolumeM3: item.physicalVolumeM3 || 0,
+        costSource: item.costSource || 'LATEST_PURCHASE',
+        unitCost: item.unitCost || 0,
       }))
       await OpnameAPI.updateCounts(id as string, updates)
       toast({ title: "Progress Saved", description: "Your count has been saved." })
@@ -76,6 +82,15 @@ export default function OpnameDetailsPage() {
   const handleConfirm = async () => {
     setConfirming(true)
     try {
+      const updates = items.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        physicalQuantityPcs: item.physicalQuantityPcs || 0,
+        physicalVolumeM3: item.physicalVolumeM3 || 0,
+        costSource: item.costSource || 'LATEST_PURCHASE',
+        unitCost: item.unitCost || 0,
+      }))
+      await OpnameAPI.updateCounts(id as string, updates)
       await OpnameAPI.confirm(id as string)
       toast({ title: "Opname Confirmed", description: "The opname has been successfully confirmed." })
       fetchOpname()
@@ -136,11 +151,12 @@ export default function OpnameDetailsPage() {
                   <th className="p-3 text-right font-semibold text-primary">Phys Vol (M3)</th>
                   <th className="p-3 text-right">Var Qty</th>
                   <th className="p-3 text-right">Var Vol</th>
+                  <th className="p-3 text-left">Costing</th>
                 </tr>
               </thead>
               <tbody>
                 {items.length === 0 ? (
-                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No items in this warehouse.</td></tr>
+                  <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">No items in this warehouse.</td></tr>
                 ) : items.map((item, index) => {
                   const varQty = item.varianceQuantityPcs || 0
                   const varVol = item.varianceVolumeM3 || 0
@@ -173,6 +189,40 @@ export default function OpnameDetailsPage() {
                       </td>
                       <td className={`p-3 text-right font-medium ${varVol < 0 ? 'text-red-500' : varVol > 0 ? 'text-green-500' : 'text-muted-foreground'}`}>
                         {varVol > 0 ? '+' : ''}{varVol.toFixed(4)}
+                      </td>
+                      <td className="p-3 text-left align-top">
+                        {varQty > 0 ? (
+                          <div className="flex flex-col gap-2 min-w-[200px]">
+                            <select 
+                              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                              value={item.costSource || 'LATEST_PURCHASE'}
+                              onChange={(e) => handlePhysicalChange(index, 'costSource', e.target.value)}
+                              disabled={isConfirmed}
+                            >
+                              <option value="LATEST_PURCHASE">Latest Purchase Cost</option>
+                              <option value="MANUAL">Manual Cost</option>
+                            </select>
+                            {item.costSource === 'MANUAL' && (
+                              <Input
+                                type="number"
+                                placeholder="Unit Cost"
+                                value={item.unitCost || ''}
+                                onChange={(e) => handlePhysicalChange(index, 'unitCost', e.target.value)}
+                                disabled={isConfirmed}
+                              />
+                            )}
+                            <div className="text-xs text-muted-foreground">
+                              Est. Value: Rp {((item.unitCost || 0) * varQty).toLocaleString()}
+                            </div>
+                          </div>
+                        ) : varQty < 0 ? (
+                          <div className="text-xs text-muted-foreground">
+                            <div className="font-medium text-destructive">Adjustment Type: Stock Loss</div>
+                            <div>FIFO Cost will be applied</div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
                       </td>
                     </tr>
                   )

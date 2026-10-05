@@ -249,11 +249,21 @@ export default function Customer360Page() {
  </Card>
   <Card className="shadow-sm">
     <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-      <CardTitle className="text-sm font-medium text-muted-foreground">Hutang Perusahaan</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold text-orange-600">{formatCurrency(finance.outstandingAp || 0)}</div>
-    </CardContent>
+      <CardTitle className="text-sm font-medium text-muted-foreground">Hutang & Kredit Supplier</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {finance.outstandingAp < 0 ? (
+          <>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(Math.abs(finance.outstandingAp))} <span className="text-sm font-normal">(Kredit Supplier)</span></div>
+            <p className="text-xs text-muted-foreground mt-1">Hutang Pokok: Rp0</p>
+          </>
+        ) : (
+          <>
+            <div className="text-2xl font-bold text-destructive">{formatCurrency(finance.outstandingAp || 0)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Hutang Pokok</p>
+          </>
+        )}
+      </CardContent>
   </Card>
   <Card className="shadow-sm bg-primary/5">
     <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
@@ -446,7 +456,7 @@ export default function Customer360Page() {
    linkedInvs.forEach((inv: any) => { paid += Number(inv.paid_amount || 0) });
    const sisa = Math.max(0, (so.total_amount || 0) - paid);
    return (
- <tr key={so.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+ <tr key={so.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => window.location.href = `/sales/orders?id=${so.id}`}>
  <td className="px-4 py-3 font-mono text-xs">{so.order_number}</td>
  <td className="px-4 py-3">{new Date(so.order_date || so.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{so.status}</Badge></td>
@@ -577,7 +587,14 @@ export default function Customer360Page() {
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
  <CardTitle className="text-[16px] font-semibold">Riwayat Pembelian</CardTitle>
- <Link href="/purchasing/orders"><Button variant="outline" size="sm">Kelola <Navigation className="w-3 h-3 ml-1" /></Button></Link>
+ <div className="flex gap-2">
+     <Link href={`/inventory/purchase-fish/create?partner_id=${partnerId}`}>
+       <Button size="sm">Tambah Pembelian</Button>
+     </Link>
+     <Link href="/purchasing/orders">
+       <Button variant="outline" size="sm">Kelola <Navigation className="w-3 h-3 ml-1" /></Button>
+     </Link>
+   </div>
  </CardHeader>
  <CardContent className="overflow-x-auto">
  <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
@@ -592,7 +609,7 @@ export default function Customer360Page() {
  </thead>
  <tbody>
  {data?.purchases?.orders?.map((po: any) => (
- <tr key={po.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+ <tr key={po.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => window.location.href = `/purchasing/orders?id=${po.id}`}>
  <td className="px-4 py-3 font-mono text-xs">{po.order_number}</td>
  <td className="px-4 py-3">{new Date(po.order_date || po.created_at).toLocaleDateString()}</td>
  <td className="px-4 py-3"><Badge variant="outline">{po.status}</Badge></td>
@@ -707,6 +724,44 @@ export default function Customer360Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+﻿      {/* NETTING MODAL */}
+      <Dialog open={nettingModalOpen} onOpenChange={setNettingModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Kompensasi Hutang/Piutang</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Fitur ini akan memotong silang Piutang (AR) dan Hutang (AP) untuk nelayan/partner ini secara otomatis dari saldo tertua.
+            </p>
+            <div className="space-y-2">
+              <Label>Maksimal Kompensasi yang bisa dilakukan: {formatCurrency(Math.min(data?.summary?.outstanding || 0, data?.summary?.outstanding_ap || 0))}</Label>
+              <Input
+                type="number"
+                placeholder="Nominal Kompensasi"
+                value={nettingAmount}
+                onChange={(e) => setNettingAmount(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Catatan Tambahan</Label>
+              <Input
+                type="text"
+                placeholder="Opsional..."
+                value={nettingNotes}
+                onChange={(e) => setNettingNotes(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNettingModalOpen(false)}>Batal</Button>
+            <Button onClick={handleNetting} disabled={!nettingAmount}>
+              Proses Kompensasi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 </div>
  );
 }

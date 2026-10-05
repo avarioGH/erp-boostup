@@ -1,4 +1,4 @@
-﻿import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InventoryValuationEvent } from '../events/accounting.events';
 import {
   Injectable,
@@ -539,6 +539,7 @@ export class InventoryService {
             transaction_id: transaction.id,
             product_id: item.productId,
             qty: 0,
+            subtotal: 0,
             system_qty: item.systemQty,
             counted_qty: item.countedQty,
             difference: item.countedQty - item.systemQty,
@@ -557,72 +558,29 @@ export class InventoryService {
         include: { items: true },
       });
       if (!transaction) throw new NotFoundException('Adjustment not found');
-      if (transaction.status !== 'Draft')
+      const updateCheck = await tx.inventoryTransaction.updateMany({
+        where: { id, status: 'Draft' },
+        data: { status: 'Processing' },
+      });
+      if (updateCheck.count === 0)
         throw new BadRequestException(
-          'Only Draft adjustments can be validated',
+          'Only Draft adjustments can be validated or it is already processing',
         );
 
       for (const item of transaction.items) {
         const diff = item.difference || 0;
         if (diff === 0) continue;
 
-        let stock = await tx.warehouseStock.findUnique({
-          where: {
-            company_id_warehouse_id_product_id: {
-              company_id: companyId,
-              warehouse_id: transaction.warehouse_id,
-              product_id: item.product_id,
-            },
-          },
-        });
-
-        if (!stock && diff > 0) {
-          stock = await tx.warehouseStock.create({
-            data: {
-              company_id: companyId,
-              warehouse_id: transaction.warehouse_id,
-              product_id: item.product_id,
-              current_stock: diff,
-              available_stock: diff,
-            },
-          });
-        } else if (stock) {
-          if (stock.available_stock + diff < 0) {
-            throw new BadRequestException(
-              'Cannot adjust stock below 0 for product ' + item.product_id,
-            );
-          }
-          const adjustRes = await tx.warehouseStock.updateMany({
-            where: {
-              id: stock.id,
-              available_stock: { gte: diff < 0 ? Math.abs(diff) : 0 },
-            },
-            data: {
-              current_stock: { increment: diff },
-              available_stock: { increment: diff },
-            },
-          });
-          if (adjustRes.count === 0) {
-            throw new BadRequestException(
-              'Concurrency conflict or insufficient stock for adjustment on ' +
-                item.product_id,
-            );
-          }
-        }
-
-        await tx.stockMovement.create({
-          data: {
-            company_id: companyId,
-            warehouse_id: transaction.warehouse_id,
-            product_id: item.product_id,
-            transaction_type: 'ADJUSTMENT',
-            transaction_id: transaction.id,
-            movement_type: diff > 0 ? 'ADJUSTMENT_IN' : 'ADJUSTMENT_OUT',
-            qty_in: diff > 0 ? diff : 0,
-            qty_out: diff < 0 ? Math.abs(diff) : 0,
-            balance_after: stock ? stock.current_stock + diff : diff,
-            created_by: userId,
-          },
+        await this.adjustStock(tx as any, {
+          companyId,
+          warehouseId: transaction.warehouse_id,
+          productId: item.product_id,
+          difference: diff,
+          unitCost: Number(item.unit_cost) || 0,
+          referenceType: 'ADJUSTMENT',
+          referenceId: transaction.id,
+          description: item.notes || 'Stock Adjustment',
+          userId,
         });
       }
 
@@ -672,6 +630,7 @@ export class InventoryService {
         transaction_id: transaction.id,
         product_id: stock.product_id,
         qty: 0,
+        subtotal: 0,
         system_qty: stock.current_stock,
         counted_qty: stock.current_stock,
         difference: 0,
@@ -689,7 +648,7 @@ export class InventoryService {
     companyId: string,
     id: string,
     userId: string,
-    counts: { productId: string; countedQty: number }[],
+    counts: { productId: string; countedQty: number; unitCost?: number }[],
   ) {
     return this.prisma.$transaction(async (tx) => {
       const transaction = await tx.inventoryTransaction.findUnique({
@@ -697,8 +656,14 @@ export class InventoryService {
         include: { items: true },
       });
       if (!transaction) throw new NotFoundException('Opname not found');
-      if (transaction.status !== 'Draft')
-        throw new BadRequestException('Only Draft opname can be approved');
+      const updateCheck = await tx.inventoryTransaction.updateMany({
+        where: { id, status: 'Draft' },
+        data: { status: 'Processing' },
+      });
+      if (updateCheck.count === 0)
+        throw new BadRequestException(
+          'Only Draft opname can be approved or it is already processing',
+        );
 
       for (const count of counts) {
         const item = transaction.items.find(
@@ -709,7 +674,11 @@ export class InventoryService {
 
         await tx.inventoryTransactionItem.update({
           where: { id: item.id },
-          data: { counted_qty: count.countedQty, difference: diff },
+          data: {
+            counted_qty: count.countedQty,
+            difference: diff,
+            unit_cost: count.unitCost || 0,
+          },
         });
 
         if (diff !== 0) {
@@ -718,6 +687,7 @@ export class InventoryService {
             warehouseId: transaction.warehouse_id,
             productId: item.product_id,
             difference: diff,
+            unitCost: count.unitCost || 0,
             referenceType: 'OPNAME',
             referenceId: transaction.id,
             description: 'Stock Opname',
@@ -1160,6 +1130,7 @@ export class InventoryService {
       warehouseId: string;
       productId: string;
       difference: number;
+      unitCost?: number;
       referenceType: string;
       referenceId: string;
       description?: string;
@@ -1169,18 +1140,125 @@ export class InventoryService {
     if (params.difference === 0) return;
 
     if (params.difference > 0) {
-      // Adjust IN => equivalent to receiveStock
+      let finalUnitCost = params.unitCost || 0;
+      if (finalUnitCost <= 0) {
+        const latestFifo = await (tx as any).inventoryCostLayer.findFirst({
+          where: { company_id: params.companyId, product_id: params.productId },
+          orderBy: { created_at: 'desc' },
+        });
+        if (latestFifo) {
+          finalUnitCost = Number(latestFifo.unit_cost);
+        } else {
+          const prod = await (tx as any).product.findUnique({
+            where: { id: params.productId },
+          });
+          finalUnitCost = Number(prod?.purchase_price) || 0;
+          if (finalUnitCost <= 0) {
+            throw new BadRequestException(
+              'Valid unit cost is required for positive adjustment. No purchase history found.',
+            );
+          }
+        }
+      }
+
       await this.receiveStock(tx, {
         ...params,
         quantity: params.difference,
-        unitCost: 0,
-      }); // Note: unitCost 0 for adjustment? FIFO requires unit cost if available, but for adjustment, typically 0 or average cost
+        unitCost: finalUnitCost,
+      });
+
+      const totalValue = params.difference * finalUnitCost;
+      if (totalValue > 0) {
+        this.eventEmitter.emit(
+          'inventory.valuation',
+          new InventoryValuationEvent(
+            params.companyId,
+            params.referenceId,
+            `adj-gain-${params.referenceId}-${Date.now()}`,
+            new Date(),
+            {
+              type: 'ADJUSTMENT_GAIN',
+              totalValue: totalValue,
+              description: params.description || 'Stock Adjustment Gain',
+            },
+            tx,
+          ),
+        );
+      }
     } else {
-      // Adjust OUT => equivalent to issueStock
-      await this.issueStock(tx, {
+      const { consumedCost } = await this.issueStock(tx, {
         ...params,
         quantity: Math.abs(params.difference),
       });
+
+      if (consumedCost > 0) {
+        this.eventEmitter.emit(
+          'inventory.valuation',
+          new InventoryValuationEvent(
+            params.companyId,
+            params.referenceId,
+            `adj-loss-${params.referenceId}-${Date.now()}`,
+            new Date(),
+            {
+              type: 'ADJUSTMENT_LOSS',
+              totalValue: consumedCost,
+              description: params.description || 'Stock Adjustment Loss',
+            },
+            tx,
+          ),
+        );
+      }
     }
   }
+
+    async getFifoDiagnostic(companyId: string) {
+    const stock = await this.prisma.warehouseStock.findMany({
+      where: { company_id: companyId, current_stock: { gt: 0 } },
+      include: {
+        product: { select: { id: true, name: true, code: true } },
+        warehouse: { select: { id: true, name: true } },
+      },
+    });
+
+    const fifoLayers = await this.prisma.inventoryCostLayer.findMany({
+      where: { company_id: companyId, remaining_quantity: { gt: 0 } },
+      select: { warehouse_id: true, product_id: true, remaining_quantity: true, unit_cost: true },
+    });
+
+    const layerMap = new Map();
+    fifoLayers.forEach(l => {
+      const key = `${l.warehouse_id}_${l.product_id}`;
+      if (!layerMap.has(key)) layerMap.set(key, { qty: 0, val: 0 });
+      const current = layerMap.get(key);
+      current.qty += l.remaining_quantity;
+      current.val += (l.remaining_quantity * l.unit_cost);
+    });
+
+    const result = stock.map(s => {
+      const layer = layerMap.get(`${s.warehouse_id}_${s.product_id}`);
+      const physicalQty = Number(s.current_stock);
+      const fifoQty = layer ? layer.qty : 0;
+      
+      let status = 'OK';
+      if (fifoQty < physicalQty && fifoQty > 0) status = 'INSUFFICIENT_COVERAGE';
+      else if (fifoQty === 0 && physicalQty > 0) status = 'NO_COVERAGE';
+      else if (fifoQty > physicalQty) status = 'EXCEEDS_PHYSICAL_STOCK';
+
+      return {
+        productId: s.product_id,
+        code: s.product.code,
+        productName: s.product.name,
+        warehouseId: s.warehouse_id,
+        warehouseName: s.warehouse.name,
+        physicalQuantity: physicalQty,
+        fifoQuantity: fifoQty,
+        fifoValue: layer ? layer.val : 0,
+        difference: physicalQty - fifoQty,
+        status,
+      };
+    });
+
+    return result;
+  }
+
 }
