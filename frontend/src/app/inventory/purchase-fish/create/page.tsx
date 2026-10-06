@@ -32,6 +32,7 @@ export default function PurchaseFishForm() {
   const [processing, setProcessing] = useState(false)
   const [showNota, setShowNota] = useState(false)
   const [notaData, setNotaData] = useState<any>(null)
+  const [isWarehouseLocked, setIsWarehouseLocked] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -44,6 +45,17 @@ export default function PurchaseFishForm() {
         setPartners(pRes.data?.data || pRes.data || [])
         setWarehouses(wRes.data || [])
         setProducts(prRes.data || [])
+
+        const stored = localStorage.getItem('active_warehouse');
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (parsed && parsed.id && parsed.id !== 'all') {
+              setFormData(prev => ({ ...prev, warehouse_id: parsed.id }));
+              setIsWarehouseLocked(true);
+            }
+          } catch (e) {}
+        }
       } catch (err) {
         console.error(err)
       }
@@ -152,7 +164,7 @@ export default function PurchaseFishForm() {
             </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2"><Building className="w-4 h-4"/> Gudang Penerimaan</Label>
-              <Select value={formData.warehouse_id} onValueChange={(val) => setFormData({...formData, warehouse_id: val || ""})}>
+              <Select value={formData.warehouse_id} onValueChange={(val) => setFormData({...formData, warehouse_id: val || ""})} disabled={isWarehouseLocked}>
                         <SelectTrigger className="w-full">
                           <span className="flex flex-1 text-left">
                             {formData.warehouse_id 

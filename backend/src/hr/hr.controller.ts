@@ -18,6 +18,52 @@ import { HrService } from './hr.service';
 @Controller('hr')
 export class HrController {
 
+  @Permissions('hr.view')
+  @Get('performance-report')
+  async getPerformanceReport(
+    @Request() req: any,
+    @Query('month') month: string,
+    @Query('year') year: string
+  ) {
+    const m = parseInt(month) || new Date().getMonth() + 1;
+    const y = parseInt(year) || new Date().getFullYear();
+    return this.hrService.getPerformanceReport(req.user.company_id, m, y);
+  }
+
+
+  // --- SHIFT MANAGEMENT ---
+  @Permissions('hr.view')
+  @Get('shifts')
+  async getShifts(@Request() req: any) {
+    return this.hrService.getShifts(req.user.company_id);
+  }
+
+  @Permissions('hr.create')
+  @Post('shifts')
+  async createShift(@Request() req: any, @Body() data: any) {
+    data.company_id = req.user.company_id;
+    return this.hrService.createShift(data);
+  }
+
+  @Permissions('hr.update')
+  @Put('shifts/:id')
+  async updateShift(@Param('id') id: string, @Body() data: any) {
+    return this.hrService.updateShift(id, data);
+  }
+
+  @Permissions('hr.delete')
+  @Post('shifts/:id/delete')
+  async deleteShift(@Param('id') id: string) {
+    return this.hrService.deleteShift(id);
+  }
+
+  @Permissions('hr.update')
+  @Post('employees/:id/shift')
+  async setEmployeeShift(@Param('id') id: string, @Body() data: { shift_id: string }) {
+    return this.hrService.setEmployeeShift(id, data.shift_id);
+  }
+
+
   @Permissions('hr.create')
   @Post('attendance/clock-in')
   async clockIn(@Request() req: any, @Body() data: any) {

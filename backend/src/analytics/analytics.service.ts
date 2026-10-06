@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FinanceService } from '../finance/finance.service';
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private finance: FinanceService) {}
 
   async getDashboardKPIs(companyId: string, warehouseId?: string) {
     const today = new Date();
@@ -20,18 +21,7 @@ export class AnalyticsService {
     }
 
     // Revenue Today
-    const todayOrders = await this.prisma.salesOrder.aggregate({
-      where: { ...whereBase, order_date: { gte: today } },
-      _sum: { total_amount: true },
-    });
-    const currentRevenue = todayOrders._sum.total_amount || 0;
-
-    // Monthly Revenue
-    const monthlyOrders = await this.prisma.salesOrder.aggregate({
-      where: { ...whereBase, order_date: { gte: firstDayOfMonth } },
-      _sum: { total_amount: true },
-    });
-    const monthlyRevenue = monthlyOrders._sum.total_amount || 0;
+    // Current Revenue is now derived from canonical GL P&L
 
     const financeWhere: any = {
       company_id: companyId,
@@ -56,8 +46,17 @@ export class AnalyticsService {
       }
     });
 
-    const netProfit = realCashIn - realCashOut;
     const cashFlow = realCashIn;
+    
+    // Get canonical Accrual P&L from GL
+    const pnl = await this.finance.getProfitLossReport(companyId, firstDayOfMonth, new Date());
+      const netProfit = pnl.netProfit;
+      
+      const monthAgg = await this.prisma.salesOrder.aggregate({
+        where: { ...whereBase, order_date: { gte: firstDayOfMonth } },
+        _sum: { total_amount: true }
+      });
+      const currentRevenue = monthAgg._sum.total_amount || 0;
 
     // Inventory Value
     const stocks = await this.prisma.warehouseStock.findMany({ where: warehouseId && warehouseId !== 'all' ? { company_id: companyId, warehouse_id: warehouseId } : { company_id: companyId }, include: { product: true } });
@@ -150,13 +149,14 @@ export class AnalyticsService {
         }
       });
 
+      const dayPnl = await this.finance.getProfitLossReport(companyId, d, nextD);
       chartDataArray.push({
-        date: d.toLocaleDateString('id-ID', { month: 'short', day: 'numeric' }),
-        revenue: dayAgg._sum.total_amount || 0,
-        profit: dayCashIn - dayCashOut,
-        cashIn: dayCashIn,
-        cashOut: dayCashOut
-      });
+          date: d.toLocaleDateString('id-ID', { month: 'short', day: 'numeric' }),
+          revenue: dayAgg._sum.total_amount || 0,
+          profit: dayPnl.netProfit, // Profit is global for now
+          cashIn: dayCashIn,
+          cashOut: dayCashOut
+        });
     }
 
     return {

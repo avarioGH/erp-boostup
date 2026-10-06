@@ -36,6 +36,9 @@ export default function Customer360Page() {
   const [nettingModalOpen, setNettingModalOpen] = useState(false);
   const [nettingAmount, setNettingAmount] = useState('');
   const [nettingNotes, setNettingNotes] = useState('');
+  const [salesSearch, setSalesSearch] = useState('');
+  const [salesStartDate, setSalesStartDate] = useState('');
+  const [salesEndDate, setSalesEndDate] = useState('');
 
   const handleCreateInvoice = async (soId: string) => {
     setIsCreatingInv(soId);
@@ -190,9 +193,24 @@ export default function Customer360Page() {
  ...finance.payments.map((p:any) => ({ id: p.id, type: 'PAYMENT', date: new Date(p.created_at), title: `Payment received: ${formatCurrency(p.amount)}` })),
  ...feed
  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+  const filteredQuotations = sales?.quotations?.filter((q: any) => {
+    const matchSearch = q.quotation_number?.toLowerCase().includes(salesSearch.toLowerCase());
+    const qDate = new Date(q.quotation_date || q.created_at);
+    const matchStart = salesStartDate ? qDate >= new Date(salesStartDate) : true;
+    const matchEnd = salesEndDate ? qDate <= new Date(salesEndDate) : true;
+    return matchSearch && matchStart && matchEnd;
+  }) || [];
 
- return (
- <div className="space-y-6 pb-12 animate-in fade-in duration-300">
+  const filteredOrders = sales?.orders?.filter((so: any) => {
+    const matchSearch = so.order_number?.toLowerCase().includes(salesSearch.toLowerCase());
+    const soDate = new Date(so.order_date || so.created_at);
+    const matchStart = salesStartDate ? soDate >= new Date(salesStartDate) : true;
+    const matchEnd = salesEndDate ? soDate <= new Date(salesEndDate) : true;
+    return matchSearch && matchStart && matchEnd;
+  }) || [];
+
+  return (
+    <div className="space-y-6 pb-12 animate-in fade-in duration-300">
  {/* Action Bar */}
  <div className="flex items-center gap-4 text-sm text-muted-foreground">
  <button onClick={() => router.push('/crm/partners')} className="flex items-center hover:text-foreground transition-colors">
@@ -269,8 +287,8 @@ export default function Customer360Page() {
     <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
       <CardTitle className="text-sm font-medium text-primary">Net Balance</CardTitle>
       {(finance.outstandingAmount > 0 && finance.outstandingAp > 0) && (
-        <Button size="sm" onClick={() => setNettingModalOpen(true)}>Kompensasi</Button>
-      )}
+          <Button type="button" size="sm" onClick={() => setNettingModalOpen(true)}>Kompensasi</Button>
+        )}
     </CardHeader>
     <CardContent>
       <div className="text-2xl font-bold text-primary">{formatCurrency(finance.netBalance || 0)}</div>
@@ -401,6 +419,27 @@ export default function Customer360Page() {
 
  {/* SALES & QUOTATIONS */}
  <TabsContent value="sales" className="space-y-4 mt-4">
+        <div className="flex flex-col md:flex-row gap-4 mb-4">
+          <Input 
+            placeholder="Cari Quotation / Order #..." 
+            value={salesSearch} 
+            onChange={(e) => setSalesSearch(e.target.value)} 
+            className="max-w-sm" 
+          />
+          <div className="flex gap-2 items-center">
+            <Input 
+              type="date" 
+              value={salesStartDate} 
+              onChange={(e) => setSalesStartDate(e.target.value)} 
+            />
+            <span className="text-muted-foreground">-</span>
+            <Input 
+              type="date" 
+              value={salesEndDate} 
+              onChange={(e) => setSalesEndDate(e.target.value)} 
+            />
+          </div>
+        </div>
  <Card className="shadow-sm">
  <CardHeader className="flex flex-row items-center justify-between">
  <CardTitle className="text-[16px] font-semibold">Quotations</CardTitle>
@@ -417,7 +456,7 @@ export default function Customer360Page() {
  </tr>
  </thead>
  <tbody>
- {sales.quotations.map((q: any) => (
+ {filteredQuotations.map((q: any) => (
  <tr key={q.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{q.quotation_number}</td>
  <td className="px-4 py-3">{new Date(q.quotation_date || q.created_at).toLocaleDateString()}</td>
@@ -425,7 +464,7 @@ export default function Customer360Page() {
  <td className="px-4 py-3 text-right">{formatCurrency(q.total_amount)}</td>
  </tr>
  ))}
- {sales.quotations.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No quotations found.</td></tr>}
+ {filteredQuotations.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No quotations found.</td></tr>}
  </tbody>
  </table>
  </CardContent>
@@ -450,7 +489,7 @@ export default function Customer360Page() {
  </tr>
  </thead>
  <tbody>
- {sales.orders.map((so: any) => {
+ {filteredOrders.map((so: any) => {
    let paid = so.allocations?.reduce((sum: number, a: any) => sum + Number(a.amount || 0), 0) || 0;
    const linkedInvs = (data?.finance?.invoices || []).filter((i: any) => i.sales_order_id === so.id);
    linkedInvs.forEach((inv: any) => { paid += Number(inv.paid_amount || 0) });
@@ -467,17 +506,27 @@ export default function Customer360Page() {
  </td>
  <td className="px-4 py-3 text-right">{formatCurrency(so.total_amount)}</td>
  <td className={`px-4 py-3 text-right font-semibold ${sisa > 0 ? 'text-amber-600' : 'text-muted-foreground'}`}>{sisa > 0 ? formatCurrency(sisa) : '-'}</td>
- <td className="px-4 py-3 text-right">
-   {so.invoice_status !== 'INVOICED' && (
-      <Button variant="outline" size="sm" onClick={() => handleCreateInvoice(so.id)} disabled={isCreatingInv === so.id}>
-        {isCreatingInv === so.id ? '...' : 'Buat Faktur'}
-      </Button>
-   )}
- </td>
+   <td className="px-4 py-3 text-right">
+     {so.invoice_status !== 'INVOICED' ? (
+        <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleCreateInvoice(so.id); }} disabled={isCreatingInv === so.id}>
+          {isCreatingInv === so.id ? '...' : 'Buat Faktur'}
+        </Button>
+     ) : (
+        <div className="flex flex-col items-end gap-1">
+          {linkedInvs.length > 0 ? linkedInvs.map((inv: any) => (
+             <Badge key={inv.id} variant="secondary" className="cursor-pointer hover:bg-muted" onClick={(e) => { e.stopPropagation(); const tab = document.querySelector('[value="finance"]'); if(tab) (tab as HTMLElement).click(); }}>
+               {inv.invoice_number}
+             </Badge>
+          )) : (
+             <span className="text-muted-foreground text-xs">Sudah Difaktur</span>
+          )}
+        </div>
+     )}
+   </td>
  </tr>
    );
  })}
- {sales.orders.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Belum ada transaksi.</td></tr>}
+ {filteredOrders.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">Belum ada transaksi.</td></tr>}
  </tbody>
  </table>
  </CardContent>
@@ -724,51 +773,45 @@ export default function Customer360Page() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-﻿      {/* NETTING MODAL */}
-      <Dialog open={nettingModalOpen} onOpenChange={setNettingModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Kompensasi Hutang/Piutang</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <p className="text-sm text-muted-foreground">
-              Fitur ini akan memotong silang Piutang (AR) dan Hutang (AP) untuk nelayan/partner ini secara otomatis dari saldo tertua.
-            </p>
-            <div className="space-y-2">
-              <Label>Maksimal Kompensasi yang bisa dilakukan: {formatCurrency(Math.min(data?.summary?.outstanding || 0, data?.summary?.outstanding_ap || 0))}</Label>
-              <Input
-                type="number"
-                placeholder="Nominal Kompensasi"
-                value={nettingAmount}
-                onChange={(e) => setNettingAmount(e.target.value)}
-              />
+      
+
+        {/* NETTING MODAL */}
+        <Dialog open={nettingModalOpen} onOpenChange={setNettingModalOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Kompensasi Hutang/Piutang</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <p className="text-sm text-muted-foreground">
+                Fitur ini akan memotong silang Piutang (AR) dan Hutang (AP) untuk nelayan/partner ini secara otomatis dari saldo tertua.
+              </p>
+              <div className="space-y-2">
+                <Label>Maksimal Kompensasi yang bisa dilakukan: {formatCurrency(Math.min(finance?.outstandingAmount || 0, finance?.outstandingAp || 0))}</Label>
+                <Input
+                  type="number"
+                  placeholder="Nominal Kompensasi"
+                  value={nettingAmount}
+                  onChange={(e) => setNettingAmount(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Catatan Tambahan</Label>
+                <Input
+                  type="text"
+                  placeholder="Opsional..."
+                  value={nettingNotes}
+                  onChange={(e) => setNettingNotes(e.target.value)}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Catatan Tambahan</Label>
-              <Input
-                type="text"
-                placeholder="Opsional..."
-                value={nettingNotes}
-                onChange={(e) => setNettingNotes(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNettingModalOpen(false)}>Batal</Button>
-            <Button onClick={handleNetting} disabled={!nettingAmount}>
-              Proses Kompensasi
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-</div>
- );
-}
-
-
-
-
-
-
-
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setNettingModalOpen(false)}>Batal</Button>
+              <Button onClick={handleNetting} disabled={!nettingAmount}>
+                Proses Kompensasi
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }

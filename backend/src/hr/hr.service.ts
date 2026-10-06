@@ -14,6 +14,98 @@ import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class HrService {
 
+  async getPerformanceReport(companyId: string, month: number, year: number) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 1);
+
+    const attendances = await this.prisma.attendance.findMany({
+      where: {
+        company_id: companyId,
+        date: { gte: startDate, lt: endDate }
+      },
+      include: { employee: true }
+    });
+
+    const reportMap = new Map();
+
+    attendances.forEach(att => {
+      if (!reportMap.has(att.employee_id)) {
+        reportMap.set(att.employee_id, {
+          employee_id: att.employee_id,
+          employee_name: att.employee?.first_name + ' ' + (att.employee?.last_name || ''),
+          employee_code: att.employee?.employee_code,
+          total_present: 0,
+          total_late_minutes: 0,
+          total_overtime_minutes: 0,
+          late_count: 0
+        });
+      }
+
+      const stats = reportMap.get(att.employee_id);
+      
+      if (att.status === 'PRESENT' || att.status === 'LATE') {
+         stats.total_present += 1;
+      }
+      
+      if (att.late_minutes && att.late_minutes > 0) {
+        stats.total_late_minutes += att.late_minutes;
+        stats.late_count += 1;
+      }
+      
+      if (att.overtime_minutes && att.overtime_minutes > 0) {
+        stats.total_overtime_minutes += att.overtime_minutes;
+      }
+    });
+
+    return Array.from(reportMap.values());
+  }
+
+
+  // --- SHIFT MANAGEMENT ---
+  async getShifts(companyId: string) {
+    return this.prisma.shift.findMany({
+      where: { company_id: companyId }
+    });
+  }
+
+  async createShift(data: any) {
+    return this.prisma.shift.create({
+      data: {
+        company_id: data.company_id,
+        code: data.code,
+        name: data.name,
+        start_time: data.start_time,
+        end_time: data.end_time,
+        grace_period_minutes: parseInt(data.grace_period_minutes) || 15
+      }
+    });
+  }
+
+  async updateShift(id: string, data: any) {
+    return this.prisma.shift.update({
+      where: { id },
+      data: {
+        code: data.code,
+        name: data.name,
+        start_time: data.start_time,
+        end_time: data.end_time,
+        grace_period_minutes: parseInt(data.grace_period_minutes) || 15
+      }
+    });
+  }
+
+  async deleteShift(id: string) {
+    return this.prisma.shift.delete({ where: { id } });
+  }
+
+  async setEmployeeShift(employeeId: string, shiftId: string) {
+    return this.prisma.employee.update({
+      where: { id: employeeId },
+      data: { default_shift_id: shiftId || null }
+    });
+  }
+
+
   // --- ATTENDANCE (CLOCK IN / OUT) ---
   async clockIn(data: any) {
     const { employeeId, time, notes, companyId } = data;
@@ -43,11 +135,58 @@ export class HrService {
     const { attendanceId, time, notes } = data;
     const checkOutTime = new Date(time);
 
+    const att = await this.prisma.attendance.findUnique({
+      where: { id: attendanceId },
+      include: { shift: true }
+    });
+
+    let overtimeMins = 0;
+    if (att && att.shift && att.shift.end_time) {
+      const [h, m] = att.shift.end_time.split(':');
+      const shiftEndHour = parseInt(h);
+      const shiftEndMin = parseInt(m);
+      
+      const checkOutHour = checkOutTime.getHours();
+      const checkOutMin = checkOutTime.getMinutes();
+      
+      const checkOutTotalMins = checkOutHour * 60 + checkOutMin;
+      const shiftEndTotalMins = shiftEndHour * 60 + shiftEndMin;
+      
+      // Simplified: if checkOut is later than shift end (assuming same day)
+      // For overnight shifts, this requires date difference handling. 
+      // A quick fix for same-day shifts:
+      if (checkOutTotalMins > shiftEndTotalMins) {
+        overtimeMins = checkOutTotalMins - shiftEndTotalMins;
+      }
+      
+      // If check_in is on previous day, or check_out is on next day (overnight)
+      if (att.check_in && checkOutTime.getDate() !== att.check_in.getDate()) {
+        const diffInMs = checkOutTime.getTime() - att.check_in.getTime();
+        const diffInMins = Math.floor(diffInMs / 60000);
+        // Calculate expected duration based on shift start and end
+        let expectedDuration = shiftEndTotalMins - (parseInt(att.shift.start_time.split(':')[0]) * 60 + parseInt(att.shift.start_time.split(':')[1]));
+        if (expectedDuration < 0) expectedDuration += 24 * 60; // overnight shift
+        
+        if (diffInMins > expectedDuration) {
+          overtimeMins = diffInMins - expectedDuration;
+        }
+      }
+    } else {
+       // Default 17:00 end time if no shift
+       const checkOutHour = checkOutTime.getHours();
+       const checkOutMin = checkOutTime.getMinutes();
+       const checkOutTotalMins = checkOutHour * 60 + checkOutMin;
+       if (checkOutTotalMins > 17 * 60) {
+         overtimeMins = checkOutTotalMins - (17 * 60);
+       }
+    }
+
     return this.prisma.attendance.update({
       where: { id: attendanceId },
       data: {
         check_out: checkOutTime,
         notes: notes,
+        overtime_minutes: overtimeMins,
       }
     });
   }

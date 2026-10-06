@@ -259,7 +259,7 @@ export default function OwnerDashboard() {
  <ShoppingCart className="w-5 h-5" />
  </div>
  <CardHeader className="pb-2">
- <CardDescription className="font-semibold tracking-wider uppercase text-[10px] text-muted-foreground truncate">Penjualan Hari Ini</CardDescription>
+ <CardDescription className="font-semibold tracking-wider uppercase text-[10px] text-muted-foreground truncate">Penjualan Bulan Ini</CardDescription>
  <CardTitle className="text-2xl font-bold text-foreground truncate mt-1" title={formatIDR(kpi?.currentRevenue)}>{formatIDR(kpi?.currentRevenue)}</CardTitle>
  </CardHeader>
  <CardContent>

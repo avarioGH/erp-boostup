@@ -201,6 +201,7 @@ const items: MenuItem[] = [
  id: "crm",
  subItems: [
  { title: "Daftar Pelanggan", url: "/crm/partners" },
+        { title: "WhatsApp Chat", url: "/crm/whatsapp" },
  { title: "Pipeline & Leads", url: "/crm/pipeline" },
  { title: "Loyalty & Poin", url: "/customers/loyalty" },
  { title: "Voucher", url: "/customers/voucher" }

@@ -16,7 +16,10 @@ export default function HrAttendance() {
   const [employees, setEmployees] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [employeeId, setEmployeeId] = useState("")
-  const [clockTime, setClockTime] = useState("")
+  const [inDate, setInDate] = useState("");
+  const [inTime, setInTime] = useState("");
+  const [outDate, setOutDate] = useState("");
+  const [outTime, setOutTime] = useState("");
 
   const fetchData = async () => {
     try {
@@ -36,22 +39,31 @@ export default function HrAttendance() {
     fetchData()
   }, [])
 
-  const handleClockIn = async () => {
-    if (!employeeId || !clockTime) return alert("Pilih Karyawan dan Jam")
+  const handleSaveAttendance = async () => {
+    if (!employeeId || !inDate || !inTime) return alert("Karyawan, Tgl Masuk, dan Jam Masuk wajib diisi")
     try {
-      // Mocking today's date with the selected time
-      const today = new Date()
-      const [h, m] = clockTime.split(':')
-      today.setHours(parseInt(h), parseInt(m), 0)
-
-      await api.post('/hr/attendance/clock-in', {
+      const checkInDate = new Date(inDate + 'T' + inTime + ':00');
+      const res = await api.post('/hr/attendance/clock-in', {
         employeeId,
-        time: today.toISOString()
-      })
-      alert("Berhasil Clock In")
-      fetchData()
-    } catch (err) {
-      console.error(err)
+        time: checkInDate.toISOString()
+      });
+      
+      const attendanceId = res.data?.id;
+
+      if (outDate && outTime && attendanceId) {
+         const checkOutDate = new Date(outDate + 'T' + outTime + ':00');
+         await api.post('/hr/attendance/clock-out', {
+           attendanceId,
+           time: checkOutDate.toISOString()
+         });
+      }
+
+      alert("Berhasil menyimpan absensi manual");
+      setInDate(""); setInTime(""); setOutDate(""); setOutTime("");
+      fetchData();
+    } catch (err: any) {
+      console.error(err);
+      alert("Gagal: " + (err.response?.data?.message || err.message));
     }
   }
 
@@ -67,28 +79,43 @@ export default function HrAttendance() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-1">
           <CardHeader>
-            <CardTitle>Manual Clock In</CardTitle>
-            <CardDescription>Input absensi manual</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Karyawan</Label>
-              <select className="w-full border p-2 rounded-md" value={employeeId} onChange={e => setEmployeeId(e.target.value)}>
-                <option value="">-- Pilih Karyawan --</option>
-                {employees.map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name} ({emp.employee_code})</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label>Jam Masuk</Label>
-              <Input type="time" value={clockTime} onChange={e => setClockTime(e.target.value)} />
-            </div>
-            <Button className="w-full" onClick={handleClockIn}>Simpan Absen Masuk</Button>
-            <div className="text-xs text-muted-foreground mt-2 border-t pt-2">
-              * Jam Masuk standar adalah 08:00. Jika lebih dari jam 8, status otomatis LATE (Terlambat).
-            </div>
-          </CardContent>
+            <CardTitle>Input Absensi Manual</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Karyawan</Label>
+                <select className="w-full p-2 rounded-md border bg-background" value={employeeId} onChange={e => setEmployeeId(e.target.value)}>
+                  <option value="">-- Pilih Karyawan --</option>
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name} ({emp.employee_code})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <Label>Tgl Masuk</Label>
+                  <Input type="date" value={inDate} onChange={e => setInDate(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Jam Masuk</Label>
+                  <Input type="time" value={inTime} onChange={e => setInTime(e.target.value)} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  <Label>Tgl Keluar (Ops)</Label>
+                  <Input type="date" value={outDate} onChange={e => setOutDate(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Jam Keluar</Label>
+                  <Input type="time" value={outTime} onChange={e => setOutTime(e.target.value)} />
+                </div>
+              </div>
+              <Button className="w-full" onClick={handleSaveAttendance}>Simpan Absensi</Button>
+              <div className="text-xs text-muted-foreground mt-2 border-t pt-2">
+                * Tgl & Jam keluar opsional jika belum pulang.
+              </div>
+            </CardContent>
         </Card>
 
         <Card className="md:col-span-2">

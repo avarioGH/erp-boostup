@@ -233,6 +233,11 @@ export const HrAPI: any = {
   createPayroll: async (data: any) => (await api.post('/hr/payroll', data)).data,
   calculatePayroll: async (employeeId: string, period: string) => (await api.post('/hr/payroll/' + employeeId + '/calculate', { period })).data,
   postPayroll: async (id: string) => (await api.post('/hr/payroll/' + id + '/post')).data,
+  getShifts: async () => (await api.get('/hr/shifts')).data,
+  createShift: async (data: any) => (await api.post('/hr/shifts', data)).data,
+  updateShift: async (id: string, data: any) => (await api.put(`/hr/shifts/${id}`, data)).data,
+  deleteShift: async (id: string) => (await api.post(`/hr/shifts/${id}/delete`)).data,
+  assignShift: async (employeeId: string, shiftId: string) => (await api.post(`/hr/employees/${employeeId}/shift`, { shift_id: shiftId })).data,
 };
 
 export const ExpenseAPI: any = {

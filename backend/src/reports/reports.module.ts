@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ReportController } from './report.controller';
 import { ReportService } from './report.service';
 import { ExportService } from './export.service';
@@ -9,8 +9,10 @@ import { SequenceService } from './sequence.service';
 import { FinancialReportService } from './services/financial-report.service';
 import { SalesReportService } from './services/sales-report.service';
 import { InventoryReportService } from './services/inventory-report.service';
+import { FinanceModule } from '../finance/finance.module';
 
 @Module({
+  imports: [forwardRef(() => FinanceModule)],
   controllers: [ReportController],
   providers: [
     ReportService,

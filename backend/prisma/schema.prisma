@@ -38,6 +38,7 @@ model Company {
 
   // Phase 5 Finance
   cash_accounts        CashAccount[]
+  shifts               Shift[]
   finance_categories   FinanceCategory[]
   finance_transactions FinanceTransaction[]
   petty_cashes         PettyCash[]
@@ -1805,6 +1806,7 @@ model Employee {
 
   basic_salary   Float   @default(0)
   bank_name      String?
+  default_shift_id String? @db.ObjectId
   account_number String?
 
   fingerprint_right_thumb String?
@@ -1817,6 +1819,7 @@ model Employee {
   created_at     DateTime       @default(now())
   updated_at     DateTime       @updatedAt
   LeaveRequest   LeaveRequest[]
+  shift          Shift? @relation(fields: [default_shift_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([company_id, employee_code])
 }
@@ -1831,6 +1834,11 @@ model Attendance {
   check_in    DateTime?
   check_out   DateTime?
   notes       String?
+  
+  shift_id         String? @db.ObjectId
+  shift            Shift?  @relation(fields: [shift_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  late_minutes     Int     @default(0)
+  overtime_minutes Int     @default(0)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -3886,4 +3894,24 @@ model SalesReturnCostAllocation {
   created_at DateTime @default(now())
 
   @@index([sales_return_id])
+}
+
+
+model Shift {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  company_id           String?   @db.ObjectId
+  company              Company?  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  code                 String
+  name                 String
+  start_time           String    // e.g. "08:00"
+  end_time             String    // e.g. "17:00"
+  grace_period_minutes Int       @default(15) // Minutes before marked LATE
+  status               String    @default("ACTIVE")
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+
+  employees            Employee[]
+  attendances          Attendance[]
+
+  @@unique([company_id, code])
 }

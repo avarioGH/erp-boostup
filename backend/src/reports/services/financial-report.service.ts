@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { FinanceService } from '../../finance/finance.service';
 import { ReportFilterDto, ReportResultDto } from '../report.types';
 
 @Injectable()
 export class FinancialReportService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private financeService: FinanceService) {}
 
   async getTrialBalance(filters: ReportFilterDto): Promise<ReportResultDto> {
     const whereCondition: any = {
@@ -91,67 +92,30 @@ export class FinancialReportService {
   }
 
   async getProfitAndLoss(filters: ReportFilterDto): Promise<ReportResultDto> {
-    const whereCondition: any = {
-      journal_entry: { company_id: filters.company_id, status: 'Posted' },
-    };
-    if (filters.start_date || filters.end_date) {
-      whereCondition.journal_entry.journal_date = {};
-      if (filters.start_date)
-        whereCondition.journal_entry.journal_date.gte = new Date(
-          filters.start_date,
-        );
-      if (filters.end_date)
-        whereCondition.journal_entry.journal_date.lte = new Date(
-          filters.end_date,
-        );
-    }
-
-    const items = await this.prisma.journalEntryItem.findMany({
-      where: whereCondition,
-      include: { account: { include: { account_type: true } } },
-    });
-
-    let revenue = 0;
-    let cogs = 0;
-    let expenses = 0;
-    let otherIncome = 0;
-    let otherExpenses = 0;
-
-    items.forEach((item) => {
-      const type = item.account.account_type.code.toUpperCase();
-      const amount = item.credit - item.debit; // revenue/equity normal is credit
-      const expAmount = item.debit - item.credit; // expense normal is debit
-
-      if (type.includes('REVENUE') || type.includes('INCOME')) {
-        if (type.includes('OTHER')) otherIncome += amount;
-        else revenue += amount;
-      } else if (type === 'COGS') {
-        cogs += expAmount;
-      } else if (type.includes('EXPENSE')) {
-        if (type.includes('OTHER')) otherExpenses += expAmount;
-        else expenses += expAmount;
-      }
-    });
-
-    const grossProfit = revenue - cogs;
-    const netProfit = grossProfit - expenses + otherIncome - otherExpenses;
+    const pnl = await this.financeService.getProfitLossReport(
+      filters.company_id,
+      filters.start_date ? new Date(filters.start_date) : undefined,
+      filters.end_date ? new Date(filters.end_date) : undefined
+    );
 
     return {
-      title: 'Profit & Loss',
+      title: 'Profit & Loss (Accrual)',
       columns: [
         { header: 'Category', key: 'category' },
         { header: 'Amount', key: 'amount', type: 'currency' },
       ],
       data: [
-        { category: 'Revenue', amount: revenue },
-        { category: 'Cost of Goods Sold', amount: cogs },
-        { category: 'Gross Profit', amount: grossProfit },
-        { category: 'Operating Expenses', amount: expenses },
-        { category: 'Other Income', amount: otherIncome },
-        { category: 'Other Expenses', amount: otherExpenses },
-        { category: 'Net Profit', amount: netProfit },
+        { category: 'Gross Revenue', amount: pnl.totalRevenue },
+        { category: 'Contra Revenue', amount: -pnl.totalContraRevenue },
+        { category: 'Net Revenue', amount: pnl.netRevenue },
+        { category: 'Cost of Goods Sold', amount: pnl.totalCogs },
+        { category: 'Gross Profit', amount: pnl.grossProfit },
+        { category: 'Operating Expenses', amount: pnl.totalOperatingExpenses },
+        { category: 'Other Income', amount: pnl.totalOtherIncome },
+        { category: 'Other Expenses', amount: pnl.totalOtherExpenses },
+        { category: 'Net Profit', amount: pnl.netProfit },
       ],
-      totals: { amount: netProfit },
+      totals: { amount: pnl.netProfit },
     };
   }
 
