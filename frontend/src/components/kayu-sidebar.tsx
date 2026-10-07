@@ -170,7 +170,7 @@ export function KayuSidebar() {
  const isIkan = false; // Default to Ikan logic if not explicitly Kayu
  
  if (isKayu) {
-      const allowedForKayu = ['inventory', 'production', 'dashboard', 'settings', 'ai', 'sales', 'pos', 'crm', 'finance', 'hr'];
+      const allowedForKayu = ['inventory', 'production', 'dashboard', 'settings', 'ai', 'sales', 'pos', 'crm', 'finance', 'hr', 'inbound', 'outbound', 'reports', 'master_data'];
       if (item.id && !allowedForKayu.includes(item.id)) return false;
       if (!item.id || user?.role === 'Owner') return true;
       return user?.accessible_modules?.includes(item.id);
