@@ -750,15 +750,12 @@ const [partai, setPartai] = useState<any>(null);
                                 const grouped: any = {};
                                 (partai?.sawnOutputs || []).forEach((out: any) => {
                                    (out.items || []).forEach((item: any) => {
-                                      const t = item.thicknessMm ? item.thicknessMm / 10 : (item.thickness || 0);
-                                      const w = item.widthMm ? item.widthMm / 10 : (item.width || 0);
-                                      const l = item.lengthMm ? item.lengthMm / 10 : (item.length || 0);
-                                      const key = `${item.timberVariant?.species || "Kayu"}-${item.grade}-${t}x${w}x${l}`;
+                                      const key = `${item.species}-${item.grade}-${item.thickness}x${item.width}x${item.length}`;
                                       if (!grouped[key]) {
                                          grouped[key] = {
-                                            species: item.timberVariant?.species || "Kayu",
+                                            species: item.species,
                                             grade: item.grade || '-',
-                                            dimensions: `${t}x${w}x${l}`,
+                                            dimensions: `${item.thickness}x${item.width}x${item.length}`,
                                             pcs: 0,
                                             vol: 0
                                          };
@@ -783,10 +780,7 @@ const [partai, setPartai] = useState<any>(null);
                              })()}
                           </TableBody>
                        </Table>
-                  </div>
-                </>
-              );
-            })()}
+                    </div>
                  </div>
               </CardContent>
             </Card>
@@ -799,17 +793,30 @@ const [partai, setPartai] = useState<any>(null);
               </div>
             </CardHeader>
             <CardContent className="pt-0">
+              <div className="flex items-center space-x-4 mb-4 bg-muted/30 p-3 rounded-lg border">
+                <div className="text-sm font-medium">{selectedOutputItems.length} item terpilih</div>
+                <Select value={selectedGradeId} onValueChange={setSelectedGradeId}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Pilih Grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {grades.map(g => (
+                      <SelectItem key={g.id} value={g.id}>{g.code}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  onClick={handleBulkGrade} 
+                  disabled={selectedOutputItems.length === 0 || !selectedGradeId || isGrading}
+                >
+                  {isGrading ? "Memproses..." : "Update Grade"}
+                </Button>
+              </div>
               <Table>
                 <TableHeader className="bg-muted/30">
                   
                     <TableRow>
-                      <TableHead className="w-[40px]">
-    <Checkbox 
-       checked={allOutputItems.length > 0 && selectedOutputItems.length === allOutputItems.length} 
-       onCheckedChange={() => toggleSelectAllOutputItems(allOutputItems)} 
-    />
-  </TableHead>
-  <TableHead>Tgl Produksi</TableHead>
+                      <TableHead>Tgl Produksi</TableHead>
                       <TableHead>Bundle No</TableHead>
                       <TableHead>Source WIP</TableHead>
                       <TableHead>Tebal</TableHead>
@@ -823,7 +830,9 @@ const [partai, setPartai] = useState<any>(null);
 
                 </TableHeader>
                 <TableBody>
-                  {allOutputItems.map((i: any) => {
+                  {(() => {
+  const allOutputItems = (partai.sawnOutputs || []).flatMap((o: any) => (o.items || []).map((item: any) => ({ ...item, parentDate: o.outputDate, parentInputId: o.inputLogId, parentBundleNumber: o.bundleNumber, parentOutputId: o.id, parentStatus: o.status })));
+  return allOutputItems.map((i: any) => {
                     const wip = (partai.inputLogs || []).find((log: any) => log.id === i.parentInputId);
                     return (
                       
@@ -834,7 +843,7 @@ const [partai, setPartai] = useState<any>(null);
        onCheckedChange={() => toggleSelectOutputItem(i.id, i.parentOutputId)} 
      />
    </TableCell>
-   <TableCell>{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                            <TableCell>{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
                           <TableCell className="font-medium text-blue-600 dark:text-blue-400">{i.parentBundleNumber}</TableCell>
                           <TableCell className="font-medium text-primary"><Link href={`/inventory/input-logs/${i.parentInputId}`} onClick={e => e.stopPropagation()}>{wip?.inputNumber || "WIP"}</Link></TableCell>
                           <TableCell>{i.thicknessMm / 10} cm</TableCell>
