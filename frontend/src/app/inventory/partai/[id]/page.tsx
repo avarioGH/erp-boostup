@@ -860,7 +860,7 @@ const [partai, setPartai] = useState<any>(null);
                         </TableRow>
 
                     );
-                  })}
+                  });
                   })()}
                   {(!partai.sawnOutputs || partai.sawnOutputs.length === 0 || partai.sawnOutputs.flatMap((o: any) => o.items).length === 0) && (
                     <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">Belum ada output produksi.</TableCell></TableRow>
