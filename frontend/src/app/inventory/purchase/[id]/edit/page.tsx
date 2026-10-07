@@ -33,12 +33,10 @@ const SearchableSelect = ({ value, onChange, options, placeholder, onAdd }: any)
   return (
     <div className="flex gap-2 w-full">
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" aria-expanded={open} className="flex-1 justify-between bg-background font-normal border-input">
+      <PopoverTrigger className="flex h-10 flex-1 justify-between items-center px-3 py-2 bg-background border border-input rounded-md text-sm font-normal hover:bg-accent hover:text-accent-foreground">
           {selected ? selected.label : <span className="text-muted-foreground">{placeholder}</span>}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
+        </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="start">
         <Command>
           <CommandInput placeholder={"Cari..."} />
