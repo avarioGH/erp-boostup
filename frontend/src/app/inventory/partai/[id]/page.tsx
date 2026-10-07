@@ -670,7 +670,7 @@ const [partai, setPartai] = useState<any>(null);
 
                 </TableHeader>
                 <TableBody>
-                  {(partai.sawnOutputs || []).flatMap((o: any) => (o.items || []).map((item: any) => ({ ...item, parentDate: o.outputDate, parentInputId: o.inputLogId, parentBundleNumber: o.bundleNumber, parentOutputId: o.id, parentStatus: o.status })))).map((i: any) => {
+                  {(partai.sawnOutputs || []).flatMap((o: any) => (o.items || []).map((item: any) => ({ ...item, parentDate: o.outputDate, parentInputId: o.inputLogId, parentBundleNumber: o.bundleNumber, parentOutputId: o.id, parentStatus: o.status }))).map((i: any) => {
                     const wip = (partai.inputLogs || []).find((log: any) => log.id === i.parentInputId);
                     return (
                       
