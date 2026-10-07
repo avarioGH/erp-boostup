@@ -181,7 +181,11 @@ export default function CreatePurchasePage() {
         items: form.purchaseType === "sawn-timber" ? form.items : [],
         logItems: form.purchaseType === "raw-log" ? form.logItems : []
       })
-      router.push("/inventory/purchase")
+      if (form.partaiId) {
+        router.push(`/inventory/partai/${form.partaiId}?tab=purchase`)
+      } else {
+        router.push("/inventory/purchase")
+      }
       router.refresh()
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to create purchase")
