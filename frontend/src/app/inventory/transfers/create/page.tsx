@@ -87,7 +87,7 @@ export default function CreateTransferPage() {
       toast({ title: "Success", description: "Transfer created (DRAFT)" })
       router.push('/inventory/transfers')
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || "Failed to create.", variant: "destructive" })
+      toast({ title: "Error", description: (err.response?.data?.error?.message || err.response?.data?.message) || "Failed to create.", variant: "destructive" })
     } finally {
       setSubmitting(false)
     }

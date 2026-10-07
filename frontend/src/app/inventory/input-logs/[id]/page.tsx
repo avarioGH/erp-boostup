@@ -127,7 +127,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
       setEditTallyOpen(false)
       loadData()
     } catch (err: any) {
-      toast({ title: "Gagal", description: err.response?.data?.message || err.message, variant: "destructive" })
+      toast({ title: "Gagal", description: (err.response?.data?.error?.message || err.response?.data?.message) || err.message, variant: "destructive" })
     } finally {
       setSavingTally(false)
     }

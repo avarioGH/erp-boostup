@@ -105,7 +105,7 @@ export default function CreateDeliveryPage() {
       alert('Surat Jalan berhasil dibuat!')
       router.push('/sales/deliveries')
     } catch (err: any) {
-      alert('Gagal: ' + (err.response?.data?.message || err.message))
+      alert('Gagal: ' + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message))
     } finally {
       setLoading(false)
     }

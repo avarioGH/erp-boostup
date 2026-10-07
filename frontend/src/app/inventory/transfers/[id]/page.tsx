@@ -38,7 +38,7 @@ export default function TransferDetailPage({ params }: { params: Promise<{ id: s
       toast({ title: "Success", description: `Transfer ${action === "post" ? "posted" : "cancelled"} successfully.` })
       loadData()
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || `Failed to ${action}.`, variant: "destructive" })
+      toast({ title: "Error", description: (err.response?.data?.error?.message || err.response?.data?.message) || `Failed to ${action}.`, variant: "destructive" })
     } finally {
       setActionLoading(false)
     }

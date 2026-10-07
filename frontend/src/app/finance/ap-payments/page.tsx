@@ -54,7 +54,7 @@ function APPaymentContent() {
  router.push('/finance/ap-payments') // clear query string
  fetchPayments()
  } catch (err: any) {
- alert(err.response?.data?.message ||"Gagal memproses pembayaran")
+ alert((err.response?.data?.error?.message || err.response?.data?.message) ||"Gagal memproses pembayaran")
  }
  }
 

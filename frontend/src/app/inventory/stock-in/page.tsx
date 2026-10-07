@@ -124,7 +124,7 @@ export default function StockInPage() {
  }, 2000)
  } catch (err: any) {
  console.error(err)
- setError(err.response?.data?.message ||"Gagal menyimpan transaksi inbound.")
+ setError((err.response?.data?.error?.message || err.response?.data?.message) ||"Gagal menyimpan transaksi inbound.")
  } finally {
  setLoading(false)
  }

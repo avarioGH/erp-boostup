@@ -106,7 +106,7 @@ export default function UsersSettingsPage() {
  setFormData({ username:"", name:"", email:"", password:"", warehouse_ids: [], modules: [] })
  setTimeout(() => setSuccess(""), 4000)
  } catch (err: any) {
- setError(err.response?.data?.message ||"Gagal membuat pengguna. Pastikan Anda login sebagai Owner.")
+ setError((err.response?.data?.error?.message || err.response?.data?.message) ||"Gagal membuat pengguna. Pastikan Anda login sebagai Owner.")
  } finally {
  setProcessing(false)
  }

@@ -72,7 +72,7 @@ export default function CreateOutputPage() {
       toast({ title: "Berhasil", description: "Output berhasil dibuat (status: DRAFT)" })
       router.push('/inventory/sawn-timber/output')
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || "Gagal menyimpan", variant: "destructive" })
+      toast({ title: "Error", description: (err.response?.data?.error?.message || err.response?.data?.message) || "Gagal menyimpan", variant: "destructive" })
     } finally {
       setSubmitting(false)
     }

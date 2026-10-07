@@ -63,7 +63,7 @@ export default function HrAttendance() {
       fetchData();
     } catch (err: any) {
       console.error(err);
-      alert("Gagal: " + (err.response?.data?.message || err.message));
+      alert("Gagal: " + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message));
     }
   }
 

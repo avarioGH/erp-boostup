@@ -59,7 +59,7 @@ export default function CreateProductionPage() {
       toast({ title: "Berhasil", description: "Production Process berhasil dibuat" })
       router.push('/inventory/production')
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || "Gagal menyimpan", variant: "destructive" })
+      toast({ title: "Error", description: (err.response?.data?.error?.message || err.response?.data?.message) || "Gagal menyimpan", variant: "destructive" })
     } finally {
       setSubmitting(false)
     }

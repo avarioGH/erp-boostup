@@ -35,7 +35,7 @@ export default function VendorBillsPage() {
  alert("Tagihan vendor berhasil diposting")
  fetchBills()
  } catch (err: any) {
- alert(err.response?.data?.message ||"Gagal posting tagihan")
+ alert((err.response?.data?.error?.message || err.response?.data?.message) ||"Gagal posting tagihan")
  }
  }
 

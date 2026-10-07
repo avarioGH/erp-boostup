@@ -48,7 +48,7 @@ export default function Customer360Page() {
       const res = await CRMAPI.getPartner360(partnerId);
       setData(res); // Refresh all data to update the invoices table
     } catch(err: any) {
-      toast.error('Gagal membuat faktur: ' + (err.response?.data?.message || err.message));
+      toast.error('Gagal membuat faktur: ' + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message));
     } finally {
       setIsCreatingInv(null);
     }
@@ -72,7 +72,7 @@ export default function Customer360Page() {
       const res = await CRMAPI.getPartner360(partnerId);
       setData(res);
     } catch(err: any) {
-      toast.error('Gagal: ' + (err.response?.data?.message || err.message));
+      toast.error('Gagal: ' + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message));
     } finally {
       setIsSavingAct(false);
     }
@@ -88,7 +88,7 @@ export default function Customer360Page() {
       setData(res);
       toast.success('Kompensasi berhasil!');
     } catch(err:any) {
-      toast.error('Gagal: ' + (err.response?.data?.message || err.message));
+      toast.error('Gagal: ' + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message));
     }
   };
   const handlePay = async () => {
@@ -131,7 +131,7 @@ export default function Customer360Page() {
       const res = await CRMAPI.getPartner360(partnerId);
       setData(res);
     } catch(err: any) {
-      toast.error('Gagal: ' + (err.response?.data?.message || err.message));
+      toast.error('Gagal: ' + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message));
     } finally {
       setIsPaying(false);
     }

@@ -25,7 +25,7 @@ export default function ProductionDetailPage() {
     ProductionAPI.getProcess(params.id as string)
       .then((res: any) => setData(res))
       .catch((err: any) => {
-        toast({ title: "Error", description: err.response?.data?.message || "Failed to load process", variant: "destructive" })
+        toast({ title: "Error", description: (err.response?.data?.error?.message || err.response?.data?.message) || "Failed to load process", variant: "destructive" })
         router.push('/inventory/production')
       })
       .finally(() => setLoading(false))
@@ -44,7 +44,7 @@ export default function ProductionDetailPage() {
       setShowConfirmModal(false)
       fetchProcess()
     } catch (err: any) {
-      const msg = err.response?.data?.message || "Gagal mengkonfirmasi process"
+      const msg = (err.response?.data?.error?.message || err.response?.data?.message) || "Gagal mengkonfirmasi process"
       const lowerMsg = msg.toLowerCase()
       if (lowerMsg.includes("consumed") || lowerMsg.includes("insufficient")) {
         setErrorMsg(msg)

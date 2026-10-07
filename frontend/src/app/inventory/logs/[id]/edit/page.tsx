@@ -98,7 +98,7 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
       toast({ title: "Berhasil", description: "Log berhasil diperbarui." })
       router.push('/inventory/logs')
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || "Gagal memperbarui log.", variant: "destructive" })
+      toast({ title: "Error", description: (err.response?.data?.error?.message || err.response?.data?.message) || "Gagal memperbarui log.", variant: "destructive" })
     } finally {
       setSubmitting(false)
     }

@@ -56,7 +56,7 @@ export default function SawmillRunDetail({ params }: { params: Promise<{ id: str
  alert('Berhasil di-POST');
  loadData();
  } catch (err: any) {
- alert(err.response?.data?.message || err.message);
+ alert((err.response?.data?.error?.message || err.response?.data?.message) || err.message);
  } finally {
  setPosting(false);
  }
@@ -72,7 +72,7 @@ export default function SawmillRunDetail({ params }: { params: Promise<{ id: str
  alert('Berhasil di-CANCEL');
  loadData();
  } catch (err: any) {
- alert(err.response?.data?.message || err.message);
+ alert((err.response?.data?.error?.message || err.response?.data?.message) || err.message);
  } finally {
  setPosting(false);
  }

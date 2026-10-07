@@ -59,7 +59,7 @@ export default function CompanySettingsPage() {
  setSuccess("Pengaturan sistem berhasil disimpan.")
  setTimeout(() => setSuccess(""), 3000)
  } catch (err: any) {
- setError(err.response?.data?.message ||"Gagal menyimpan pengaturan.")
+ setError((err.response?.data?.error?.message || err.response?.data?.message) ||"Gagal menyimpan pengaturan.")
  } finally {
  setProcessing(false)
  }

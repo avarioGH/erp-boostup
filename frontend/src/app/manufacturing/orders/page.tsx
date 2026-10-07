@@ -38,7 +38,7 @@ export default function MOPage() {
  setSelectedDoc(res.data)
  fetchMOs()
  } catch (err: any) {
- toast({ title:"Error", description: err.response?.data?.message || `Failed to ${action} MO.`, variant:"destructive" })
+ toast({ title:"Error", description: (err.response?.data?.error?.message || err.response?.data?.message) || `Failed to ${action} MO.`, variant:"destructive" })
  } finally { setActionLoading(false) }
  }
 

@@ -119,7 +119,7 @@ export default function CreateSalesOrderPage() {
         setNewCustomer({ name: "", phone: "" })
       }
     } catch (err: any) {
-      toast({ title: "Gagal menambah pelanggan", description: err.response?.data?.message || err.message, variant: "destructive" })
+      toast({ title: "Gagal menambah pelanggan", description: (err.response?.data?.error?.message || err.response?.data?.message) || err.message, variant: "destructive" })
     } finally {
       setIsCreatingCustomer(false)
     }

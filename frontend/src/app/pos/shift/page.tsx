@@ -96,7 +96,7 @@ export default function PosShiftPage() {
  
  fetchData()
  } catch (err: any) {
- setError(err.response?.data?.message ||"Gagal membuka shift")
+ setError((err.response?.data?.error?.message || err.response?.data?.message) ||"Gagal membuka shift")
  } finally {
  setProcessing(false)
  }
@@ -118,7 +118,7 @@ export default function PosShiftPage() {
  }, 3000)
  fetchData()
  } catch (err: any) {
- setError(err.response?.data?.message ||"Gagal menutup shift")
+ setError((err.response?.data?.error?.message || err.response?.data?.message) ||"Gagal menutup shift")
  } finally {
  setProcessing(false)
  }

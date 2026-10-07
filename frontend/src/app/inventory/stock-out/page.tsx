@@ -144,7 +144,7 @@ export default function StockOutPage() {
  }, 2000)
  } catch (err: any) {
  console.error(err)
- setError(err.response?.data?.message ||"Gagal menyimpan transaksi outbound.")
+ setError((err.response?.data?.error?.message || err.response?.data?.message) ||"Gagal menyimpan transaksi outbound.")
  } finally {
  setLoading(false)
  }

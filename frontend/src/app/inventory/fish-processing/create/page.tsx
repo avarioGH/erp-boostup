@@ -62,7 +62,7 @@ export default function FishProcessingForm() {
       setOutputs([{ warehouse_id: "", product_id: "", qty: 1 }])
       setFormData({...formData, notes: ""})
     } catch (err: any) {
-      toast.error("Gagal: " + (err.response?.data?.message || err.message))
+      toast.error("Gagal: " + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message))
     } finally {
       setProcessing(false)
     }

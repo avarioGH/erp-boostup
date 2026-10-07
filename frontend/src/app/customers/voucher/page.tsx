@@ -71,7 +71,7 @@ export default function VouchersPage() {
  
  setTimeout(() => setSuccess(""), 3000)
  } catch (err: any) {
- setError(err.response?.data?.message ||"Gagal membuat voucher")
+ setError((err.response?.data?.error?.message || err.response?.data?.message) ||"Gagal membuat voucher")
  } finally {
  setProcessing(false)
  }

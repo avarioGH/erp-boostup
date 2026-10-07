@@ -56,7 +56,7 @@ export default function PosReports() {
       setPayModalOpen(false)
       fetchData() // Refresh list
     } catch(err: any) {
-      alert('Gagal: ' + (err.response?.data?.message || err.message))
+      alert('Gagal: ' + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message))
     } finally {
       setIsPaying(false)
     }

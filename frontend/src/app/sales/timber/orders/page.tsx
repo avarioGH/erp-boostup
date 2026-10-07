@@ -21,7 +21,7 @@ export default function TimberOrdersList() {
  const res = await api.get("/sales/timber-orders");
  setOrders(res.data.data || []);
  } catch (err: any) {
- setError(err.response?.data?.message ||"Failed to load orders");
+ setError((err.response?.data?.error?.message || err.response?.data?.message) ||"Failed to load orders");
  } finally {
  setLoading(false);
  }

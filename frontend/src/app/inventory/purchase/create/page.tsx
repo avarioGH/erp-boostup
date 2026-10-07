@@ -188,7 +188,7 @@ export default function CreatePurchasePage() {
       }
       router.refresh()
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to create purchase")
+      setError((err.response?.data?.error?.message || err.response?.data?.message) || "Failed to create purchase")
       setLoading(false)
     }
   }

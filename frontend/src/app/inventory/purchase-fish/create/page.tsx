@@ -113,7 +113,7 @@ export default function PurchaseFishForm() {
       setFormData({ ...formData, paid_amount: 0 })
       setItems([{ product_id: "", qty: 1, unit_price: 0 }])
     } catch (err: any) {
-      toast.error("Gagal: " + (err.response?.data?.message || err.message))
+      toast.error("Gagal: " + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message))
     } finally {
       setProcessing(false)
     }

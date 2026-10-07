@@ -56,7 +56,7 @@ export default function PurchaseOrderDetailPage() {
  toast({ title: 'PO Confirmed' });
  fetchPO();
  } catch (err: any) {
- toast({ title: 'Error', description: err.response?.data?.message || 'Error confirming', variant: 'destructive' });
+ toast({ title: 'Error', description: (err.response?.data?.error?.message || err.response?.data?.message) || 'Error confirming', variant: 'destructive' });
  } finally {
  setActionLoading(false);
  }
@@ -77,7 +77,7 @@ export default function PurchaseOrderDetailPage() {
  toast({ title: 'Goods Received Successfully' });
  fetchPO();
  } catch (err: any) {
- toast({ title: 'Receiving Error', description: err.response?.data?.message || 'Error receiving', variant: 'destructive' });
+ toast({ title: 'Receiving Error', description: (err.response?.data?.error?.message || err.response?.data?.message) || 'Error receiving', variant: 'destructive' });
  } finally {
  setActionLoading(false);
  }
@@ -103,7 +103,7 @@ export default function PurchaseOrderDetailPage() {
  router.push(`/finance/vendor-bills`);
  }, 1000);
  } catch (err: any) {
- toast({ title: 'Billing Error', description: err.response?.data?.message || 'Error billing', variant: 'destructive' });
+ toast({ title: 'Billing Error', description: (err.response?.data?.error?.message || err.response?.data?.message) || 'Error billing', variant: 'destructive' });
  } finally {
  setActionLoading(false);
  }

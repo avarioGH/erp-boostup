@@ -63,7 +63,7 @@ export default function CreateInputLogPage() {
  toast({ title:"Success", description:"Input Log created successfully." })
  router.push('/inventory/input-logs')
  } catch (err: any) {
- toast({ title:"Error", description: err.response?.data?.message ||"Failed to create.", variant:"destructive" })
+ toast({ title:"Error", description: (err.response?.data?.error?.message || err.response?.data?.message) ||"Failed to create.", variant:"destructive" })
  } finally {
  setSubmitting(false)
  }

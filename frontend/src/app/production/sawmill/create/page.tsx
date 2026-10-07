@@ -44,7 +44,7 @@ export default function CreateSawmillRun() {
  const res = await SawmillProductionAPI.createRun(payload);
  router.push(`/production/sawmill/${res.id}`);
  } catch (err: any) {
- alert(err.response?.data?.message || err.message);
+ alert((err.response?.data?.error?.message || err.response?.data?.message) || err.message);
  } finally {
  setSaving(false);
  }

@@ -35,7 +35,7 @@ export default function TrimmingListPage() {
      toast({ title: "Success", description: "Log deleted." });
      fetchLogs();
    } catch (err: any) {
-     toast({ title: "Error", description: err.response?.data?.message || "Failed to delete", variant: "destructive" });
+     toast({ title: "Error", description: (err.response?.data?.error?.message || err.response?.data?.message) || "Failed to delete", variant: "destructive" });
    }
  }
 

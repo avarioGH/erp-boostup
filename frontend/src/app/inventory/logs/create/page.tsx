@@ -231,7 +231,7 @@ export default function MassCreateRawLogPage() {
       toast({ title: "Berhasil", description: `${payloadItems.length} Logs berhasil disimpan.` })
       router.push('/inventory/logs')
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || "Gagal menyimpan data massal.", variant: "destructive" })
+      toast({ title: "Error", description: (err.response?.data?.error?.message || err.response?.data?.message) || "Gagal menyimpan data massal.", variant: "destructive" })
     } finally {
       setSubmitting(false)
     }

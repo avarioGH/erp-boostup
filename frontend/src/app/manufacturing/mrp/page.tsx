@@ -31,7 +31,7 @@ export default function MRPPage() {
  setData(Array.isArray(res.data?.recommendations) ? res.data.recommendations : (Array.isArray(res.data) ? res.data : []))
  toast({ title:"MRP Calculated", description:"Material requirements have been computed." })
  } catch (err: any) {
- toast({ title:"Error", description: err.response?.data?.message ||"Failed to calculate MRP.", variant:"destructive" })
+ toast({ title:"Error", description: (err.response?.data?.error?.message || err.response?.data?.message) ||"Failed to calculate MRP.", variant:"destructive" })
  } finally {
  setLoading(false)
  }

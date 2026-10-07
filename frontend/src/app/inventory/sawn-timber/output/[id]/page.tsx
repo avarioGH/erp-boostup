@@ -33,7 +33,7 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
       toast({ title: "Success", description: `Output ${action === "post" ? "posted" : "cancelled"} successfully.` })
       loadData()
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || `Failed to ${action}.`, variant: "destructive" })
+      toast({ title: "Error", description: (err.response?.data?.error?.message || err.response?.data?.message) || `Failed to ${action}.`, variant: "destructive" })
     } finally {
       setActionLoading(false)
     }
@@ -45,7 +45,7 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
       toast({ title: "Success", description: "Grade updated successfully." });
       loadData();
     } catch (err: any) {
-      toast({ title: "Error", description: err.response?.data?.message || "Failed to update grade.", variant: "destructive" });
+      toast({ title: "Error", description: (err.response?.data?.error?.message || err.response?.data?.message) || "Failed to update grade.", variant: "destructive" });
     }
   }
 

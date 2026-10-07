@@ -105,7 +105,7 @@ export default function CustomerDetailPage() {
       setPayRef('');
       fetchDetail();
     } catch(err: any) {
-      alert('Gagal: ' + (err.response?.data?.message || err.message));
+      alert('Gagal: ' + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message));
     } finally {
       setIsPaying(false);
     }

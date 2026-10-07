@@ -39,7 +39,7 @@ export default function RFQPage() {
  fetchRFQs()
  router.push('/purchasing/orders')
  } catch (err: any) {
- toast({ title:"Error", description: err.response?.data?.message ||"Failed to confirm RFQ.", variant:"destructive" })
+ toast({ title:"Error", description: (err.response?.data?.error?.message || err.response?.data?.message) ||"Failed to confirm RFQ.", variant:"destructive" })
  } finally { setActionLoading(false) }
  }
 

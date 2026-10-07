@@ -30,7 +30,7 @@ export default function QualityPage() {
  toast({ title:"Check Completed", description: `Quality check marked as ${result}.` })
  fetchChecks()
  } catch (err: any) {
- toast({ title:"Error", description: err.response?.data?.message ||"Failed to complete check.", variant:"destructive" })
+ toast({ title:"Error", description: (err.response?.data?.error?.message || err.response?.data?.message) ||"Failed to complete check.", variant:"destructive" })
  }
  }
 

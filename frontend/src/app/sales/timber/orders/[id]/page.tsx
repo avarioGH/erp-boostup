@@ -22,7 +22,7 @@ export default function TimberOrderDetail({ params }: { params: Promise<{ id: st
  const res = await api.get(`/sales/timber-orders/${id}`);
  setOrder(res.data.data);
  } catch (err: any) {
- setError(err.response?.data?.message ||"Failed to load order");
+ setError((err.response?.data?.error?.message || err.response?.data?.message) ||"Failed to load order");
  } finally {
  setLoading(false);
  }
