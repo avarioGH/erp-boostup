@@ -713,7 +713,7 @@ const [partai, setPartai] = useState<any>(null);
                   </SelectTrigger>
                   <SelectContent>
                     {grades.map(g => (
-                      <SelectItem key={g.id} value={g.id}>{g.code}</SelectItem>
+                      <SelectItem key={g.id} value={g.id}>{g.code ? `Grade ${g.code}` : (g.name || g.id)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
