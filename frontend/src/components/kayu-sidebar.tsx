@@ -122,6 +122,13 @@ const items: MenuItem[] = [
  }
 ];
 
+const settings: MenuItem[] = [
+  { title: "Pengguna & Role", url: "/settings/users", icon: UserCheck, id: "settings" },
+  { title: "Pengaturan Sistem", url: "/settings/company", icon: Settings, id: "settings" },
+  { title: "Integrasi API", url: "/settings/integrations", icon: Share2, id: "settings" },
+  { title: "Audit Log", url: "/monitoring/audit-log", icon: ShieldAlert, id: "settings" },
+];
+
 export function KayuSidebar() {
  const pathname = usePathname()
  const { t } = useLanguage()
