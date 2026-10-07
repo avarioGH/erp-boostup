@@ -68,7 +68,8 @@ export class RawLogService {
       where: { id },
       include: {
         location: true,
-        trimmedLogs: true,
+          trimmedLogs: true,
+          partai: true,
       },
     });
     if (!log) throw new NotFoundException('Raw log not found');

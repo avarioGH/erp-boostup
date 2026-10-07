@@ -82,7 +82,7 @@ export default function RawLogDetailPage({ params }: { params: Promise<{ id: str
  <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10"><CardTitle className="text-[16px] font-semibold flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Identity & Location</CardTitle></CardHeader>
  <CardContent className="pt-6 space-y-4 text-sm">
  <div><p className="text-muted-foreground mb-1">Barcode / System ID</p><p className="font-mono bg-muted p-1.5 rounded text-xs">{data.barcode}</p></div>
- <div><p className="text-muted-foreground mb-1">Partai</p><p className="font-medium">{data.batch ||"-"}</p></div>
+ <div><p className="text-muted-foreground mb-1">Partai</p><p className="font-medium">{data.partai?.partaiNumber || "-"}</p></div>
  <div><p className="text-muted-foreground mb-1">Location</p><p className="font-medium text-primary/90">{data.location?.name ||"-"}</p></div>
  <div><p className="text-muted-foreground mb-1">Receiving Date</p><p className="font-medium">{new Date(data.receivingDate).toLocaleDateString("id-ID")}</p></div>
  </CardContent>
