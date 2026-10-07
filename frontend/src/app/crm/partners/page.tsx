@@ -12,7 +12,10 @@ import { useDataTable } from"@/hooks/use-data-table"
 import { PaginationControls } from"@/components/ui/pagination-controls"
 
 export default function CustomersPage() {
+
  const [customers, setCustomers] = useState<any[]>([])
+ const [activeWarehouse, setActiveWarehouse] = useState<any>(null)
+
  const [loading, setLoading] = useState(true)
  const [totalPages, setTotalPages] = useState(1)
  const { page, limit, search, status, inputValue, setInputValue, handlePageChange, handleStatusChange } = useDataTable({ defaultLimit: 12 })
@@ -29,7 +32,11 @@ export default function CustomersPage() {
  const fetchCustomers = async () => {
  try {
  setLoading(true)
- const res = await api.get(`/customers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&status=${status}`)
+ let url = `/customers?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}&status=${status}`;
+ if (activeWarehouse && activeWarehouse.id && activeWarehouse.id !== 'ALL') {
+   url += `&warehouse_id=${activeWarehouse.id}`;
+ }
+ const res = await api.get(url)
  setCustomers(res.data.data || res.data)
  setTotalPages(res.data.totalPages || 1)
  } catch (e) {
@@ -40,8 +47,23 @@ export default function CustomersPage() {
  }
 
  useEffect(() => {
+   const handleWhChange = () => {
+     const stored = localStorage.getItem('active_warehouse');
+     if (stored) {
+       const parsed = JSON.parse(stored);
+       setActiveWarehouse(parsed.id === 'ALL' ? null : parsed);
+     } else {
+       setActiveWarehouse(null);
+     }
+   };
+   handleWhChange();
+   window.addEventListener('warehouse_changed', handleWhChange);
+   return () => window.removeEventListener('warehouse_changed', handleWhChange);
+ }, []);
+
+ useEffect(() => {
  fetchCustomers()
- }, [page, limit, search, status])
+ }, [page, limit, search, status, activeWarehouse])
 
  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

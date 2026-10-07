@@ -60,14 +60,10 @@ export class CustomerService {
     };
   }
 
-  async getCustomersWithReceivables(
-    companyId: string,
-    search?: string,
-    page: number = 1,
-    limit: number = 20,
-  ) {
+  async getCustomersWithReceivables(companyId: string, search?: string, page: number = 1, limit: number = 20, warehouseId?: string) {
     const skip = (page - 1) * limit;
     const where: any = { company_id: companyId };
+    if (warehouseId) where.warehouse_id = warehouseId;
 
     if (search) {
       where.OR = [

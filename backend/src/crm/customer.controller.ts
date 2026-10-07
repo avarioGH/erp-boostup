@@ -31,15 +31,11 @@ export class CustomerController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
     @Query('search') search?: string,
+    @Query('warehouse_id') warehouseId?: string,
   ) {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.max(1, parseInt(limit, 10) || 10);
-    return this.customerService.getCustomersWithReceivables(
-      req.user.company_id || req.user.companyId,
-      search,
-      pageNum,
-      limitNum,
-    );
+    return this.customerService.getCustomersWithReceivables(req.user.company_id || req.user.companyId, search, pageNum, limitNum, warehouseId);
   }
 
   @Permissions('crm.customer.view')
@@ -60,8 +56,7 @@ export class CustomerController {
         code: data.code || `CUST-${Date.now()}`,
         name: data.name,
         phone: data.phone,
-        email: data.email,
-        address: data.address,
+        email: data.email, address: data.address, warehouse_id: data.warehouse_id || undefined,
       },
     });
   }
