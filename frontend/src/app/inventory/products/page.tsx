@@ -629,8 +629,8 @@ export default function ProductInventory() {
  })}
  
  {/* Total */}
- {visibleColumns.totalStock && (
- <TableCell className="text-center">
+  {visibleColumns.totalStock && !activeWarehouse && (
+  <TableCell className="text-center">
  <Badge className={`${
  totalStock < 50 ? 'bg-rose-100 text-rose-700 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 border-none' : 
  'bg-emerald-100 text-primary hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-primary border-none'
