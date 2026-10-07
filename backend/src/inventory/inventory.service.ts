@@ -121,8 +121,8 @@ export class InventoryService {
 
   async getProducts(companyId: string) {
     return this.prisma.product.findMany({
-      where: { company_id: companyId },
-      include: {
+      where: { company_id: companyId, status: true },
+        include: {
         category: true,
         unit: true,
         brand: true,
@@ -227,8 +227,8 @@ export class InventoryService {
 
   async getTransactions(companyId: string) {
     return this.prisma.inventoryTransaction.findMany({
-      where: { company_id: companyId },
-      include: {
+      where: { company_id: companyId, status: true },
+        include: {
         warehouse: true,
         target_warehouse: true,
         items: { include: { product: true } },
@@ -290,15 +290,26 @@ export class InventoryService {
     });
     if (!product) throw new Error('Product not found');
 
-    // First delete images
-    await this.prisma.productImage.deleteMany({
-      where: { product_id: id }
-    });
+    try {
+      // First delete images
+      await this.prisma.productImage.deleteMany({
+        where: { product_id: id }
+      });
 
-    // Then delete the product
-    return this.prisma.product.delete({
-      where: { id }
-    });
+      // Then delete the product
+      return await this.prisma.product.delete({
+        where: { id }
+      });
+    } catch (error: any) {
+      if (error.code === 'P2003' || error.code === 'P2014' || error.message?.includes('Foreign key')) {
+        // Fallback to soft-delete (status: false)
+        return await this.prisma.product.update({
+          where: { id },
+          data: { status: false }
+        });
+      }
+      throw error;
+    }
   }
 
   async createProduct(data: any) {
