@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Check, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -20,6 +24,51 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
     const rnd = Math.floor(avg);
     return (rnd * rnd * 0.7854 / 10000) * length;
   };
+
+
+const SearchableSelect = ({ value, onChange, options, placeholder, onAdd }: any) => {
+  const [open, setOpen] = useState(false)
+  const selected = options.find((o: any) => o.value === value)
+
+  return (
+    <div className="flex gap-2 w-full">
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" aria-expanded={open} className="flex-1 justify-between bg-background font-normal border-input">
+          {selected ? selected.label : <span className="text-muted-foreground">{placeholder}</span>}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[400px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={"Cari..."} />
+          <CommandList>
+            <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+            <CommandGroup>
+              {options.map((option: any) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.label}
+                  onSelect={() => {
+                    onChange(option.value)
+                    setOpen(false)
+                  }}
+                >
+                  <Check className={cn("mr-2 h-4 w-4", value === option.value ? "opacity-100" : "opacity-0")} />
+                  {option.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+    {onAdd && (
+      <Button type="button" variant="outline" onClick={onAdd} title="Tambah Baru" className="px-3"><Plus className="w-4 h-4" /></Button>
+    )}
+    </div>
+  )
+}
 
 export default function EditPurchasePage() {
   const params = useParams();
@@ -36,6 +85,26 @@ export default function EditPurchasePage() {
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false)
   const [newVariant, setNewVariant] = useState({ species: "", grade: "", thickness: "", width: "", length: "" })
   const [creatingVariant, setCreatingVariant] = useState(false)
+  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false)
+  const [newSupplierName, setNewSupplierName] = useState("")
+  const [creatingSupplier, setCreatingSupplier] = useState(false)
+
+  const handleCreateSupplier = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newSupplierName) return;
+    setCreatingSupplier(true)
+    try {
+      const res = await api.post('/inventory/master-data/timber-source', { name: newSupplierName, code: "SUP-" + Math.floor(Math.random() * 10000), type: "SUPPLIER" })
+      setSources([res.data, ...sources])
+      setForm({...form, sourceId: res.data.id})
+      setIsSupplierModalOpen(false)
+      setNewSupplierName("")
+    } catch (err: any) {
+      console.error(err)
+    } finally {
+      setCreatingSupplier(false)
+    }
+  }
 
   const handleCreateVariant = async (e: React.FormEvent) => {
     e.preventDefault()
