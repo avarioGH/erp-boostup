@@ -16,7 +16,12 @@ export default function ReportsStock() {
   const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
-    fetchStocks()
+    fetchStocks();
+    const handleWhChange = () => {
+      fetchStocks();
+    };
+    window.addEventListener('warehouse-changed', handleWhChange);
+    return () => window.removeEventListener('warehouse-changed', handleWhChange);
   }, [])
 
   const fetchStocks = async () => {

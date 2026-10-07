@@ -32,7 +32,12 @@ export default function InflowReportPage() {
     }
   }
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    fetchData();
+    const handleWhChange = () => fetchData();
+    window.addEventListener('warehouse-changed', handleWhChange);
+    return () => window.removeEventListener('warehouse-changed', handleWhChange);
+  }, [])
 
   const filtered = (report.data || []).filter((t: any) =>
     !search ||

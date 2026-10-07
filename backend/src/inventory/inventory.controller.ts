@@ -144,8 +144,8 @@ export class InventoryController {
 
   @Permissions('inventory.view')
   @Get('stocks')
-  async getStocks(@Request() req) {
-    return this.inventoryService.getWarehouseStocks(req.user.company_id);
+  async getStocks(@Request() req, @Query('warehouseId') warehouseId?: string) {
+    return this.inventoryService.getWarehouseStocks(req.user.company_id, warehouseId);
   }
 
   @Permissions('inventory.create')

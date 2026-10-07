@@ -237,9 +237,11 @@ export class InventoryService {
     });
   }
 
-  async getWarehouseStocks(companyId: string) {
+  async getWarehouseStocks(companyId: string, warehouseId?: string) {
+    const where: any = { company_id: companyId };
+    if (warehouseId) where.warehouse_id = warehouseId;
     return this.prisma.warehouseStock.findMany({
-      where: { company_id: companyId },
+      where,
       include: { warehouse: true, product: true },
     });
   }
