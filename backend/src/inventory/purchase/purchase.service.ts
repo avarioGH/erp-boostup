@@ -132,6 +132,61 @@ export class PurchaseService {
     });
   }
 
+  
+  async markAsReceived(id: string, companyId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+      const purchase = await tx.timberPurchase.findFirst({
+        where: isObjectId
+          ? { id, company_id: companyId }
+          : { purchaseNumber: id, company_id: companyId },
+        include: { logItems: true },
+      });
+      if (!purchase) throw new NotFoundException('Timber purchase not found');
+
+      const received = await tx.timberPurchase.update({
+        where: { id: purchase.id },
+        data: { status: 'RECEIVED' },
+      });
+
+      if (purchase.logItems && purchase.logItems.length > 0) {
+        for (const item of purchase.logItems) {
+          const existing = await tx.rawLog.findUnique({ where: { logNumber: item.logNumber } });
+          if (!existing) {
+             const avgDia = (item.purchaseDiameter1 + item.purchaseDiameter2 + item.purchaseDiameter3 + item.purchaseDiameter4) / 4;
+             const rndDia = Math.floor(avgDia);
+             const grossVol = ((rndDia * rndDia * 0.7854) / 10000) * item.purchaseLength;
+             
+             await tx.rawLog.create({
+                data: {
+                  partaiId: purchase.partaiId,
+                  purchaseLogItemId: item.id,
+                  logNumber: item.logNumber,
+                  species: item.species,
+                  speciesId: item.speciesId,
+                  originalLength: item.purchaseLength,
+                  diameter1: item.purchaseDiameter1,
+                  diameter2: item.purchaseDiameter2,
+                  diameter3: item.purchaseDiameter3,
+                  diameter4: item.purchaseDiameter4,
+                  averageDiameter: avgDia,
+                  roundedDiameter: rndDia,
+                  grossVolume: grossVol,
+                  netVolume: grossVol,
+                  status: 'AVAILABLE'
+                }
+             });
+          }
+          await tx.timberPurchaseLogItem.update({
+             where: { id: item.id },
+             data: { status: 'RECEIVED' }
+          });
+        }
+      }
+      return received;
+    });
+  }
+
   async cancel(id: string, companyId: string) {
     return this.prisma.$transaction(async (tx) => {
       const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);

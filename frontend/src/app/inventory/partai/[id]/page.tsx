@@ -156,6 +156,17 @@ const [partai, setPartai] = useState<any>(null);
   }, [id]);
 
   
+  
+  const handleReceivePurchase = async (purchaseId: string) => {
+    try {
+      await PurchaseAPI.receivePurchase(purchaseId);
+      toast({ title: "Success", description: "Purchase marked as Received. Logs have been added to DUKB." });
+      fetchPartai();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.response?.data?.message || "Failed to receive", variant: "destructive" });
+    }
+  };
+
   const handleConfirmPurchase = async (purchaseId: string) => {
     try {
       await PurchaseAPI.confirmPurchase(purchaseId);
