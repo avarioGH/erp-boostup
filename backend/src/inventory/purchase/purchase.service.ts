@@ -153,7 +153,15 @@ export class PurchaseService {
         for (const item of purchase.logItems) {
           const existing = await tx.rawLog.findUnique({ where: { logNumber: item.logNumber } });
           if (!existing) {
-             const avgDia = (item.purchaseDiameter1 + item.purchaseDiameter2 + item.purchaseDiameter3 + item.purchaseDiameter4) / 4;
+             
+               let diaSum = 0;
+               let diaCount = 0;
+               if (item.purchaseDiameter1) { diaSum += item.purchaseDiameter1; diaCount++; }
+               if (item.purchaseDiameter2) { diaSum += item.purchaseDiameter2; diaCount++; }
+               if (item.purchaseDiameter3) { diaSum += item.purchaseDiameter3; diaCount++; }
+               if (item.purchaseDiameter4) { diaSum += item.purchaseDiameter4; diaCount++; }
+               const avgDia = diaCount > 0 ? diaSum / diaCount : 0;
+
              const rndDia = Math.floor(avgDia);
              const grossVol = ((rndDia * rndDia * 0.7854) / 10000) * item.purchaseLength;
              
