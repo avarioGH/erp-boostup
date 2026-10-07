@@ -95,6 +95,15 @@ export class CustomerService {
       },
       include: { allocations: true },
     });
+    
+    const apInvoices = await this.prisma.invoice.findMany({
+      where: {
+        supplier_id: { in: customerIds },
+        company_id: companyId,
+        type: 'AP',
+        status: { notIn: ['CANCELLED', 'DRAFT'] },
+      }
+    });
 
     const soByCustomer: Record<string, typeof salesOrders> = {};
     for (const so of salesOrders) {
@@ -108,6 +117,13 @@ export class CustomerService {
       let totalSales = 0;
       let totalPaid = 0;
       let totalOutstanding = 0;
+        let totalPayable = 0;
+        
+        for (const inv of apInvoices) {
+          if (inv.supplier_id === c.id) {
+            totalPayable += inv.remaining_amount;
+          }
+        }
 
       for (const so of sos) {
         totalSales += so.total_amount;
@@ -125,8 +141,9 @@ export class CustomerService {
         totalSales,
         totalPaid,
         totalOutstanding,
-      };
-    });
+          totalPayable,
+        };
+      });
 
     return {
       data,

@@ -24,6 +24,7 @@ interface Customer {
   totalSales: number;
   totalPaid: number;
   totalOutstanding: number;
+  totalPayable: number;
 }
 
 export default function CustomersPage() {
@@ -96,7 +97,8 @@ export default function CustomersPage() {
                   <TableHead>Alamat</TableHead>
                   <TableHead className="text-right">Total Tagihan</TableHead>
                   <TableHead className="text-right">Total Dibayar</TableHead>
-                  <TableHead className="text-right">Piutang</TableHead>
+                <TableHead className="text-right">Piutang Kustomer</TableHead>
+                <TableHead className="text-right">Hutang Kita (Vendor)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
