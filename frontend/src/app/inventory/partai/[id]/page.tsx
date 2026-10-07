@@ -509,8 +509,8 @@ const [partai, setPartai] = useState<any>(null);
                     <TableRow key={t.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => router.push(`/inventory/trimming/${t.id}`)}>
                       <TableCell className="font-medium">{t.trimNumber || t.logNumber}</TableCell>
                       <TableCell className="text-primary font-medium">{t.rawLog?.logNumber || "-"}</TableCell>
-                      <TableCell className="text-right font-bold text-foreground/90">{t.volumeM3 || t.trimVolume || 0}</TableCell>
-                      <TableCell className="text-right">{t.gerowongVolume || 0}</TableCell>
+                      <TableCell className="text-right font-bold text-foreground/90">{Number(t.netVolume || 0).toFixed(4)}</TableCell>
+                      <TableCell className="text-right">{Number(t.hollowVolume || 0).toFixed(4)}</TableCell>
                       <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">

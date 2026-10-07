@@ -76,7 +76,7 @@ export class PartaiService {
           include: { items: true, logItems: true },
         },
         rawLogs: true,
-        trimmedLogs: true,
+        trimmedLogs: { include: { rawLog: true } },
         inputLogs: {
           include: {
             items: {
