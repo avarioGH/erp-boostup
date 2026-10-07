@@ -25,14 +25,18 @@ export default function SalesOrdersPage() {
 
  useEffect(() => {
    const handleWhChange = () => {
-     const stored = localStorage.getItem('active_warehouse');
-     if (stored) {
-       const parsed = JSON.parse(stored);
-       setActiveWarehouse(parsed.id === 'ALL' ? null : parsed);
-     } else {
-       setActiveWarehouse(null);
-     }
-   };
+    const stored = localStorage.getItem('active_warehouse');
+    if (stored && stored !== 'null') {
+      try {
+        const parsed = JSON.parse(stored);
+        setActiveWarehouse(parsed && parsed.id === 'ALL' ? null : parsed);
+      } catch(e) {
+        setActiveWarehouse(null);
+      }
+    } else {
+      setActiveWarehouse(null);
+    }
+  };
    handleWhChange();
    window.addEventListener('warehouse_changed', handleWhChange);
    return () => window.removeEventListener('warehouse_changed', handleWhChange);

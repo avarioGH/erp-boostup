@@ -49,9 +49,13 @@ export default function CustomersPage() {
  useEffect(() => {
    const handleWhChange = () => {
      const stored = localStorage.getItem('active_warehouse');
-     if (stored) {
-       const parsed = JSON.parse(stored);
-       setActiveWarehouse(parsed.id === 'ALL' ? null : parsed);
+     if (stored && stored !== 'null') {
+       try {
+         const parsed = JSON.parse(stored);
+         setActiveWarehouse(parsed && parsed.id === 'ALL' ? null : parsed);
+       } catch (e) {
+         setActiveWarehouse(null);
+       }
      } else {
        setActiveWarehouse(null);
      }
