@@ -213,6 +213,7 @@ export class InputLogService {
           operatorName,
           machine,
           locationId: locationId || trimmedLogs[0].locationId,
+            partaiId: trimmedLogs[0].partaiId,
           batch,
           species,
           totalQty,

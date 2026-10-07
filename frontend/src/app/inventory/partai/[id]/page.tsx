@@ -559,7 +559,7 @@ const [partai, setPartai] = useState<any>(null);
                       <Button 
                         className="w-full bg-amber-500 hover:bg-amber-600 text-white" 
                         onClick={async () => {
-                          if (!confirm(`Kirim log ${t.trimNumber} ke mesin gergaji (Buat WIP)?`)) return;
+                          
                           try {
                             await TimberAPI.createInputLog({ trimmedLogIds: [t.id] });
                             toast({ title: "Berhasil", description: `WIP Job untuk log ${t.trimNumber} berhasil dibuat.` });
