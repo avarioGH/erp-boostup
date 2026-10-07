@@ -335,10 +335,14 @@ export const PurchaseAPI: any = {
   getPurchases: async (params?: any) => (await api.get('/inventory/timber-purchase', { params })).data,
   getPurchase: async (id: string) => (await api.get('/inventory/timber-purchase/' + id)).data,
   createPurchase: async (data: any) => (await api.post('/inventory/timber-purchase', data)).data,
+  updatePurchase: async (id: string, data: any) => (await api.put('/inventory/timber-purchase/' + id, data)).data,
   confirmPurchase: async (id: string) => (await api.post('/inventory/timber-purchase/' + id + '/confirm')).data,
   cancelPurchase: async (id: string) => (await api.post('/inventory/timber-purchase/' + id + '/cancel')).data,
+  deletePurchase: async (id: string) => (await api.delete('/inventory/timber-purchase/' + id)).data,
+  receivePurchase: async (id: string) => (await api.post('/inventory/timber-purchase/' + id + '/receive')).data,
   addPurchaseLogItem: async (id: string, data: any) => (await api.post('/inventory/timber-purchase/' + id + '/log-items', data)).data,
 };
+
 
 export const ShipmentAPI: any = {
   getShipments: async (params?: any) => (await api.get('/inventory/timber-shipment', { params })).data,
