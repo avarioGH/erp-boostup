@@ -36,225 +36,91 @@ type MenuItem = {
 
 const items: MenuItem[] = [
  { title: "Dashboard", url: "/", icon: LayoutDashboard, id: "generic-dashboard" },
- {
- title: "Master Data",
- url: "/inventory/products",
- icon: Database,
- id: "ikan_master_data",
- subItems: [
- { title: "Produk Ikan", url: "/inventory/products" },
-            { title: "Lokasi Gudang", url: "/inventory/warehouses" },
- { title: "Daftar Pelanggan", url: "/crm/partners" }
- ]
- },
- {
- title: "Inventori",
- url: "/inventory/stock",
- icon: Box,
- id: "ikan_inventory",
- subItems: [
- { title: "Ikan Masuk", url: "/inventory/inflow" },
- { title: "Stok Ikan", url: "/inventory/stock" },
- { title: "Stock Movement", url: "/inventory/movements" },
- { title: "Penyesuaian Stok", url: "/inventory/adjustments" }
- ]
- },
- {
- title: "Laporan",
- url: "/reports/stock",
- icon: BarChart3,
- id: "ikan_reports",
- subItems: [
- { title: "Laporan Stok", url: "/reports/stock" },
- { title: "Laporan Ikan Masuk", url: "/reports/inflow" },
- { title: "Laporan POS", url: "/reports/pos" },
- { title: "Laporan Sales", url: "/reports/sales" },
- { title: "Laporan Penjualan", url: "/reports/profit" }
- ]
- },
- {
- title: "Penjualan",
- url: "/pos/new-transaction",
+ 
+ { 
+ title: "Pembelian & Inbound", 
+ url: "/inventory/partai", 
  icon: ShoppingCart,
- id: "ikan_sales",
+ id: "inbound",
  subItems: [
- { title: "POS (Kasir Retail)", url: "/pos/new-transaction" },
- { title: "Sales Orders", url: "/sales/orders" },
- { title: "Pelanggan & Piutang", url: "/sales/customers" },
- { title: "Pengiriman", url: "/sales/deliveries" },
-        { title: "Daftar Ekspor", url: "/sales/exports" }
- ]
- },
- {
- title: "Pembelian (Purchasing)",
- url: "/purchasing/analytics",
- icon: ShoppingCart,
- id: "purchasing",
- subItems: [
- { title: "Overview", url: "/purchasing/analytics" },
- { title: "Purchase Requests", url: "/purchasing/requests" },
- { title: "RFQ (Penawaran)", url: "/purchasing/rfqs" },
+ { title: "Manajemen Partai", url: "/inventory/partai" },
  { title: "Purchase Orders (PO)", url: "/purchasing/orders" },
- { title: "Penerimaan Barang", url: "/purchasing/receipts" }
+ { title: "Shipment (Delivery)", url: "/inventory/shipment" }
  ]
  },
+ 
  { 
- title: "Inventory (Timber & Logs)", 
- url: "/inventory/dashboard", 
- icon: Box,
- id: "inventory",
- subItems: [
- { title: "Dashboard", url: "/inventory/dashboard" },
-
- { title: "Partai (Project)", url: "#", type: "label" },
-        { title: "Manajemen Partai", url: "/inventory/partai" },
-
-        { title: "Purchase & Shipment", url: "#", type: "label" },
- { title: "Shipment (Delivery)", url: "/inventory/shipment" },
- 
- { title: "Master Data", url: "#", type: "label" },
- { title: "Species", url: "/inventory/master-data/species" },
- { title: "Grade", url: "/inventory/master-data/grade" },
- { title: "Source", url: "/inventory/master-data/source" },
- { title: "Location", url: "/inventory/master-data/location" },
- { title: "Vehicle", url: "/inventory/master-data/vehicle" },
- { title: "Driver", url: "/inventory/master-data/driver" },
- 
- { title: "Produksi Log", url: "#", type: "label" },
- { title: "Sawn Timber Output", url: "/inventory/sawn-timber/output" },
- 
- { title: "Proses Lanjutan", url: "#", type: "label" },
- { title: "Chamber (Oven)", url: "/production/chamber" },
- 
- { title: "Stock Kayu", url: "#", type: "label" },
- { title: "Finished Timber Stock", url: "/inventory/timber-stock" },
- { title: "Stock Movements", url: "/inventory/movements" },
- { title: "Stock Adjustments", url: "/inventory/adjustments" },
- { title: "Location Management", url: "/inventory/warehouses" },
- 
- { title: "Report & Traceability", url: "#", type: "label" },
- { title: "Stock Movement Explorer", url: "/inventory/reports/movements" },
- { title: "Stock Card", url: "/inventory/reports/stock-card" },
- { title: "Operational Dashboard", url: "/inventory/reports/traceability" },
- 
- { title: "Data & Audit", url: "#", type: "label" },
- { title: "Data Import (Excel)", url: "/inventory/import" },
- { title: "Audit Log", url: "/inventory/audit" },
-        { title: "Reservation Reconciliation", url: "/inventory/reconciliation/reservations" },
- { title: "Stock Opname & Audit", url: "/inventory/stock-opname" }
- ]
- },
-
- { 
- title: "Manufacturing", 
- url: "/manufacturing/orders", 
- icon: Factory,
- id: "manufacturing",
- subItems: [
- { title: "Overview", url: "/manufacturing/orders" },
- { title: "Bills of Materials", url: "/manufacturing/bom" },
- { title: "MRP", url: "/manufacturing/mrp" },
- { title: "Manufacturing Orders", url: "/manufacturing/orders" },
- { title: "Quality Control", url: "/manufacturing/quality" }
- ]
- },
- { 
- title: "Production", 
- url: "/inventory/production", 
+ title: "Pengolahan & Produksi", 
+ url: "/production/chamber", 
  icon: Factory,
  id: "production",
  subItems: [
- { title: "Production List", url: "/inventory/production" },
- { title: "New Production", url: "/inventory/production/create" },
+ { title: "Chamber (Oven)", url: "/production/chamber" },
+ { title: "Sawn Timber Output", url: "/inventory/sawn-timber/output" }
  ]
  },
-
+ 
  { 
- title: "Penjualan (Sales B2B)", 
+ title: "Manajemen Gudang (Stok)", 
+ url: "/inventory/timber-stock", 
+ icon: Box,
+ id: "inventory",
+ subItems: [
+ { title: "Stok Kayu Jadi", url: "/inventory/timber-stock" },
+ { title: "Pergerakan Stok", url: "/inventory/movements" },
+ { title: "Penyesuaian Stok", url: "/inventory/adjustments" },
+ { title: "Stock Opname & Audit", url: "/inventory/stock-opname" }
+ ]
+ },
+ 
+ { 
+ title: "Penjualan (Outbound)", 
  url: "/sales/orders", 
  icon: ShoppingCart,
- id: "sales",
+ id: "outbound",
  subItems: [
  { title: "Penawaran (Quotation)", url: "/sales/quotations" },
  { title: "Sales Orders (SO)", url: "/sales/orders" },
- { title: "Pelanggan & Piutang", url: "/sales/customers" },
- { title: "Pengiriman (Delivery)", url: "/sales/deliveries" },
-        { title: "Daftar Ekspor", url: "/sales/exports" }
+ { title: "Surat Jalan (Pengiriman)", url: "/sales/deliveries" },
+ { title: "Daftar Ekspor", url: "/sales/exports" },
+ { title: "Daftar Pelanggan", url: "/sales/customers" }
  ]
  },
- { 
- title: "POS (Kasir Retail)", 
  
- url: "/pos/new-transaction", 
- icon: ShoppingCart,
- id: "pos",
- subItems: [
- { title: "Kasir POS", url: "/pos/new-transaction" },
- { title: "Riwayat Penjualan", url: "/pos/order-history" },
- { title: "Shift & Kas", url: "/pos/shift" }
- ]
- },
  { 
- title: "Pelanggan & CRM", 
- url: "/crm/partners", 
- icon: Users,
- id: "crm",
+ title: "Laporan & Analitik", 
+ url: "/inventory/reports/stock-card", 
+ icon: BarChart3,
+ id: "reports",
  subItems: [
- { title: "Daftar Pelanggan", url: "/crm/partners" },
-        { title: "WhatsApp Chat", url: "/crm/whatsapp" },
- { title: "Pipeline & Leads", url: "/crm/pipeline" },
- { title: "Loyalty & Poin", url: "/customers/loyalty" },
- { title: "Voucher", url: "/customers/voucher" }
+ { title: "Kartu Stok (Stock Card)", url: "/inventory/reports/stock-card" },
+ { title: "Lacak Asal Usul (Traceability)", url: "/inventory/reports/traceability" },
+ { title: "Laporan Pergerakan", url: "/inventory/reports/movements" }
  ]
  },
- {
- title: "Keuangan & Akuntansi", 
- url: "/finance", 
- icon: Calculator,
- id: "finance",
- subItems: [
- { title: "Dashboard Keuangan", url: "/finance" },
- { title: "Kas & Bank", url: "/finance/cash" },
- { title: "Pemasukan", url: "/finance/cash-in" },
- { title: "Pengeluaran", url: "/finance/cash-out" },
- { title: "Buku Besar (GL)", url: "/finance/gl" },
- { title: "Periode Akuntansi", url: "/finance/accounting-periods" },
- { title: "Laporan Keuangan", url: "/finance/reports" }
- ]
- },
- {
- title: "HR & Absensi",
- url: "/hr",
- icon: UserCheck,
- id: "hr",
- subItems: [
- { title: "Dashboard HR", url: "/hr" },
- { title: "Pegawai", url: "/hr/employees" },
- { title: "Absensi", url: "/hr/attendance" },
- { title: "Penggajian (Payroll)", url: "/hr/payroll" },
- { title: "Shift", url: "/hr/shift" }
- ]
- },
+ 
  { 
- title: "AI Assistant", 
- url: "/ai/chat", 
- icon: Bot,
- badge: "Beta",
+ title: "Master Data & Pengaturan", 
+ url: "/inventory/master-data/species", 
+ icon: Database,
+ id: "master_data",
  subItems: [
- { title: "Chat AI", url: "/ai/chat" },
- { title: "Analisis Inventaris", url: "/ai/inventory-analysis" },
- { title: "Analisis Keuangan", url: "/ai/finance-analysis" },
- { title: "Prediksi", url: "/ai/prediction" }
+ { title: "Katalog Kayu", url: "#", type: "label" },
+ { title: "Data Species", url: "/inventory/master-data/species" },
+ { title: "Data Grade", url: "/inventory/master-data/grade" },
+ 
+ { title: "Lokasi & Logistik", url: "#", type: "label" },
+ { title: "Gudang & Lokasi", url: "/inventory/warehouses" },
+ { title: "Asal Usul (Source)", url: "/inventory/master-data/source" },
+ { title: "Data Kendaraan", url: "/inventory/master-data/vehicle" },
+ { title: "Data Supir", url: "/inventory/master-data/driver" },
+
+ { title: "Lainnya", url: "#", type: "label" },
+ { title: "Data Import (Excel)", url: "/inventory/import" },
+ { title: "Audit Log", url: "/inventory/audit" }
  ]
  }
-]
-
-const settings: MenuItem[] = [
- { title: "Pengguna & Role", url: "/settings/users", icon: UserCheck, id: "settings" },
- { title: "Pengaturan Sistem", url: "/settings/company", icon: Settings, id: "settings" },
- { title: "Integrasi API", url: "/settings/integrations", icon: Share2, id: "settings" },
- { title: "Audit Log", url: "/monitoring/audit-log", icon: ShieldAlert, id: "settings" },
-]
+];
 
 export function KayuSidebar() {
  const pathname = usePathname()
