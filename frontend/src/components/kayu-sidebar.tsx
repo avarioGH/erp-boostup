@@ -44,9 +44,7 @@ const items: MenuItem[] = [
  id: "inbound",
  subItems: [
  { title: "Manajemen Partai", url: "/inventory/partai" },
- { title: "Purchase Orders (PO)", url: "/purchasing/orders" },
- { title: "Shipment (Delivery)", url: "/inventory/shipment" }
- ]
+   ]
  },
  
  { 
