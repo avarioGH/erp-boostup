@@ -2712,7 +2712,7 @@ model RawLog {
   partai            TimberPartai?  @relation(fields: [partaiId], references: [id])
   purchaseLogItemId String?        @db.ObjectId
   id                String         @id @default(auto()) @map("_id") @db.ObjectId
-  logNumber         String         @unique // No Log
+  logNumber         String // No Log
   sequence          Int? // Urut
   code              String? // Kode
   species           String // Jenis Kayu
@@ -2764,7 +2764,7 @@ model TrimmedLog {
   partaiId   String?       @db.ObjectId
   partai     TimberPartai? @relation(fields: [partaiId], references: [id])
   id         String        @id @default(auto()) @map("_id") @db.ObjectId
-  trimNumber String        @unique // e.g. 199A
+  trimNumber String // e.g. 199A
   rawLogId   String        @db.ObjectId
   rawLog     RawLog        @relation(fields: [rawLogId], references: [id])
 

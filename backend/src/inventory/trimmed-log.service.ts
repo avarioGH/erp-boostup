@@ -102,8 +102,8 @@ export class TrimmedLogService {
       const trimLetter = String.fromCharCode(65 + existingCount); // A, B, C...
       const trimNumber = `${parent.logNumber}${trimLetter}`;
 
-      const existingCode = await tx.trimmedLog.findUnique({
-        where: { trimNumber },
+      const existingCode = await tx.trimmedLog.findFirst({
+        where: { trimNumber, partaiId: parent.partaiId || undefined },
       });
       if (existingCode)
         throw new BadRequestException(`Trim code ${trimNumber} already exists`);

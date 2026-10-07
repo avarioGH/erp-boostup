@@ -91,9 +91,9 @@ export class RawLogService {
       data.species = pItem.species;
     }
     // Validate uniqueness
-    const existingLog = await this.prisma.rawLog.findUnique({
-      where: { logNumber: data.logNumber },
-    });
+    const existingLog = await this.prisma.rawLog.findFirst({
+        where: { logNumber: data.logNumber, partaiId: data.partaiId || undefined },
+      });
     if (existingLog)
       throw new BadRequestException(
         `Log Number ${data.logNumber} already exists.`,
@@ -280,8 +280,8 @@ export class RawLogService {
         if (!data.logNumber)
           throw new BadRequestException('Log Number is required');
 
-        const existingLog = await tx.rawLog.findUnique({
-          where: { logNumber: data.logNumber },
+        const existingLog = await tx.rawLog.findFirst({
+          where: { logNumber: data.logNumber, partaiId: data.partaiId || undefined },
         });
         if (existingLog)
           throw new BadRequestException(
