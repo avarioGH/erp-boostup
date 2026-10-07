@@ -164,7 +164,7 @@ export class SawnTimberService {
           width,
           length,
           sku,
-          barcode: `V-${sku}-${Date.now().toString().slice(-6)}`,
+          barcode: `V-${sku}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
           volumePerPiece,
         },
       });
