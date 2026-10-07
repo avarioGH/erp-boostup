@@ -402,10 +402,6 @@ export class SawnTimberService {
         include: { items: { include: { timberVariant: true } } },
       });
       if (!output) throw new NotFoundException('Output not found');
-      if (output.status !== 'DRAFT')
-        throw new BadRequestException(
-          'Only DRAFT outputs can be modified directly',
-        );
 
       const item = output.items.find((i: any) => i.id === itemId);
       if (!item) throw new NotFoundException('Item not found');
@@ -422,20 +418,47 @@ export class SawnTimberService {
       // Wait, getOrCreateTimberVariant in this service uses 	his.prisma, not 	x.
       // It's safe to just call it (it reads/writes variants, not output items).
       const newVariant = await this.getOrCreateTimberVariant(
-        location.company_id,
-        item.timberVariant.species,
-        data.grade,
-        item.thicknessMm,
-        item.widthMm,
-        item.lengthMm,
-        item.timberVariant.speciesId || undefined,
-        data.gradeId,
-      );
+          location.company_id,
+          item.timberVariant.species,
+          data.grade,
+          item.thicknessMm,
+          item.widthMm,
+          item.lengthMm,
+          item.timberVariant.speciesId || undefined,
+          data.gradeId,
+        );
 
-      return tx.sawnTimberOutputItem.update({
-        where: { id: itemId },
-        data: { grade: data.grade, timberVariantId: newVariant.id },
+        if (output.status === 'POSTED') {
+           // Move out of old variant
+           await this.ledgerService.createMovement(
+             tx as any,
+             output.locationId,
+             item.timberVariantId,
+             'ADJ',
+             'REGRADING',
+             output.id,
+             item.quantityPcs,
+             item.volumeM3,
+             output.batch || 'UNKNOWN'
+           );
+           // Move into new variant
+           await this.ledgerService.createMovement(
+             tx as any,
+             output.locationId,
+             newVariant.id,
+             'IN',
+             'REGRADING',
+             output.id,
+             item.quantityPcs,
+             item.volumeM3,
+             output.batch || 'UNKNOWN'
+           );
+        }
+  
+        return tx.sawnTimberOutputItem.update({
+          where: { id: itemId },
+          data: { grade: data.grade, timberVariantId: newVariant.id, gradeId: data.gradeId },
+        });
       });
-    });
   }
 }
