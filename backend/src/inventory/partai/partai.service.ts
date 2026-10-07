@@ -69,6 +69,53 @@ export class PartaiService {
   }
 
   async findOne(id: string, companyId: string) {
+
+      // FIX CORRUPT DATA:
+      // If there are InputLogs that belong to this Partai's TrimmedLogs but lack partaiId, fix them.
+      const corruptInputLogItems = await this.prisma.inputLogItem.findMany({
+         where: {
+            trimmedLog: { partaiId: id },
+            inputLog: { partaiId: null }
+         },
+         include: { inputLog: true, trimmedLog: true }
+      });
+      
+      for (const item of corruptInputLogItems) {
+          if (item.inputLog) {
+             await this.prisma.inputLog.update({
+                where: { id: item.inputLogId },
+                data: { partaiId: id }
+             });
+          }
+      }
+      
+      // FIX MISSING INPUT LOGS:
+      // Find TrimmedLogs that think they are in an InputLog, but the InputLog doesn't exist
+      const assignedTrimmedLogs = await this.prisma.trimmedLog.findMany({
+         where: { partaiId: id, status: 'ASSIGNED_TO_INPUT', inputLogId: { not: null } },
+         include: { inputLog: true }
+      });
+      for (const st of assignedTrimmedLogs) {
+         if (!st.inputLog) {
+             await this.prisma.trimmedLog.update({
+                where: { id: st.id },
+                data: { status: 'AVAILABLE', inputLogId: null }
+             });
+         }
+      }
+
+      // FIX CORRUPT TRIMMED LOGS:
+      // If there are TrimmedLogs that are ASSIGNED_TO_INPUT but don't have an inputLogId or their inputLog is missing, reset them
+      const stuckTrimmedLogs = await this.prisma.trimmedLog.findMany({
+         where: { partaiId: id, status: 'ASSIGNED_TO_INPUT', inputLogId: null }
+      });
+      for (const st of stuckTrimmedLogs) {
+         await this.prisma.trimmedLog.update({
+            where: { id: st.id },
+            data: { status: 'AVAILABLE' }
+         });
+      }
+
     const partai = await this.prisma.timberPartai.findFirst({
       where: { id, company_id: companyId },
       include: {
