@@ -220,7 +220,7 @@ export default function EditPurchasePage() {
                         </Button>
                       )}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
+                    <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mt-2 pr-6">
                       <div className="space-y-2 md:col-span-2">
                         <div className="flex items-center justify-between">
                           <Label>Variant / Sku Kayu</Label>
@@ -340,7 +340,7 @@ export default function EditPurchasePage() {
                         </Button>
                       )}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
+                    <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mt-2 pr-6">
                       <div className="space-y-2">
                         <Label>No Log</Label>
                         <Input value={item.logNumber} onChange={(e) => {
