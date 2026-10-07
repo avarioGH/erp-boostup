@@ -29,9 +29,9 @@ export default function CreateExportPage() {
 
   useEffect(() => {
     Promise.all([
-      api.get('/customers?limit=100').then(res => setDbCustomers(res.data.data || res.data)).catch(()=> {}),
-      InventoryAPI.getProducts().then(res => setDbProducts(res.data || res)).catch(()=> {}),
-      B2BApi.getOrders({ limit: 100 }).then(res => setDbOrders((res?.data || []).filter((o:any) => o.order_number?.startsWith('SO')))).catch(()=> {})
+      api.get('/customers?limit=100').then((res: any) => setDbCustomers(res.data.data || res.data)).catch(()=> {}),
+      InventoryAPI.getProducts().then((res: any) => setDbProducts(res.data || res)).catch(()=> {}),
+      B2BApi.getOrders({ limit: 100 }).then((res: any) => setDbOrders((res?.data || []).filter((o:any) => o.order_number?.startsWith('SO')))).catch(()=> {})
     ])
   }, [])
 
