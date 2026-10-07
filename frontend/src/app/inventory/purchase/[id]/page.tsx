@@ -62,7 +62,7 @@ export default function PurchaseDetailPage() {
           <CardTitle>Overview</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
-          <div><span className="text-gray-500">Supplier:</span> {purchase.supplier?.name || purchase.partnerId}</div>
+          <div><span className="text-gray-500">Supplier:</span> {purchase.source?.name || purchase.sourceId}</div>
           <div><span className="text-gray-500">Warehouse:</span> {purchase.warehouse?.name || purchase.warehouseId}</div>
           <div>
             <span className="text-gray-500">Status: </span>
