@@ -259,10 +259,22 @@ export class InventoryService {
       barcode: data.barcode,
       purchase_price: data.purchasePrice ? Number(data.purchasePrice) : 0,
       selling_price: data.sellingPrice ? Number(data.sellingPrice) : 0,
-      status: data.isActive === 'true' || data.isActive === true,
       minimum_stock: data.minStock ? Number(data.minStock) : 0,
       weight: data.weight ? Number(data.weight) : undefined,
     };
+
+    if (data.isActive !== undefined) {
+      updateData.status = data.isActive === 'true' || data.isActive === true;
+    } else {
+      updateData.status = true; // Default to true if not provided, or better: just don't touch it. 
+      // Actually if they are editing a soft-deleted product maybe they want to restore it?
+      // Let's just remove it so we don't accidentally delete. Wait, if it's undefined, we just delete updateData.status so it doesn't override.
+    }
+    
+    // Actually, I'll just delete status if it's undefined.
+    if (data.isActive === undefined) {
+      delete updateData.status;
+    }
 
     if (data.categoryId) updateData.category_id = data.categoryId;
     if (data.brandId) updateData.brand_id = data.brandId;
