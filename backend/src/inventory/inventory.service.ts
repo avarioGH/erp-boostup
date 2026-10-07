@@ -257,11 +257,11 @@ export class InventoryService {
       name: data.name,
       description: data.description,
       barcode: data.barcode,
-      type: data.type,
-      cost_price: data.costPrice ? Number(data.costPrice) : undefined,
-      sell_price: data.sellPrice ? Number(data.sellPrice) : undefined,
-      is_active: data.isActive === 'true' || data.isActive === true,
-      min_stock: data.minStock ? Number(data.minStock) : undefined,
+      purchase_price: data.purchasePrice ? Number(data.purchasePrice) : 0,
+      selling_price: data.sellingPrice ? Number(data.sellingPrice) : 0,
+      status: data.isActive === 'true' || data.isActive === true,
+      minimum_stock: data.minStock ? Number(data.minStock) : 0,
+      weight: data.weight ? Number(data.weight) : undefined,
     };
 
     if (data.categoryId) updateData.category_id = data.categoryId;
