@@ -80,8 +80,7 @@ const items: MenuItem[] = [
  { title: "Penawaran (Quotation)", url: "/sales/quotations" },
  { title: "Sales Orders (SO)", url: "/sales/orders" },
  { title: "Surat Jalan (Pengiriman)", url: "/sales/deliveries" },
- { title: "Daftar Ekspor", url: "/sales/exports" },
- { title: "Daftar Pelanggan", url: "/sales/customers" }
+  { title: "Daftar Pelanggan", url: "/sales/customers" }
  ]
  },
  
