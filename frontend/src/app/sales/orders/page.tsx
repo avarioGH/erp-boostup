@@ -112,13 +112,13 @@ export default function SalesOrdersPage() {
  <Button variant="outline"><Download className="w-4 h-4 mr-2" /> Export</Button>
  <Link href={`/sales/orders/${details.id}/print`} target="_blank"><Button variant="outline"><Printer className="w-4 h-4 mr-2" /> Cetak Surat Jalan</Button></Link>
  
- {details.status === 'CONFIRMED' && (
+ {(details.status === 'CONFIRMED' || details.status === 'COMPLETED') && (
  <Button onClick={() => router.push("/sales/deliveries")} className="">
  <Truck className="w-4 h-4 mr-2" /> Create Delivery
  </Button>
  )}
  
- {(details.status === 'CONFIRMED' || details.status === 'DELIVERED') && (
+ {(details.status === 'CONFIRMED' || details.status === 'DELIVERED' || details.status === 'COMPLETED') && (
  <Button onClick={() => router.push("/finance/invoices")} variant="outline" className="border-indigo-200 text-primary hover:bg-indigo-50">
  <FileOutput className="w-4 h-4 mr-2" /> Create Invoice
  </Button>

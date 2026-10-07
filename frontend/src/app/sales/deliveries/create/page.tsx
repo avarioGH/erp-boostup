@@ -27,7 +27,7 @@ export default function CreateDeliveryPage() {
     try {
       const res = await B2BApi.getOrders({ limit: 100 })
       // Only show orders that are confirmed or partially delivered
-      const validOrders = (res?.data || []).filter((o: any) => o.status === 'CONFIRMED' || o.delivery_status === 'PARTIAL')
+      const validOrders = (res?.data || []).filter((o: any) => o.order_number?.startsWith('SO') && o.delivery_status !== 'DELIVERED')
       setOrders(validOrders)
     } catch (e) {
       console.error(e)
