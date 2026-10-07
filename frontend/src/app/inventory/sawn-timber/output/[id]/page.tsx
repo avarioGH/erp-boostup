@@ -217,19 +217,19 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
                           {data.status === 'DRAFT' ? (
                             <DropdownMenu>
                               <DropdownMenuTrigger className={`inline-flex items-center justify-center rounded-sm px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider transition-colors ${item.grade === 'PENDING' ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}>
-                                {item.grade === 'PENDING' ? 'BELUM DIISI' : `GRADE ${item.grade}`}
+                                {item.grade === 'PENDING' ? 'BELUM DIISI' : (grades.find(g => g.code === item.grade)?.name || item.grade)}
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="center">
                                 {grades.map(g => (
                                   <DropdownMenuItem key={g.id} onClick={() => handleUpdateGrade(item.id, g.id, g.code)}>
-                                    {g.code ? `Grade ${g.code}` : (g.name || 'Unknown Grade')}
+                                    {g.name || g.code || 'Unknown Grade'}
                                   </DropdownMenuItem>
                                 ))}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           ) : (
                             <span className={`inline-flex items-center rounded-sm px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${item.grade === 'PENDING' ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}>
-                              {item.grade === 'PENDING' ? 'BELUM DIISI' : `GRADE ${item.grade}`}
+                              {item.grade === 'PENDING' ? 'BELUM DIISI' : (grades.find(g => g.code === item.grade)?.name || item.grade)}
                             </span>
                           )}
                         </td>

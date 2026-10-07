@@ -713,7 +713,7 @@ const [partai, setPartai] = useState<any>(null);
                   </SelectTrigger>
                   <SelectContent>
                     {grades.map(g => (
-                      <SelectItem key={g.id} value={g.id}>{g.code ? `Grade ${g.code}` : (g.name || g.id)}</SelectItem>
+                      <SelectItem key={g.id} value={g.id}>{g.name || g.code || g.id}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -764,7 +764,7 @@ const [partai, setPartai] = useState<any>(null);
                           <TableCell className="text-right font-medium">{i.quantityPcs}</TableCell>
                           <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400">{i.volumeM3.toFixed(4)}</TableCell>
                           <TableCell className="text-center">
-                            {i.grade === 'PENDING' ? <Badge variant="outline" className="text-amber-500 border-amber-500">PENDING</Badge> : <Badge className="bg-primary">{i.grade}</Badge>}
+                            {i.grade === 'PENDING' ? <Badge variant="outline" className="text-amber-500 border-amber-500">PENDING</Badge> : <Badge className="bg-primary">{grades.find(g => g.code === i.grade)?.name || i.grade}</Badge>}
                           </TableCell>
                           <TableCell className="text-center">
                             {i.parentStatus === 'POSTED' ? <Badge className="bg-emerald-500">POSTED</Badge> : <Badge variant="outline">DRAFT</Badge>}
