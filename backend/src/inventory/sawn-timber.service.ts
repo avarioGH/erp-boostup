@@ -195,7 +195,7 @@ export class SawnTimberService {
 
       const inputLog = await tx.inputLog.findUnique({
         where: { id: inputLogId },
-        include: { location: true },
+        
       });
       if (!inputLog) throw new NotFoundException('Input log not found');
       if (inputLog.status !== 'AVAILABLE' && inputLog.status !== 'IN_PROCESS') {
@@ -205,7 +205,7 @@ export class SawnTimberService {
       }
 
       // Resolve company_id: from inputLog.location or from the provided warehouse
-      let companyId = inputLog.location?.company_id;
+      let companyId = null;
       if (!companyId) {
         const warehouse = await tx.warehouse.findUnique({
           where: { id: locationId },
