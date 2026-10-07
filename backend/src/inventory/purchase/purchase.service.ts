@@ -151,7 +151,7 @@ export class PurchaseService {
 
       if (purchase.logItems && purchase.logItems.length > 0) {
         for (const item of purchase.logItems) {
-          const existing = await tx.rawLog.findUnique({ where: { logNumber: item.logNumber } });
+          const existing = await tx.rawLog.findFirst({ where: { logNumber: item.logNumber } });
           if (!existing) {
              
                let diaSum = 0;

@@ -206,7 +206,7 @@ export class SawnTimberService {
       }
 
       // Resolve company_id: from inputLog.location or from the provided warehouse
-      let companyId = null;
+      let companyId: string | null | undefined = null;
       if (!companyId) {
         const warehouse = await tx.warehouse.findUnique({
           where: { id: locationId },
@@ -435,7 +435,7 @@ export class SawnTimberService {
              output.locationId,
              item.timberVariantId,
              'ADJ',
-             'REGRADING',
+             'ADJUSTMENT_OUT',
              output.id,
              item.quantityPcs,
              item.volumeM3,
@@ -447,7 +447,7 @@ export class SawnTimberService {
              output.locationId,
              newVariant.id,
              'IN',
-             'REGRADING',
+             'ADJUSTMENT_IN',
              output.id,
              item.quantityPcs,
              item.volumeM3,
@@ -457,7 +457,7 @@ export class SawnTimberService {
   
         return tx.sawnTimberOutputItem.update({
           where: { id: itemId },
-          data: { grade: data.grade, timberVariantId: newVariant.id, gradeId: data.gradeId },
+          data: { grade: data.grade, timberVariantId: newVariant.id },
         });
       });
   }

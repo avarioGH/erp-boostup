@@ -3,6 +3,25 @@ import { PrismaService } from './prisma/prisma.service';
 
 @Controller('fix')
 export class FixController {
+  @Get('partai-force-fix')
+  async partaiForceFix() {
+    const t = await this.prisma.trimmedLog.findUnique({where: {trimNumber: '201A'}});
+    let items = [];
+    let logs = [];
+    if (t) {
+        items = await this.prisma.inputLogItem.findMany({where: {trimmedLogId: t.id}});
+        logs = await this.prisma.inputLog.findMany({where: {id: {in: items.map(i => i.inputLogId)}}});
+    }
+    
+    // forcefully fix it
+    if (t) {
+        await this.prisma.trimmedLog.update({where: {id: t.id}, data: {status: 'AVAILABLE', inputLogId: null}});
+    }
+    await this.prisma.inputLog.deleteMany({where: {partaiId: null}});
+
+    return { trimmedLog: t, items, logs, message: "TrimmedLog 201A forcibly set to AVAILABLE." };
+  }
+  
   constructor(private prisma: PrismaService) {}
 
   @Get('make-owner')

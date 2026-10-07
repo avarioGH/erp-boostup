@@ -177,8 +177,8 @@ export class ReportService {
       });
       if (inputLog) return { type: 'INPUT_LOG', ...inputLog };
 
-      const trimmedLog = await this.prisma.trimmedLog.findUnique({
-        where: { trimNumber: search },
+      const trimmedLog = await this.prisma.trimmedLog.findFirst({
+          where: { trimNumber: search },
         include: { rawLog: true },
       });
       if (trimmedLog) return { type: 'TRIMMED_LOG', ...trimmedLog };
