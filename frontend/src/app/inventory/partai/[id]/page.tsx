@@ -1,10 +1,12 @@
 ﻿"use client";
 import React, { useEffect, useState } from "react";
-import { api, PartaiAPI, TimberAPI, PurchaseAPI } from "@/lib/api";
+import { api, PartaiAPI, TimberAPI, PurchaseAPI, MasterDataAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +25,53 @@ const [partai, setPartai] = useState<any>(null);
   const [inlineDukbRows, setInlineDukbRows] = useState<any[]>([]);
   const [isSavingDukb, setIsSavingDukb] = useState(false);
   const [lengthUnit, setLengthUnit] = useState<'m' | 'cm' | 'mm'>('m');
+  const [grades, setGrades] = useState<any[]>([]);
+  const [selectedOutputItems, setSelectedOutputItems] = useState<{id: string, outputId: string}[]>([]);
+  const [isGrading, setIsGrading] = useState(false);
+  const [selectedGradeId, setSelectedGradeId] = useState("");
+  
+  useEffect(() => {
+    MasterDataAPI.getGrades().then((res: any) => setGrades(res.data || res)).catch(() => {});
+  }, []);
+  
+  const handleBulkGrade = async () => {
+    if (!selectedGradeId) {
+       toast({ title: "Pilih Grade", description: "Silakan pilih grade terlebih dahulu", variant: "destructive" });
+       return;
+    }
+    const gradeObj = grades.find(g => g.id === selectedGradeId);
+    setIsGrading(true);
+    let success = 0;
+    for (const item of selectedOutputItems) {
+       try {
+         await api.patch(`/inventory/sawn-timber/output/${item.outputId}/items/${item.id}/grade`, { gradeId: gradeObj.id, grade: gradeObj.code });
+         success++;
+       } catch (e) {
+         console.error(e);
+       }
+    }
+    setIsGrading(false);
+    toast({ title: "Selesai", description: `Berhasil mengupdate ${success} item.` });
+    setSelectedOutputItems([]);
+    fetchPartai();
+  };
+  
+  const toggleSelectOutputItem = (id: string, outputId: string) => {
+    const exists = selectedOutputItems.find(x => x.id === id);
+    if (exists) {
+      setSelectedOutputItems(selectedOutputItems.filter(x => x.id !== id));
+    } else {
+      setSelectedOutputItems([...selectedOutputItems, {id, outputId}]);
+    }
+  };
+  
+  const toggleSelectAllOutputItems = (allItems: any[]) => {
+    if (selectedOutputItems.length === allItems.length) {
+       setSelectedOutputItems([]);
+    } else {
+       setSelectedOutputItems(allItems.map(i => ({ id: i.id, outputId: i.parentOutputId })));
+    }
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('erp_length_unit_pref');
@@ -701,12 +750,15 @@ const [partai, setPartai] = useState<any>(null);
                                 const grouped: any = {};
                                 (partai?.sawnOutputs || []).forEach((out: any) => {
                                    (out.items || []).forEach((item: any) => {
-                                      const key = `${item.species}-${item.grade}-${item.thickness}x${item.width}x${item.length}`;
+                                      const t = item.thicknessMm ? item.thicknessMm / 10 : (item.thickness || 0);
+                                      const w = item.widthMm ? item.widthMm / 10 : (item.width || 0);
+                                      const l = item.lengthMm ? item.lengthMm / 10 : (item.length || 0);
+                                      const key = `${item.timberVariant?.species || "Kayu"}-${item.grade}-${t}x${w}x${l}`;
                                       if (!grouped[key]) {
                                          grouped[key] = {
-                                            species: item.species,
+                                            species: item.timberVariant?.species || "Kayu",
                                             grade: item.grade || '-',
-                                            dimensions: `${item.thickness}x${item.width}x${item.length}`,
+                                            dimensions: `${t}x${w}x${l}`,
                                             pcs: 0,
                                             vol: 0
                                          };
@@ -731,7 +783,10 @@ const [partai, setPartai] = useState<any>(null);
                              })()}
                           </TableBody>
                        </Table>
-                    </div>
+                  </div>
+                </>
+              );
+            })()}
                  </div>
               </CardContent>
             </Card>
@@ -748,7 +803,13 @@ const [partai, setPartai] = useState<any>(null);
                 <TableHeader className="bg-muted/30">
                   
                     <TableRow>
-                      <TableHead>Tgl Produksi</TableHead>
+                      <TableHead className="w-[40px]">
+    <Checkbox 
+       checked={allOutputItems.length > 0 && selectedOutputItems.length === allOutputItems.length} 
+       onCheckedChange={() => toggleSelectAllOutputItems(allOutputItems)} 
+    />
+  </TableHead>
+  <TableHead>Tgl Produksi</TableHead>
                       <TableHead>Bundle No</TableHead>
                       <TableHead>Source WIP</TableHead>
                       <TableHead>Tebal</TableHead>
@@ -762,12 +823,18 @@ const [partai, setPartai] = useState<any>(null);
 
                 </TableHeader>
                 <TableBody>
-                  {(partai.sawnOutputs || []).flatMap((o: any) => (o.items || []).map((item: any) => ({ ...item, parentDate: o.outputDate, parentInputId: o.inputLogId, parentBundleNumber: o.bundleNumber, parentOutputId: o.id, parentStatus: o.status }))).map((i: any) => {
+                  {allOutputItems.map((i: any) => {
                     const wip = (partai.inputLogs || []).find((log: any) => log.id === i.parentInputId);
                     return (
                       
                         <TableRow key={i.id} className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/inventory/sawn-timber/output/${i.parentOutputId}`)}>
-                          <TableCell>{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                          <TableCell onClick={e => e.stopPropagation()}>
+     <Checkbox 
+       checked={!!selectedOutputItems.find(x => x.id === i.id)} 
+       onCheckedChange={() => toggleSelectOutputItem(i.id, i.parentOutputId)} 
+     />
+   </TableCell>
+   <TableCell>{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
                           <TableCell className="font-medium text-blue-600 dark:text-blue-400">{i.parentBundleNumber}</TableCell>
                           <TableCell className="font-medium text-primary"><Link href={`/inventory/input-logs/${i.parentInputId}`} onClick={e => e.stopPropagation()}>{wip?.inputNumber || "WIP"}</Link></TableCell>
                           <TableCell>{i.thicknessMm / 10} cm</TableCell>
