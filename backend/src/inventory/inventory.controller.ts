@@ -108,7 +108,63 @@ export class InventoryController {
     }
   }
 
+  
+  @Permissions('inventory.product.update')
+  @Put('products/:id')
+  @UseInterceptors(
+    FilesInterceptor('images', 8, {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const fs = require('fs');
+          const dir = './uploads/products';
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          cb(null, dir);
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, uniqueSuffix + ext);
+        },
+      }),
+    }),
+  )
+  async updateProduct(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() data: any,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    try {
+      data.companyId = req.user.company_id || req.user.companyId;
+      if (files && files.length > 0) {
+        data.images = files.map((file) => '/uploads/products/' + file.filename);
+      }
+      return await this.inventoryService.updateProduct(data.companyId, id, data);
+    } catch (error: any) {
+      console.error('Error updating product:', error);
+      const { HttpException, HttpStatus } = require('@nestjs/common');
+      throw new HttpException(error.message || 'Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Permissions('inventory.product.delete')
+  @Delete('products/:id')
+  async deleteProduct(@Request() req: any, @Param('id') id: string) {
+    try {
+      const companyId = req.user.company_id || req.user.companyId;
+      return await this.inventoryService.deleteProduct(companyId, id);
+    } catch (error: any) {
+      console.error('Error deleting product:', error);
+      const { HttpException, HttpStatus } = require('@nestjs/common');
+      if (error.message && error.message.includes('Foreign key') || error.code === 'P2003' || error.code === 'P2014' || error.message.includes('Foreign key constraint failed')) {
+        throw new HttpException('Tidak bisa menghapus produk karena sedang digunakan dalam transaksi atau stok.', HttpStatus.BAD_REQUEST);
+      }
+      throw new HttpException(error.message || 'Gagal menghapus produk.', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
   @Permissions('inventory.warehouse.view')
+
   @Get('warehouses')
   async getWarehouses(@Request() req) {
     return this.inventoryService.getWarehouses(req.user.company_id);

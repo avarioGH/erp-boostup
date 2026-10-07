@@ -246,6 +246,61 @@ export class InventoryService {
     });
   }
 
+  
+  async updateProduct(companyId: string, id: string, data: any) {
+    const product = await this.prisma.product.findFirst({
+      where: { id, company_id: companyId }
+    });
+    if (!product) throw new Error('Product not found');
+
+    const updateData: any = {
+      name: data.name,
+      description: data.description,
+      barcode: data.barcode,
+      type: data.type,
+      cost_price: data.costPrice ? Number(data.costPrice) : undefined,
+      sell_price: data.sellPrice ? Number(data.sellPrice) : undefined,
+      is_active: data.isActive === 'true' || data.isActive === true,
+      min_stock: data.minStock ? Number(data.minStock) : undefined,
+    };
+
+    if (data.categoryId) updateData.category_id = data.categoryId;
+    if (data.brandId) updateData.brand_id = data.brandId;
+    if (data.unitId) updateData.unit_id = data.unitId;
+
+    const updated = await this.prisma.product.update({
+      where: { id },
+      data: updateData
+    });
+
+    if (data.images && data.images.length > 0) {
+      await this.prisma.productImage.createMany({
+        data: data.images.map((url: string) => ({
+          product_id: product.id,
+          image_url: url
+        }))
+      });
+    }
+    return updated;
+  }
+
+  async deleteProduct(companyId: string, id: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id, company_id: companyId }
+    });
+    if (!product) throw new Error('Product not found');
+
+    // First delete images
+    await this.prisma.productImage.deleteMany({
+      where: { product_id: id }
+    });
+
+    // Then delete the product
+    return this.prisma.product.delete({
+      where: { id }
+    });
+  }
+
   async createProduct(data: any) {
     // We need a unit to create a product. Let's find or create a default 'PCS' unit.
     let unit = await this.prisma.unit.findFirst({
