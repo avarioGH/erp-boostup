@@ -248,9 +248,9 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                 <DialogContent className="max-w-3xl">
                   <DialogHeader>
                     <DialogTitle>Input Tally Harian</DialogTitle>
-                    <DialogDescription>Masukkan hasil produksi gergajian. Sistem otomatis menghitung M&sup3; (T &times; L &times; P &times; PCS &divide; 10&sup9;).</DialogDescription>
+                    <DialogDescription>Masukkan hasil produksi gergajian. Sistem otomatis menghitung M&sup3; (T &times; L &times; P &times; PCS &divide; 1.000.000).</DialogDescription>
                   </DialogHeader>
-                  <div className="py-4 space-y-4">
+                  <div className="py-4 space-y-4 overflow-x-auto">
                     <div className="w-1/3">
                       <Label>Tanggal Produksi</Label>
                       <Input type="date" value={tallyDate} onChange={e => setTallyDate(e.target.value)} />
@@ -270,7 +270,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                         </TableHeader>
                         <TableBody>
                           {tallyLines.map((line, idx) => {
-                            const vol = (Number(line.t || 0) * 10 * Number(line.l || 0) * 10 * Number(line.p || 0) * 10 * Number(line.pcs || 0)) / 1000000000
+                            const vol = (Number(line.t || 0) * Number(line.l || 0) * Number(line.p || 0) * Number(line.pcs || 0)) / 1000000
                             return (
                               <TableRow key={idx}>
                                 <TableCell className="p-2"><Input type="number" placeholder="5" value={line.t} onChange={e => { const n = [...tallyLines]; n[idx].t = e.target.value; setTallyLines(n) }} /></TableCell>
