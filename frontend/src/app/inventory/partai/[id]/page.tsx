@@ -44,14 +44,21 @@ const [partai, setPartai] = useState<any>(null);
     let success = 0;
     for (const item of selectedOutputItems) {
        try {
-         await api.patch(`/inventory/sawn-timber/output/${item.outputId}/items/${item.id}/grade`, { gradeId: gradeObj.id, grade: gradeObj.code });
+         await api.patch(`/inventory/sawn-timber/output/${item.outputId}/items/${item.id}/grade`, {
+           gradeId: gradeObj.id,
+           grade: gradeObj.code || gradeObj.name || 'STANDARD',
+         });
          success++;
-       } catch (e) {
+       } catch (e: any) {
          console.error(e);
+         const msg = e?.response?.data?.error?.message || e?.response?.data?.message || 'Gagal update grade';
+         toast({ title: 'Gagal', description: msg, variant: 'destructive' });
        }
     }
     setIsGrading(false);
-    toast({ title: "Selesai", description: `Berhasil mengupdate ${success} item.` });
+    if (success > 0) {
+      toast({ title: "Selesai", description: `Berhasil mengupdate ${success} item.` });
+    }
     setSelectedOutputItems([]);
     fetchPartai();
   };

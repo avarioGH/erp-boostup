@@ -133,7 +133,68 @@ export class ReportService {
     startDate?: Date,
     endDate?: Date,
   ) {
-    return { stock: {}, card: [] };
+    const stock = await this.prisma.timberStock.findFirst({
+      where: { timberVariantId: variantId, locationId },
+      include: {
+        location: true,
+        timberVariant: { include: { product: true } },
+      },
+    });
+
+    const whereMovement: any = {
+      timberStock: {
+        locationId,
+        timberVariantId: variantId,
+      },
+    };
+    if (startDate || endDate) {
+      whereMovement.date = {};
+      if (startDate) whereMovement.date.gte = startDate;
+      if (endDate) whereMovement.date.lte = endDate;
+    }
+
+    const movements = await this.prisma.timberStockMovement.findMany({
+      where: whereMovement,
+      orderBy: { date: 'asc' },
+    });
+
+    let runningPcs = 0;
+    let runningM3 = 0;
+    const card = movements.map((m) => {
+      const isOut =
+        m.type === 'OUT' ||
+        (m.type === 'ADJ' &&
+          (m.referenceType === 'ADJUSTMENT_OUT' || m.referenceType === 'REVERSAL'));
+      const inQty = !isOut ? m.quantityPcs : 0;
+      const outQty = isOut ? m.quantityPcs : 0;
+      if (!isOut) {
+        runningPcs += m.quantityPcs;
+        runningM3 += m.volumeM3;
+      } else {
+        runningPcs -= m.quantityPcs;
+        runningM3 -= m.volumeM3;
+      }
+      return {
+        id: m.id,
+        date: m.date || m.createdAt,
+        reference: m.referenceId || m.referenceType,
+        type: m.referenceType || m.type,
+        in: inQty,
+        out: outQty,
+        balancePcs: runningPcs,
+        balanceM3: runningM3,
+      };
+    });
+
+    return {
+      stock: stock || {
+        currentPcs: 0,
+        currentVolumeM3: 0,
+        timberVariant: null,
+        location: null,
+      },
+      card,
+    };
   }
   async getYieldReport(params: any) {
     return {

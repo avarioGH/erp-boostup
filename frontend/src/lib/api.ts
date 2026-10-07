@@ -117,6 +117,7 @@ export const TimberAPI: any = {
   postSawnOutput: async (id: string) => (await api.post('/inventory/sawn-timber/output/' + id + '/post')).data,
   cancelSawnOutput: async (id: string) => (await api.post('/inventory/sawn-timber/output/' + id + '/cancel')).data,
   getTimberStock: async (params?: any) => (await api.get('/inventory/sawn-timber/stock', { params })).data,
+  getStockCard: async (variantId: string, locationId: string, params?: any) => (await api.get(`/inventory/reports/stock-card/${variantId}/${locationId}`, { params })).data,
 
   // --- Stock Movements ---
   getMovements: async (params?: any) => (await api.get('/inventory/movements', { params })).data,

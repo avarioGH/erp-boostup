@@ -21,9 +21,13 @@ export class SawnTimberService {
     search?: string;
     locationId?: string;
     status?: string;
+    partaiId?: string;
   }) {
-    const { skip = 0, take = 50, search, locationId, status } = params;
-    const where: any = { partaiId: null };
+    const { skip = 0, take = 50, search, locationId, status, partaiId } = params;
+    const where: any = {};
+    if (partaiId !== undefined) {
+      where.partaiId = partaiId;
+    }
     if (search) {
       where.OR = [
         { bundleNumber: { contains: search, mode: 'insensitive' } },
@@ -104,17 +108,11 @@ export class SawnTimberService {
     }
     if (gradeId) {
       const gr = await this.prisma.timberGrade.findFirst({
-        where: { id: gradeId, company_id: companyId },
+        where: { id: gradeId },
       });
       if (!gr)
-        throw new BadRequestException(
-          'TimberGrade not found or does not belong to this company',
-        );
-      if (!gr.isActive)
-        throw new BadRequestException(
-          'Cannot use inactive TimberGrade for new production',
-        );
-      actualGrade = gr.code;
+        throw new BadRequestException('TimberGrade not found');
+      actualGrade = gr.code || gr.name || 'STANDARD';
     }
 
     const sizeStr = this.normalizeDimensions(thickness, width, length);
@@ -338,8 +336,8 @@ export class SawnTimberService {
             tx as any,
             output.locationId,
             item.timberVariantId,
-            'IN',
-            'PRODUCTION_OUTPUT',
+            'OUT',
+            'REVERSAL',
             output.id,
             item.quantityPcs,
             item.volumeM3,

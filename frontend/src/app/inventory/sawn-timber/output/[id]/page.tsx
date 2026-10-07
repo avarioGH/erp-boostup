@@ -221,7 +221,7 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="center">
                                 {grades.map(g => (
-                                  <DropdownMenuItem key={g.id} onClick={() => handleUpdateGrade(item.id, g.id, g.code)}>
+                                  <DropdownMenuItem key={g.id} onClick={() => handleUpdateGrade(item.id, g.id, g.code || g.name || 'STANDARD')}>
                                     {g.name || g.code || 'Unknown Grade'}
                                   </DropdownMenuItem>
                                 ))}

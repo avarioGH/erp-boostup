@@ -277,7 +277,7 @@ export default function PurchaseFishForm() {
               <Label>Termin / Jatuh Tempo (Hari)</Label>
               <Select 
                 value={formData.payment_terms.toString()} 
-                onValueChange={val => setFormData({...formData, payment_terms: parseInt(val)})}
+                onValueChange={val => setFormData({...formData, payment_terms: parseInt(val || '0')})}
               >
                 <SelectTrigger className="bg-white dark:bg-background">
                   <SelectValue placeholder="Pilih Termin" />
