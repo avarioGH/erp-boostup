@@ -642,8 +642,100 @@ const [partai, setPartai] = useState<any>(null);
           </Card>
         </TabsContent>
 
-        {/* 5. SAWN TIMBER OUTPUT */}
-        <TabsContent value="output">
+        
+          {/* 5. SAWN TIMBER OUTPUT */}
+          <TabsContent value="output">
+            <Card className="mb-6 border-emerald-500/30 bg-emerald-50/10 dark:bg-emerald-900/10">
+              <CardHeader className="pb-3 border-b border-emerald-100 dark:border-emerald-900/30">
+                 <CardTitle className="text-emerald-700 dark:text-emerald-500 text-lg">Ringkasan Total Output Partai</CardTitle>
+                 <CardDescription>Total stok hasil jadi yang didapatkan dari seluruh log partai ini</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-background rounded-lg p-3 border shadow-sm flex flex-col justify-center">
+                       <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">Total Pcs</span>
+                       <span className="text-2xl font-black text-foreground">
+                         {partai?.sawnOutputs?.reduce((acc: number, out: any) => acc + (out.items || []).reduce((sum: number, item: any) => sum + (item.quantityPcs || 0), 0), 0).toLocaleString()} <span className="text-sm font-medium text-muted-foreground ml-1">pcs</span>
+                       </span>
+                    </div>
+                    <div className="bg-background rounded-lg p-3 border shadow-sm flex flex-col justify-center">
+                       <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">Total Volume Output</span>
+                       <span className="text-2xl font-black text-emerald-600">
+                         {partai?.sawnOutputs?.reduce((acc: number, out: any) => acc + (out.items || []).reduce((sum: number, item: any) => sum + (item.volumeM3 || 0), 0), 0).toFixed(4)} <span className="text-sm font-medium text-emerald-600/70 ml-1">m³</span>
+                       </span>
+                    </div>
+                    <div className="bg-background rounded-lg p-3 border shadow-sm flex flex-col justify-center">
+                       <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">Total Input Kayu Bulat</span>
+                       <span className="text-2xl font-black text-blue-600">
+                         {partai?.trimmedLogs?.reduce((acc: number, t: any) => acc + (t.netVolume || 0), 0).toFixed(4)} <span className="text-sm font-medium text-blue-600/70 ml-1">m³</span>
+                       </span>
+                    </div>
+                    <div className="bg-background rounded-lg p-3 border shadow-sm flex flex-col justify-center">
+                       <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-1">Overall Rendement</span>
+                       <span className="text-2xl font-black text-amber-600">
+                         {(() => {
+                            const totalOut = partai?.sawnOutputs?.reduce((acc: number, out: any) => acc + (out.items || []).reduce((sum: number, item: any) => sum + (item.volumeM3 || 0), 0), 0) || 0;
+                            const totalIn = partai?.trimmedLogs?.reduce((acc: number, t: any) => acc + (t.netVolume || 0), 0) || 0;
+                            if (totalIn === 0) return '0%';
+                            return ((totalOut / totalIn) * 100).toFixed(1) + '%';
+                         })()}
+                       </span>
+                    </div>
+                 </div>
+                 
+                 <div className="mt-6">
+                    <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wide mb-3">Detail Ukuran yang Dihasilkan</h4>
+                    <div className="bg-background rounded-lg border shadow-sm overflow-hidden">
+                       <Table>
+                          <TableHeader className="bg-muted/50">
+                             <TableRow>
+                                <TableHead className="py-2">Spesies</TableHead>
+                                <TableHead className="py-2">Grade</TableHead>
+                                <TableHead className="py-2">Ukuran (T x L x P)</TableHead>
+                                <TableHead className="text-right py-2">Pcs</TableHead>
+                                <TableHead className="text-right py-2">Volume (m³)</TableHead>
+                             </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                             {(() => {
+                                const grouped: any = {};
+                                (partai?.sawnOutputs || []).forEach((out: any) => {
+                                   (out.items || []).forEach((item: any) => {
+                                      const key = `${item.species}-${item.grade}-${item.thickness}x${item.width}x${item.length}`;
+                                      if (!grouped[key]) {
+                                         grouped[key] = {
+                                            species: item.species,
+                                            grade: item.grade || '-',
+                                            dimensions: `${item.thickness}x${item.width}x${item.length}`,
+                                            pcs: 0,
+                                            vol: 0
+                                         };
+                                      }
+                                      grouped[key].pcs += (item.quantityPcs || 0);
+                                      grouped[key].vol += (item.volumeM3 || 0);
+                                   });
+                                });
+                                const arr = Object.values(grouped).sort((a: any, b: any) => b.vol - a.vol);
+                                if (arr.length === 0) {
+                                   return <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-4">Belum ada hasil produksi</TableCell></TableRow>;
+                                }
+                                return arr.map((g: any, i: number) => (
+                                   <TableRow key={i}>
+                                      <TableCell className="py-2 font-medium">{g.species}</TableCell>
+                                      <TableCell className="py-2"><Badge variant="outline">{g.grade}</Badge></TableCell>
+                                      <TableCell className="py-2">{g.dimensions}</TableCell>
+                                      <TableCell className="text-right py-2 font-semibold">{g.pcs.toLocaleString()}</TableCell>
+                                      <TableCell className="text-right py-2 font-bold text-emerald-600">{g.vol.toFixed(4)}</TableCell>
+                                   </TableRow>
+                                ));
+                             })()}
+                          </TableBody>
+                       </Table>
+                    </div>
+                 </div>
+              </CardContent>
+            </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
               <div>
