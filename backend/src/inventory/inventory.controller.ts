@@ -2,6 +2,7 @@ import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
 import {
   Controller,
+  Query,
   Get,
   Post,
   Body,
