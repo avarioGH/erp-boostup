@@ -14,7 +14,7 @@ import { Loader2, Plus, X, ArrowLeft } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 
-  const calculateLogVolume = (length, d1, d2) => {
+  const calculateLogVolume = (length: number, d1: number, d2: number) => {
     if (!length || !d1 || !d2) return 0;
     const avg = (d1 + d2) / 2;
     const rnd = Math.floor(avg);
