@@ -1,3 +1,4 @@
+import { PrismaService } from './prisma/prisma.service';
 import { OnModuleInit } from '@nestjs/common';
 import { TimberSalesModule } from './sales/timber-sales.module';
 import { FixController } from './fix.controller';
@@ -104,7 +105,7 @@ import { SalesReturnModule } from './sales/sales-return/sales-return.module';
   providers: [AppService],
 })
 export class AppModule implements OnModuleInit {
-  constructor(private prisma: import('./prisma/prisma.service').PrismaService) {}
+  constructor(private prisma: PrismaService) {}
   async onModuleInit() {
     try {
       const warehouses = await this.prisma.warehouse.findMany({});
