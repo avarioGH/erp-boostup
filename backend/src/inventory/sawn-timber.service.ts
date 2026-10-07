@@ -370,7 +370,7 @@ export class SawnTimberService {
       locationId,
       locationCodePrefix,
     } = params;
-    const where: any = { partaiId: null };
+    const where: any = {};
     if (search) {
       where.timberVariant = { sku: { contains: search, mode: 'insensitive' } };
     }
