@@ -3,6 +3,8 @@ import {
   Get,
   Post,
   Patch,
+  Put,
+  Delete,
   Body,
   Param,
   Query,
@@ -53,6 +55,18 @@ export class SawnTimberController {
   async listStock(@Query() query: any) {
     return this.sawnTimberService.listStock(query);
   }
+  @Put('output/:id')
+  @Permissions('write_inventory')
+  async updateOutput(@Param('id') id: string, @Body() data: any) {
+    return this.sawnTimberService.updateOutput(id, data);
+  }
+
+  @Delete('output/:id')
+  @Permissions('write_inventory')
+  async deleteOutput(@Param('id') id: string) {
+    return this.sawnTimberService.deleteOutput(id);
+  }
+
   @Patch('output/:id/items/:itemId/grade')
   @Permissions('write_inventory')
   async updateItemGrade(

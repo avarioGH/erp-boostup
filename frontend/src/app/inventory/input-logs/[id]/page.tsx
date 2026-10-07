@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Loader2, ArrowLeft, ArrowRight, Box, CheckCircle2, Factory, Calendar, Package, Plus, Trash, Check, X, AlertCircle } from "lucide-react"
+import { Loader2, ArrowLeft, ArrowRight, Box, CheckCircle2, Factory, Calendar, Package, Plus, Trash, Check, Edit, X, AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
@@ -27,6 +27,14 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
   const [tallyLines, setTallyLines] = useState([{ t: "", l: "", p: "", pcs: "" }])
   const [tallyDate, setTallyDate] = useState(new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0])
   const [savingTally, setSavingTally] = useState(false)
+
+  // Edit states
+  const [editTallyOpen, setEditTallyOpen] = useState(false)
+  const [editTallyId, setEditTallyId] = useState("")
+  const [editTallyDate, setEditTallyDate] = useState("")
+  const [editTallyStatus, setEditTallyStatus] = useState("")
+  const [editTallyLines, setEditTallyLines] = useState<{t:string, l:string, p:string, pcs:string}[]>([])
+  const [deletingId, setDeletingId] = useState("")
   
   // Status Update State
   const [updatingStatus, setUpdatingStatus] = useState(false)
@@ -53,6 +61,75 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
       toast({ title: "Gagal Merubah Status", description: err?.response?.data?.message || err.message, variant: "destructive" })
     } finally {
       setUpdatingStatus(false)
+    }
+  }
+
+  const handleDeleteTally = async (tallyId: string, status: string) => {
+    if (!confirm("Hapus tally ini? Jika sudah POSTED, stok akan direverse (dibatalkan).")) return;
+    setDeletingId(tallyId);
+    try {
+      if (status === "POSTED") {
+        await TimberAPI.cancelSawnOutput(tallyId);
+      }
+      await TimberAPI.deleteSawnOutput(tallyId);
+      toast({ title: "Berhasil", description: "Tally berhasil dihapus." });
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Gagal", description: e.response?.data?.message || "Gagal menghapus tally.", variant: "destructive" });
+    } finally {
+      setDeletingId("");
+    }
+  }
+
+  const openEditDialog = (o: any) => {
+    setEditTallyId(o.id);
+    setEditTallyStatus(o.status);
+    setEditTallyDate(o.outputDate ? new Date(o.outputDate).toISOString().substring(0, 10) : new Date().toISOString().substring(0, 10));
+    setEditTallyLines(o.items.map((i: any) => ({
+      t: (i.thicknessMm / 10).toString(),
+      l: (i.widthMm / 10).toString(),
+      p: (i.lengthMm / 10).toString(),
+      pcs: i.quantityPcs.toString()
+    })));
+    setEditTallyOpen(true);
+  }
+
+  const handleSaveEdit = async () => {
+    try {
+      const validLines = editTallyLines.filter(line => Number(line.t) > 0 && Number(line.l) > 0 && Number(line.p) > 0 && Number(line.pcs) > 0)
+      if (validLines.length === 0) {
+        toast({ title: "Input Tidak Valid", description: "Mohon isi setidaknya satu baris dimensi dengan benar.", variant: "destructive" })
+        return
+      }
+
+      setSavingTally(true)
+      
+      if (editTallyStatus === "POSTED") {
+        await TimberAPI.cancelSawnOutput(editTallyId);
+      }
+
+      const payload = {
+        outputDate: editTallyDate,
+        items: validLines.map(line => ({
+          timberVariantId: undefined, 
+          thickness: parseFloat(line.t) * 10,
+          width: parseFloat(line.l) * 10,
+          length: parseFloat(line.p) * 10,
+          quantityPcs: parseInt(line.pcs),
+          grade: "A"
+        }))
+      }
+
+      await TimberAPI.updateSawnOutput(editTallyId, payload);
+      await api.post('/inventory/sawn-timber/output/' + editTallyId + '/post');
+
+      toast({ title: "Berhasil", description: "Tally berhasil diperbarui." })
+      setEditTallyOpen(false)
+      loadData()
+    } catch (err: any) {
+      toast({ title: "Gagal", description: err.response?.data?.message || err.message, variant: "destructive" })
+    } finally {
+      setSavingTally(false)
     }
   }
 

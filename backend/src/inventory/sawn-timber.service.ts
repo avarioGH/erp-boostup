@@ -391,6 +391,80 @@ export class SawnTimberService {
     ]);
     return { items, total, skip: Number(skip), take: Number(take) };
   }
+  async updateOutput(id: string, data: any) {
+    return this.prisma.$transaction(async (tx) => {
+      const output = await tx.sawnTimberOutput.findUnique({ 
+        where: { id }, 
+        include: { items: true, inputLog: true } 
+      });
+      if (!output) throw new NotFoundException('Output not found');
+      if (output.status !== 'DRAFT') throw new BadRequestException('Can only edit DRAFT outputs. Please cancel first.');
+
+      const location = await tx.warehouse.findUnique({ where: { id: output.locationId } });
+      const updateData: any = {};
+      if (data.outputDate) updateData.outputDate = new Date(data.outputDate);
+      if (data.date) updateData.date = new Date(data.date);
+      if (data.shift) updateData.shift = data.shift;
+      if (data.notes) updateData.notes = data.notes;
+
+      if (data.items && Array.isArray(data.items)) {
+        await tx.sawnTimberOutputItem.deleteMany({ where: { outputId: id } });
+        
+        let totalPcs = 0;
+        let totalM3 = 0;
+
+        for (const item of data.items) {
+          const variant = await this.getOrCreateTimberVariant(
+            location?.company_id || '',
+            output.inputLog?.species || 'Unknown',
+            item.grade || 'PENDING',
+            Number(item.thickness),
+            Number(item.width),
+            Number(item.length),
+            undefined, undefined
+          );
+          const volumeM3 = variant.volumePerPiece * item.quantityPcs;
+          totalPcs += item.quantityPcs;
+          totalM3 += volumeM3;
+
+          await tx.sawnTimberOutputItem.create({
+            data: {
+              outputId: id,
+              timberVariantId: variant.id,
+              grade: variant.grade,
+              quantityPcs: item.quantityPcs,
+              thicknessMm: Number(item.thickness),
+              widthMm: Number(item.width),
+              lengthMm: Number(item.length),
+              volumeM3: volumeM3,
+            }
+          });
+        }
+        updateData.totalQty = totalPcs;
+        updateData.totalVolume = totalM3;
+      }
+
+      const result = await tx.sawnTimberOutput.update({
+        where: { id },
+        data: updateData,
+        include: { items: true }
+      });
+      return result;
+    });
+  }
+
+  async deleteOutput(id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const output = await tx.sawnTimberOutput.findUnique({ where: { id } });
+      if (!output) throw new NotFoundException('Output not found');
+      if (output.status === 'POSTED') throw new BadRequestException('Cannot delete POSTED outputs. Cancel it first.');
+      
+      await tx.sawnTimberOutputItem.deleteMany({ where: { outputId: id } });
+      await tx.sawnTimberOutput.delete({ where: { id } });
+      return { success: true };
+    });
+  }
+
   async updateItemGrade(
     outputId: string,
     itemId: string,
