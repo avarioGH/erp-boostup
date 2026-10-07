@@ -251,7 +251,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                 <DialogTrigger>
                   <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-emerald-600 text-primary-foreground shadow hover:bg-emerald-700 h-8 rounded-md px-3" style={data.status === "DONE" ? {opacity: 0.5, pointerEvents: "none"} : {}}><Plus className="w-4 h-4" /> Tally Hari Ini</div>
                 </DialogTrigger>
-                <DialogContent className="max-w-3xl">
+                <DialogContent className="max-w-4xl">
                   <DialogHeader>
                     <DialogTitle>Input Tally Harian</DialogTitle>
                     <DialogDescription>Masukkan hasil produksi gergajian. Sistem otomatis menghitung M&sup3; (T &times; L &times; P &times; PCS &divide; 1.000.000).</DialogDescription>
@@ -266,11 +266,11 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                       <Table>
                         <TableHeader className="bg-muted">
                           <TableRow>
-                            <TableHead>T (cm)</TableHead>
-                            <TableHead>L (cm)</TableHead>
-                            <TableHead>P (cm)</TableHead>
-                            <TableHead>PCS</TableHead>
-                            <TableHead>M&sup3; (Auto)</TableHead>
+                            <TableHead className="min-w-[80px]">T (cm)</TableHead>
+                              <TableHead className="min-w-[80px]">L (cm)</TableHead>
+                              <TableHead className="min-w-[90px]">P (cm)</TableHead>
+                              <TableHead className="min-w-[80px]">PCS</TableHead>
+                              <TableHead className="min-w-[100px]">M&sup3; (Auto)</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                           </TableRow>
                         </TableHeader>
