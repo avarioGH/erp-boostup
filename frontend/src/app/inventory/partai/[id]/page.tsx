@@ -795,7 +795,7 @@ const [partai, setPartai] = useState<any>(null);
             <CardContent className="pt-0">
               <div className="flex items-center space-x-4 mb-4 bg-muted/30 p-3 rounded-lg border">
                 <div className="text-sm font-medium">{selectedOutputItems.length} item terpilih</div>
-                <Select value={selectedGradeId} onValueChange={setSelectedGradeId}>
+                <Select value={selectedGradeId} onValueChange={(val) => setSelectedGradeId(val || "")}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue placeholder="Pilih Grade" />
                   </SelectTrigger>
