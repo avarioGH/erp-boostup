@@ -5,9 +5,9 @@ import { PrismaService } from './prisma/prisma.service';
 export class FixController {
   @Get('partai-force-fix')
   async partaiForceFix() {
-    const t = await this.prisma.trimmedLog.findUnique({where: {trimNumber: '201A'}});
-    let items = [];
-    let logs = [];
+    const t = await this.prisma.trimmedLog.findFirst({where: {trimNumber: '201A'}});
+    let items: any[] = [];
+    let logs: any[] = [];
     if (t) {
         items = await this.prisma.inputLogItem.findMany({where: {trimmedLogId: t.id}});
         logs = await this.prisma.inputLog.findMany({where: {id: {in: items.map(i => i.inputLogId)}}});
