@@ -129,14 +129,10 @@ export class PartaiService {
             items: {
               include: { trimmedLog: true, rawLog: true },
             },
-            sawnOutputs: {
-              include: { items: true },
-            },
+            sawnOutputs: { include: { items: { include: { timberVariant: true } } } },
           },
         },
-        sawnOutputs: {
-          include: { items: true },
-        },
+        sawnOutputs: { include: { items: { include: { timberVariant: true } } } },
       },
     });
 
