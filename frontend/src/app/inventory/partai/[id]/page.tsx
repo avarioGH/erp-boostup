@@ -62,6 +62,41 @@ const [partai, setPartai] = useState<any>(null);
     setSelectedOutputItems([]);
     fetchPartai();
   };
+
+  const [isPostingOutputs, setIsPostingOutputs] = useState(false);
+  const handlePostOutputs = async () => {
+    const draftOutputs = (partai?.sawnOutputs || []).filter((o: any) => o.status === 'DRAFT');
+    const outputsToPost = selectedOutputItems.length > 0
+      ? Array.from(new Set(selectedOutputItems.map(i => i.outputId))).filter(oid => {
+          const out = (partai?.sawnOutputs || []).find((o: any) => o.id === oid);
+          return out?.status === 'DRAFT';
+        })
+      : draftOutputs.map((o: any) => o.id);
+
+    if (outputsToPost.length === 0) {
+      toast({ title: "Info", description: "Tidak ada output berstatus DRAFT untuk di-posting ke stok." });
+      return;
+    }
+
+    setIsPostingOutputs(true);
+    let success = 0;
+    for (const outputId of outputsToPost) {
+      try {
+        await api.post(`/inventory/sawn-timber/output/${outputId}/post`);
+        success++;
+      } catch (err: any) {
+        console.error(err);
+        const msg = err?.response?.data?.error?.message || err?.response?.data?.message || 'Gagal posting output';
+        toast({ title: 'Gagal', description: msg, variant: 'destructive' });
+      }
+    }
+    setIsPostingOutputs(false);
+    if (success > 0) {
+      toast({ title: "Berhasil", description: `${success} output berhasil di-posting ke Stok!` });
+    }
+    setSelectedOutputItems([]);
+    fetchPartai();
+  };
   
   const toggleSelectOutputItem = (id: string, outputId: string) => {
     const exists = selectedOutputItems.find(x => x.id === id);
@@ -729,6 +764,14 @@ const [partai, setPartai] = useState<any>(null);
                   disabled={selectedOutputItems.length === 0 || !selectedGradeId || isGrading}
                 >
                   {isGrading ? "Memproses..." : "Update Grade"}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handlePostOutputs} 
+                  disabled={isPostingOutputs || (partai?.sawnOutputs || []).filter((o: any) => o.status === 'DRAFT').length === 0}
+                  className="ml-auto text-emerald-600 border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/30"
+                >
+                  {isPostingOutputs ? "Memposting..." : "Post Output ke Stok"}
                 </Button>
               </div>
               <Table>

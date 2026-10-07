@@ -133,30 +133,82 @@ export class ReportService {
     startDate?: Date,
     endDate?: Date,
   ) {
-    const stock = await this.prisma.timberStock.findFirst({
-      where: { timberVariantId: variantId, locationId },
+    // 1. Resolve variant
+    let variant = await this.prisma.timberVariant.findUnique({
+      where: { id: variantId },
+      include: { product: true },
+    }).catch(() => null);
+
+    if (!variant) {
+      variant = await this.prisma.timberVariant.findFirst({
+        where: { OR: [{ id: variantId }, { sku: variantId }, { productId: variantId }] },
+        include: { product: true },
+      }).catch(() => null);
+    }
+
+    // 2. Resolve warehouse / location
+    let location = await this.prisma.warehouse.findUnique({
+      where: { id: locationId },
+    }).catch(() => null);
+
+    if (!location && locationId && locationId !== 'undefined' && locationId !== 'all') {
+      location = await this.prisma.warehouse.findFirst({
+        where: { OR: [{ id: locationId }, { code: locationId }, { name: locationId }] },
+      }).catch(() => null);
+    }
+
+    const actualVariantId = variant?.id || variantId;
+    const actualLocationId = location?.id || locationId;
+
+    // 3. Find stocks
+    const stockWhere: any = {};
+    if (actualVariantId && actualVariantId !== 'undefined') {
+      stockWhere.timberVariantId = actualVariantId;
+    }
+    if (actualLocationId && actualLocationId !== 'undefined' && actualLocationId !== 'all') {
+      stockWhere.locationId = actualLocationId;
+    }
+
+    const stocks = await this.prisma.timberStock.findMany({
+      where: stockWhere,
       include: {
         location: true,
         timberVariant: { include: { product: true } },
       },
     });
 
-    const whereMovement: any = {
-      timberStock: {
-        locationId,
-        timberVariantId: variantId,
-      },
-    };
+    const currentPcs = stocks.reduce((sum, s) => sum + (s.currentPcs || 0), 0);
+    const currentVolumeM3 = stocks.reduce((sum, s) => sum + (s.currentVolumeM3 || 0), 0);
+    const primaryStock = stocks[0];
+
+    if (!variant && primaryStock?.timberVariant) {
+      variant = primaryStock.timberVariant;
+    }
+    if (!location && primaryStock?.location) {
+      location = primaryStock.location;
+    }
+
+    // 4. Find movements directly by timberStockId
+    const stockIds = stocks.map((s) => s.id);
+    const whereMovement: any = {};
+    if (stockIds.length > 0) {
+      whereMovement.timberStockId = { in: stockIds };
+    } else if (actualVariantId && actualVariantId !== 'undefined') {
+      whereMovement.timberStock = { timberVariantId: actualVariantId };
+    }
+
     if (startDate || endDate) {
       whereMovement.date = {};
       if (startDate) whereMovement.date.gte = startDate;
       if (endDate) whereMovement.date.lte = endDate;
     }
 
-    const movements = await this.prisma.timberStockMovement.findMany({
-      where: whereMovement,
-      orderBy: { date: 'asc' },
-    });
+    const movements = (stockIds.length > 0 || whereMovement.timberStock)
+      ? await this.prisma.timberStockMovement.findMany({
+          where: whereMovement,
+          orderBy: { date: 'asc' },
+        })
+      : [];
 
     let runningPcs = 0;
     let runningM3 = 0;
@@ -187,11 +239,11 @@ export class ReportService {
     });
 
     return {
-      stock: stock || {
-        currentPcs: 0,
-        currentVolumeM3: 0,
-        timberVariant: null,
-        location: null,
+      stock: {
+        currentPcs,
+        currentVolumeM3,
+        timberVariant: variant || null,
+        location: location || null,
       },
       card,
     };
