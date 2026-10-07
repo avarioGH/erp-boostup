@@ -1,6 +1,6 @@
 import {
   Controller,
-  Get,
+  Get, Query,
   Post,
   Body,
   UseGuards,
@@ -14,7 +14,7 @@ import { SalesCompletedEvent } from '../events/sales-completed.event';
 import { InventoryService } from '../inventory/inventory.service';
 
 @UseGuards(JwtAuthGuard)
-@Controller('orders')
+@Controller('sales/orders')
 export class OrderController {
   constructor(
     private readonly prisma: PrismaService,
@@ -23,9 +23,13 @@ export class OrderController {
   ) {}
 
   @Get()
-  async getOrders(@Request() req) {
+  async getOrders(@Request() req, @Query() query: any) {
+    const whereParams: any = { company_id: req.user.company_id };
+    if (query.warehouse_id) {
+      whereParams.warehouse_id = query.warehouse_id;
+    }
     return this.prisma.salesOrder.findMany({
-      where: { company_id: req.user.company_id },
+      where: whereParams,
       include: {
         customer: true,
         items: {

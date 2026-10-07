@@ -6,7 +6,7 @@ import {
   Post,
   Body,
   Param,
-  Put,
+  Put, Delete,
   Query,
   UseGuards,
   Request,
@@ -123,6 +123,12 @@ export class HrController {
   }
 
   @Permissions('hr.update')
+  @Permissions('hr.delete')
+  @Delete('employees/:id')
+  async deleteEmployee(@Request() req: any, @Param('id') id: string) {
+    return this.hrService.deleteEmployee(req.user.company_id, id);
+  }
+
   @Put('employees/:id')
   async updateEmployee(
     @Request() req: any,

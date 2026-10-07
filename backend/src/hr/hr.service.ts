@@ -352,6 +352,10 @@ export class HrService {
     });
   }
 
+  async deleteEmployee(companyId: string, id: string) {
+    return this.prisma.employee.delete({ where: { id, company_id: companyId } });
+  }
+
   async updateEmployee(companyId: string, id: string, data: any) {
     return this.prisma.employee.update({
       where: { id, company_id: companyId },

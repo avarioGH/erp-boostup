@@ -1,20 +1,17 @@
 const fs = require('fs');
-const path = 'backend/src/analytics/analytics.service.ts';
-let content = fs.readFileSync(path, 'utf8');
 
-// Replace the fake calculations in getDashboardKPIs
-content = content.replace(
-    /\/\/ For Finance, filter by warehouse if possible[\s\S]*?const cashFlow = monthlyRevenue \* 0\.8; \/\/ Approximation since Finance doesn't have warehouse_id/,
-    `const financeWhere: any = {
-      company_id: companyId,
-      status: { in: ['Approved', 'COMPLETED', 'POSTED'] },
-      transaction_date: { gte: firstDayOfMonth },
-    };
-    if (warehouseId && warehouseId !== 'all') {
-      financeWhere.warehouse_id = warehouseId;
-    }
+let code = fs.readFileSync('backend/src/analytics/analytics.service.ts', 'utf8');
 
-    const financeTransactions = await this.prisma.financeTransaction.findMany({
+// Inject FinanceService
+if (!code.includes('FinanceService')) {
+  code = code.replace("import { PrismaService } from '../prisma/prisma.service';", "import { PrismaService } from '../prisma/prisma.service';\nimport { FinanceService } from '../finance/finance.service';");
+  code = code.replace("constructor(private prisma: PrismaService) {}", "constructor(private prisma: PrismaService, private finance: FinanceService) {}");
+}
+
+// Replace currentRevenue and netProfit
+code = code.replace(
+  /const financeTransactions = await this\.prisma\.financeTransaction\.findMany\(\{[\s\S]*?let realCashIn = 0;[\s\S]*?const cashFlow = realCashIn;/m,
+  `const financeTransactions = await this.prisma.financeTransaction.findMany({
       where: financeWhere
     });
 
@@ -28,82 +25,34 @@ content = content.replace(
       }
     });
 
-    const netProfit = realCashIn - realCashOut;
-    const cashFlow = realCashIn;`
+    const cashFlow = realCashIn;
+    
+    // Get canonical Accrual P&L from GL
+    const pnl = await this.finance.getProfitLossReport(companyId, firstDayOfMonth, new Date());
+    const netProfit = pnl.netProfit;
+    const currentRevenue = pnl.netRevenue;`
 );
 
-// Replace the whereBase.OR logic that is too complex and wrong
-content = content.replace(
-    /if \(warehouseId && warehouseId !== 'all'\) \{\s*whereBase\.OR = \[\s*\{ pos_shift: \{ warehouse_id: warehouseId \} \},\s*\{ customer: \{ warehouse_id: warehouseId \} \},\s*\{\s*items: \{\s*some: \{\s*product: \{\s*warehouse_stocks: \{ some: \{ warehouse_id: warehouseId \} \},\s*\},\s*\},\s*\},\s*\},\s*\];\s*\}/,
-    `if (warehouseId && warehouseId !== 'all') {
-      whereBase.warehouse_id = warehouseId;
-    }`
+// Remove the old revenue calculation logic that was using SalesOrder total_amount so there's no conflict. Wait, the old code was:
+code = code.replace(
+  /const todayOrders = await this\.prisma\.salesOrder\.aggregate\(\{[\s\S]*?const monthlyRevenue = monthlyOrders\._sum\.total_amount \|\| 0;/m,
+  `// Current Revenue is now derived from canonical GL P&L`
 );
 
-// Replace fake chart data profit
-content = content.replace(
-    /profit: \(dayAgg\._sum\.total_amount \|\| 0\) \* 0\.2,/g,
-    `profit: 0,`
-);
 
-content = content.replace(
-    /const chartDataArray: any\[\] = \[\];\s*for \(let i = 6; i >= 0; i--\) \{[\s\S]*?chartDataArray\.push\(\{[\s\S]*?\}\);\s*\}/,
-    `const chartDataArray: any[] = [];
-    
-    // Fetch last 7 days finance transactions
-    const d7 = new Date();
-    d7.setDate(d7.getDate() - 6);
-    d7.setHours(0, 0, 0, 0);
-    
-    const weekFinanceWhere: any = {
-      company_id: companyId,
-      status: { in: ['Approved', 'COMPLETED', 'POSTED'] },
-      transaction_date: { gte: d7 },
-    };
-    if (warehouseId && warehouseId !== 'all') weekFinanceWhere.warehouse_id = warehouseId;
-    
-    const weekFinanceTransactions = await this.prisma.financeTransaction.findMany({
-      where: weekFinanceWhere
-    });
-    
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      d.setHours(0, 0, 0, 0);
-      const nextD = new Date(d);
-      nextD.setDate(d.getDate() + 1);
-
-      const dayAgg = await this.prisma.salesOrder.aggregate({
-        where: { ...whereBase, order_date: { gte: d, lt: nextD } },
-        _sum: { total_amount: true },
-      });
-      
-      let dayCashIn = 0;
-      let dayCashOut = 0;
-      weekFinanceTransactions.forEach(ft => {
-        if (ft.transaction_date >= d && ft.transaction_date < nextD) {
-           if (['Cash In', 'Income'].includes(ft.transaction_type)) dayCashIn += ft.total_amount;
-           else if (['Cash Out', 'Expense', 'Payment'].includes(ft.transaction_type)) dayCashOut += ft.total_amount;
-        }
-      });
-
+// Replace chartData revenue and profit to use canonical GL as well!
+// Wait, chart data runs a loop for the last 7 days. If I call getProfitLossReport 7 times, it's 7 DB queries. That's fine.
+code = code.replace(
+  /chartDataArray\.push\(\{\n\s*date: d\.toLocaleDateString[\s\S]*?cashOut: dayCashOut\n\s*\}\);/g,
+  `const dayPnl = await this.finance.getProfitLossReport(companyId, d, nextD);
       chartDataArray.push({
         date: d.toLocaleDateString('id-ID', { month: 'short', day: 'numeric' }),
-        revenue: dayAgg._sum.total_amount || 0,
-        profit: dayCashIn - dayCashOut,
+        revenue: dayPnl.netRevenue,
+        profit: dayPnl.netProfit,
         cashIn: dayCashIn,
         cashOut: dayCashOut
-      });
-    }`
+      });`
 );
 
-// Update chart format
-content = content.replace(
-    /chartData: \{ sales: chartDataArray\.map\(d => \(\{ date: d\.date, sales: d\.revenue, profit: d\.profit \}\)\), cashflow: chartDataArray\.map\(d => \(\{ name: d\.date, income: d\.revenue, expense: d\.profit \}\)\) \},/,
-    `chartData: { 
-        sales: chartDataArray.map(d => ({ date: d.date, sales: d.revenue, profit: d.profit })), 
-        cashflow: chartDataArray.map(d => ({ name: d.date, income: d.cashIn, expense: d.cashOut })) 
-      },`
-);
-
-fs.writeFileSync(path, content);
+fs.writeFileSync('backend/src/analytics/analytics.service.ts', code);
+console.log('patched analytics.service.ts');

@@ -224,6 +224,7 @@ export const HrAPI: any = {
   getEmployees: async () => (await api.get('/hr/employees')).data,
   createEmployee: async (data: any) => (await api.post('/hr/employees', data)).data,
   updateEmployee: async (id: string, data: any) => (await api.put('/hr/employees/' + id, data)).data,
+  deleteEmployee: async (id: string) => (await api.delete('/hr/employees/' + id)).data,
   registerBiometric: async (id: string, data: any) => (await api.post('/hr/employees/' + id + '/biometric', data)).data,
   getLeaves: async () => (await api.get('/hr/leaves')).data,
   createLeave: async (data: any) => (await api.post('/hr/leaves', data)).data,

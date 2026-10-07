@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
 import { Button } from"@/components/ui/button"
 import { Input } from"@/components/ui/input"
 import { Label } from"@/components/ui/label"
-import { Plus, Fingerprint, CheckCircle2, ScanFace, Loader2 } from"lucide-react"
+import { Plus, Fingerprint, CheckCircle2, ScanFace, Loader2, Edit, Trash } from"lucide-react"
 import {
  Dialog,
  DialogContent,
@@ -32,6 +32,25 @@ export default function EmployeesPage() {
  const [bioModalOpen, setBioModalOpen] = useState(false)
  const [selectedEmp, setSelectedEmp] = useState<any>(null)
  const [bioStatus, setBioStatus] = useState<'idle' | 'scanning_right' | 'scanning_left' | 'done'>('idle')
+
+ 
+ const deleteEmp = async (id: string) => {
+   if(confirm("Yakin hapus karyawan ini?")) {
+     await HrAPI.deleteEmployee(id);
+     fetchData();
+   }
+ }
+ 
+ const editEmp = (emp: any) => {
+   setFormData({
+     firstName: emp.first_name,
+     lastName: emp.last_name,
+     email: emp.email || "",
+     position: emp.position || "",
+     basicSalary: emp.basic_salary || ""
+   });
+   setShowForm(true);
+ }
 
  const fetchData = async () => {
  try {

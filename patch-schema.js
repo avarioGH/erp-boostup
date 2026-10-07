@@ -1,30 +1,47 @@
 const fs = require('fs');
+const path = 'backend/prisma/schema.prisma';
+let code = fs.readFileSync(path, 'utf8');
 
-let schema = fs.readFileSync('backend/prisma/schema.prisma', 'utf8');
+// Add default_shift_id to Employee
+code = code.replace(
+  /bank_name      String\?/,
+  'bank_name      String?\n  default_shift_id String? @db.ObjectId'
+);
 
-// 1. Rename Supplier to Partner (or delete Supplier and rename Customer)
-// Let's delete the entire Supplier model block.
-const supplierRegex = /model Supplier \{[\s\S]*?\}\n/g;
-schema = schema.replace(supplierRegex, '');
+// Add shift relation to Employee
+code = code.replace(
+  /LeaveRequest   LeaveRequest\[\]/,
+  'LeaveRequest   LeaveRequest[]\n  shift          Shift? @relation(fields: [default_shift_id], references: [id], onDelete: NoAction, onUpdate: NoAction)'
+);
 
-// 2. Rename Customer to Partner
-schema = schema.replace(/model Customer \{/g, 'model Partner {');
+// Add Shift model at the end
+code += `
 
-// 3. Rename references to Supplier/Customer in other models
-schema = schema.replace(/supplier\s+Supplier\?/g, 'supplier Partner?');
-schema = schema.replace(/supplier\s+Supplier/g, 'supplier Partner');
-schema = schema.replace(/customer\s+Customer\?/g, 'customer Partner?');
-schema = schema.replace(/customer\s+Customer/g, 'customer Partner');
+model Shift {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  company_id           String?   @db.ObjectId
+  company              Company?  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  code                 String
+  name                 String
+  start_time           String    // e.g. "08:00"
+  end_time             String    // e.g. "17:00"
+  grace_period_minutes Int       @default(15) // Minutes before marked LATE
+  status               String    @default("ACTIVE")
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
 
-// 4. Update the Partner model to include Roles and mapped to customers
-schema = schema.replace(/model Partner \{/, `model Partner {\n  roles String[] @default(["CUSTOMER"])`);
+  employees            Employee[]
+  attendances          Attendance[]
 
-// 5. Update foreign keys (customer_id -> partner_id, supplier_id -> partner_id) in the schema?
-// WAIT, renaming fields in Prisma means the database column name changes unless we use @map.
-// If I use @map("customer_id") then the DB is untouched.
-// Let's just keep the field names as `customer_id` and `supplier_id` in other tables for now, 
-// but point BOTH of them to the Partner model! 
-// This avoids rewriting thousands of lines of API responses if we just point them to Partner!
+  @@unique([company_id, code])
+}
+`;
 
-fs.writeFileSync('backend/prisma/schema.prisma', schema);
-console.log('Schema updated.');
+// Add new fields to Attendance
+code = code.replace(
+  /notes       String\?/,
+  'notes            String?\n  shift_id         String? @db.ObjectId\n  shift            Shift?  @relation(fields: [shift_id], references: [id], onDelete: NoAction, onUpdate: NoAction)\n  late_minutes     Int     @default(0)\n  overtime_minutes Int     @default(0)'
+);
+
+fs.writeFileSync(path, code);
+console.log('patched schema');

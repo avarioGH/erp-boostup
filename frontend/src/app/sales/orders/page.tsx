@@ -11,7 +11,10 @@ import { useRouter } from 'next/navigation'
 
 export default function SalesOrdersPage() {
  const router = useRouter()
+
  const [data, setData] = useState<any[]>([])
+ const [activeWarehouse, setActiveWarehouse] = useState<any>(null)
+
  const [loading, setLoading] = useState(true)
  const [searchTerm, setSearchTerm] = useState("")
  const [selectedDoc, setSelectedDoc] = useState<any | null>(null)
@@ -21,12 +24,32 @@ export default function SalesOrdersPage() {
  const [docDetails, setDocDetails] = useState<any | null>(null)
 
  useEffect(() => {
- fetchOrders()
- }, [])
+   const handleWhChange = () => {
+     const stored = localStorage.getItem('active_warehouse');
+     if (stored) {
+       const parsed = JSON.parse(stored);
+       setActiveWarehouse(parsed.id === 'ALL' ? null : parsed);
+     } else {
+       setActiveWarehouse(null);
+     }
+   };
+   handleWhChange();
+   window.addEventListener('warehouse_changed', handleWhChange);
+   return () => window.removeEventListener('warehouse_changed', handleWhChange);
+ }, []);
+
+ useEffect(() => {
+   fetchOrders();
+ }, [activeWarehouse]);
 
  const fetchOrders = async () => {
- try {
- const res = await B2BApi.getOrders({ page: 1, limit: 100 })
+   try {
+     setLoading(true);
+     const params: any = { page: 1, limit: 100 };
+     if (activeWarehouse && activeWarehouse.id && activeWarehouse.id !== 'ALL') {
+       params.warehouse_id = activeWarehouse.id;
+     }
+     const res = await B2BApi.getOrders(params)
  setData(res?.data || [])
  } catch (error) {
  console.error(error)

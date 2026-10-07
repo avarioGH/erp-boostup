@@ -1,11 +1,16 @@
+require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-async function main() {
-  const sales = await prisma.salesOrder.findMany({
-    orderBy: { created_at: 'desc' },
-    take: 5,
-    include: { items: true }
+
+async function run() {
+  const items = await prisma.journalEntryItem.findMany({
+    include: { account: { include: { account_type: true } }, journal_entry: true }
   });
-  console.log('Recent Sales Orders:', JSON.stringify(sales, null, 2));
+  console.log(items.map(i => ({
+    acc: i.account.name,
+    type: i.account.account_type.name,
+    deb: i.debit,
+    cred: i.credit
+  })));
 }
-main().catch(console.error).finally(() => prisma.$disconnect());
+run().finally(() => prisma.$disconnect());
