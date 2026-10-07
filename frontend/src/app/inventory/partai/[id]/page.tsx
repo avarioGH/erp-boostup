@@ -654,33 +654,47 @@ const [partai, setPartai] = useState<any>(null);
             <CardContent className="pt-0">
               <Table>
                 <TableHeader className="bg-muted/30">
-                  <TableRow>
-                    <TableHead>Tgl Produksi</TableHead>
-                    <TableHead>Source WIP</TableHead>
-                    <TableHead>Tebal</TableHead>
-                    <TableHead>Lebar</TableHead>
-                    <TableHead>Panjang</TableHead>
-                    <TableHead className="text-right">PCS</TableHead>
-                    <TableHead className="text-right">M&sup3;</TableHead>
-                  </TableRow>
+                  
+                    <TableRow>
+                      <TableHead>Tgl Produksi</TableHead>
+                      <TableHead>Bundle No</TableHead>
+                      <TableHead>Source WIP</TableHead>
+                      <TableHead>Tebal</TableHead>
+                      <TableHead>Lebar</TableHead>
+                      <TableHead>Panjang</TableHead>
+                      <TableHead className="text-right">PCS</TableHead>
+                      <TableHead className="text-right">M&sup3;</TableHead>
+                      <TableHead className="text-center">Grade</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                    </TableRow>
+
                 </TableHeader>
                 <TableBody>
-                  {(partai.sawnOutputs || []).flatMap((o: any) => (o.items || []).map((item: any) => ({ ...item, parentDate: o.outputDate, parentInputId: o.inputLogId }))).map((i: any) => {
+                  {(partai.sawnOutputs || []).flatMap((o: any) => (o.items || []).map((item: any) => ({ ...item, parentDate: o.outputDate, parentInputId: o.inputLogId, parentBundleNumber: o.bundleNumber, parentOutputId: o.id, parentStatus: o.status })))).map((i: any) => {
                     const wip = (partai.inputLogs || []).find((log: any) => log.id === i.parentInputId);
                     return (
-                      <TableRow key={i.id} className="hover:bg-muted/50 transition-colors">
-                        <TableCell>{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
-                        <TableCell className="font-medium text-primary"><Link href={`/inventory/input-logs/${i.parentInputId}`}>{wip?.inputNumber || "WIP"}</Link></TableCell>
-                        <TableCell>{i.thicknessMm / 10} cm</TableCell>
-                        <TableCell>{i.widthMm / 10} cm</TableCell>
-                        <TableCell>{i.lengthMm / 10} cm</TableCell>
-                        <TableCell className="text-right font-medium">{i.quantityPcs}</TableCell>
-                        <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400">{i.volumeM3.toFixed(4)}</TableCell>
-                      </TableRow>
+                      
+                        <TableRow key={i.id} className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/inventory/sawn-timber/output/${i.parentOutputId}`)}>
+                          <TableCell>{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                          <TableCell className="font-medium text-blue-600 dark:text-blue-400">{i.parentBundleNumber}</TableCell>
+                          <TableCell className="font-medium text-primary"><Link href={`/inventory/input-logs/${i.parentInputId}`} onClick={e => e.stopPropagation()}>{wip?.inputNumber || "WIP"}</Link></TableCell>
+                          <TableCell>{i.thicknessMm / 10} cm</TableCell>
+                          <TableCell>{i.widthMm / 10} cm</TableCell>
+                          <TableCell>{i.lengthMm / 10} cm</TableCell>
+                          <TableCell className="text-right font-medium">{i.quantityPcs}</TableCell>
+                          <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400">{i.volumeM3.toFixed(4)}</TableCell>
+                          <TableCell className="text-center">
+                            {i.grade === 'PENDING' ? <Badge variant="outline" className="text-amber-500 border-amber-500">PENDING</Badge> : <Badge className="bg-primary">{i.grade}</Badge>}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {i.parentStatus === 'POSTED' ? <Badge className="bg-emerald-500">POSTED</Badge> : <Badge variant="outline">DRAFT</Badge>}
+                          </TableCell>
+                        </TableRow>
+
                     );
                   })}
                   {(!partai.sawnOutputs || partai.sawnOutputs.length === 0 || partai.sawnOutputs.flatMap((o: any) => o.items).length === 0) && (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Belum ada output produksi.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Belum ada output produksi.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
