@@ -1,3 +1,4 @@
+import { OnModuleInit } from '@nestjs/common';
 import { TimberSalesModule } from './sales/timber-sales.module';
 import { FixController } from './fix.controller';
 import { MasterDataModule } from './inventory/master-data/master-data.module';
@@ -102,4 +103,19 @@ import { SalesReturnModule } from './sales/sales-return/sales-return.module';
   controllers: [AppController, FixController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements OnModuleInit {
+  constructor(private prisma: import('./prisma/prisma.service').PrismaService) {}
+  async onModuleInit() {
+    try {
+      const warehouses = await this.prisma.warehouse.findMany({});
+      const gudangA = warehouses.find(w => w.name.toLowerCase().includes('a'));
+      if (gudangA) {
+        await this.prisma.salesOrder.updateMany({
+          where: { warehouse_id: { isSet: false } },
+          data: { warehouse_id: gudangA.id }
+        });
+        console.log('Migrated old SalesOrders to Gudang A');
+      }
+    } catch(e) {}
+  }
+}

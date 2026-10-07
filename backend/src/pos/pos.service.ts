@@ -40,6 +40,11 @@ export class PosService {
     let totalPosCogs = 0;
 
     const _posResult = await this.prisma.$transaction(async (tx) => {
+        let resolvedWarehouseId = warehouseId;
+        if (!resolvedWarehouseId) {
+          const defaultWh = await tx.warehouse.findFirst({ where: { company_id: companyId } });
+          resolvedWarehouseId = defaultWh?.id;
+        }
       // 0. Idempotency Check
       if (idempotency_key) {
         const existing = await tx.salesOrder.findFirst({
@@ -87,9 +92,10 @@ export class PosService {
       else if (paidAmount > 0) initialPaymentStatus = 'PARTIALLY_PAID';
 
       const salesOrder = await tx.salesOrder.create({
-        data: {
-          company_id: companyId,
-          order_number: soNo,
+          data: {
+            company_id: companyId,
+            warehouse_id: resolvedWarehouseId,
+            order_number: soNo,
           ecommerce_session_id: idempotency_key,
           customer_id: customerId,
           order_date: new Date(),
@@ -113,14 +119,7 @@ export class PosService {
           },
         });
 
-        // Resolve warehouseId — use provided or fall back to first warehouse for company
-        let resolvedWarehouseId = warehouseId;
-        if (!resolvedWarehouseId) {
-          const defaultWh = await tx.warehouse.findFirst({
-            where: { company_id: companyId },
-          });
-          resolvedWarehouseId = defaultWh?.id;
-        }
+        
 
         if (resolvedWarehouseId) {
           const issueRes = await this.inventoryService.issueStock(tx as any, {
