@@ -422,17 +422,16 @@ export default function ProductInventory() {
  
  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/20 p-4 rounded-xl border border-border/60">
  <div className="space-y-2">
- <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Harga Beli Dasar <span className="text-red-500">*</span></Label>
- <div className="relative">
- <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">Rp</span>
- <Input 
- type="number" 
- placeholder="0"
- value={formData.purchasePrice} 
- onChange={(e) => setFormData({...formData, purchasePrice: e.target.value})} 
- className="pl-9 font-mono"
- required 
- />
+ <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Harga Beli Dasar</Label>
+   <div className="relative">
+   <span className="absolute left-3 top-2.5 text-sm text-muted-foreground font-medium">Rp</span>
+   <Input 
+   type="number" 
+   placeholder="0"
+   value={formData.purchasePrice} 
+   onChange={(e) => setFormData({...formData, purchasePrice: e.target.value})} 
+   className="pl-9 font-mono"
+   />
  </div>
  </div>
  <div className="space-y-2">
