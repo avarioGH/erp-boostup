@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import React, { useEffect, useState } from "react";
 import { api, PartaiAPI, TimberAPI, PurchaseAPI, MasterDataAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
@@ -782,6 +782,192 @@ const [partai, setPartai] = useState<any>(null);
             </CardContent>
           </Card>
         </TabsContent>
+
+          {/* 6. REKAPAN */}
+          <TabsContent value="summary">
+            {(() => {
+              // Raw Logs (DUKB)
+              const rawLogs = partai.rawLogs || [];
+              const totalRawLogPcs = rawLogs.length;
+              const totalRawLogVolM3 = rawLogs.reduce((s: number, r: any) => {
+                const d = (r.averageDiameter || r.diameter || 0) / 100;
+                const l = r.length || 0;
+                return s + (Math.PI / 4) * d * d * l;
+              }, 0);
+
+              // Trimming
+              const trimmedLogs = partai.trimmedLogs || [];
+              const totalTrimmedPcs = trimmedLogs.length;
+              const totalTrimmedVolM3 = trimmedLogs.reduce((s: number, t: any) => {
+                const d = (t.averageDiameter || t.diameter || 0) / 100;
+                const l = t.length || 0;
+                return s + (Math.PI / 4) * d * d * l;
+              }, 0);
+
+              // Input WIP
+              const inputLogs = partai.inputLogs || [];
+              const totalInputPcs = inputLogs.length;
+
+              // Output Sawn Timber
+              const allOutputItems = (partai.sawnOutputs || []).flatMap((o: any) => o.items || []);
+              const totalOutputPcs = allOutputItems.reduce((s: number, i: any) => s + (i.quantityPcs || 0), 0);
+              const totalOutputM3 = allOutputItems.reduce((s: number, i: any) => s + (i.volumeM3 || 0), 0);
+              const postedItems = (partai.sawnOutputs || []).filter((o: any) => o.status === 'POSTED').flatMap((o: any) => o.items || []);
+              const postedPcs = postedItems.reduce((s: number, i: any) => s + (i.quantityPcs || 0), 0);
+              const postedM3 = postedItems.reduce((s: number, i: any) => s + (i.volumeM3 || 0), 0);
+
+              // Rendemen
+              const rendemen = totalRawLogVolM3 > 0 ? (totalOutputM3 / totalRawLogVolM3) * 100 : 0;
+
+              // Grade breakdown
+              const gradeBreakdown: Record<string, { pcs: number; m3: number }> = {};
+              allOutputItems.forEach((i: any) => {
+                const gradeKey = i.grade || 'PENDING';
+                const gradeName = grades.find((g: any) => g.code === gradeKey)?.name || gradeKey;
+                if (!gradeBreakdown[gradeName]) gradeBreakdown[gradeName] = { pcs: 0, m3: 0 };
+                gradeBreakdown[gradeName].pcs += i.quantityPcs || 0;
+                gradeBreakdown[gradeName].m3 += i.volumeM3 || 0;
+              });
+
+              return (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card className="border-blue-500/30 bg-blue-50/30 dark:bg-blue-900/10">
+                      <CardContent className="pt-5 pb-4">
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Total Raw Log</p>
+                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalRawLogPcs} pcs</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">{totalRawLogVolM3.toFixed(3)} m³</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-amber-500/30 bg-amber-50/30 dark:bg-amber-900/10">
+                      <CardContent className="pt-5 pb-4">
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Input Mesin (WIP)</p>
+                        <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{totalInputPcs} pcs</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">dari {totalTrimmedPcs} log trimming</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-900/10">
+                      <CardContent className="pt-5 pb-4">
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Output Kayu Gergajian</p>
+                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{totalOutputPcs} pcs</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">{totalOutputM3.toFixed(4)} m³</p>
+                      </CardContent>
+                    </Card>
+                    <Card className={rendemen >= 50 ? "border-purple-500/30 bg-purple-50/30 dark:bg-purple-900/10" : "border-red-500/30 bg-red-50/30 dark:bg-red-900/10"}>
+                      <CardContent className="pt-5 pb-4">
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Rendemen</p>
+                        <p className={`text-2xl font-bold ${rendemen >= 50 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600'}`}>{rendemen.toFixed(1)}%</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">Output / Raw Log M³</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card>
+                    <CardHeader className="border-b pb-4">
+                      <CardTitle>Alur Proses Partai</CardTitle>
+                      <CardDescription>Ringkasan volume & jumlah di setiap tahap produksi</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Tahap</TableHead>
+                            <TableHead className="text-right">Jumlah (Pcs)</TableHead>
+                            <TableHead className="text-right">Volume (M³)</TableHead>
+                            <TableHead className="text-right">Susut</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell className="font-medium">2. DUKB (Raw Log Diterima)</TableCell>
+                            <TableCell className="text-right">{totalRawLogPcs}</TableCell>
+                            <TableCell className="text-right">{totalRawLogVolM3.toFixed(3)}</TableCell>
+                            <TableCell className="text-right text-muted-foreground">-</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">3. Trimming</TableCell>
+                            <TableCell className="text-right">{totalTrimmedPcs}</TableCell>
+                            <TableCell className="text-right">{totalTrimmedVolM3.toFixed(3)}</TableCell>
+                            <TableCell className="text-right">
+                              {totalRawLogVolM3 > 0 && totalTrimmedVolM3 > 0 ? (
+                                <span className="text-amber-600 font-medium">-{(totalRawLogVolM3 - totalTrimmedVolM3).toFixed(3)} m³</span>
+                              ) : '-'}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">4. Input Mesin (WIP)</TableCell>
+                            <TableCell className="text-right">{totalInputPcs}</TableCell>
+                            <TableCell className="text-right text-muted-foreground">-</TableCell>
+                            <TableCell className="text-right text-muted-foreground">-</TableCell>
+                          </TableRow>
+                          <TableRow className="bg-emerald-50/30 dark:bg-emerald-900/10">
+                            <TableCell className="font-bold text-emerald-700 dark:text-emerald-400">5. Output Kayu Gergajian (Total)</TableCell>
+                            <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400">{totalOutputPcs}</TableCell>
+                            <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400">{totalOutputM3.toFixed(4)}</TableCell>
+                            <TableCell className="text-right">
+                              {totalRawLogVolM3 > 0 ? (
+                                <span className={`font-bold ${rendemen >= 50 ? 'text-emerald-600' : 'text-red-600'}`}>Rendemen {rendemen.toFixed(1)}%</span>
+                              ) : '-'}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow className="bg-blue-50/30 dark:bg-blue-900/10">
+                            <TableCell className="font-medium text-blue-700 dark:text-blue-400 pl-8">↳ Sudah POSTED ke Stok</TableCell>
+                            <TableCell className="text-right text-blue-700 dark:text-blue-400">{postedPcs}</TableCell>
+                            <TableCell className="text-right text-blue-700 dark:text-blue-400">{postedM3.toFixed(4)}</TableCell>
+                            <TableCell className="text-right text-muted-foreground">-</TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+
+                  {Object.keys(gradeBreakdown).length > 0 && (
+                    <Card>
+                      <CardHeader className="border-b pb-4">
+                        <CardTitle>Output per Grade / Kualitas</CardTitle>
+                        <CardDescription>Distribusi hasil gergajian berdasarkan grade</CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Grade</TableHead>
+                              <TableHead className="text-right">Pcs</TableHead>
+                              <TableHead className="text-right">Volume (M³)</TableHead>
+                              <TableHead className="text-right">% dari Total</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {Object.entries(gradeBreakdown).sort((a, b) => b[1].m3 - a[1].m3).map(([gradeName, val]) => (
+                              <TableRow key={gradeName}>
+                                <TableCell>
+                                  {gradeName === 'PENDING'
+                                    ? <Badge variant="outline" className="text-amber-500 border-amber-500">BELUM DIISI</Badge>
+                                    : <Badge className="bg-primary">{gradeName}</Badge>}
+                                </TableCell>
+                                <TableCell className="text-right">{val.pcs}</TableCell>
+                                <TableCell className="text-right font-bold">{val.m3.toFixed(4)}</TableCell>
+                                <TableCell className="text-right text-muted-foreground">
+                                  {totalOutputM3 > 0 ? ((val.m3 / totalOutputM3) * 100).toFixed(1) + '%' : '-'}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {totalRawLogPcs === 0 && totalOutputPcs === 0 && (
+                    <div className="text-center py-16 text-muted-foreground">
+                      <p className="text-lg font-medium">Belum ada data untuk ditampilkan.</p>
+                      <p className="text-sm mt-1">Lengkapi data di tab DUKB, Trimming, dan Output terlebih dahulu.</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </TabsContent>
       </Tabs>
     </div>
   );
