@@ -21,7 +21,7 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
 
   const loadData = () => {
     TimberAPI.getSawnOutput(id).then(setData).catch(console.error).finally(() => setLoading(false))
-      api.get('/inventory/master-data/timber-grade').then(res => setGrades(res.data)).catch(console.error)
+      MasterDataAPI.getGrades().then(setGrades).catch(console.error)
   }
   useEffect(() => { loadData() }, [id])
 
