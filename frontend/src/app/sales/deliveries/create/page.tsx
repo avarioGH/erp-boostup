@@ -24,11 +24,10 @@ export default function CreateDeliveryPage() {
   }, [])
 
   const fetchOrders = async () => {
-    try {
-      let initialSoId = '';
-      if (typeof window !== 'undefined') {
-        initialSoId = new URLSearchParams(window.location.search).get('so_id') || '';
-      }
+    let initialSoId = '';
+    if (typeof window !== 'undefined') {
+      initialSoId = new URLSearchParams(window.location.search).get('so_id') || '';
+    }
     try {
       const res = await B2BApi.getOrders({ limit: 100 })
       // Only show orders that are confirmed or partially delivered
