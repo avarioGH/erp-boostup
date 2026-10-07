@@ -1,6 +1,6 @@
 "use client"
-import { useState } from "react"
-import { exportShipment } from "@/lib/api"
+import { useState, useEffect } from "react"
+import { exportShipment, api, B2BApi, InventoryAPI } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -21,7 +21,43 @@ export default function CreateExportPage() {
     exportDate: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]
   })
 
+
+  // DB Data
+  const [dbCustomers, setDbCustomers] = useState<any[]>([])
+  const [dbProducts, setDbProducts] = useState<any[]>([])
+  const [dbOrders, setDbOrders] = useState<any[]>([])
+
+  useEffect(() => {
+    Promise.all([
+      api.get('/customers?limit=100').then(res => setDbCustomers(res.data.data || res.data)).catch(()=> {}),
+      InventoryAPI.getProducts().then(res => setDbProducts(res.data || res)).catch(()=> {}),
+      B2BApi.getOrders({ limit: 100 }).then(res => setDbOrders((res?.data || []).filter((o:any) => o.order_number?.startsWith('SO')))).catch(()=> {})
+    ])
+  }, [])
+
+  const handleSelectOrder = async (gIdx: number, orderId: string) => {
+    if (!orderId) return;
+    try {
+      const order = await B2BApi.getOrder(orderId);
+      const newGroups = [...groups];
+      newGroups[gIdx].groupName = order.customer?.name || "Customer";
+      
+      const newItems = (order.items || []).map((i: any) => ({
+        productName: i.product?.name || "Item",
+        qtyKg: i.qty.toString(),
+        qtyMc: "",
+        qtySak: ""
+      }));
+      
+      if (newItems.length > 0) {
+        newGroups[gIdx].items = newItems;
+      }
+      setGroups(newGroups);
+    } catch(e) {}
+  }
+
   // Grouped state
+  
   const [groups, setGroups] = useState([
     { groupName: "", items: [{ productName: "", qtyKg: "", qtyMc: "", qtySak: "" }] }
   ])
@@ -110,7 +146,14 @@ export default function CreateExportPage() {
         <h1 className="text-2xl font-bold">Input Daftar Barang Eksport</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      
+        <datalist id="customers-list">
+          {dbCustomers.map(c => <option key={c.id} value={c.name} />)}
+        </datalist>
+        <datalist id="products-list">
+          {dbProducts.map(p => <option key={p.id} value={p.name} />)}
+        </datalist>
+        <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader><CardTitle>Informasi Kontainer</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -159,7 +202,7 @@ export default function CreateExportPage() {
                   </div>
                   <div className="col-span-5 space-y-1">
                     <Label className="text-xs">Nama Barang</Label>
-                    <Input placeholder="" value={item.productName} onChange={e => updateItem(gIdx, iIdx, 'productName', e.target.value)} required />
+                    <Input placeholder="Ketik/Pilih Barang" list="products-list" value={item.productName} onChange={e => updateItem(gIdx, iIdx, 'productName', e.target.value)} required />
                   </div>
                   <div className="col-span-2 space-y-1">
                     <Label className="text-xs">Jumlah KG</Label>
