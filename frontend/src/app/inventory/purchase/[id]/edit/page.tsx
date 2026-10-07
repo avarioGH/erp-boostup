@@ -13,6 +13,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Plus, X, ArrowLeft } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+
+  const calculateLogVolume = (length, d1, d2) => {
+    if (!length || !d1 || !d2) return 0;
+    const avg = (d1 + d2) / 2;
+    const rnd = Math.floor(avg);
+    return (rnd * rnd * 0.7854 / 10000) * length;
+  };
+
 export default function EditPurchasePage() {
   const params = useParams();
   const isEdit = true;
@@ -359,7 +367,8 @@ export default function EditPurchasePage() {
                         <Input type="number" step="0.1" value={item.purchaseLength} onChange={(e) => {
                           const newLogItems = [...form.logItems];
                           newLogItems[index].purchaseLength = parseFloat(e.target.value) || 0;
-                          setForm({ ...form, logItems: newLogItems });
+                            newLogItems[index].purchaseVolume = Number(calculateLogVolume(newLogItems[index].purchaseLength, newLogItems[index].purchaseDiameter1, newLogItems[index].purchaseDiameter2).toFixed(4));
+                            setForm({ ...form, logItems: newLogItems });
                         }} />
                       </div>
                       <div className="space-y-2">
@@ -367,7 +376,8 @@ export default function EditPurchasePage() {
                         <Input type="number" step="0.1" value={item.purchaseDiameter1} onChange={(e) => {
                           const newLogItems = [...form.logItems];
                           newLogItems[index].purchaseDiameter1 = parseFloat(e.target.value) || 0;
-                          setForm({ ...form, logItems: newLogItems });
+                            newLogItems[index].purchaseVolume = Number(calculateLogVolume(newLogItems[index].purchaseLength, newLogItems[index].purchaseDiameter1, newLogItems[index].purchaseDiameter2).toFixed(4));
+                            setForm({ ...form, logItems: newLogItems });
                         }} />
                       </div>
                       <div className="space-y-2">
@@ -375,7 +385,8 @@ export default function EditPurchasePage() {
                         <Input type="number" step="0.1" value={item.purchaseDiameter2} onChange={(e) => {
                           const newLogItems = [...form.logItems];
                           newLogItems[index].purchaseDiameter2 = parseFloat(e.target.value) || 0;
-                          setForm({ ...form, logItems: newLogItems });
+                            newLogItems[index].purchaseVolume = Number(calculateLogVolume(newLogItems[index].purchaseLength, newLogItems[index].purchaseDiameter1, newLogItems[index].purchaseDiameter2).toFixed(4));
+                            setForm({ ...form, logItems: newLogItems });
                         }} />
                       </div>
                       <div className="space-y-2">
