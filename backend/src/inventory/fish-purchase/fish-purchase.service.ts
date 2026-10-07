@@ -6,7 +6,7 @@ export class FishPurchaseService {
   constructor(private prisma: PrismaService) {}
 
   async createAtomicPurchase(data: any, reqUser: any) {
-    let { partner_id, warehouse_id, date, items, paid_amount, payment_method } = data;
+    let { partner_id, warehouse_id, date, items, paid_amount, payment_method, payment_terms } = data;
     items = items.map((i: any) => ({
       ...i,
       qty: Number(i.qty || 0),
@@ -134,12 +134,18 @@ export class FishPurchaseService {
           customer_id: partner_id, // we mapped it to Customer model
           invoice_number: `INV-AP-${orderNumber}`,
           invoice_date: new Date(date),
-          due_date: new Date(date),
+          due_date: (() => {
+            const d = new Date(date);
+            if (payment_terms) {
+              d.setDate(d.getDate() + parseInt(payment_terms));
+            }
+            return d;
+          })(),
           status: paid_amount >= total_amount ? 'PAID' : (paid_amount > 0 ? 'PARTIALLY PAID' : 'POSTED'),
           subtotal: total_amount,
           tax: 0,
           total: total_amount,
-          remaining_amount: total_amount,
+          remaining_amount: Math.max(0, total_amount - paid_amount),
         }
       });
 

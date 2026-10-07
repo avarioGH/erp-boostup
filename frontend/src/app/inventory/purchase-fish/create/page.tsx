@@ -25,7 +25,8 @@ export default function PurchaseFishForm() {
     warehouse_id: "",
     date: new Date().toISOString().slice(0, 10),
     paid_amount: 0,
-    payment_method: "TUNAI"
+    payment_method: "TUNAI",
+    payment_terms: 0
   })
 
   const [items, setItems] = useState<any[]>([{ product_id: "", qty: 1, unit_price: 0 }])
@@ -250,8 +251,8 @@ export default function PurchaseFishForm() {
 
         <Card className="mb-6 border-blue-200 bg-blue-50/30 dark:border-blue-900/50 dark:bg-blue-900/10">
           <CardHeader>
-            <CardTitle className="text-lg text-blue-700 dark:text-blue-400">Pembayaran Langsung (Opsional)</CardTitle>
-            <CardDescription>Isi jika Kakak langsung membayar / mencicil utang ke Nelayan saat ini.</CardDescription>
+            <CardTitle className="text-lg text-blue-700 dark:text-blue-400">Pembayaran & Termin (Utang)</CardTitle>
+            <CardDescription>Jika belum dibayar lunas, sisa tagihan akan masuk ke utang. Atur termin jatuh tempo di bawah.</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -272,6 +273,25 @@ export default function PurchaseFishForm() {
                 <option value="TRANSFER">Transfer Bank</option>
               </select>
             </div>
+            <div className="space-y-2">
+              <Label>Termin / Jatuh Tempo (Hari)</Label>
+              <Select 
+                value={formData.payment_terms.toString()} 
+                onValueChange={val => setFormData({...formData, payment_terms: parseInt(val)})}
+              >
+                <SelectTrigger className="bg-white dark:bg-background">
+                  <SelectValue placeholder="Pilih Termin" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Cash / 0 Hari</SelectItem>
+                  <SelectItem value="7">7 Hari (Net 7)</SelectItem>
+                  <SelectItem value="14">14 Hari (Net 14)</SelectItem>
+                  <SelectItem value="30">30 Hari (Net 30)</SelectItem>
+                  <SelectItem value="60">60 Hari (Net 60)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
           </CardContent>
         </Card>
 
