@@ -72,11 +72,17 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
 
       setSavingTally(true)
       
-      const payload = {
+      let whId = data?.locationId;
+        try {
+           const stored = localStorage.getItem('active_warehouse');
+           if (stored) whId = JSON.parse(stored).id;
+        } catch(e) {}
+        
+        const payload = {
         inputLogId: id,
         partaiId: data.partaiId,
         outputDate: tallyDate,
-        locationId: data.locationId,
+        locationId: whId,
         items: validLines.map(line => ({
           thickness: parseFloat(line.t) * 10,
           width: parseFloat(line.l) * 10,
