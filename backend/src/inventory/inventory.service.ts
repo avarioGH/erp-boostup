@@ -227,7 +227,7 @@ export class InventoryService {
 
   async getTransactions(companyId: string) {
     return this.prisma.inventoryTransaction.findMany({
-      where: { company_id: companyId, status: true },
+      where: { company_id: companyId },
         include: {
         warehouse: true,
         target_warehouse: true,
