@@ -887,7 +887,7 @@ const [partai, setPartai] = useState<any>(null);
                       <CardContent className="pt-5 pb-4">
                         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Total Raw Log</p>
                         <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalRawLogPcs} pcs</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">{totalRawLogVolM3.toFixed(3)} m³</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">{Number(totalRawLogVolM3.toFixed(3))} m³</p>
                       </CardContent>
                     </Card>
                     <Card className="border-amber-500/30 bg-amber-50/30 dark:bg-amber-900/10">
@@ -901,7 +901,7 @@ const [partai, setPartai] = useState<any>(null);
                       <CardContent className="pt-5 pb-4">
                         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Output Kayu Gergajian</p>
                         <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{totalOutputPcs} pcs</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">{totalOutputM3.toFixed(4)} m³</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">{Number(totalOutputM3.toFixed(4))} m³</p>
                       </CardContent>
                     </Card>
                     <Card className={rendemen >= 50 ? "border-purple-500/30 bg-purple-50/30 dark:bg-purple-900/10" : "border-red-500/30 bg-red-50/30 dark:bg-red-900/10"}>
@@ -932,16 +932,16 @@ const [partai, setPartai] = useState<any>(null);
                           <TableRow>
                             <TableCell className="font-medium">2. DUKB (Raw Log Diterima)</TableCell>
                             <TableCell className="text-right">{totalRawLogPcs}</TableCell>
-                            <TableCell className="text-right">{totalRawLogVolM3.toFixed(3)}</TableCell>
+                            <TableCell className="text-right">{Number(totalRawLogVolM3.toFixed(3))}</TableCell>
                             <TableCell className="text-right text-muted-foreground">-</TableCell>
                           </TableRow>
                           <TableRow>
                             <TableCell className="font-medium">3. Trimming</TableCell>
                             <TableCell className="text-right">{totalTrimmedPcs}</TableCell>
-                            <TableCell className="text-right">{totalTrimmedVolM3.toFixed(3)}</TableCell>
+                            <TableCell className="text-right">{Number(totalTrimmedVolM3.toFixed(3))}</TableCell>
                             <TableCell className="text-right">
                               {totalRawLogVolM3 > 0 && totalTrimmedVolM3 > 0 ? (
-                                <span className="text-amber-600 font-medium">-{(totalRawLogVolM3 - totalTrimmedVolM3).toFixed(3)} m³</span>
+                                <span className="text-amber-600 font-medium">-{Number((totalRawLogVolM3 - totalTrimmedVolM3).toFixed(3))} m³</span>
                               ) : '-'}
                             </TableCell>
                           </TableRow>
@@ -954,7 +954,7 @@ const [partai, setPartai] = useState<any>(null);
                           <TableRow className="bg-emerald-50/30 dark:bg-emerald-900/10">
                             <TableCell className="font-bold text-emerald-700 dark:text-emerald-400">5. Output Kayu Gergajian (Total)</TableCell>
                             <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400">{totalOutputPcs}</TableCell>
-                            <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400">{totalOutputM3.toFixed(4)}</TableCell>
+                            <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400">{Number(totalOutputM3.toFixed(4))}</TableCell>
                             <TableCell className="text-right">
                               {totalRawLogVolM3 > 0 ? (
                                 <span className={`font-bold ${rendemen >= 50 ? 'text-emerald-600' : 'text-red-600'}`}>Rendemen {rendemen.toFixed(1)}%</span>
@@ -964,7 +964,7 @@ const [partai, setPartai] = useState<any>(null);
                           <TableRow className="bg-blue-50/30 dark:bg-blue-900/10">
                             <TableCell className="font-medium text-blue-700 dark:text-blue-400 pl-8">↳ Sudah POSTED ke Stok</TableCell>
                             <TableCell className="text-right text-blue-700 dark:text-blue-400">{postedPcs}</TableCell>
-                            <TableCell className="text-right text-blue-700 dark:text-blue-400">{postedM3.toFixed(4)}</TableCell>
+                            <TableCell className="text-right text-blue-700 dark:text-blue-400">{Number(postedM3.toFixed(4))}</TableCell>
                             <TableCell className="text-right text-muted-foreground">-</TableCell>
                           </TableRow>
                         </TableBody>
@@ -997,7 +997,7 @@ const [partai, setPartai] = useState<any>(null);
                                     : <Badge className="bg-primary">{gradeName}</Badge>}
                                 </TableCell>
                                 <TableCell className="text-right">{val.pcs}</TableCell>
-                                <TableCell className="text-right font-bold">{val.m3.toFixed(4)}</TableCell>
+                                <TableCell className="text-right font-bold">{Number(val.m3.toFixed(4))}</TableCell>
                                 <TableCell className="text-right text-muted-foreground">
                                   {totalOutputM3 > 0 ? ((val.m3 / totalOutputM3) * 100).toFixed(1) + '%' : '-'}
                                 </TableCell>

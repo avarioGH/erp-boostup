@@ -78,7 +78,8 @@ export default function SawnTimberOutputPage() {
                   <tr>
                     <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Bundle No</th>
                     <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Date</th>
-                    <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Source Input</th>
+                    <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Partai</th>
+                      <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Source Input</th>
                     <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Product</th>
                     <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Qty (PCS)</th>
                     <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Total M³</th>
@@ -94,10 +95,11 @@ export default function SawnTimberOutputPage() {
                       <tr key={out.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30 cursor-pointer transition-colors" onClick={() => router.push(`/inventory/sawn-timber/output/${out.id}`)}>
                         <td className="py-3 px-6 font-semibold text-foreground/90">{out.bundleNumber}</td>
                         <td className="py-3 px-6 text-[13px] text-muted-foreground">{new Date(out.outputDate || Date.now()).toLocaleDateString("id-ID")}</td>
-                        <td className="py-3 px-6 font-medium text-muted-foreground">{out.inputLog?.inputNumber || "-"}</td>
+                        <td className="py-3 px-6 font-medium text-emerald-600 dark:text-emerald-400">{out.partai?.name || "-"}</td>
+                          <td className="py-3 px-6 font-medium text-muted-foreground">{out.inputLog?.inputNumber || "-"}</td>
                         <td className="py-3 px-6 text-[13px] font-semibold text-foreground/80">{variantSku}</td>
                         <td className="py-3 px-6 text-right font-bold text-muted-foreground">{totalPcs}</td>
-                        <td className="py-3 px-6 text-right font-bold text-primary">{totalM3.toFixed(4)}</td>
+                        <td className="py-3 px-6 text-right font-bold text-primary">{Number(totalM3.toFixed(4))}</td>
                         <td className="py-3 px-6 text-center">{getStatusBadge(out.status)}</td>
                       </tr>
                     );
