@@ -54,6 +54,11 @@ export class TimberSalesController {
     return this.service.createDelivery(id, dto);
   }
 
+  @Get('reports/realization')
+  getAllRealization() {
+    return this.service.getAllOrdersRealization();
+  }
+
   @Get('orders/:id/realization')
   getRealization(@Param('id') id: string) {
     return this.service.getOrderRealization(id);

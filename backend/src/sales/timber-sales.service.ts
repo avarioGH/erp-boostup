@@ -317,4 +317,52 @@ export class TimberSalesService {
       })),
     };
   }
+
+  async getAllOrdersRealization() {
+    const orders = await this.prisma.timberSalesOrder.findMany({
+      where: {
+        status: { in: ['CONFIRMED', 'PARTIALLY_FULFILLED', 'FULFILLED', 'DRAFT'] },
+      },
+      include: {
+        customer: true,
+        items: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const reportRows: any[] = [];
+    orders.forEach((order) => {
+      order.items.forEach((item: any) => {
+        const orderQty = item.orderQty || 0;
+        const realizedQty = item.realizedQty || 0;
+        const orderM3 = Number(item.orderM3 || 0);
+        const realizedM3 = Number(item.realizedM3 || 0);
+        const remainingQty = orderQty - realizedQty;
+        const remainingM3 = orderM3 - realizedM3;
+        const pct = orderQty > 0 ? (realizedQty / orderQty) * 100 : 0;
+
+        reportRows.push({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerName: order.customer?.name || '-',
+          orderDate: order.orderDate,
+          status: order.status,
+          species: item.species || 'MERANTI',
+          grade: item.grade || 'EXPORT',
+          thicknessMm: item.thicknessMm,
+          widthMm: item.widthMm,
+          lengthMm: item.lengthMm,
+          orderQty,
+          orderM3: parseFloat(orderM3.toFixed(4)),
+          realizedQty,
+          realizedM3: parseFloat(realizedM3.toFixed(4)),
+          remainingQty,
+          remainingM3: parseFloat(remainingM3.toFixed(4)),
+          fulfillmentPct: parseFloat(pct.toFixed(1)),
+        });
+      });
+    });
+
+    return reportRows;
+  }
 }
