@@ -35,7 +35,8 @@ type MenuItem = {
 }
 
 const items: MenuItem[] = [
- { title: "Dashboard", url: "/", icon: LayoutDashboard, id: "generic-dashboard" },
+ { title: "Dashboard Utama", url: "/", icon: LayoutDashboard, id: "generic-dashboard" },
+   { title: "Dashboard Kayu", url: "/inventory/dashboard", icon: Factory, id: "dashboard" },
  
  { 
  title: "Pembelian & Inbound", 
