@@ -14,12 +14,15 @@ export class ShipmentService {
   ) {}
 
   async create(companyId: string, data: any) {
-    const {
+    let {
       shipmentNumber,
       shipmentDate,
       warehouseId,
       vehicleId,
       driverId,
+      fusoName,
+      policeNumber,
+      driverName,
       customerId,
       destinationName,
       destinationAddress,
@@ -27,6 +30,15 @@ export class ShipmentService {
       items,
       salesOrderId,
     } = data;
+
+    if (!shipmentNumber) {
+      shipmentNumber = `FUSO-${Date.now().toString().slice(-6)}`;
+    }
+
+    if (!warehouseId) {
+      const defWh = await this.prisma.warehouse.findFirst({ where: { company_id: companyId } });
+      if (defWh) warehouseId = defWh.id;
+    }
 
     const existing = await this.prisma.timberShipment.findUnique({
       where: { shipmentNumber },
@@ -88,10 +100,26 @@ export class ShipmentService {
     let totalPcs = 0;
     let totalVolumeM3 = 0;
 
-    for (const item of items) {
-      totalPcs += item.quantityPcs;
-      totalVolumeM3 += item.volumeM3;
-    }
+    const processedItems = (items || []).map((item: any) => {
+      let vol = Number(item.volumeM3) || 0;
+      if (!vol && item.thicknessMm && item.widthMm && item.lengthMm && item.quantityPcs) {
+        vol = (Number(item.quantityPcs) * Number(item.thicknessMm) * Number(item.widthMm) * Number(item.lengthMm)) / 1000000000;
+      }
+      totalPcs += Number(item.quantityPcs) || 0;
+      totalVolumeM3 += vol;
+      return {
+        timberVariantId: item.timberVariantId || undefined,
+        batch: item.batch || 'UNKNOWN',
+        species: item.species || null,
+        productCategory: item.productCategory || 'BALOK',
+        thicknessMm: item.thicknessMm ? Number(item.thicknessMm) : null,
+        widthMm: item.widthMm ? Number(item.widthMm) : null,
+        lengthMm: item.lengthMm ? Number(item.lengthMm) : null,
+        quantityPcs: Number(item.quantityPcs) || 0,
+        volumeM3: Number(vol.toFixed(4)),
+        salesOrderItemId: item.salesOrderItemId || undefined,
+      };
+    });
 
     const shipment = await this.prisma.timberShipment.create({
       data: {
@@ -99,28 +127,25 @@ export class ShipmentService {
         shipmentNumber,
         shipmentDate: shipmentDate ? new Date(shipmentDate) : undefined,
         warehouseId,
-        vehicleId,
-        driverId,
-        customerId,
+        vehicleId: vehicleId || undefined,
+        driverId: driverId || undefined,
+        fusoName,
+        policeNumber,
+        driverName,
+        customerId: customerId || undefined,
         destinationName,
         destinationAddress,
         notes,
         status: 'DRAFT',
         totalPcs,
-        totalVolumeM3,
-        salesOrderId,
+        totalVolumeM3: Number(totalVolumeM3.toFixed(4)),
+        salesOrderId: salesOrderId || undefined,
         items: {
-          create: items.map((item: any) => ({
-            timberVariantId: item.timberVariantId,
-            batch: item.batch || 'UNKNOWN',
-            quantityPcs: item.quantityPcs,
-            volumeM3: item.volumeM3,
-            salesOrderItemId: item.salesOrderItemId,
-          })),
+          create: processedItems,
         },
       },
       include: {
-        items: true,
+        items: { include: { timberVariant: true } },
       },
     });
 
@@ -222,17 +247,19 @@ export class ShipmentService {
           });
         }
 
-        await this.inventoryLedgerService.createMovement(
-          tx,
-          shipment.warehouseId,
-          item.timberVariantId,
-          'OUT',
-          'TIMBER_SHIPMENT',
-          shipment.id,
-          item.quantityPcs,
-          item.volumeM3,
-          item.batch,
-        );
+        if (item.timberVariantId) {
+          await this.inventoryLedgerService.createMovement(
+            tx,
+            shipment.warehouseId,
+            item.timberVariantId,
+            'OUT',
+            'TIMBER_SHIPMENT',
+            shipment.id,
+            item.quantityPcs,
+            item.volumeM3,
+            item.batch,
+          );
+        }
       }
 
       if (shipment.salesOrderId) {
@@ -262,17 +289,19 @@ export class ShipmentService {
       });
 
       for (const item of shipment.items) {
-        await this.inventoryLedgerService.createMovement(
-          tx,
-          shipment.warehouseId,
-          item.timberVariantId,
-          'IN',
-          'TIMBER_SHIPMENT_REVERSAL',
-          shipment.id,
-          item.quantityPcs,
-          item.volumeM3,
-          item.batch,
-        );
+        if (item.timberVariantId) {
+          await this.inventoryLedgerService.createMovement(
+            tx,
+            shipment.warehouseId,
+            item.timberVariantId,
+            'IN',
+            'TIMBER_SHIPMENT_REVERSAL',
+            shipment.id,
+            item.quantityPcs,
+            item.volumeM3,
+            item.batch,
+          );
+        }
 
         if (item.salesOrderItemId) {
           const orderItem = await tx.timberSalesOrderItem.findUnique({
@@ -354,5 +383,16 @@ export class ShipmentService {
     });
     if (!shipment) throw new NotFoundException('Timber shipment not found');
     return shipment;
+  }
+  async delete(id: string, companyId: string) {
+    const shipment = await this.prisma.timberShipment.findFirst({
+      where: { id, company_id: companyId },
+    });
+    if (!shipment) throw new NotFoundException('Timber shipment not found');
+    if (shipment.status === 'CONFIRMED') {
+      throw new BadRequestException('Cannot delete CONFIRMED shipment. Please cancel it first.');
+    }
+    await this.prisma.timberShipment.delete({ where: { id } });
+    return { success: true, message: 'Shipment deleted successfully' };
   }
 }

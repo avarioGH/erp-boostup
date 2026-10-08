@@ -353,6 +353,7 @@ export const ShipmentAPI: any = {
   createShipment: async (data: any) => (await api.post('/inventory/timber-shipment', data)).data,
   confirmShipment: async (id: string) => (await api.post('/inventory/timber-shipment/' + id + '/confirm')).data,
   cancelShipment: async (id: string) => (await api.post('/inventory/timber-shipment/' + id + '/cancel')).data,
+  deleteShipment: async (id: string) => (await api.delete('/inventory/timber-shipment/' + id)).data,
 };
 
 export const OpnameAPI: any = {

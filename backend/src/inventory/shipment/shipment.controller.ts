@@ -5,6 +5,7 @@ import {
   Param,
   Put,
   Get,
+  Delete,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -46,5 +47,11 @@ export class ShipmentController {
   @Permissions('inventory.read')
   findOne(@Param('id') id: string, @Request() req) {
     return this.shipmentService.findOne(id, req.user.companyId);
+  }
+
+  @Delete(':id')
+  @Permissions('inventory.create')
+  delete(@Param('id') id: string, @Request() req) {
+    return this.shipmentService.delete(id, req.user.companyId);
   }
 }

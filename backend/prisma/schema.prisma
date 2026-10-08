@@ -3511,6 +3511,11 @@ model TimberShipment {
   driverId String? @db.ObjectId
   driver   Driver? @relation(fields: [driverId], references: [id])
 
+  // Direct armada fields for external transport (Ex Kalteng Fuso / Truk)
+  fusoName     String?
+  policeNumber String?
+  driverName   String?
+
   customerId         String?   @db.ObjectId
   customer           Customer? @relation(fields: [customerId], references: [id])
   destinationName    String?
@@ -3536,10 +3541,17 @@ model TimberShipmentItem {
   timberShipmentId String         @db.ObjectId
   timberShipment   TimberShipment @relation(fields: [timberShipmentId], references: [id], onDelete: Cascade)
 
-  timberVariantId String        @db.ObjectId
-  timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
+  timberVariantId String?        @db.ObjectId
+  timberVariant   TimberVariant? @relation(fields: [timberVariantId], references: [id])
 
   batch String @default("UNKNOWN")
+
+  // Dimension & classification fields for direct tally muat
+  species         String?
+  productCategory String? @default("BALOK") // BALOK, RENG, AFKIR_BS, AIR_DRY, etc.
+  thicknessMm     Float?
+  widthMm         Float?
+  lengthMm        Float?
 
   quantityPcs      Int
   volumeM3         Float

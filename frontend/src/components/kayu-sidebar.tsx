@@ -80,6 +80,8 @@ const items: MenuItem[] = [
  subItems: [
  { title: "Penawaran (Quotation)", url: "/sales/quotations" },
  { title: "Sales Orders (SO)", url: "/sales/orders" },
+ { title: "Data Muat & Rekap Fuso", url: "/inventory/shipment" },
+ { title: "Monitoring Realisasi PO", url: "/sales/timber/reports/order-realization" },
  { title: "Surat Jalan (Pengiriman)", url: "/sales/deliveries" },
   { title: "Daftar Pelanggan", url: "/sales/customers" }
  ]
