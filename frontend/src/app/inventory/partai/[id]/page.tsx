@@ -778,7 +778,8 @@ const [partai, setPartai] = useState<any>(null);
                 <TableHeader className="bg-muted/30">
                   
                     <TableRow>
-                      <TableHead>Tgl Produksi</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
+                        <TableHead>Tgl Produksi</TableHead>
                       <TableHead>Bundle No</TableHead>
                       <TableHead>Source WIP</TableHead>
                       <TableHead>Tebal</TableHead>
@@ -812,7 +813,7 @@ const [partai, setPartai] = useState<any>(null);
                           <TableCell>{i.widthMm / 10} cm</TableCell>
                           <TableCell>{i.lengthMm / 10} cm</TableCell>
                           <TableCell className="text-right font-medium">{i.quantityPcs}</TableCell>
-                          <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400">{i.volumeM3.toFixed(4)}</TableCell>
+                          <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400">{Number(i.volumeM3.toFixed(4))}</TableCell>
                           <TableCell className="text-center">
                             {i.grade === 'PENDING' ? <Badge variant="outline" className="text-amber-500 border-amber-500">PENDING</Badge> : <Badge className="bg-primary">{grades.find(g => g.code === i.grade)?.name || i.grade}</Badge>}
                           </TableCell>
