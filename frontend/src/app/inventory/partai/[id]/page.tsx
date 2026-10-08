@@ -782,6 +782,7 @@ const [partai, setPartai] = useState<any>(null);
                         <TableHead>Tgl Produksi</TableHead>
                       <TableHead>Bundle No</TableHead>
                       <TableHead>Source WIP</TableHead>
+                      <TableHead>Kategori</TableHead>
                       <TableHead>Tebal</TableHead>
                       <TableHead>Lebar</TableHead>
                       <TableHead>Panjang</TableHead>
@@ -809,6 +810,21 @@ const [partai, setPartai] = useState<any>(null);
                             <TableCell>{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
                           <TableCell className="font-medium text-blue-600 dark:text-blue-400">{i.parentBundleNumber}</TableCell>
                           <TableCell className="font-medium text-primary"><Link href={`/inventory/input-logs/${i.parentInputId}`} onClick={e => e.stopPropagation()}>{wip?.inputNumber || "WIP"}</Link></TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={
+                              i.productType === 'RENG' ? 'border-amber-500 text-amber-600 bg-amber-50/50' :
+                              i.productType === 'AFKIR_BS' ? 'border-red-500 text-red-600 bg-red-50/50' :
+                              i.productType === 'AIR_DRY' ? 'border-sky-500 text-sky-600 bg-sky-50/50' :
+                              i.productType === 'FJL' ? 'border-purple-500 text-purple-600 bg-purple-50/50' :
+                              'border-emerald-500 text-emerald-600 bg-emerald-50/50'
+                            }>
+                              {i.productType === 'BALOK' ? 'Balok / Main' :
+                               i.productType === 'RENG' ? 'Reng / Papan' :
+                               i.productType === 'AFKIR_BS' ? 'BS / Afkir' :
+                               i.productType === 'AIR_DRY' ? 'Air Dry' :
+                               i.productType === 'FJL' ? 'FJL' : (i.productType || 'Balok / Main')}
+                            </Badge>
+                          </TableCell>
                           <TableCell>{i.thicknessMm / 10} cm</TableCell>
                           <TableCell>{i.widthMm / 10} cm</TableCell>
                           <TableCell>{i.lengthMm / 10} cm</TableCell>
@@ -826,7 +842,7 @@ const [partai, setPartai] = useState<any>(null);
                   });
                   })()}
                   {(!partai.sawnOutputs || partai.sawnOutputs.length === 0 || partai.sawnOutputs.flatMap((o: any) => o.items).length === 0) && (
-                    <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">Belum ada output produksi.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-8">Belum ada output produksi.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -869,6 +885,22 @@ const [partai, setPartai] = useState<any>(null);
 
               // Rendemen
               const rendemen = totalRawLogVolM3 > 0 ? (totalOutputM3 / totalRawLogVolM3) * 100 : 0;
+
+              // Product Category breakdown (Balok, Reng, BS, Air Dry, FJL)
+              const CATEGORY_CONFIG: Record<string, { label: string; badgeClass: string }> = {
+                BALOK: { label: 'Balok / Main Size', badgeClass: 'border-emerald-500 text-emerald-600 bg-emerald-50/50' },
+                RENG: { label: 'Reng / Papan', badgeClass: 'border-amber-500 text-amber-600 bg-amber-50/50' },
+                AFKIR_BS: { label: 'BS / Afkir', badgeClass: 'border-red-500 text-red-600 bg-red-50/50' },
+                AIR_DRY: { label: 'Air Dry', badgeClass: 'border-sky-500 text-sky-600 bg-sky-50/50' },
+                FJL: { label: 'FJL', badgeClass: 'border-purple-500 text-purple-600 bg-purple-50/50' },
+              };
+              const categoryBreakdown: Record<string, { pcs: number; m3: number }> = {};
+              allOutputItems.forEach((i: any) => {
+                const cat = i.productType || 'BALOK';
+                if (!categoryBreakdown[cat]) categoryBreakdown[cat] = { pcs: 0, m3: 0 };
+                categoryBreakdown[cat].pcs += i.quantityPcs || 0;
+                categoryBreakdown[cat].m3 += i.volumeM3 || 0;
+              });
 
               // Grade breakdown
               const gradeBreakdown: Record<string, { pcs: number; m3: number }> = {};
@@ -971,6 +1003,53 @@ const [partai, setPartai] = useState<any>(null);
                       </Table>
                     </CardContent>
                   </Card>
+
+                  {Object.keys(categoryBreakdown).length > 0 && (
+                    <Card>
+                      <CardHeader className="border-b pb-4">
+                        <CardTitle>Rendemen & Rekap per Kategori Produk</CardTitle>
+                        <CardDescription>Distribusi Balok (Main Size), Reng/Papan, BS/Afkir & rendemen parsial terhadap Log Raw</CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Kategori Produk</TableHead>
+                              <TableHead className="text-right">Jumlah (Pcs)</TableHead>
+                              <TableHead className="text-right">Volume (M³)</TableHead>
+                              <TableHead className="text-right">% dari Output</TableHead>
+                              <TableHead className="text-right">Rendemen thdp Log (%)</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {Object.entries(categoryBreakdown).map(([catKey, val]) => {
+                              const conf = CATEGORY_CONFIG[catKey] || { label: catKey, badgeClass: 'border-slate-500 text-slate-600 bg-slate-50/50' };
+                              const pctOutput = totalOutputM3 > 0 ? (val.m3 / totalOutputM3) * 100 : 0;
+                              const partialRendemen = totalRawLogVolM3 > 0 ? (val.m3 / totalRawLogVolM3) * 100 : 0;
+                              return (
+                                <TableRow key={catKey}>
+                                  <TableCell>
+                                    <Badge variant="outline" className={conf.badgeClass}>{conf.label}</Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium">{val.pcs}</TableCell>
+                                  <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400">{Number(val.m3.toFixed(4))}</TableCell>
+                                  <TableCell className="text-right text-muted-foreground">{pctOutput.toFixed(1)}%</TableCell>
+                                  <TableCell className="text-right font-bold text-primary">{partialRendemen.toFixed(2)}%</TableCell>
+                                </TableRow>
+                              );
+                            })}
+                            <TableRow className="bg-muted/30 font-bold border-t">
+                              <TableCell>Total Output</TableCell>
+                              <TableCell className="text-right">{totalOutputPcs}</TableCell>
+                              <TableCell className="text-right text-emerald-600 dark:text-emerald-400">{Number(totalOutputM3.toFixed(4))}</TableCell>
+                              <TableCell className="text-right">100%</TableCell>
+                              <TableCell className={`text-right ${rendemen >= 50 ? 'text-emerald-600' : 'text-red-600'}`}>{rendemen.toFixed(2)}%</TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   {Object.keys(gradeBreakdown).length > 0 && (
                     <Card>

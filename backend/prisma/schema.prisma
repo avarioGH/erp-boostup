@@ -2935,6 +2935,7 @@ model SawnTimberOutputItem {
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
 
   grade       String?
+  productType String?          @default("BALOK") // BALOK, RENG, AFKIR_BS, AIR_DRY, FJL, LAINNYA
   quantityPcs Int
   thicknessMm Int
   widthMm     Int

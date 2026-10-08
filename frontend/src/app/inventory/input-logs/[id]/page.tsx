@@ -24,7 +24,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
   
   // Tally Modal State
   const [tallyOpen, setTallyOpen] = useState(false)
-  const [tallyLines, setTallyLines] = useState([{ t: "", l: "", p: "", pcs: "" }])
+  const [tallyLines, setTallyLines] = useState([{ t: "", l: "", p: "", pcs: "", productType: "BALOK" }])
   const [tallyDate, setTallyDate] = useState(new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0])
   const [savingTally, setSavingTally] = useState(false)
 
@@ -165,7 +165,8 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
           width: parseFloat(line.l) * 10,
           length: parseFloat(line.p) * 10,
           quantityPcs: parseInt(line.pcs),
-          grade: "PENDING"
+          grade: "PENDING",
+          productType: line.productType || "BALOK"
         }))
       }
 
@@ -175,7 +176,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
       
       toast({ title: "Berhasil", description: "Tally harian berhasil disimpan dan di-posting." })
       setTallyOpen(false)
-      setTallyLines([{ t: "", l: "", p: "", pcs: "" }])
+      setTallyLines([{ t: "", l: "", p: "", pcs: "", productType: "BALOK" }])
       loadData()
     } catch (err: any) {
       toast({ title: "Gagal Menyimpan Tally", description: err?.response?.data?.error?.message || err?.response?.data?.message || err.message, variant: "destructive" }); alert("Gagal Tally: " + (err?.response?.data?.error?.message || err?.response?.data?.message || err.message));
@@ -343,12 +344,13 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                       <Table>
                         <TableHeader className="bg-muted">
                           <TableRow>
-                            <TableHead className="min-w-[80px]">T (cm)</TableHead>
-                              <TableHead className="min-w-[80px]">L (cm)</TableHead>
-                              <TableHead className="min-w-[90px]">P (cm)</TableHead>
-                              <TableHead className="min-w-[80px]">PCS</TableHead>
-                              <TableHead className="min-w-[100px]">M&sup3; (Auto)</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
+                            <TableHead className="min-w-[70px]">T (cm)</TableHead>
+                              <TableHead className="min-w-[70px]">L (cm)</TableHead>
+                              <TableHead className="min-w-[80px]">P (cm)</TableHead>
+                              <TableHead className="min-w-[70px]">PCS</TableHead>
+                              <TableHead className="min-w-[120px]">Kategori</TableHead>
+                              <TableHead className="min-w-[90px]">M&sup3; (Auto)</TableHead>
+                            <TableHead className="w-[40px]"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -360,6 +362,19 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                                 <TableCell className="p-2"><Input type="number" placeholder="10" value={line.l} onChange={e => { const n = [...tallyLines]; n[idx].l = e.target.value; setTallyLines(n) }} /></TableCell>
                                 <TableCell className="p-2"><Input type="number" placeholder="400" value={line.p} onChange={e => { const n = [...tallyLines]; n[idx].p = e.target.value; setTallyLines(n) }} /></TableCell>
                                 <TableCell className="p-2"><Input type="number" placeholder="15" value={line.pcs} onChange={e => { const n = [...tallyLines]; n[idx].pcs = e.target.value; setTallyLines(n) }} /></TableCell>
+                                <TableCell className="p-2">
+                                  <select 
+                                    className="h-9 w-full rounded-md border border-input bg-background px-2 py-1 text-xs font-semibold focus:outline-none"
+                                    value={line.productType || "BALOK"} 
+                                    onChange={e => { const n = [...tallyLines]; n[idx].productType = e.target.value; setTallyLines(n); }}
+                                  >
+                                    <option value="BALOK">Balok (Main)</option>
+                                    <option value="RENG">Reng / Papan</option>
+                                    <option value="AFKIR_BS">BS / Afkir</option>
+                                    <option value="AIR_DRY">Air Dry</option>
+                                    <option value="FJL">FJL / Jasa</option>
+                                  </select>
+                                </TableCell>
                                 <TableCell className="p-2 font-mono font-semibold text-emerald-600">{vol.toFixed(4)}</TableCell>
                                 <TableCell className="p-2">
                                   <Button variant="ghost" size="icon" onClick={() => setTallyLines(tallyLines.filter((_, i) => i !== idx))} disabled={tallyLines.length === 1}>
@@ -372,7 +387,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                         </TableBody>
                       </Table>
                       <div className="p-2 bg-muted/30 border-t">
-                        <Button variant="ghost" size="sm" onClick={() => setTallyLines([...tallyLines, { t: "", l: "", p: "", pcs: "" }])} className="w-full border border-dashed">
+                        <Button variant="ghost" size="sm" onClick={() => setTallyLines([...tallyLines, { t: "", l: "", p: "", pcs: "", productType: "BALOK" }])} className="w-full border border-dashed">
                           <Plus className="w-4 h-4 mr-2" /> Tambah Ukuran Lain
                         </Button>
                       </div>
@@ -394,6 +409,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                     <TableRow className="bg-muted/30 hover:bg-muted/30">
                       <TableHead className="h-10 text-xs">TANGGAL</TableHead>
                       <TableHead className="h-10 text-xs">UKURAN (cm)</TableHead>
+                      <TableHead className="h-10 text-xs">KATEGORI</TableHead>
                       <TableHead className="h-10 text-xs text-right">PCS</TableHead>
                       <TableHead className="h-10 text-xs text-right text-emerald-600">VOL (m&sup3;)</TableHead>
                       <TableHead className="h-10 text-xs text-center w-[120px]">STATUS</TableHead>
@@ -405,6 +421,16 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                         <TableRow key={i.id || idx} className="hover:bg-muted/30">
                           <TableCell className="font-medium text-sm">{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
                           <TableCell className="text-sm">{i.thicknessMm / 10} &times; {i.widthMm / 10} &times; {i.lengthMm / 10}</TableCell>
+                          <TableCell className="text-sm">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${
+                              i.productType === 'RENG' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' :
+                              i.productType === 'AFKIR_BS' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' :
+                              i.productType === 'AIR_DRY' ? 'bg-cyan-500/10 text-cyan-600 border border-cyan-500/20' :
+                              'bg-blue-500/10 text-blue-600 border border-blue-500/20'
+                            }`}>
+                              {i.productType || 'BALOK'}
+                            </span>
+                          </TableCell>
                           <TableCell className="text-right text-sm">{i.quantityPcs}</TableCell>
                           <TableCell className="text-right font-semibold text-emerald-600 dark:text-emerald-400 text-sm">{i.volumeM3.toFixed(4)}</TableCell>
                           <TableCell className="text-center">
