@@ -45,6 +45,7 @@ const items: MenuItem[] = [
  id: "inbound",
  subItems: [
  { title: "Manajemen Partai", url: "/inventory/partai" },
+ { title: "Beli Masak (Kayu Olahan)", url: "/inventory/purchase" },
    ]
  },
  
@@ -55,7 +56,8 @@ const items: MenuItem[] = [
  id: "production",
  subItems: [
  { title: "Chamber (Oven)", url: "/production/chamber" },
- { title: "Sawn Timber Output", url: "/inventory/sawn-timber/output" }
+ { title: "Sawn Timber Output", url: "/inventory/sawn-timber/output" },
+ { title: "Produksi Sawmill (Re-sawing)", url: "/production/sawmill" }
  ]
  },
  
