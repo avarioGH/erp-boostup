@@ -49,6 +49,7 @@ export class SawnTimberService {
         include: {
           location: true,
           inputLog: true,
+          partai: true,
           items: { include: { timberVariant: true } },
         },
       }),
