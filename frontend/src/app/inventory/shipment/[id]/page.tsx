@@ -38,7 +38,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
   };
 
   const handleConfirm = async () => {
-    if (!confirm("Apakah Anda yakin ingin mengkonfirmasi keberangkatan armada ini? Status akan menjadi CONFIRMED.")) return;
+    if (!confirm("Konfirmasi keberangkatan armada ini? Stok kayu jadi di gudang akan otomatis dipotong.")) return;
     setError("");
     setActionLoading(true);
     try {
@@ -52,7 +52,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
   };
 
   const handleCancel = async () => {
-    if (!confirm("Apakah Anda yakin ingin membatalkan pengiriman armada ini?")) return;
+    if (!confirm("Batalkan pengiriman armada ini? Stok kayu yang sebelumnya dipotong akan otomatis dikembalikan ke gudang.")) return;
     setError("");
     setActionLoading(true);
     try {

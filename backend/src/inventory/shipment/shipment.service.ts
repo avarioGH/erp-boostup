@@ -100,15 +100,31 @@ export class ShipmentService {
     let totalPcs = 0;
     let totalVolumeM3 = 0;
 
-    const processedItems = (items || []).map((item: any) => {
+    const processedItems: any[] = [];
+    for (const item of (items || [])) {
       let vol = Number(item.volumeM3) || 0;
       if (!vol && item.thicknessMm && item.widthMm && item.lengthMm && item.quantityPcs) {
         vol = (Number(item.quantityPcs) * Number(item.thicknessMm) * Number(item.widthMm) * Number(item.lengthMm)) / 1000000000;
       }
       totalPcs += Number(item.quantityPcs) || 0;
       totalVolumeM3 += vol;
-      return {
-        timberVariantId: item.timberVariantId || undefined,
+
+      let variantId = item.timberVariantId;
+      if (!variantId && item.thicknessMm && item.widthMm && item.lengthMm && item.species) {
+        const found = await this.prisma.timberVariant.findFirst({
+          where: {
+            company_id: companyId,
+            species: { equals: item.species, mode: 'insensitive' },
+            thickness: Math.round(Number(item.thicknessMm)),
+            width: Math.round(Number(item.widthMm)),
+            length: Math.round(Number(item.lengthMm)),
+          },
+        });
+        if (found) variantId = found.id;
+      }
+
+      processedItems.push({
+        timberVariantId: variantId || undefined,
         batch: item.batch || 'UNKNOWN',
         species: item.species || null,
         productCategory: item.productCategory || 'BALOK',
@@ -118,8 +134,8 @@ export class ShipmentService {
         quantityPcs: Number(item.quantityPcs) || 0,
         volumeM3: Number(vol.toFixed(4)),
         salesOrderItemId: item.salesOrderItemId || undefined,
-      };
-    });
+      });
+    }
 
     const shipment = await this.prisma.timberShipment.create({
       data: {
@@ -148,6 +164,10 @@ export class ShipmentService {
         items: { include: { timberVariant: true } },
       },
     });
+
+    if (data.autoConfirm) {
+      return this.confirm(shipment.id, companyId);
+    }
 
     return shipment;
   }
