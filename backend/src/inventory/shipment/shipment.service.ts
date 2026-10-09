@@ -159,7 +159,7 @@ export class ShipmentService {
         items: {
           create: processedItems,
         },
-      },
+      } as any,
       include: {
         items: { include: { timberVariant: true } },
       },

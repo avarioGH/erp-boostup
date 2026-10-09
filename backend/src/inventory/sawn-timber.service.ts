@@ -276,7 +276,7 @@ export class SawnTimberService {
             widthMm: Number(item.width),
             lengthMm: Number(item.length),
             volumeM3,
-          },
+          } as any,
         });
       }
 
@@ -438,7 +438,7 @@ export class SawnTimberService {
               widthMm: Number(item.width),
               lengthMm: Number(item.length),
               volumeM3: volumeM3,
-            }
+            } as any,
           });
         }
         updateData.totalQty = totalPcs;
