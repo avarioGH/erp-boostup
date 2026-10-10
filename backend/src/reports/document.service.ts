@@ -25,7 +25,7 @@ export class DocumentService {
       ],
       data: inv.items.map((item) => ({
         product: item.product.name,
-        qty: item.qty,
+        qty: Number(item.qty),
         price: item.unit_price,
         total: item.subtotal,
       })),
@@ -59,7 +59,7 @@ export class DocumentService {
       ],
       data: po.items.map((item) => ({
         product: item.product?.name || '',
-        qty: item.qty,
+        qty: Number(item.qty),
         price: item.unit_price,
         total: item.subtotal || (item.qty * item.unit_price),
       })),

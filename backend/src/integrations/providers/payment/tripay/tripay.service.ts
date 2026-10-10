@@ -84,7 +84,7 @@ export class TripayService {
       order_items: invoice.items.map((i) => ({
         name: i.description || 'Item',
         price: i.unit_price,
-        quantity: i.qty,
+        quantity: Number(i.qty),
       })),
       return_url: 'https://example.com/payment/success',
       expired_time: Math.floor(Date.now() / 1000) + 24 * 60 * 60,

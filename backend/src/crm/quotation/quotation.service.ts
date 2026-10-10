@@ -40,7 +40,7 @@ export class QuotationService {
       total += lineTotal;
       return {
         product_id: item.productId,
-        qty: item.qty,
+        qty: Number(item.qty),
         unit_price: item.price,
         discount: discount,
         tax: tax,
@@ -140,7 +140,7 @@ export class QuotationService {
           items: {
             create: q.items.map((item) => ({
               product_id: item.product_id,
-              qty: item.qty,
+              qty: Number(item.qty),
               unit_price: item.unit_price,
               subtotal: item.subtotal,
             })),

@@ -65,7 +65,7 @@ export class PurchasingService {
         items: {
           create: data.items.map((i: any) => ({
             product_id: i.productId,
-            qty: i.qty,
+            qty: Number(i.qty),
             unit: i.unit,
             notes: i.notes,
           })),
@@ -147,7 +147,7 @@ export class PurchasingService {
       total += finalSub;
       return {
         product_id: item.productId,
-        qty: item.qty,
+        qty: Number(item.qty),
         unit_price: item.price,
         tax,
         discount,
@@ -227,7 +227,7 @@ export class PurchasingService {
           items: {
             create: receiptData.items.map((item: any) => ({
               product_id: item.productId,
-              qty: item.qty,
+              qty: Number(item.qty),
             })),
           },
         },
@@ -268,7 +268,7 @@ export class PurchasingService {
           companyId,
           warehouseId: grn.warehouse_id,
           productId: rItem.productId,
-          quantity: rItem.qty,
+          quantity: Number(rItem.qty),
           unitCost: poItem.unit_price,
           referenceType: 'PURCHASE_RECEIPT',
           referenceId: grn.id,
@@ -321,7 +321,7 @@ export class PurchasingService {
         if (!billData.items || billData.items.length === 0) {
           billData.items = po.items.map((i: any) => ({
             productId: i.product_id,
-            qty: i.qty - (i.billed_qty || 0),
+            qty: Number(i.qty) - (i.billed_qty || 0),
           })).filter((i: any) => i.qty > 0);
         }
 

@@ -62,11 +62,11 @@ export class FishPurchaseService {
           data: {
             purchase_order_id: purchaseOrder.id,
             product_id: item.product_id,
-            qty: item.qty,
+            qty: Number(item.qty),
             unit_price: item.unit_price,
             subtotal: item.qty * item.unit_price,
-            received_qty: item.qty,
-            billed_qty: item.qty,
+            received_qty: Number(item.qty),
+            billed_qty: Number(item.qty),
           }
         });
 
@@ -74,7 +74,7 @@ export class FishPurchaseService {
           data: {
             goods_receipt_id: goodsReceipt.id,
             product_id: item.product_id,
-            qty: item.qty,
+            qty: Number(item.qty),
           }
         });
 
@@ -154,7 +154,7 @@ export class FishPurchaseService {
           data: {
             invoice_id: invoice.id,
             product_id: item.product_id,
-            qty: item.qty,
+            qty: Number(item.qty),
             unit_price: item.unit_price,
             subtotal: item.qty * item.unit_price,
             tax: 0,

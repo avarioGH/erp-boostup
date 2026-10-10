@@ -91,7 +91,7 @@ export class MrpService {
         demandSources.get(item.product_id).push({
           type: 'SALES_ORDER',
           id: so.order_number,
-          qty: item.qty,
+          qty: Number(item.qty),
           date: so.order_date,
         });
       }

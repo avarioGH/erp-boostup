@@ -113,7 +113,7 @@ export class PosService {
           data: {
             sales_order_id: salesOrder.id,
             product_id: item.productId,
-            qty: item.qty,
+            qty: Number(item.qty),
             unit_price: item.price,
             subtotal: item.qty * item.price,
           },
@@ -126,7 +126,7 @@ export class PosService {
             companyId,
             warehouseId: resolvedWarehouseId,
             productId: item.productId,
-            quantity: item.qty,
+            quantity: Number(item.qty),
             referenceType: 'POS_SALE',
             referenceId: salesOrder.id,
             allowNegative: true,

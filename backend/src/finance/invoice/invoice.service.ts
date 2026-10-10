@@ -33,7 +33,7 @@ export class InvoiceService {
         subtotal += item.subtotal;
         return {
           product_id: item.product_id,
-          qty: item.qty,
+          qty: Number(item.qty),
           unit_price: item.unit_price,
           subtotal: item.subtotal,
         };

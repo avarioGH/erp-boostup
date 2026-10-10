@@ -64,7 +64,7 @@ export class OrderController {
 
         orderItems.push({
           product_id: product.id,
-          qty: item.qty,
+          qty: Number(item.qty),
           unit_price: product.selling_price,
           subtotal,
         });
@@ -134,7 +134,7 @@ export class OrderController {
             companyId: req.user.company_id,
             warehouseId: warehouse.id,
             productId: item.product_id,
-            quantity: item.qty,
+            quantity: Number(item.qty),
             referenceType: 'SALE',
             referenceId: order.id,
             description: `Sales Order ${order.order_number}`,
