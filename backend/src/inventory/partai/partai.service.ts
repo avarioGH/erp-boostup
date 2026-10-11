@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -14,12 +14,42 @@ export class PartaiService {
       if (firstCompany) targetCompanyId = firstCompany.id;
     }
 
-    return this.prisma.timberPartai.create({
-      data: {
-        ...data,
-        company_id: targetCompanyId,
+    if (!data?.code || !data.code.trim()) {
+      throw new BadRequestException('Kode Partai wajib diisi.');
+    }
+
+    const code = data.code.trim();
+
+    // Check if duplicate code exists
+    const existing = await this.prisma.timberPartai.findFirst({
+      where: {
+        code,
+        ...(targetCompanyId ? { company_id: targetCompanyId } : {}),
       },
     });
+
+    if (existing) {
+      throw new BadRequestException(
+        `Kode Partai '${code}' sudah terdaftar di sistem. Mohon gunakan kode partai yang berbeda.`,
+      );
+    }
+
+    try {
+      return await this.prisma.timberPartai.create({
+        data: {
+          ...data,
+          code,
+          company_id: targetCompanyId,
+        },
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        throw new BadRequestException(
+          `Kode Partai '${code}' sudah terdaftar di sistem. Mohon gunakan kode partai yang berbeda.`,
+        );
+      }
+      throw err;
+    }
   }
 
   async migrateToTesting(companyId?: string) {
@@ -179,10 +209,37 @@ export class PartaiService {
       where,
     });
     if (!partai) throw new NotFoundException('Partai not found');
-    return this.prisma.timberPartai.update({
-      where: { id },
-      data,
-    });
+
+    if (data?.code && data.code.trim() !== partai.code) {
+      const code = data.code.trim();
+      const existing = await this.prisma.timberPartai.findFirst({
+        where: {
+          code,
+          ...(partai.company_id ? { company_id: partai.company_id } : {}),
+          id: { not: id },
+        },
+      });
+      if (existing) {
+        throw new BadRequestException(
+          `Kode Partai '${code}' sudah digunakan oleh partai lain.`,
+        );
+      }
+      data.code = code;
+    }
+
+    try {
+      return await this.prisma.timberPartai.update({
+        where: { id },
+        data,
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        throw new BadRequestException(
+          `Kode Partai '${data?.code || ''}' sudah digunakan.`,
+        );
+      }
+      throw err;
+    }
   }
 
   async delete(id: string, companyId?: string) {
