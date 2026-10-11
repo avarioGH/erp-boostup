@@ -23,7 +23,7 @@ export class PartaiService {
     // Check if duplicate code exists
     const existing = await this.prisma.timberPartai.findFirst({
       where: {
-        code,
+        code: { equals: code, mode: 'insensitive' },
         ...(targetCompanyId ? { company_id: targetCompanyId } : {}),
       },
     });
@@ -43,7 +43,11 @@ export class PartaiService {
         },
       });
     } catch (err: any) {
-      if (err?.code === 'P2002') {
+      if (
+        err?.code === 'P2002' ||
+        (typeof err?.message === 'string' &&
+          err.message.includes('Unique constraint failed'))
+      ) {
         throw new BadRequestException(
           `Kode Partai '${code}' sudah terdaftar di sistem. Mohon gunakan kode partai yang berbeda.`,
         );
@@ -214,7 +218,7 @@ export class PartaiService {
       const code = data.code.trim();
       const existing = await this.prisma.timberPartai.findFirst({
         where: {
-          code,
+          code: { equals: code, mode: 'insensitive' },
           ...(partai.company_id ? { company_id: partai.company_id } : {}),
           id: { not: id },
         },
@@ -233,7 +237,11 @@ export class PartaiService {
         data,
       });
     } catch (err: any) {
-      if (err?.code === 'P2002') {
+      if (
+        err?.code === 'P2002' ||
+        (typeof err?.message === 'string' &&
+          err.message.includes('Unique constraint failed'))
+      ) {
         throw new BadRequestException(
           `Kode Partai '${data?.code || ''}' sudah digunakan.`,
         );

@@ -1,4 +1,4 @@
-﻿import {
+import {
   ExceptionFilter,
   Catch,
   ArgumentsHost,
@@ -17,7 +17,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const status =
+    let status =
       exception instanceof HttpException
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
@@ -37,6 +37,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = errorResponse;
     }
 
+    // Handle Prisma errors gracefully
+    const prismaError = exception as any;
+    if (
+      prismaError?.code === 'P2002' ||
+      (typeof prismaError?.message === 'string' &&
+        prismaError.message.includes('Unique constraint failed'))
+    ) {
+      status = HttpStatus.BAD_REQUEST;
+      code = 'DUPLICATE_ENTRY';
+      message =
+        'Data dengan kode atau entitas tersebut sudah terdaftar di sistem (duplikat).';
+    } else if (
+      prismaError?.code === 'P2025' ||
+      (typeof prismaError?.message === 'string' &&
+        prismaError.message.includes('Record to update not found'))
+    ) {
+      status = HttpStatus.NOT_FOUND;
+      code = 'RESOURCE_NOT_FOUND';
+      message = 'Data yang dicari tidak ditemukan.';
+    }
+
     // Correlation ID mapping (simulate extraction from headers if available)
     const requestId = request.headers['x-request-id'] || `REQ-${Date.now()}`;
 
@@ -53,6 +74,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     response.status(status).json({
       success: false,
+      message,
       error: {
         code:
           status === HttpStatus.UNAUTHORIZED

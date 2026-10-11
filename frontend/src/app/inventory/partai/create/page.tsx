@@ -31,7 +31,11 @@ export default function CreatePartaiPage() {
       await PartaiAPI.createPartai(form);
       router.push('/inventory/partai');
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err.message || "Gagal membuat partai";
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error?.message ||
+        err.message ||
+        "Gagal membuat partai";
       setError(msg);
     } finally {
       setLoading(false);
