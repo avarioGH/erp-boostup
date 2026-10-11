@@ -14,6 +14,12 @@ export class ShipmentService {
   ) {}
 
   async create(companyId: string, data: any) {
+    let targetCompanyId = companyId;
+    if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
+      const firstCompany = await this.prisma.company.findFirst();
+      if (firstCompany) targetCompanyId = firstCompany.id;
+    }
+
     let {
       shipmentNumber,
       shipmentDate,
@@ -36,7 +42,9 @@ export class ShipmentService {
     }
 
     if (!warehouseId) {
-      const defWh = await this.prisma.warehouse.findFirst({ where: { company_id: companyId } });
+      const defWh = await this.prisma.warehouse.findFirst({
+        where: targetCompanyId ? { company_id: targetCompanyId } : {},
+      });
       if (defWh) warehouseId = defWh.id;
     }
 
@@ -139,7 +147,7 @@ export class ShipmentService {
 
     const shipment = await this.prisma.timberShipment.create({
       data: {
-        company_id: companyId,
+        company_id: targetCompanyId as string,
         shipmentNumber,
         shipmentDate: shipmentDate ? new Date(shipmentDate) : undefined,
         warehouseId,
@@ -166,7 +174,7 @@ export class ShipmentService {
     });
 
     if (data.autoConfirm) {
-      return this.confirm(shipment.id, companyId);
+      return this.confirm(shipment.id, targetCompanyId as string);
     }
 
     return shipment;
@@ -191,10 +199,14 @@ export class ShipmentService {
     });
   }
 
-  async confirm(id: string, companyId: string) {
+  async confirm(id: string, companyId?: string) {
     return this.prisma.$transaction(async (tx: any) => {
+      const where: any = { id };
+      if (companyId && /^[0-9a-fA-F]{24}$/.test(companyId)) {
+        where.company_id = companyId;
+      }
       const shipment = await tx.timberShipment.findFirst({
-        where: { id, company_id: companyId },
+        where,
         include: { items: true },
       });
 
@@ -290,10 +302,14 @@ export class ShipmentService {
     });
   }
 
-  async cancel(id: string, companyId: string) {
+  async cancel(id: string, companyId?: string) {
     return this.prisma.$transaction(async (tx: any) => {
+      const where: any = { id };
+      if (companyId && /^[0-9a-fA-F]{24}$/.test(companyId)) {
+        where.company_id = companyId;
+      }
       const shipment = await tx.timberShipment.findFirst({
-        where: { id, company_id: companyId },
+        where,
         include: { items: true },
       });
 
@@ -376,9 +392,14 @@ export class ShipmentService {
     });
   }
 
-  async findAll(companyId: string) {
+  async findAll(companyId?: string) {
+    const where: any = {};
+    if (companyId && /^[0-9a-fA-F]{24}$/.test(companyId)) {
+      where.company_id = companyId;
+    }
+
     return this.prisma.timberShipment.findMany({
-      where: { company_id: companyId },
+      where,
       include: {
         warehouse: true,
         vehicle: true,
@@ -390,9 +411,14 @@ export class ShipmentService {
     });
   }
 
-  async findOne(id: string, companyId: string) {
+  async findOne(id: string, companyId?: string) {
+    const where: any = { id };
+    if (companyId && /^[0-9a-fA-F]{24}$/.test(companyId)) {
+      where.company_id = companyId;
+    }
+
     const shipment = await this.prisma.timberShipment.findFirst({
-      where: { id, company_id: companyId },
+      where,
       include: {
         warehouse: true,
         vehicle: true,
@@ -404,9 +430,15 @@ export class ShipmentService {
     if (!shipment) throw new NotFoundException('Timber shipment not found');
     return shipment;
   }
-  async delete(id: string, companyId: string) {
+
+  async delete(id: string, companyId?: string) {
+    const where: any = { id };
+    if (companyId && /^[0-9a-fA-F]{24}$/.test(companyId)) {
+      where.company_id = companyId;
+    }
+
     const shipment = await this.prisma.timberShipment.findFirst({
-      where: { id, company_id: companyId },
+      where,
     });
     if (!shipment) throw new NotFoundException('Timber shipment not found');
     if (shipment.status === 'CONFIRMED') {

@@ -22,36 +22,42 @@ export class ShipmentController {
   @Post()
   @Permissions('inventory.create')
   create(@Body() data: any, @Request() req) {
-    return this.shipmentService.create(req.user.companyId, data);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.shipmentService.create(companyId, data);
   }
 
   @Post(':id/confirm')
   @Permissions('inventory.create')
   confirm(@Param('id') id: string, @Request() req) {
-    return this.shipmentService.confirm(id, req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.shipmentService.confirm(id, companyId);
   }
 
   @Post(':id/cancel')
   @Permissions('inventory.create')
   cancel(@Param('id') id: string, @Request() req) {
-    return this.shipmentService.cancel(id, req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.shipmentService.cancel(id, companyId);
   }
 
   @Get()
   @Permissions('inventory.read')
   findAll(@Request() req) {
-    return this.shipmentService.findAll(req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.shipmentService.findAll(companyId);
   }
 
   @Get(':id')
   @Permissions('inventory.read')
   findOne(@Param('id') id: string, @Request() req) {
-    return this.shipmentService.findOne(id, req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.shipmentService.findOne(id, companyId);
   }
 
   @Delete(':id')
   @Permissions('inventory.create')
   delete(@Param('id') id: string, @Request() req) {
-    return this.shipmentService.delete(id, req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.shipmentService.delete(id, companyId);
   }
 }

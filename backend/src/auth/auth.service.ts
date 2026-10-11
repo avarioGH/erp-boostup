@@ -56,4 +56,23 @@ export class AuthService {
       },
     };
   }
+
+  async getProfile(userId: string) {
+    if (!userId) return null;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        role: true,
+        company: true,
+        warehouse_accesses: {
+          include: {
+            warehouse: true,
+          },
+        },
+      },
+    });
+    if (!user) return null;
+    const { password, ...result } = user;
+    return result;
+  }
 }

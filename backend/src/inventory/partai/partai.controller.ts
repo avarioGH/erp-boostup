@@ -22,36 +22,42 @@ export class PartaiController {
   @Post()
   @Permissions('inventory.create')
   create(@Body() data: any, @Request() req) {
-    return this.partaiService.create(req.user.companyId, data);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.partaiService.create(companyId, data);
   }
 
   @Get('migrate-testing')
   @Permissions('inventory.read')
   migrateTesting(@Request() req) {
-    return this.partaiService.migrateToTesting(req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.partaiService.migrateToTesting(companyId);
   }
 
   @Get()
   @Permissions('inventory.read')
   findAll(@Request() req) {
-    return this.partaiService.findAll(req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.partaiService.findAll(companyId);
   }
 
   @Get(':id')
   @Permissions('inventory.read')
   findOne(@Param('id') id: string, @Request() req) {
-    return this.partaiService.findOne(id, req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.partaiService.findOne(id, companyId);
   }
 
   @Put(':id')
   @Permissions('inventory.create')
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
-    return this.partaiService.update(id, req.user.companyId, data);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.partaiService.update(id, companyId, data);
   }
 
   @Delete(':id')
   @Permissions('inventory.create')
   delete(@Param('id') id: string, @Request() req) {
-    return this.partaiService.delete(id, req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.partaiService.delete(id, companyId);
   }
 }
