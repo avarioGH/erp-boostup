@@ -152,6 +152,7 @@ export default function EditPurchasePage() {
     warehouseId: "",
     notes: "",
     purchaseType: "sawn-timber",
+    status: "DRAFT",
     items: [{ 
       timberVariantId: "", 
       quantityPcs: 1, 
@@ -209,7 +210,8 @@ export default function EditPurchasePage() {
           purchaseDate: p.purchaseDate ? p.purchaseDate.substring(0,10) : "",
           sourceId: p.sourceId || "",
           warehouseId: p.warehouseId || "",
-          notes: p.notes || ""
+          notes: p.notes || "",
+          status: p.status || "DRAFT"
         }));
 
         if (p.source) {
@@ -267,6 +269,7 @@ export default function EditPurchasePage() {
         sourceId: form.sourceId,
         warehouseId: form.warehouseId,
         notes: form.notes,
+        status: form.status,
         items: form.purchaseType === "sawn-timber" ? form.items : [],
         logItems: form.purchaseType === "raw-log" ? form.logItems : []
       })
@@ -349,9 +352,33 @@ export default function EditPurchasePage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Catatan (Notes)</Label>
-              <Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="font-semibold text-foreground">Status Penerimaan Barang *</Label>
+                <Select value={form.status} onValueChange={val => setForm({...form, status: val || "DRAFT"})}>
+                  <SelectTrigger className="font-medium h-10 border-emerald-300 dark:border-emerald-800">
+                    <SelectValue placeholder="Pilih Status Penerimaan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="RECEIVED">
+                      <span className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                        Sudah Diterima (Langsung Masuk Stok)
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="DRAFT">
+                      <span className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-medium">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+                        Belum Diterima (Draft / Pending)
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Catatan (Notes)</Label>
+                <Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Catatan pembelian kayu..." />
+              </div>
             </div>
 
             <Tabs value={form.purchaseType} onValueChange={(v) => setForm({...form, purchaseType: v})} className="w-full">

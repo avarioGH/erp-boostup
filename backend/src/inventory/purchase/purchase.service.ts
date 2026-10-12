@@ -45,133 +45,97 @@ export class PurchaseService {
     let totalVolumeM3 = 0;
 
     for (const item of items || []) {
-      totalPcs += item.quantityPcs;
-      totalVolumeM3 += item.volumeM3;
+      totalPcs += Number(item.quantityPcs || 0);
+      totalVolumeM3 += Number(item.volumeM3 || 0);
     }
 
-    const purchase = await this.prisma.timberPurchase.create({
-      data: {
-        company_id: targetCompanyId as string,
-        partaiId: partaiId || null,
-        purchaseNumber,
-        purchaseDate: purchaseDate ? new Date(purchaseDate) : undefined,
-        sourceId,
-        warehouseId,
-        notes,
-        status: 'DRAFT',
-        totalPcs,
-        totalVolumeM3,
-        items: {
-          create: items.map((item: any) => ({
-            timberVariantId: item.timberVariantId,
-            quantityPcs: item.quantityPcs,
-            volumeM3: item.volumeM3,
-            purchaseThickness: item.purchaseThickness,
-            purchaseWidth: item.purchaseWidth,
-            purchaseLength: item.purchaseLength,
-            unitPrice: item.unitPrice,
-            notes: item.notes,
-            batch: item.batch || 'UNKNOWN',
-          })),
-        },
-        logItems: {
-          create: logItems.map((li: any) => ({
-            logNumber: li.logNumber,
-            species: li.species,
-            speciesId: li.speciesId,
-            purchaseLength: li.purchaseLength || 0,
-            purchaseDiameter1: li.purchaseDiameter1 || 0,
-            purchaseDiameter2: li.purchaseDiameter2 || 0,
-            purchaseDiameter3: li.purchaseDiameter3 || 0,
-            purchaseDiameter4: li.purchaseDiameter4 || 0,
-            purchaseVolume: li.purchaseVolume || 0,
-          })),
-        },
-      },
-      include: {
-        items: true,
-      },
-    });
+    const isDirectlyReceived = data.status === 'RECEIVED' || data.isReceived === true;
+    const initialStatus = isDirectlyReceived ? 'RECEIVED' : 'DRAFT';
 
-    return purchase;
-  }
-
-  async confirm(id: string, companyId: string) {
     return this.prisma.$transaction(async (tx) => {
-      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
-      const purchase = await tx.timberPurchase.findFirst({
-        where: isObjectId
-          ? { id, company_id: companyId }
-          : { purchaseNumber: id, company_id: companyId },
-        include: { items: true },
+      const purchase = await tx.timberPurchase.create({
+        data: {
+          company_id: targetCompanyId as string,
+          partaiId: partaiId || null,
+          purchaseNumber,
+          purchaseDate: purchaseDate ? new Date(purchaseDate) : undefined,
+          sourceId,
+          warehouseId,
+          notes,
+          status: initialStatus,
+          totalPcs,
+          totalVolumeM3,
+          items: {
+            create: (items || []).map((item: any) => ({
+              timberVariantId: item.timberVariantId,
+              quantityPcs: Number(item.quantityPcs || 0),
+              volumeM3: Number(item.volumeM3 || 0),
+              purchaseThickness: Number(item.purchaseThickness || 0),
+              purchaseWidth: Number(item.purchaseWidth || 0),
+              purchaseLength: Number(item.purchaseLength || 0),
+              unitPrice: Number(item.unitPrice || 0),
+              notes: item.notes,
+              batch: item.batch || 'UNKNOWN',
+            })),
+          },
+          logItems: {
+            create: (logItems || []).map((li: any) => ({
+              logNumber: li.logNumber,
+              species: li.species,
+              speciesId: li.speciesId,
+              purchaseLength: Number(li.purchaseLength || 0),
+              purchaseDiameter1: Number(li.purchaseDiameter1 || 0),
+              purchaseDiameter2: Number(li.purchaseDiameter2 || 0),
+              purchaseDiameter3: Number(li.purchaseDiameter3 || 0),
+              purchaseDiameter4: Number(li.purchaseDiameter4 || 0),
+              purchaseVolume: Number(li.purchaseVolume || 0),
+              status: isDirectlyReceived ? 'RECEIVED' : 'PENDING',
+            })),
+          },
+        },
+        include: {
+          items: true,
+          logItems: true,
+        },
       });
 
-      if (!purchase) {
-        throw new NotFoundException('Timber purchase not found');
-      }
+      // If directly received upon creation, immediately stock into warehouse
+      if (isDirectlyReceived) {
+        // Sawn timber stock mutation
+        if (purchase.items && purchase.items.length > 0) {
+          for (const item of purchase.items) {
+            if (item.quantityPcs > 0 && item.volumeM3 > 0 && item.timberVariantId) {
+              await this.inventoryLedgerService.createMovement(
+                tx,
+                purchase.warehouseId,
+                item.timberVariantId,
+                'IN',
+                'TIMBER_PURCHASE',
+                purchase.id,
+                item.quantityPcs,
+                item.volumeM3,
+                item.batch || 'UNKNOWN',
+              );
+            }
+          }
+        }
 
-      if (purchase.status !== 'DRAFT') {
-        throw new BadRequestException('Only DRAFT purchase can be confirmed');
-      }
+        // Raw log conversion
+        if (purchase.logItems && purchase.logItems.length > 0) {
+          for (const item of purchase.logItems) {
+            const existingLog = await tx.rawLog.findFirst({ where: { logNumber: item.logNumber } });
+            if (!existingLog) {
+              let diaSum = 0;
+              let diaCount = 0;
+              if (item.purchaseDiameter1) { diaSum += item.purchaseDiameter1; diaCount++; }
+              if (item.purchaseDiameter2) { diaSum += item.purchaseDiameter2; diaCount++; }
+              if (item.purchaseDiameter3) { diaSum += item.purchaseDiameter3; diaCount++; }
+              if (item.purchaseDiameter4) { diaSum += item.purchaseDiameter4; diaCount++; }
+              const avgDia = diaCount > 0 ? diaSum / diaCount : 0;
+              const rndDia = Math.floor(avgDia);
+              const grossVol = ((rndDia * rndDia * 0.7854) / 10000) * item.purchaseLength;
 
-      // Update status
-      const confirmed = await tx.timberPurchase.update({
-        where: { id },
-        data: { status: 'CONFIRMED' },
-      });
-
-      // Stock mutations
-      for (const item of purchase.items) {
-        await this.inventoryLedgerService.createMovement(
-          tx,
-          purchase.warehouseId,
-          item.timberVariantId,
-          'IN',
-          'TIMBER_PURCHASE',
-          purchase.id,
-          item.quantityPcs,
-          item.volumeM3,
-        );
-      }
-
-      return confirmed;
-    });
-  }
-
-  
-  async markAsReceived(id: string, companyId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
-      const purchase = await tx.timberPurchase.findFirst({
-        where: isObjectId
-          ? { id, company_id: companyId }
-          : { purchaseNumber: id, company_id: companyId },
-        include: { logItems: true },
-      });
-      if (!purchase) throw new NotFoundException('Timber purchase not found');
-
-      const received = await tx.timberPurchase.update({
-        where: { id: purchase.id },
-        data: { status: 'RECEIVED' },
-      });
-
-      if (purchase.logItems && purchase.logItems.length > 0) {
-        for (const item of purchase.logItems) {
-          const existing = await tx.rawLog.findFirst({ where: { logNumber: item.logNumber } });
-          if (!existing) {
-             
-               let diaSum = 0;
-               let diaCount = 0;
-               if (item.purchaseDiameter1) { diaSum += item.purchaseDiameter1; diaCount++; }
-               if (item.purchaseDiameter2) { diaSum += item.purchaseDiameter2; diaCount++; }
-               if (item.purchaseDiameter3) { diaSum += item.purchaseDiameter3; diaCount++; }
-               if (item.purchaseDiameter4) { diaSum += item.purchaseDiameter4; diaCount++; }
-               const avgDia = diaCount > 0 ? diaSum / diaCount : 0;
-
-             const rndDia = Math.floor(avgDia);
-             const grossVol = ((rndDia * rndDia * 0.7854) / 10000) * item.purchaseLength;
-             
-             await tx.rawLog.create({
+              await tx.rawLog.create({
                 data: {
                   partaiId: purchase.partaiId,
                   purchaseLogItemId: item.id,
@@ -187,75 +151,197 @@ export class PurchaseService {
                   roundedDiameter: rndDia,
                   grossVolume: grossVol,
                   netVolume: grossVol,
-                  status: 'AVAILABLE'
-                }
-             });
+                  status: 'AVAILABLE',
+                },
+              });
+            }
           }
-          await tx.timberPurchaseLogItem.update({
-             where: { id: item.id },
-             data: { status: 'RECEIVED' }
-          });
         }
       }
-      return received;
+
+      return purchase;
     });
   }
 
-  async cancel(id: string, companyId: string) {
+  async confirm(id: string, companyId: string) {
+    return this.markAsReceived(id, companyId);
+  }
+
+  async markAsReceived(id: string, companyId: string) {
     return this.prisma.$transaction(async (tx) => {
+      let targetCompanyId = companyId;
+      if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
+        const firstCompany = await this.prisma.company.findFirst();
+        if (firstCompany) targetCompanyId = firstCompany.id;
+      }
+
       const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
       const purchase = await tx.timberPurchase.findFirst({
         where: isObjectId
-          ? { id, company_id: companyId }
-          : { purchaseNumber: id, company_id: companyId },
-        include: { items: true },
+          ? { id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) }
+          : { purchaseNumber: id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) },
+        include: { items: true, logItems: true },
       });
 
       if (!purchase) {
         throw new NotFoundException('Timber purchase not found');
       }
 
-      if (purchase.status !== 'CONFIRMED') {
-        throw new BadRequestException(
-          'Only CONFIRMED purchase can be cancelled',
-        );
+      if (purchase.status === 'RECEIVED' || purchase.status === 'CONFIRMED') {
+        throw new BadRequestException('Pembelian ini sudah diterima dan masuk ke stok');
       }
+
+      if (purchase.status === 'CANCELLED') {
+        throw new BadRequestException('Pembelian yang dibatalkan tidak dapat diterima');
+      }
+
+      // Update status to RECEIVED
+      const received = await tx.timberPurchase.update({
+        where: { id: purchase.id },
+        data: { status: 'RECEIVED' },
+      });
+
+      // 1. Stock mutations for sawn timber
+      if (purchase.items && purchase.items.length > 0) {
+        for (const item of purchase.items) {
+          if (item.quantityPcs > 0 && item.volumeM3 > 0 && item.timberVariantId) {
+            await this.inventoryLedgerService.createMovement(
+              tx,
+              purchase.warehouseId,
+              item.timberVariantId,
+              'IN',
+              'TIMBER_PURCHASE',
+              purchase.id,
+              item.quantityPcs,
+              item.volumeM3,
+              item.batch || 'UNKNOWN',
+            );
+          }
+        }
+      }
+
+      // 2. Convert log items to RawLog
+      if (purchase.logItems && purchase.logItems.length > 0) {
+        for (const item of purchase.logItems) {
+          const existing = await tx.rawLog.findFirst({ where: { logNumber: item.logNumber } });
+          if (!existing) {
+            let diaSum = 0;
+            let diaCount = 0;
+            if (item.purchaseDiameter1) { diaSum += item.purchaseDiameter1; diaCount++; }
+            if (item.purchaseDiameter2) { diaSum += item.purchaseDiameter2; diaCount++; }
+            if (item.purchaseDiameter3) { diaSum += item.purchaseDiameter3; diaCount++; }
+            if (item.purchaseDiameter4) { diaSum += item.purchaseDiameter4; diaCount++; }
+            const avgDia = diaCount > 0 ? diaSum / diaCount : 0;
+            const rndDia = Math.floor(avgDia);
+            const grossVol = ((rndDia * rndDia * 0.7854) / 10000) * item.purchaseLength;
+
+            await tx.rawLog.create({
+              data: {
+                partaiId: purchase.partaiId,
+                purchaseLogItemId: item.id,
+                logNumber: item.logNumber,
+                species: item.species,
+                speciesId: item.speciesId,
+                originalLength: item.purchaseLength,
+                diameter1: item.purchaseDiameter1,
+                diameter2: item.purchaseDiameter2,
+                diameter3: item.purchaseDiameter3,
+                diameter4: item.purchaseDiameter4,
+                averageDiameter: avgDia,
+                roundedDiameter: rndDia,
+                grossVolume: grossVol,
+                netVolume: grossVol,
+                status: 'AVAILABLE',
+              },
+            });
+          }
+          await tx.timberPurchaseLogItem.update({
+            where: { id: item.id },
+            data: { status: 'RECEIVED' },
+          });
+        }
+      }
+
+      return received;
+    });
+  }
+
+  async cancel(id: string, companyId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      let targetCompanyId = companyId;
+      if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
+        const firstCompany = await this.prisma.company.findFirst();
+        if (firstCompany) targetCompanyId = firstCompany.id;
+      }
+
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+      const purchase = await tx.timberPurchase.findFirst({
+        where: isObjectId
+          ? { id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) }
+          : { purchaseNumber: id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) },
+        include: { items: true, logItems: true },
+      });
+
+      if (!purchase) {
+        throw new NotFoundException('Timber purchase not found');
+      }
+
+      if (purchase.status === 'CANCELLED') {
+        throw new BadRequestException('Pembelian ini sudah dibatalkan sebelumnya');
+      }
+
+      const wasStocked = purchase.status === 'CONFIRMED' || purchase.status === 'RECEIVED';
 
       // Update status
       const cancelled = await tx.timberPurchase.update({
-        where: { id },
+        where: { id: purchase.id },
         data: { status: 'CANCELLED' },
       });
 
-      // Stock mutations (reversal)
-      for (const item of purchase.items) {
-        // Pre-flight check: we need enough stock to reverse
-        const stock = await tx.timberStock.findUnique({
-          where: {
-            locationId_timberVariantId_batch: {
-              locationId: purchase.warehouseId,
-              timberVariantId: item.timberVariantId,
-              batch: 'UNKNOWN',
+      // Reversal for sawn timber stock
+      if (wasStocked && purchase.items && purchase.items.length > 0) {
+        for (const item of purchase.items) {
+          const stock = await tx.timberStock.findUnique({
+            where: {
+              locationId_timberVariantId_batch: {
+                locationId: purchase.warehouseId,
+                timberVariantId: item.timberVariantId,
+                batch: item.batch || 'UNKNOWN',
+              },
             },
-          },
-        });
+          });
 
-        if (!stock || stock.currentPcs < item.quantityPcs) {
-          throw new BadRequestException(
-            `Insufficient stock to cancel purchase for variant ${item.timberVariantId}`,
+          if (!stock || stock.currentPcs < item.quantityPcs) {
+            throw new BadRequestException(
+              `Stok tidak mencukupi untuk membatalkan pembelian varian ${item.timberVariantId}. Stok saat ini: ${stock?.currentPcs || 0}, dibutuhkan: ${item.quantityPcs}`,
+            );
+          }
+
+          await this.inventoryLedgerService.createMovement(
+            tx,
+            purchase.warehouseId,
+            item.timberVariantId,
+            'OUT',
+            'TIMBER_PURCHASE_REVERSAL',
+            purchase.id,
+            item.quantityPcs,
+            item.volumeM3,
+            item.batch || 'UNKNOWN',
           );
         }
+      }
 
-        await this.inventoryLedgerService.createMovement(
-          tx,
-          purchase.warehouseId,
-          item.timberVariantId,
-          'OUT',
-          'TIMBER_PURCHASE_REVERSAL',
-          purchase.id,
-          item.quantityPcs,
-          item.volumeM3,
-        );
+      // Reversal for raw logs
+      if (wasStocked && purchase.logItems && purchase.logItems.length > 0) {
+        for (const item of purchase.logItems) {
+          await tx.rawLog.deleteMany({
+            where: { purchaseLogItemId: item.id, status: 'AVAILABLE' },
+          });
+          await tx.timberPurchaseLogItem.update({
+            where: { id: item.id },
+            data: { status: 'CANCELLED' },
+          });
+        }
       }
 
       return cancelled;
@@ -271,7 +357,6 @@ export class PurchaseService {
 
     return this.prisma.timberPurchase.findMany({
       where: {
-        partaiId: null,
         ...(targetCompanyId ? { company_id: targetCompanyId } : {}),
       },
       include: {
