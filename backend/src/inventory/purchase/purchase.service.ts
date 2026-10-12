@@ -382,8 +382,13 @@ export class PurchaseService {
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
     const purchase = await this.prisma.timberPurchase.findFirst({
       where: isObjectId
-        ? { id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) }
-        : { purchaseNumber: id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) },
+        ? { id }
+        : {
+            OR: [
+              { id },
+              { purchaseNumber: id },
+            ],
+          },
       include: {
         source: true,
         warehouse: true,
@@ -455,90 +460,127 @@ export class PurchaseService {
   }
 
   async updatePurchase(id: string, data: any) {
-    const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
-    const purchase = await this.prisma.timberPurchase.findFirst({
-      where: isObjectId ? { id } : { purchaseNumber: id },
-    });
-    if (!purchase) throw new Error('Purchase not found');
-    if (purchase.status !== 'DRAFT')
-      throw new Error('Can only edit DRAFT purchases');
-    const actualId = purchase.id;
-
-    // Update main purchase
-    const updated = await this.prisma.timberPurchase.update({
-      where: { id: actualId },
-      data: {
-        warehouseId: data.warehouseId || purchase.warehouseId,
-        sourceId: data.sourceId || purchase.sourceId,
-        notes: data.notes || purchase.notes,
-        purchaseDate: data.purchaseDate
-          ? new Date(data.purchaseDate)
-          : purchase.purchaseDate,
-      },
-    });
-
-    // We skip updating nested items for now to keep it simple, unless we fully recreate them
-    if (data.items && data.items.length > 0) {
-      // Recreate items
-      await this.prisma.timberPurchaseItem.deleteMany({
-        where: { timberPurchaseId: actualId },
+    return this.prisma.$transaction(async (tx) => {
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+      const purchase = await tx.timberPurchase.findFirst({
+        where: isObjectId ? { id } : { purchaseNumber: id },
+        include: { items: true, logItems: true },
       });
-      let totalPcs = 0;
-      let totalVolume = 0;
-      for (const item of data.items) {
-        totalPcs += Number(item.quantityPcs || 0);
-        totalVolume += Number(item.volumeM3 || 0);
-        await this.prisma.timberPurchaseItem.create({
-          data: {
-            timberPurchaseId: actualId,
-            timberVariantId: item.variantId,
-            quantityPcs: Number(item.quantityPcs),
-            volumeM3: Number(item.volumeM3),
-            unitPrice: Number(item.unitPrice || 0),
-          },
-        });
+      if (!purchase) throw new NotFoundException('Purchase not found');
+      if (purchase.status !== 'DRAFT') {
+        throw new BadRequestException('Hanya pembelian berstatus DRAFT yang dapat diedit');
       }
-      await this.prisma.timberPurchase.update({
+      const actualId = purchase.id;
+      const targetWarehouseId = data.warehouseId || purchase.warehouseId;
+      const willBeReceived = data.status === 'RECEIVED';
+
+      // 1. Update main purchase header
+      await tx.timberPurchase.update({
         where: { id: actualId },
-        data: { totalPcs, totalVolumeM3: totalVolume },
-      });
-    }
-
-    if (data.logItems && data.logItems.length > 0) {
-      await this.prisma.timberPurchaseLogItem.deleteMany({
-        where: { timberPurchaseId: actualId },
-      });
-      await this.prisma.rawLog.deleteMany({
-        where: {
-          purchaseLogItemId: {
-            in: (
-              await this.prisma.timberPurchaseLogItem.findMany({
-                where: { timberPurchaseId: actualId },
-              })
-            ).map((x) => x.id),
-          },
+        data: {
+          purchaseNumber: data.purchaseNumber || purchase.purchaseNumber,
+          warehouseId: targetWarehouseId,
+          sourceId: data.sourceId || purchase.sourceId,
+          notes: data.notes !== undefined ? data.notes : purchase.notes,
+          status: willBeReceived ? 'RECEIVED' : 'DRAFT',
+          purchaseDate: data.purchaseDate
+            ? new Date(data.purchaseDate)
+            : purchase.purchaseDate,
         },
-      }); // Wait, actually I just deleted them above. This is tricky. Let's just avoid complex nested log updates for now and let the user re-create or we just wipe and recreate.
+      });
 
-      // Let's do a simple wipe and recreate for logItems
-      for (const item of data.logItems) {
-        await this.prisma.timberPurchaseLogItem.create({
-          data: {
-            timberPurchaseId: actualId,
-            logNumber: item.logNumber,
-            species: item.species || 'UNKNOWN',
-            purchaseLength: Number(item.purchaseLength || 0),
-            purchaseDiameter1: Number(item.purchaseDiameter1 || 0),
-            purchaseDiameter2: Number(item.purchaseDiameter2 || 0),
-            purchaseDiameter3: Number(item.purchaseDiameter3 || 0),
-            purchaseDiameter4: Number(item.purchaseDiameter4 || 0),
-            purchaseVolume: Number(item.purchaseVolume || 0),
-          },
+      // 2. Recreate sawn timber items if provided
+      let finalItems: any[] = [];
+      if (data.items && Array.isArray(data.items)) {
+        await tx.timberPurchaseItem.deleteMany({
+          where: { timberPurchaseId: actualId },
+        });
+
+        let totalPcs = 0;
+        let totalVolume = 0;
+
+        for (const item of data.items) {
+          const variantId = item.timberVariantId || item.variantId;
+          if (!variantId) continue;
+
+          const pcs = Number(item.quantityPcs || 0);
+          const vol = Number(item.volumeM3 || 0);
+          totalPcs += pcs;
+          totalVolume += vol;
+
+          const createdItem = await tx.timberPurchaseItem.create({
+            data: {
+              timberPurchaseId: actualId,
+              timberVariantId: variantId,
+              quantityPcs: pcs,
+              volumeM3: vol,
+              purchaseThickness: Number(item.purchaseThickness || 0),
+              purchaseWidth: Number(item.purchaseWidth || 0),
+              purchaseLength: Number(item.purchaseLength || 0),
+              unitPrice: Number(item.unitPrice || 0),
+              batch: item.batch || 'UNKNOWN',
+              notes: item.notes,
+            },
+          });
+          finalItems.push(createdItem);
+        }
+
+        await tx.timberPurchase.update({
+          where: { id: actualId },
+          data: { totalPcs, totalVolumeM3: totalVolume },
         });
       }
-    }
 
-    return updated;
+      // 3. Recreate log items if provided
+      if (data.logItems && Array.isArray(data.logItems)) {
+        await tx.timberPurchaseLogItem.deleteMany({
+          where: { timberPurchaseId: actualId },
+        });
+
+        for (const item of data.logItems) {
+          if (!item.logNumber) continue;
+          await tx.timberPurchaseLogItem.create({
+            data: {
+              timberPurchaseId: actualId,
+              logNumber: item.logNumber,
+              species: item.species || 'UNKNOWN',
+              speciesId: item.speciesId,
+              purchaseLength: Number(item.purchaseLength || 0),
+              purchaseDiameter1: Number(item.purchaseDiameter1 || 0),
+              purchaseDiameter2: Number(item.purchaseDiameter2 || 0),
+              purchaseDiameter3: Number(item.purchaseDiameter3 || 0),
+              purchaseDiameter4: Number(item.purchaseDiameter4 || 0),
+              purchaseVolume: Number(item.purchaseVolume || 0),
+              status: willBeReceived ? 'RECEIVED' : 'PENDING',
+            },
+          });
+        }
+      }
+
+      // 4. If status changed to RECEIVED, execute stock mutations
+      if (willBeReceived) {
+        for (const item of finalItems) {
+          if (item.quantityPcs > 0 && item.volumeM3 > 0 && item.timberVariantId) {
+            await this.inventoryLedgerService.createMovement(
+              tx,
+              targetWarehouseId,
+              item.timberVariantId,
+              'IN',
+              'TIMBER_PURCHASE',
+              actualId,
+              item.quantityPcs,
+              item.volumeM3,
+              item.batch || 'UNKNOWN',
+            );
+          }
+        }
+      }
+
+      return tx.timberPurchase.findUnique({
+        where: { id: actualId },
+        include: { items: true, logItems: true, source: true, warehouse: true },
+      });
+    });
   }
 
   async deletePurchase(id: string) {

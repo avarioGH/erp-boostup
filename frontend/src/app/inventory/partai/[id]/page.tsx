@@ -417,9 +417,36 @@ const [partai, setPartai] = useState<any>(null);
                           })()}
                         </TableCell>
                       <TableCell>{p.purchaseDate ? new Date(p.purchaseDate).toLocaleDateString("id-ID") : "-"}</TableCell>
-                      <TableCell><Badge variant="outline" className={p.status === 'CONFIRMED' ? 'text-emerald-500 border-emerald-500 bg-emerald-500/10' : 'text-muted-foreground'}>{p.status || "DRAFT"}</Badge></TableCell>
-                      <TableCell>{(p.items?.length || 0) + (p.logItems?.length || 0)}</TableCell>
-                      <TableCell>{p.totalVolumeM3 || 0}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            p.status === 'CONFIRMED' || p.status === 'RECEIVED'
+                              ? 'text-emerald-500 border-emerald-500 bg-emerald-500/10'
+                              : p.status === 'CANCELLED'
+                              ? 'text-destructive border-destructive/30'
+                              : 'text-amber-500 border-amber-500/40 bg-amber-500/10'
+                          }
+                        >
+                          {p.status === 'RECEIVED' ? 'DITERIMA' : (p.status || "DRAFT")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-semibold text-foreground">
+                        {(() => {
+                          const pcs = p.totalPcs || (p.items || []).reduce((sum: number, it: any) => sum + Number(it.quantityPcs || 0), 0);
+                          const logs = (p.logItems || []).length;
+                          if (pcs > 0 && logs > 0) return `${pcs} Pcs / ${logs} Log`;
+                          if (pcs > 0) return `${pcs} Pcs`;
+                          if (logs > 0) return `${logs} Log`;
+                          return "-";
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const vol = p.totalVolumeM3 || (p.items || []).reduce((sum: number, it: any) => sum + Number(it.volumeM3 || 0), 0) || (p.logItems || []).reduce((sum: number, it: any) => sum + Number(it.purchaseVolume || 0), 0);
+                          return Number(vol || 0).toFixed(4);
+                        })()}
+                      </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2 ">
                           <Button variant="ghost" size="sm" className="h-8 px-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/purchase/${p.id}`) }}>
