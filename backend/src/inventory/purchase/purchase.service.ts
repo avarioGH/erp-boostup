@@ -49,6 +49,11 @@ export class PurchaseService {
       totalVolumeM3 += Number(item.volumeM3 || 0);
     }
 
+    for (const li of logItems || []) {
+      totalPcs += 1;
+      totalVolumeM3 += Number(li.purchaseVolume || 0);
+    }
+
     const isDirectlyReceived = data.status === 'RECEIVED' || data.isReceived === true;
     const initialStatus = isDirectlyReceived ? 'RECEIVED' : 'DRAFT';
 
@@ -625,14 +630,21 @@ export class PurchaseService {
       }
 
       // 3. Recreate log items if provided
+      let createdLogItems: any[] = [];
       if (data.logItems && Array.isArray(data.logItems)) {
         await tx.timberPurchaseLogItem.deleteMany({
           where: { timberPurchaseId: actualId },
         });
 
+        let logPcs = 0;
+        let logVolume = 0;
+
         for (const item of data.logItems) {
           if (!item.logNumber) continue;
-          await tx.timberPurchaseLogItem.create({
+          logPcs += 1;
+          logVolume += Number(item.purchaseVolume || 0);
+
+          const li = await tx.timberPurchaseLogItem.create({
             data: {
               timberPurchaseId: actualId,
               logNumber: item.logNumber,
@@ -647,10 +659,18 @@ export class PurchaseService {
               status: willBeReceived ? 'RECEIVED' : 'PENDING',
             },
           });
+          createdLogItems.push(li);
+        }
+
+        if (!data.items || data.items.length === 0) {
+          await tx.timberPurchase.update({
+            where: { id: actualId },
+            data: { totalPcs: logPcs, totalVolumeM3: logVolume },
+          });
         }
       }
 
-      // 4. If status changed to RECEIVED, execute stock mutations
+      // 4. If status changed to RECEIVED, execute stock mutations and log conversions
       if (willBeReceived) {
         for (const item of finalItems) {
           if (item.quantityPcs > 0 && item.volumeM3 > 0 && item.timberVariantId) {
@@ -665,6 +685,74 @@ export class PurchaseService {
               item.volumeM3,
               item.batch || 'UNKNOWN',
             );
+          }
+        }
+
+        // Convert log items to RawLog if not yet converted
+        const targetPartaiId = purchase.partaiId || data.partaiId;
+        if (targetPartaiId && createdLogItems.length > 0) {
+          for (let i = 0; i < createdLogItems.length; i++) {
+            const item = createdLogItems[i];
+            const d1 = Number(item.purchaseDiameter1 || 0);
+            const d2 = Number(item.purchaseDiameter2 || 0);
+            const d3 = Number(item.purchaseDiameter3 || 0);
+            const d4 = Number(item.purchaseDiameter4 || 0);
+            let diaSum = 0;
+            let diaCount = 0;
+            if (d1 > 0) { diaSum += d1; diaCount++; }
+            if (d2 > 0) { diaSum += d2; diaCount++; }
+            if (d3 > 0) { diaSum += d3; diaCount++; }
+            if (d4 > 0) { diaSum += d4; diaCount++; }
+            const avgDia = diaCount > 0 ? diaSum / diaCount : (d1 || d2 || 0);
+            const rndDia = Math.floor(avgDia);
+            const len = Number(item.purchaseLength || 0);
+            const grossVol = item.purchaseVolume ? Number(item.purchaseVolume) : Number((((rndDia * rndDia * 0.7854) / 10000) * len).toFixed(4));
+            const logNum = item.logNumber || `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}`;
+            const uniqueBarcode = `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
+
+            try {
+              await tx.rawLog.create({
+                data: {
+                  partaiId: targetPartaiId,
+                  purchaseLogItemId: item.id,
+                  logNumber: logNum,
+                  species: item.species || 'UNKNOWN',
+                  speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
+                  originalLength: len,
+                  diameter1: d1,
+                  diameter2: d2,
+                  diameter3: d3,
+                  diameter4: d4,
+                  averageDiameter: avgDia,
+                  roundedDiameter: rndDia,
+                  grossVolume: grossVol,
+                  netVolume: grossVol,
+                  barcode: uniqueBarcode,
+                  status: 'AVAILABLE',
+                },
+              });
+            } catch (err) {
+              await tx.rawLog.create({
+                data: {
+                  partaiId: targetPartaiId,
+                  purchaseLogItemId: item.id,
+                  logNumber: `${logNum}-${Date.now().toString().slice(-4)}`,
+                  species: item.species || 'UNKNOWN',
+                  speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
+                  originalLength: len,
+                  diameter1: d1,
+                  diameter2: d2,
+                  diameter3: d3,
+                  diameter4: d4,
+                  averageDiameter: avgDia,
+                  roundedDiameter: rndDia,
+                  grossVolume: grossVol,
+                  netVolume: grossVol,
+                  barcode: `${uniqueBarcode}-${Math.floor(Math.random() * 10000)}`,
+                  status: 'AVAILABLE',
+                },
+              });
+            }
           }
         }
       }

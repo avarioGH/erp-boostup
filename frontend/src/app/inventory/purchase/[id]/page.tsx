@@ -106,8 +106,14 @@ export default function PurchaseDetailPage() {
   const isCancelled = purchase.status === "CANCELLED";
   const isDraft = !isReceived && !isCancelled;
 
+  const isLogPurchase = (purchase.logItems && purchase.logItems.length > 0) && (!purchase.items || purchase.items.length === 0);
+  const isSawnTimberPurchase = (purchase.items && purchase.items.length > 0) && (!purchase.logItems || purchase.logItems.length === 0);
+  const isMixedPurchase = (purchase.items && purchase.items.length > 0) && (purchase.logItems && purchase.logItems.length > 0);
+
   const totalItemCount = (purchase.items || []).reduce((acc: number, it: any) => acc + (it.quantityPcs || 0), 0);
   const totalVolume = (purchase.items || []).reduce((acc: number, it: any) => acc + (it.volumeM3 || 0), 0);
+  const logVolumeTotal = (purchase.logItems || []).reduce((acc: number, it: any) => acc + (Number(it.purchaseVolume) || 0), 0);
+  const displayVolume = totalVolume > 0 ? totalVolume : (logVolumeTotal > 0 ? logVolumeTotal : (purchase.totalVolumeM3 || 0));
   const totalAmount = (purchase.items || []).reduce((acc: number, it: any) => acc + ((it.quantityPcs || 0) * (it.unitPrice || 0)), 0);
 
   return (
@@ -115,7 +121,7 @@ export default function PurchaseDetailPage() {
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
         <div className="space-y-1">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Button 
               variant="ghost" 
               size="icon" 
@@ -129,9 +135,26 @@ export default function PurchaseDetailPage() {
               <PackageOpen className="w-6 h-6 text-primary" />
               {purchase.purchaseNumber || purchase.code || "Pembelian Kayu"}
             </h1>
+            {isLogPurchase && (
+              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800 text-xs font-semibold py-0.5">
+                🪵 Log Bulat (Raw Log / DUKB)
+              </Badge>
+            )}
+            {isSawnTimberPurchase && (
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 text-xs font-semibold py-0.5">
+                🌲 Kayu Olahan (Sawn Timber)
+              </Badge>
+            )}
+            {isMixedPurchase && (
+              <Badge variant="outline" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-800 text-xs font-semibold py-0.5">
+                Campuran (Log & Sawn Timber)
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground ml-11">
-            Detail transaksi pembelian kayu dan status penerimaan ke gudang.
+            {isLogPurchase 
+              ? "Detail transaksi pembelian bahan baku kayu bulat (raw logs / DUKB) partai." 
+              : "Detail transaksi pembelian kayu olahan dan status penerimaan ke gudang."}
           </p>
         </div>
 
@@ -258,12 +281,20 @@ export default function PurchaseDetailPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-muted/20 p-4 rounded-xl border border-border">
         <div>
           <span className="text-xs text-muted-foreground font-medium">Total Item</span>
-          <p className="text-lg font-bold text-foreground">{totalItemCount > 0 ? `${totalItemCount} Pcs` : `${purchase.logItems?.length || 0} Log`}</p>
+          <p className="text-lg font-bold text-foreground">
+            {isLogPurchase
+              ? `${purchase.logItems?.length || 0} Batang Log`
+              : isSawnTimberPurchase
+              ? `${totalItemCount} Pcs Sawn Timber`
+              : totalItemCount > 0
+              ? `${totalItemCount} Pcs / ${purchase.logItems?.length || 0} Log`
+              : `${purchase.logItems?.length || 0} Log`}
+          </p>
         </div>
         <div>
           <span className="text-xs text-muted-foreground font-medium">Total Volume</span>
           <p className="text-lg font-bold text-foreground">
-            {totalVolume > 0 ? `${totalVolume.toFixed(4)} m³` : `${(purchase.totalVolumeM3 || 0).toFixed(4)} m³`}
+            {displayVolume.toFixed(4)} m³
           </p>
         </div>
         {totalAmount > 0 && (
@@ -283,93 +314,88 @@ export default function PurchaseDetailPage() {
         </div>
       )}
 
-      {/* ITEMS TABLE (SAWN TIMBER) */}
-      <Card>
-        <CardHeader className="flex flex-row justify-between items-center border-b pb-4">
-          <CardTitle className="text-base font-bold flex items-center gap-2">
-            <Layers className="w-5 h-5 text-primary" />
-            Daftar Kayu Gergajian (Sawn Timber)
-          </CardTitle>
-          <span className="text-xs text-muted-foreground">
-            {purchase.items?.length || 0} varian kayu
-          </span>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-muted/30">
-                <TableRow>
-                  <TableHead className="font-semibold">Varian / SKU</TableHead>
-                  <TableHead className="font-semibold">Jenis Kayu & Grade</TableHead>
-                  <TableHead className="font-semibold text-center">Ukuran (T x L x P)</TableHead>
-                  <TableHead className="font-semibold text-center">Jumlah (Pcs)</TableHead>
-                  <TableHead className="font-semibold text-center">Volume (M³)</TableHead>
-                  <TableHead className="font-semibold text-right">Harga Satuan</TableHead>
-                  <TableHead className="font-semibold text-right">Subtotal</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(purchase.items || []).map((item: any, i: number) => {
-                  const thickness = item.purchaseThickness || item.timberVariant?.thickness || 0;
-                  const width = item.purchaseWidth || item.timberVariant?.width || 0;
-                  const length = item.purchaseLength || item.timberVariant?.length || 0;
-                  const sku = item.timberVariant?.sku || `VAR-${thickness}x${width}x${length}`;
-                  const species = item.timberVariant?.species || item.timberVariant?.timberSpecies?.name || "-";
-                  const grade = item.timberVariant?.grade || item.timberVariant?.timberGrade?.name || "-";
-                  const subtotal = (item.quantityPcs || 0) * (item.unitPrice || 0);
-
-                  return (
-                    <TableRow key={i} className="hover:bg-muted/30">
-                      <TableCell className="font-semibold text-foreground">
-                        {sku}
-                        {item.batch && item.batch !== "UNKNOWN" && (
-                          <span className="block text-xs font-normal text-muted-foreground">Batch: {item.batch}</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium text-foreground">{species}</span>
-                        <span className="text-xs text-muted-foreground block">Grade: {grade}</span>
-                      </TableCell>
-                      <TableCell className="text-center font-mono text-sm">
-                        {thickness} × {width} × {length} mm
-                      </TableCell>
-                      <TableCell className="text-center font-bold text-foreground">
-                        {item.quantityPcs} Pcs
-                      </TableCell>
-                      <TableCell className="text-center font-mono text-sm text-muted-foreground">
-                        {(item.volumeM3 || 0).toFixed(4)} m³
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-sm">
-                        {item.unitPrice ? `Rp ${Number(item.unitPrice).toLocaleString("id-ID")}` : "-"}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-semibold text-foreground">
-                        {subtotal > 0 ? `Rp ${subtotal.toLocaleString("id-ID")}` : "-"}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                {(!purchase.items || purchase.items.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      Tidak ada data sawn timber untuk transaksi ini.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* RAW LOG ITEMS (IF ANY) */}
-      {(purchase.logItems && purchase.logItems.length > 0) && (
+      {/* ITEMS TABLE (SAWN TIMBER - ONLY SHOWN IF PURCHASE CONTAINS SAWN TIMBER) */}
+      {(purchase.items && purchase.items.length > 0) && (
         <Card>
           <CardHeader className="flex flex-row justify-between items-center border-b pb-4">
             <CardTitle className="text-base font-bold flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              Daftar Log Bulat (Raw Logs / DUKB)
+              <Layers className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              Daftar Kayu Gergajian (Sawn Timber)
             </CardTitle>
             <span className="text-xs text-muted-foreground">
+              {purchase.items.length} varian kayu
+            </span>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <TableRow>
+                    <TableHead className="font-semibold">Varian / SKU</TableHead>
+                    <TableHead className="font-semibold">Jenis Kayu & Grade</TableHead>
+                    <TableHead className="font-semibold text-center">Ukuran (T x L x P)</TableHead>
+                    <TableHead className="font-semibold text-center">Jumlah (Pcs)</TableHead>
+                    <TableHead className="font-semibold text-center">Volume (M³)</TableHead>
+                    <TableHead className="font-semibold text-right">Harga Satuan</TableHead>
+                    <TableHead className="font-semibold text-right">Subtotal</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {purchase.items.map((item: any, i: number) => {
+                    const thickness = item.purchaseThickness || item.timberVariant?.thickness || 0;
+                    const width = item.purchaseWidth || item.timberVariant?.width || 0;
+                    const length = item.purchaseLength || item.timberVariant?.length || 0;
+                    const sku = item.timberVariant?.sku || `VAR-${thickness}x${width}x${length}`;
+                    const species = item.timberVariant?.species || item.timberVariant?.timberSpecies?.name || "-";
+                    const grade = item.timberVariant?.grade || item.timberVariant?.timberGrade?.name || "-";
+                    const subtotal = (item.quantityPcs || 0) * (item.unitPrice || 0);
+
+                    return (
+                      <TableRow key={i} className="hover:bg-muted/30">
+                        <TableCell className="font-semibold text-foreground">
+                          {sku}
+                          {item.batch && item.batch !== "UNKNOWN" && (
+                            <span className="block text-xs font-normal text-muted-foreground">Batch: {item.batch}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-medium text-foreground">{species}</span>
+                          <span className="text-xs text-muted-foreground block">Grade: {grade}</span>
+                        </TableCell>
+                        <TableCell className="text-center font-mono text-sm">
+                          {thickness} × {width} × {length} mm
+                        </TableCell>
+                        <TableCell className="text-center font-bold text-foreground">
+                          {item.quantityPcs} Pcs
+                        </TableCell>
+                        <TableCell className="text-center font-mono text-sm text-muted-foreground">
+                          {(item.volumeM3 || 0).toFixed(4)} m³
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-sm">
+                          {item.unitPrice ? `Rp ${Number(item.unitPrice).toLocaleString("id-ID")}` : "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-semibold text-foreground">
+                          {subtotal > 0 ? `Rp ${subtotal.toLocaleString("id-ID")}` : "-"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* RAW LOG ITEMS (ONLY SHOWN IF PURCHASE CONTAINS RAW LOGS) */}
+      {(purchase.logItems && purchase.logItems.length > 0) && (
+        <Card className="border-blue-200 dark:border-blue-900/50">
+          <CardHeader className="flex flex-row justify-between items-center border-b pb-4 bg-blue-50/20 dark:bg-blue-950/20">
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              Daftar Log Bulat (Raw Logs / DUKB)
+            </CardTitle>
+            <span className="text-xs text-muted-foreground font-medium">
               {purchase.logItems.length} batang log
             </span>
           </CardHeader>
@@ -389,19 +415,21 @@ export default function PurchaseDetailPage() {
                 <TableBody>
                   {purchase.logItems.map((log: any, i: number) => (
                     <TableRow key={i} className="hover:bg-muted/30">
-                      <TableCell className="font-semibold text-foreground">{log.logNumber}</TableCell>
-                      <TableCell>{log.species}</TableCell>
+                      <TableCell className="font-semibold text-foreground font-mono">{log.logNumber}</TableCell>
+                      <TableCell className="font-medium">{log.species}</TableCell>
                       <TableCell className="text-center font-mono">{log.purchaseLength} m</TableCell>
                       <TableCell className="text-center font-mono text-xs">
-                        {log.purchaseDiameter1 || 0} / {log.purchaseDiameter2 || 0} / {log.purchaseDiameter3 || 0} / {log.purchaseDiameter4 || 0} cm
+                        {log.purchaseDiameter1 || 0} / {log.purchaseDiameter2 || 0} {log.purchaseDiameter3 ? `/ ${log.purchaseDiameter3} / ${log.purchaseDiameter4}` : ''} cm
                       </TableCell>
-                      <TableCell className="text-center font-mono font-medium">{log.purchaseVolume} m³</TableCell>
+                      <TableCell className="text-center font-mono font-bold text-blue-600 dark:text-blue-400">
+                        {Number(log.purchaseVolume || 0).toFixed(4)} m³
+                      </TableCell>
                       <TableCell className="text-center">
                         <Badge
                           variant={log.status === "RECEIVED" ? "default" : "secondary"}
                           className={log.status === "RECEIVED" ? "bg-emerald-500/10 text-emerald-600 border-emerald-300" : ""}
                         >
-                          {log.status === "RECEIVED" ? "Diterima" : "Draft / Pending"}
+                          {log.status === "RECEIVED" ? "Diterima (DUKB)" : "Draft / Pending"}
                         </Badge>
                       </TableCell>
                     </TableRow>
@@ -410,6 +438,12 @@ export default function PurchaseDetailPage() {
               </Table>
             </div>
           </CardContent>
+        </Card>
+      )}
+
+      {(!purchase.items || purchase.items.length === 0) && (!purchase.logItems || purchase.logItems.length === 0) && (
+        <Card className="p-8 text-center text-muted-foreground border-dashed">
+          Tidak ada data barang (sawn timber atau log bulat) untuk transaksi ini.
         </Card>
       )}
     </div>

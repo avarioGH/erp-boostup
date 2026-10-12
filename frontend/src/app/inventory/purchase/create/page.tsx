@@ -72,6 +72,9 @@ export default function CreatePurchasePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const partaiIdFromUrl = searchParams.get('partaiId') || '';
+  const typeFromUrl = searchParams.get('type') || '';
+  const initialPurchaseType = (typeFromUrl === 'raw-log' || typeFromUrl === 'log') ? 'raw-log' : 'sawn-timber';
+
   const [partais, setPartais] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [sources, setSources] = useState<any[]>([])
@@ -84,7 +87,12 @@ export default function CreatePurchasePage() {
     if (partaiIdFromUrl) {
       setForm(prev => ({ ...prev, partaiId: partaiIdFromUrl }));
     }
-  }, [partaiIdFromUrl]);
+    if (typeFromUrl === 'raw-log' || typeFromUrl === 'log') {
+      setForm(prev => ({ ...prev, purchaseType: 'raw-log' }));
+    } else if (typeFromUrl === 'sawn-timber') {
+      setForm(prev => ({ ...prev, purchaseType: 'sawn-timber' }));
+    }
+  }, [partaiIdFromUrl, typeFromUrl]);
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false)
   const [activeVariantRowIndex, setActiveVariantRowIndex] = useState<number>(0)
   const [newVariant, setNewVariant] = useState({ species: "", grade: "", thickness: "", width: "", length: "" })
@@ -157,7 +165,7 @@ export default function CreatePurchasePage() {
     sourceId: "",
     warehouseId: "",
     notes: "",
-    purchaseType: "sawn-timber",
+    purchaseType: initialPurchaseType,
     status: "RECEIVED",
     items: [{ 
       timberVariantId: "", 
@@ -377,9 +385,15 @@ export default function CreatePurchasePage() {
                   </SelectContent>
                 </Select>
                 <p className="text-[12px] text-muted-foreground">
-                  {form.status === 'RECEIVED' 
-                    ? "✓ Stok sawn timber akan langsung otomatis bertambah ke gudang saat disimpan." 
-                    : "⏳ Stok belum bertambah. Dapat diterima nanti via tombol 'Terima Barang'."}
+                  {form.purchaseType === 'raw-log' ? (
+                    form.status === 'RECEIVED' 
+                      ? "✓ Data log bulat akan langsung tercatat dan masuk ke DUKB partai saat disimpan." 
+                      : "⏳ Log disimpan sebagai DRAFT (dapat diukur ulang / diverifikasi di tab DUKB)."
+                  ) : (
+                    form.status === 'RECEIVED' 
+                      ? "✓ Stok sawn timber akan langsung otomatis bertambah ke gudang saat disimpan." 
+                      : "⏳ Stok belum bertambah. Dapat diterima nanti via tombol 'Terima Barang'."
+                  )}
                 </p>
               </div>
               <div className="space-y-2">
@@ -389,9 +403,21 @@ export default function CreatePurchasePage() {
             </div>
 
             <Tabs value={form.purchaseType} onValueChange={(v) => setForm({...form, purchaseType: v})} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="sawn-timber">Beli Kayu Gergajian (Sawn Timber)</TabsTrigger>
-                <TabsTrigger value="raw-log">Beli Log Bulat (Raw Log / DUKB)</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-6 h-12 p-1 bg-muted/70 border border-border">
+                <TabsTrigger 
+                  value="raw-log" 
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white font-bold flex items-center justify-center gap-2 text-sm"
+                >
+                  <span className="text-base">🪵</span>
+                  <span>Beli Log Bulat (Raw Log / DUKB)</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="sawn-timber" 
+                  className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white font-bold flex items-center justify-center gap-2 text-sm"
+                >
+                  <span className="text-base">🌲</span>
+                  <span>Beli Kayu Olahan (Sawn Timber)</span>
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="sawn-timber" className="space-y-4">

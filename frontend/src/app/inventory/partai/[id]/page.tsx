@@ -388,21 +388,34 @@ export default function PartaiDetailPage({ params }: { params: any }) {
         {/* 1. PURCHASE LOGS */}
         <TabsContent value="purchase">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <CardTitle>Purchase Log / Sawn Timber</CardTitle>
-                <CardDescription>Data pembelian awal bahan baku yang masuk ke partai ini.</CardDescription>
+                <CardDescription>Data pembelian awal bahan baku (log bulat atau sawn timber) untuk partai ini.</CardDescription>
               </div>
-              <Button onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}`)}>
-                <Plus className="w-4 h-4 mr-2" /> Add Purchase
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=raw-log`)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> + Beli Log Bulat (DUKB)
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=sawn-timber`)}
+                  className="border-emerald-600/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 font-semibold"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> + Beli Sawn Timber
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>No. Pembelian</TableHead>
-                      <TableHead>Nama Log</TableHead>
+                    <TableHead>Tipe Pembelian</TableHead>
+                    <TableHead>Spesies / Detail</TableHead>
                     <TableHead>Tanggal</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Total Item</TableHead>
@@ -411,27 +424,55 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(partai.purchases || []).map((p: any) => (
+                  {(partai.purchases || []).map((p: any) => {
+                    const hasLogs = p.logItems && p.logItems.length > 0;
+                    const hasItems = p.items && p.items.length > 0;
+                    const logCount = (p.logItems || []).length;
+                    const itemCount = p.totalPcs || (p.items || []).reduce((sum: number, it: any) => sum + Number(it.quantityPcs || 0), 0);
+
+                    return (
                     <TableRow key={p.id} className="group hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/inventory/purchase/${p.id}`)}>
-                      <TableCell className="font-medium">{p.purchaseNumber || p.code}</TableCell>
-                        <TableCell>
-                          {(() => {
-                            if (p.logItems && p.logItems.length > 0) {
-                              const species = Array.from(new Set(p.logItems.map((l: any) => l.species).filter(Boolean)));
-                              if (species.length > 0) return species.join(', ');
-                              return "Raw Logs";
-                            }
-                            if (p.items && p.items.length > 0) return "Sawn Timber";
-                            return "-";
-                          })()}
-                        </TableCell>
+                      <TableCell className="font-semibold text-foreground font-mono">{p.purchaseNumber || p.code}</TableCell>
+                      <TableCell>
+                        {hasLogs && !hasItems && (
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800 text-xs font-semibold py-0.5">
+                            🪵 Log Bulat (DUKB)
+                          </Badge>
+                        )}
+                        {hasItems && !hasLogs && (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 text-xs font-semibold py-0.5">
+                            🌲 Sawn Timber
+                          </Badge>
+                        )}
+                        {hasLogs && hasItems && (
+                          <Badge variant="outline" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-800 text-xs font-semibold py-0.5">
+                            Campuran
+                          </Badge>
+                        )}
+                        {!hasLogs && !hasItems && (
+                          <span className="text-muted-foreground text-xs">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          if (hasLogs) {
+                            const species = Array.from(new Set(p.logItems.map((l: any) => l.species).filter(Boolean)));
+                            if (species.length > 0) return species.join(', ');
+                            return "Raw Logs";
+                          }
+                          if (hasItems) {
+                            return `${p.items.length} varian kayu`;
+                          }
+                          return "-";
+                        })()}
+                      </TableCell>
                       <TableCell>{p.purchaseDate ? new Date(p.purchaseDate).toLocaleDateString("id-ID") : "-"}</TableCell>
                       <TableCell>
                         <Badge
                           variant="outline"
                           className={
                             p.status === 'CONFIRMED' || p.status === 'RECEIVED'
-                              ? 'text-emerald-500 border-emerald-500 bg-emerald-500/10'
+                              ? 'text-emerald-500 border-emerald-500 bg-emerald-500/10 font-bold'
                               : p.status === 'CANCELLED'
                               ? 'text-destructive border-destructive/30'
                               : 'text-amber-500 border-amber-500/40 bg-amber-500/10'
@@ -441,16 +482,12 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                         </Badge>
                       </TableCell>
                       <TableCell className="font-semibold text-foreground">
-                        {(() => {
-                          const pcs = p.totalPcs || (p.items || []).reduce((sum: number, it: any) => sum + Number(it.quantityPcs || 0), 0);
-                          const logs = (p.logItems || []).length;
-                          if (pcs > 0 && logs > 0) return `${pcs} Pcs / ${logs} Log`;
-                          if (pcs > 0) return `${pcs} Pcs`;
-                          if (logs > 0) return `${logs} Log`;
-                          return "-";
-                        })()}
+                        {hasLogs && !hasItems && `${logCount} Log`}
+                        {hasItems && !hasLogs && `${itemCount} Pcs`}
+                        {hasLogs && hasItems && `${itemCount} Pcs / ${logCount} Log`}
+                        {!hasLogs && !hasItems && "-"}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="font-mono font-medium">
                         {(() => {
                           const vol = p.totalVolumeM3 || (p.items || []).reduce((sum: number, it: any) => sum + Number(it.volumeM3 || 0), 0) || (p.logItems || []).reduce((sum: number, it: any) => sum + Number(it.purchaseVolume || 0), 0);
                           return Number(vol || 0).toFixed(4);
@@ -570,7 +607,12 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 <CardTitle>Data Ukur Kayu Bulat (DUKB)</CardTitle>
                 <CardDescription>Daftar log mentah yang terdaftar dalam partai ini.</CardDescription>
               </div>
-              
+              <Button 
+                onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=raw-log`)}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
+              >
+                <Plus className="w-4 h-4 mr-1.5" /> + Beli Log Baru (DUKB)
+              </Button>
             </CardHeader>
             <CardContent>
               <Table>
