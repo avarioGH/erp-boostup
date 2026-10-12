@@ -2737,7 +2737,7 @@ model RawLog {
   trimmingVolume Float? // Vol Tr (m3)
   netVolume      Float // Netto (m3)
 
-  barcode       String?  @unique
+  barcode       String?
   diameterClass String?
   batch         String? // Partai
   supplierRef   String?

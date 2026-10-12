@@ -230,6 +230,8 @@ export class PartaiService {
               ? item.logNumber.trim()
               : `LOG-${p.purchaseNumber || 'PUR'}-${i + 1}`;
 
+            const uniqueBarcode = item.barcode || `LOG-${p.purchaseNumber || 'PUR'}-${i + 1}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
+
             try {
               const newRawLog = await this.prisma.rawLog.create({
                 data: {
@@ -247,13 +249,39 @@ export class PartaiService {
                   roundedDiameter: rndDia,
                   grossVolume: grossVol,
                   netVolume: grossVol,
+                  barcode: uniqueBarcode,
                   status: 'AVAILABLE',
                 },
               });
               partai.rawLogs.push(newRawLog);
               existingPurchaseLogItemIds.add(item.id);
             } catch (err) {
-              console.error('Failed to auto-sync raw log for item:', item.id, err);
+              try {
+                const retryLog = await this.prisma.rawLog.create({
+                  data: {
+                    partaiId: partai.id,
+                    purchaseLogItemId: item.id,
+                    logNumber: `${logNum}-${Date.now().toString().slice(-4)}`,
+                    species: item.species || 'UNKNOWN',
+                    speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
+                    originalLength: len,
+                    diameter1: d1,
+                    diameter2: d2,
+                    diameter3: d3,
+                    diameter4: d4,
+                    averageDiameter: avgDia,
+                    roundedDiameter: rndDia,
+                    grossVolume: grossVol,
+                    netVolume: grossVol,
+                    barcode: `${uniqueBarcode}-${Math.floor(Math.random() * 10000)}`,
+                    status: 'AVAILABLE',
+                  },
+                });
+                partai.rawLogs.push(retryLog);
+                existingPurchaseLogItemIds.add(item.id);
+              } catch (retryErr) {
+                console.error('Failed to auto-sync raw log for item:', item.id, retryErr);
+              }
             }
           }
         }

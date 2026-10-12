@@ -148,29 +148,55 @@ export class PurchaseService {
               const len = Number(item.purchaseLength || 0);
               const grossVol = item.purchaseVolume ? Number(item.purchaseVolume) : Number((((rndDia * rndDia * 0.7854) / 10000) * len).toFixed(4));
 
-              const logNum = (item.logNumber && item.logNumber.trim() !== '')
+              let logNum = (item.logNumber && item.logNumber.trim() !== '')
                 ? item.logNumber.trim()
                 : `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}`;
 
-              await tx.rawLog.create({
-                data: {
-                  partaiId: purchase.partaiId,
-                  purchaseLogItemId: item.id,
-                  logNumber: logNum,
-                  species: item.species || 'UNKNOWN',
-                  speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
-                  originalLength: len,
-                  diameter1: d1,
-                  diameter2: d2,
-                  diameter3: d3,
-                  diameter4: d4,
-                  averageDiameter: avgDia,
-                  roundedDiameter: rndDia,
-                  grossVolume: grossVol,
-                  netVolume: grossVol,
-                  status: 'AVAILABLE',
-                },
-              });
+              const uniqueBarcode = item.barcode || `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
+
+              try {
+                await tx.rawLog.create({
+                  data: {
+                    partaiId: purchase.partaiId,
+                    purchaseLogItemId: item.id,
+                    logNumber: logNum,
+                    species: item.species || 'UNKNOWN',
+                    speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
+                    originalLength: len,
+                    diameter1: d1,
+                    diameter2: d2,
+                    diameter3: d3,
+                    diameter4: d4,
+                    averageDiameter: avgDia,
+                    roundedDiameter: rndDia,
+                    grossVolume: grossVol,
+                    netVolume: grossVol,
+                    barcode: uniqueBarcode,
+                    status: 'AVAILABLE',
+                  },
+                });
+              } catch (createErr: any) {
+                await tx.rawLog.create({
+                  data: {
+                    partaiId: purchase.partaiId,
+                    purchaseLogItemId: item.id,
+                    logNumber: `${logNum}-${Date.now().toString().slice(-4)}`,
+                    species: item.species || 'UNKNOWN',
+                    speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
+                    originalLength: len,
+                    diameter1: d1,
+                    diameter2: d2,
+                    diameter3: d3,
+                    diameter4: d4,
+                    averageDiameter: avgDia,
+                    roundedDiameter: rndDia,
+                    grossVolume: grossVol,
+                    netVolume: grossVol,
+                    barcode: `${uniqueBarcode}-${Math.floor(Math.random() * 10000)}`,
+                    status: 'AVAILABLE',
+                  },
+                });
+              }
             }
           }
         }
@@ -272,29 +298,55 @@ export class PurchaseService {
             const len = Number(item.purchaseLength || 0);
             const grossVol = item.purchaseVolume ? Number(item.purchaseVolume) : Number((((rndDia * rndDia * 0.7854) / 10000) * len).toFixed(4));
 
-            const logNum = (item.logNumber && item.logNumber.trim() !== '')
+            let logNum = (item.logNumber && item.logNumber.trim() !== '')
               ? item.logNumber.trim()
               : `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}`;
 
-            await tx.rawLog.create({
-              data: {
-                partaiId: purchase.partaiId,
-                purchaseLogItemId: item.id,
-                logNumber: logNum,
-                species: item.species || 'UNKNOWN',
-                speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
-                originalLength: len,
-                diameter1: d1,
-                diameter2: d2,
-                diameter3: d3,
-                diameter4: d4,
-                averageDiameter: avgDia,
-                roundedDiameter: rndDia,
-                grossVolume: grossVol,
-                netVolume: grossVol,
-                status: 'AVAILABLE',
-              },
-            });
+            const uniqueBarcode = item.barcode || `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
+
+            try {
+              await tx.rawLog.create({
+                data: {
+                  partaiId: purchase.partaiId,
+                  purchaseLogItemId: item.id,
+                  logNumber: logNum,
+                  species: item.species || 'UNKNOWN',
+                  speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
+                  originalLength: len,
+                  diameter1: d1,
+                  diameter2: d2,
+                  diameter3: d3,
+                  diameter4: d4,
+                  averageDiameter: avgDia,
+                  roundedDiameter: rndDia,
+                  grossVolume: grossVol,
+                  netVolume: grossVol,
+                  barcode: uniqueBarcode,
+                  status: 'AVAILABLE',
+                },
+              });
+            } catch (createErr: any) {
+              await tx.rawLog.create({
+                data: {
+                  partaiId: purchase.partaiId,
+                  purchaseLogItemId: item.id,
+                  logNumber: `${logNum}-${Date.now().toString().slice(-4)}`,
+                  species: item.species || 'UNKNOWN',
+                  speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
+                  originalLength: len,
+                  diameter1: d1,
+                  diameter2: d2,
+                  diameter3: d3,
+                  diameter4: d4,
+                  averageDiameter: avgDia,
+                  roundedDiameter: rndDia,
+                  grossVolume: grossVol,
+                  netVolume: grossVol,
+                  barcode: `${uniqueBarcode}-${Math.floor(Math.random() * 10000)}`,
+                  status: 'AVAILABLE',
+                },
+              });
+            }
           }
           await tx.timberPurchaseLogItem.update({
             where: { id: item.id },
