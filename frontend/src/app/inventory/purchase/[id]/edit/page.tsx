@@ -31,11 +31,12 @@ export default function EditPurchasePage() {
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
   const [speciesList, setSpeciesList] = useState<any[]>([]);
+  const [gradeList, setGradeList] = useState<any[]>([]);
   const [error, setError] = useState("");
 
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const [activeVariantRowIndex, setActiveVariantRowIndex] = useState<number>(0);
-  const [newVariant, setNewVariant] = useState({ species: "", grade: "", thickness: "", width: "", length: "" });
+  const [newVariant, setNewVariant] = useState({ species: "", speciesId: "", grade: "", gradeId: "", thickness: "", width: "", length: "" });
   const [creatingVariant, setCreatingVariant] = useState(false);
 
   const [form, setForm] = useState({
@@ -85,11 +86,12 @@ export default function EditPurchasePage() {
       setError("");
 
       try {
-        const [srcRes, whRes, varRes, specRes, purchaseRes] = await Promise.all([
+        const [srcRes, whRes, varRes, specRes, gradeRes, purchaseRes] = await Promise.all([
           api.get("/inventory/master-data/timber-source").catch(() => ({ data: [] })),
           api.get("/inventory/warehouses").catch(() => ({ data: [] })),
           api.get("/inventory/master-data/timber-variant").catch(() => ({ data: [] })),
           api.get("/inventory/master-data/timber-species").catch(() => ({ data: [] })),
+          api.get("/inventory/master-data/timber-grade").catch(() => ({ data: [] })),
           api.get(`/inventory/timber-purchase/${purchaseId}`).catch((err) => {
             console.error("Gagal mengambil data purchase:", err);
             return { data: null };
@@ -102,6 +104,7 @@ export default function EditPurchasePage() {
         const rawWh = whRes?.data?.data || whRes?.data || [];
         const rawVar = varRes?.data?.data || varRes?.data || [];
         const rawSpec = specRes?.data?.data || specRes?.data || [];
+        const rawGrade = gradeRes?.data?.data || gradeRes?.data || [];
         const p = purchaseRes?.data?.data || purchaseRes?.data;
 
         if (!p) {
@@ -136,6 +139,7 @@ export default function EditPurchasePage() {
         setWarehouses(mergedWarehouses);
         setVariants(mergedVariants);
         setSpeciesList(Array.isArray(rawSpec) ? rawSpec : []);
+        setGradeList(Array.isArray(rawGrade) ? rawGrade : []);
 
         const isRawLog = p.logItems && p.logItems.length > 0 && (!p.items || p.items.length === 0);
 
@@ -211,11 +215,21 @@ export default function EditPurchasePage() {
 
   const handleCreateVariant = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newVariant.species) {
+      alert("Silakan pilih Species (Jenis Kayu)");
+      return;
+    }
+    if (!newVariant.grade) {
+      alert("Silakan pilih Grade (Kualitas)");
+      return;
+    }
     setCreatingVariant(true);
     try {
       const payload = {
         species: (newVariant.species || "").trim().toUpperCase(),
+        speciesId: newVariant.speciesId || undefined,
         grade: (newVariant.grade || "").trim().toUpperCase(),
+        gradeId: newVariant.gradeId || undefined,
         thickness: Number(newVariant.thickness || 0),
         width: Number(newVariant.width || 0),
         length: Number(newVariant.length || 0),
@@ -239,7 +253,7 @@ export default function EditPurchasePage() {
         }
 
         setIsVariantModalOpen(false);
-        setNewVariant({ species: "", grade: "", thickness: "", width: "", length: "" });
+        setNewVariant({ species: "", speciesId: "", grade: "", gradeId: "", thickness: "", width: "", length: "" });
       }
     } catch (err: any) {
       console.error("Gagal membuat master varian:", err);
@@ -612,40 +626,66 @@ export default function EditPurchasePage() {
                     </DialogHeader>
                     <form onSubmit={handleCreateVariant} className="space-y-4">
                       <div>
-                        <Label>Species (Jenis Kayu)</Label>
-                        <Input
-                          value={newVariant.species}
-                          onChange={(e) => setNewVariant({ ...newVariant, species: e.target.value })}
-                          placeholder="e.g. MERANTI / KERUING / JATI"
-                          list="species-options-edit"
-                          required
-                        />
-                        {speciesList.length > 0 && (
-                          <datalist id="species-options-edit">
-                            {speciesList.map((s: any, idx: number) => (
-                              <option key={idx} value={s.name || s.code} />
-                            ))}
-                          </datalist>
-                        )}
+                        <Label>Species (Jenis Kayu) <span className="text-destructive">*</span></Label>
+                        <Select
+                          value={newVariant.speciesId || ""}
+                          onValueChange={(val) => {
+                            const selected = speciesList.find((s: any) => s.id === val);
+                            if (selected) {
+                              setNewVariant((prev) => ({
+                                ...prev,
+                                speciesId: selected.id,
+                                species: selected.name || selected.code || "",
+                              }));
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih Jenis Kayu (Species)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {speciesList.length === 0 ? (
+                              <SelectItem value="__EMPTY__" disabled>Belum ada master species</SelectItem>
+                            ) : (
+                              speciesList.map((s: any) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                  {s.name} {s.code && s.code !== s.name ? `(${s.code})` : ""}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div>
-                        <Label>Grade (Kualitas)</Label>
-                        <Input
-                          value={newVariant.grade}
-                          onChange={(e) => setNewVariant({ ...newVariant, grade: e.target.value })}
-                          placeholder="e.g. A / B / C / EXPORT / REJECT"
-                          list="grade-options-edit"
-                          required
-                        />
-                        <datalist id="grade-options-edit">
-                          <option value="A" />
-                          <option value="B" />
-                          <option value="C" />
-                          <option value="EXPORT" />
-                          <option value="REJECT" />
-                          <option value="BALOK" />
-                          <option value="PAPAN" />
-                        </datalist>
+                        <Label>Grade (Kualitas) <span className="text-destructive">*</span></Label>
+                        <Select
+                          value={newVariant.gradeId || ""}
+                          onValueChange={(val) => {
+                            const selected = gradeList.find((g: any) => g.id === val);
+                            if (selected) {
+                              setNewVariant((prev) => ({
+                                ...prev,
+                                gradeId: selected.id,
+                                grade: selected.code || selected.name || "",
+                              }));
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih Kualitas (Grade)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {gradeList.length === 0 ? (
+                              <SelectItem value="__EMPTY__" disabled>Belum ada master grade</SelectItem>
+                            ) : (
+                              gradeList.map((g: any) => (
+                                <SelectItem key={g.id} value={g.id}>
+                                  {g.code && g.name && g.code !== g.name ? `${g.code} - ${g.name}` : (g.name || g.code)}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
                         <div>
