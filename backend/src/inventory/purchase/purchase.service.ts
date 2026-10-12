@@ -157,7 +157,7 @@ export class PurchaseService {
                 ? item.logNumber.trim()
                 : `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}`;
 
-              const uniqueBarcode = item.barcode || `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
+              const uniqueBarcode = (item as any).barcode || `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
 
               try {
                 await tx.rawLog.create({
@@ -307,7 +307,7 @@ export class PurchaseService {
               ? item.logNumber.trim()
               : `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}`;
 
-            const uniqueBarcode = item.barcode || `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
+            const uniqueBarcode = (item as any).barcode || `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
 
             try {
               await tx.rawLog.create({

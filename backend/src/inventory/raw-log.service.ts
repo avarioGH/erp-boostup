@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   BadRequestException,
   NotFoundException,
@@ -100,7 +100,7 @@ export class RawLogService {
       );
 
     if (data.barcode) {
-      const existingBarcode = await this.prisma.rawLog.findUnique({
+      const existingBarcode = await this.prisma.rawLog.findFirst({
         where: { barcode: data.barcode },
       });
       if (existingBarcode)
@@ -289,7 +289,7 @@ export class RawLogService {
           );
 
         if (data.barcode) {
-          const existingBarcode = await tx.rawLog.findUnique({
+          const existingBarcode = await tx.rawLog.findFirst({
             where: { barcode: data.barcode },
           });
           if (existingBarcode)
