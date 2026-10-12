@@ -1036,9 +1036,11 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                       <Button 
                         className="w-full bg-amber-500 hover:bg-amber-600 text-white" 
                         onClick={async () => {
-                          
                           try {
-                            await TimberAPI.createInputLog({ trimmedLogIds: [t.id] });
+                            await TimberAPI.createInputLog({ 
+                              trimmedLogIds: [t.id],
+                              locationId: t.locationId || partai?.warehouseId || partai?.warehouse?.id,
+                            });
                             toast({ title: "Berhasil", description: `WIP Job untuk log ${t.trimNumber} berhasil dibuat.` });
                             fetchPartai();
                           } catch (err: any) {

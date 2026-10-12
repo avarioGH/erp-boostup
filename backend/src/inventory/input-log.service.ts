@@ -98,10 +98,11 @@ export class InputLogService {
   async getInputLog(id: string) {
     if (!id || id === 'undefined' || !/^[a-f\d]{24}$/i.test(id))
       throw new NotFoundException('Input log not found');
-    const log = await this.prisma.inputLog.findUnique({
+    let log = await this.prisma.inputLog.findUnique({
       where: { id },
       include: {
         location: true,
+        partai: true,
         sawnOutputs: { include: { items: true } },
         items: {
           include: {
@@ -113,6 +114,34 @@ export class InputLogService {
       },
     });
     if (!log) throw new NotFoundException('Input log not found');
+
+    // Auto-heal missing locationId on existing records
+    if (!log.locationId) {
+      const fallbackWh =
+        log.items?.[0]?.trimmedLog?.locationId ||
+        log.items?.[0]?.trimmedLog?.rawLog?.locationId ||
+        (await this.prisma.warehouse.findFirst())?.id;
+
+      if (fallbackWh) {
+        log = await this.prisma.inputLog.update({
+          where: { id: log.id },
+          data: { locationId: fallbackWh },
+          include: {
+            location: true,
+            partai: true,
+            sawnOutputs: { include: { items: true } },
+            items: {
+              include: {
+                trimmedLog: {
+                  include: { rawLog: true },
+                },
+              },
+            },
+          },
+        });
+      }
+    }
+
     return log;
   }
 
@@ -205,6 +234,12 @@ export class InputLogService {
           `Input number ${inputNumber} already exists`,
         );
 
+      let targetLocationId = locationId || trimmedLogs[0].locationId || (trimmedLogs[0] as any)?.rawLog?.locationId;
+      if (!targetLocationId) {
+        const defaultWh = await tx.warehouse.findFirst();
+        if (defaultWh) targetLocationId = defaultWh.id;
+      }
+
       const inputLog = await tx.inputLog.create({
         data: {
           inputNumber,
@@ -212,8 +247,8 @@ export class InputLogService {
           shift,
           operatorName,
           machine,
-          locationId: locationId || trimmedLogs[0].locationId,
-            partaiId: trimmedLogs[0].partaiId,
+          locationId: targetLocationId || null,
+          partaiId: trimmedLogs[0].partaiId,
           batch,
           species,
           totalQty,

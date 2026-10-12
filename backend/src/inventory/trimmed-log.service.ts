@@ -79,7 +79,7 @@ export class TrimmedLogService {
     return this.prisma.$transaction(async (tx) => {
       const parent = await tx.rawLog.findUnique({
         where: { id: rawLogId },
-        include: { trimmedLogs: true },
+        include: { trimmedLogs: true, partai: true },
       });
       if (!parent) throw new NotFoundException('Parent raw log not found');
 
@@ -175,7 +175,7 @@ export class TrimmedLogService {
           trimmingVolume: trimmingVol || null,
           netVolume: netVol,
           barcode: data.barcode || `TRIM-${Date.now()}`,
-          locationId: data.locationId || parent.locationId,
+          locationId: data.locationId || parent.locationId || null,
           notes: data.notes,
         },
       });
@@ -254,7 +254,7 @@ export class TrimmedLogService {
       try {
         const parent = await this.prisma.rawLog.findUnique({
           where: { id: rawLogId },
-          include: { trimmedLogs: true },
+          include: { trimmedLogs: true, partai: true },
         });
 
         if (!parent) {
@@ -283,7 +283,7 @@ export class TrimmedLogService {
           gerowong: parent.gerowong || 0,
           trimmingLength: trimmingLength || 0,
           species: parent.species,
-          locationId: parent.locationId,
+          locationId: parent.locationId || null,
         };
 
         const child = await this.createTrimmedLog(rawLogId, trimData);

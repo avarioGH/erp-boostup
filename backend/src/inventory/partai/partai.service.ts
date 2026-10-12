@@ -280,6 +280,7 @@ export class PartaiService {
               const newRawLog = await this.prisma.rawLog.create({
                 data: {
                   partaiId: partai.id,
+                  locationId: p.warehouseId || null,
                   purchaseLogItemId: item.id,
                   logNumber: logNum,
                   species: item.species || 'UNKNOWN',
@@ -305,6 +306,7 @@ export class PartaiService {
                 const retryLog = await this.prisma.rawLog.create({
                   data: {
                     partaiId: partai.id,
+                    locationId: p.warehouseId || null,
                     purchaseLogItemId: item.id,
                     logNumber: `${logNum}-${Date.now().toString().slice(-4)}`,
                     species: item.species || 'UNKNOWN',

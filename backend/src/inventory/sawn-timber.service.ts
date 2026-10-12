@@ -190,12 +190,10 @@ export class SawnTimberService {
         throw new BadRequestException('Output must contain at least one item');
       if (!inputLogId || !/^[a-f\d]{24}$/i.test(inputLogId))
         throw new BadRequestException('Invalid input log ID');
-      if (!locationId || !/^[a-f\d]{24}$/i.test(locationId))
-        throw new BadRequestException('Warehouse (locationId) is required');
 
       const inputLog = await tx.inputLog.findUnique({
         where: { id: inputLogId },
-        
+        include: { partai: true, location: true },
       });
       if (!inputLog) throw new NotFoundException('Input log not found');
       if (inputLog.status !== 'AVAILABLE' && inputLog.status !== 'IN_PROCESS') {
@@ -204,13 +202,37 @@ export class SawnTimberService {
         );
       }
 
+      let resolvedLocationId = locationId;
+      if (!resolvedLocationId || !/^[a-f\d]{24}$/i.test(resolvedLocationId)) {
+        resolvedLocationId = inputLog.locationId;
+      }
+      if (!resolvedLocationId) {
+        const firstWh = await tx.warehouse.findFirst();
+        resolvedLocationId = firstWh?.id;
+      }
+      if (!resolvedLocationId) {
+        throw new BadRequestException('Warehouse (locationId) is required');
+      }
+
+      // Auto-heal inputLog if missing locationId
+      if (!inputLog.locationId && resolvedLocationId) {
+        await tx.inputLog.update({
+          where: { id: inputLogId },
+          data: { locationId: resolvedLocationId },
+        });
+      }
+
       // Resolve company_id: from inputLog.location or from the provided warehouse
-      let companyId: string | null | undefined = null;
+      let companyId: string | null | undefined = inputLog.location?.company_id;
       if (!companyId) {
         const warehouse = await tx.warehouse.findUnique({
-          where: { id: locationId },
+          where: { id: resolvedLocationId },
         });
         companyId = warehouse?.company_id;
+      }
+      if (!companyId) {
+        const firstCompany = await tx.company.findFirst();
+        companyId = firstCompany?.id;
       }
       if (!companyId)
         throw new BadRequestException(
@@ -232,13 +254,13 @@ export class SawnTimberService {
 
       const output = await tx.sawnTimberOutput.create({
         data: {
-          partaiId,
+          partaiId: partaiId || inputLog.partaiId,
           bundleNumber,
           outputDate: dateObj,
           shift,
           operatorName,
           machine: machine || inputLog.machine,
-          locationId,
+          locationId: resolvedLocationId,
           inputLogId,
           batch,
           notes,

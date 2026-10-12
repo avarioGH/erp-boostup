@@ -1,12 +1,12 @@
 "use client"
 import { useState, useEffect, use } from "react"
-import { TimberAPI, api } from "@/lib/api"
+import { TimberAPI, InventoryAPI, api } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
-import { Loader2, ArrowLeft, ArrowRight, Box, CheckCircle2, Factory, Calendar, Package, Plus, Trash, Check, Edit, X, AlertCircle } from "lucide-react"
+import { Loader2, ArrowLeft, ArrowRight, Box, CheckCircle2, Factory, Calendar, Package, Plus, Trash, Check, Edit, X, AlertCircle, Warehouse } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Input } from "@/components/ui/input"
@@ -32,8 +32,29 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
   }
   
   const [data, setData] = useState<any>(null)
+  const [warehouses, setWarehouses] = useState<any[]>([])
+  const [selectedWhId, setSelectedWhId] = useState<string>("")
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    InventoryAPI.getWarehouses()
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : (res?.data || []);
+        setWarehouses(list);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (data?.locationId) {
+      setSelectedWhId(data.locationId);
+    } else if (data?.partai?.warehouseId) {
+      setSelectedWhId(data.partai.warehouseId);
+    } else if (warehouses.length > 0 && !selectedWhId) {
+      setSelectedWhId(warehouses[0].id);
+    }
+  }, [data, warehouses, selectedWhId]);
   
   // Tally Modal State
   const [tallyOpen, setTallyOpen] = useState(false)
@@ -154,23 +175,36 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
         toast({ title: "Input Tidak Valid", description: "Mohon isi setidaknya satu baris dimensi dengan benar.", variant: "destructive" })
         return
       }
-      
-      if (!data.locationId) {
-        toast({ title: "Error", description: "WIP tidak memiliki gudang yang valid.", variant: "destructive" })
-        return
-      }
 
       setSavingTally(true)
       
-      let whId = data?.locationId;
+      let whId = selectedWhId || data?.locationId || data?.partai?.warehouseId;
+      if (!whId) {
         try {
-           const stored = localStorage.getItem('active_warehouse');
-           if (stored) whId = JSON.parse(stored).id;
+          const stored = localStorage.getItem('active_warehouse');
+          if (stored) whId = JSON.parse(stored).id;
         } catch(e) {}
+      }
+      if (!whId && warehouses.length > 0) {
+        whId = warehouses[0].id;
+      }
+      if (!whId) {
+        try {
+          const whs = await InventoryAPI.getWarehouses();
+          const list = Array.isArray(whs) ? whs : (whs?.data || []);
+          if (list.length > 0) whId = list[0].id;
+        } catch(e) {}
+      }
+
+      if (!whId) {
+        toast({ title: "Error", description: "Belum ada gudang yang tersedia. Silakan buat data gudang terlebih dahulu.", variant: "destructive" })
+        setSavingTally(false)
+        return
+      }
         
-        const payload = {
+      const payload = {
         inputLogId: id,
-        partaiId: data.partaiId,
+        partaiId: data?.partaiId,
         outputDate: tallyDate,
         locationId: whId,
         items: validLines.map(line => ({
@@ -192,7 +226,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
       setTallyLines([{ t: "", l: "", p: "", pcs: "", productType: "BALOK" }])
       loadData()
     } catch (err: any) {
-      toast({ title: "Gagal Menyimpan Tally", description: err?.response?.data?.error?.message || err?.response?.data?.message || err.message, variant: "destructive" }); alert("Gagal Tally: " + (err?.response?.data?.error?.message || err?.response?.data?.message || err.message));
+      toast({ title: "Gagal Menyimpan Tally", description: err?.response?.data?.error?.message || err?.response?.data?.message || err.message, variant: "destructive" });
     } finally {
       setSavingTally(false)
     }
@@ -231,9 +265,10 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                   : data.status === 'IN_PROCESS' ? <Badge className="bg-amber-500 hover:bg-amber-600 text-sm py-1">IN PROCESS</Badge> 
                   : <Badge className="bg-rose-500 hover:bg-rose-600 text-sm py-1">AVAILABLE</Badge>}
               </h1>
-              <div className="flex items-center text-muted-foreground mt-1 space-x-4 text-sm">
+              <div className="flex flex-wrap items-center text-muted-foreground mt-1 gap-x-4 gap-y-1 text-sm">
                 <span className="flex items-center"><Calendar className="w-4 h-4 mr-1"/> {data.date ? new Date(data.date).toLocaleDateString("id-ID") : "-"}</span>
                 <span className="flex items-center"><Box className="w-4 h-4 mr-1"/> {data.species}</span>
+                <span className="flex items-center"><Warehouse className="w-4 h-4 mr-1"/> {data.location?.name || data.partai?.warehouse?.name || (warehouses.find(w => w.id === selectedWhId)?.name) || "Gudang Utama"}</span>
               </div>
             </div>
           </div>
@@ -348,9 +383,25 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                     <DialogDescription>Masukkan hasil produksi gergajian. Sistem otomatis menghitung M&sup3; (T &times; L &times; P &times; PCS &divide; 1.000.000).</DialogDescription>
                   </DialogHeader>
                   <div className="py-4 space-y-4 overflow-x-auto">
-                    <div className="w-1/3">
-                      <Label>Tanggal Produksi</Label>
-                      <Input type="date" value={tallyDate} onChange={e => setTallyDate(e.target.value)} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Tanggal Produksi</Label>
+                        <Input type="date" value={tallyDate} onChange={e => setTallyDate(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Gudang Tujuan Output</Label>
+                        <select
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          value={selectedWhId}
+                          onChange={(e) => setSelectedWhId(e.target.value)}
+                        >
+                          {warehouses.map((wh: any) => (
+                            <option key={wh.id} value={wh.id}>
+                              {wh.name || wh.code}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                     
                     <div className="border rounded-md overflow-hidden">
