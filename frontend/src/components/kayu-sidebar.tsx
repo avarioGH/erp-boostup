@@ -45,7 +45,6 @@ const items: MenuItem[] = [
  id: "inbound",
  subItems: [
  { title: "Manajemen Partai", url: "/inventory/partai" },
- { title: "Beli Masak (Kayu Olahan)", url: "/inventory/purchase" },
    ]
  },
  

@@ -116,7 +116,13 @@ export default function PurchaseDetailPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
         <div className="space-y-1">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/inventory/purchase")} className="h-8 w-8">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => purchase?.partaiId ? router.push(`/inventory/partai/${purchase.partaiId}?tab=purchase`) : router.push("/inventory/partai")} 
+              className="h-8 w-8"
+              title="Kembali ke Manajemen Partai"
+            >
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">

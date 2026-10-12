@@ -200,6 +200,66 @@ export class PartaiService {
     });
 
     if (!partai) throw new NotFoundException('Partai not found');
+
+    // Auto-heal: Ensure any logItems from purchases are converted to RawLogs in DUKB
+    if (partai.purchases && partai.purchases.length > 0) {
+      const existingPurchaseLogItemIds = new Set(
+        (partai.rawLogs || []).map((r: any) => r.purchaseLogItemId).filter(Boolean)
+      );
+
+      for (const p of partai.purchases) {
+        for (let i = 0; i < (p.logItems || []).length; i++) {
+          const item = p.logItems[i];
+          if (!existingPurchaseLogItemIds.has(item.id)) {
+            const d1 = Number(item.purchaseDiameter1 || 0);
+            const d2 = Number(item.purchaseDiameter2 || 0);
+            const d3 = Number(item.purchaseDiameter3 || 0);
+            const d4 = Number(item.purchaseDiameter4 || 0);
+            let diaSum = 0;
+            let diaCount = 0;
+            if (d1 > 0) { diaSum += d1; diaCount++; }
+            if (d2 > 0) { diaSum += d2; diaCount++; }
+            if (d3 > 0) { diaSum += d3; diaCount++; }
+            if (d4 > 0) { diaSum += d4; diaCount++; }
+            const avgDia = diaCount > 0 ? diaSum / diaCount : (d1 || d2 || 0);
+            const rndDia = Math.floor(avgDia);
+            const len = Number(item.purchaseLength || 0);
+            const grossVol = item.purchaseVolume ? Number(item.purchaseVolume) : Number((((rndDia * rndDia * 0.7854) / 10000) * len).toFixed(4));
+
+            const logNum = (item.logNumber && item.logNumber.trim() !== '')
+              ? item.logNumber.trim()
+              : `LOG-${p.purchaseNumber || 'PUR'}-${i + 1}`;
+
+            try {
+              const newRawLog = await this.prisma.rawLog.create({
+                data: {
+                  partaiId: partai.id,
+                  purchaseLogItemId: item.id,
+                  logNumber: logNum,
+                  species: item.species || 'UNKNOWN',
+                  speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
+                  originalLength: len,
+                  diameter1: d1,
+                  diameter2: d2,
+                  diameter3: d3,
+                  diameter4: d4,
+                  averageDiameter: avgDia,
+                  roundedDiameter: rndDia,
+                  grossVolume: grossVol,
+                  netVolume: grossVol,
+                  status: 'AVAILABLE',
+                },
+              });
+              partai.rawLogs.push(newRawLog);
+              existingPurchaseLogItemIds.add(item.id);
+            } catch (err) {
+              console.error('Failed to auto-sync raw log for item:', item.id, err);
+            }
+          }
+        }
+      }
+    }
+
     return partai;
   }
 

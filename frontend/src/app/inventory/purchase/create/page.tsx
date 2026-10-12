@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { api, MasterDataAPI } from "@/lib/api"
+import { api, MasterDataAPI, PartaiAPI } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -72,12 +72,19 @@ export default function CreatePurchasePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const partaiIdFromUrl = searchParams.get('partaiId') || '';
+  const [partais, setPartais] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [sources, setSources] = useState<any[]>([])
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [variants, setVariants] = useState<any[]>([])
   const [speciesList, setSpeciesList] = useState<any[]>([])
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (partaiIdFromUrl) {
+      setForm(prev => ({ ...prev, partaiId: partaiIdFromUrl }));
+    }
+  }, [partaiIdFromUrl]);
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false)
   const [activeVariantRowIndex, setActiveVariantRowIndex] = useState<number>(0)
   const [newVariant, setNewVariant] = useState({ species: "", grade: "", thickness: "", width: "", length: "" })
@@ -174,22 +181,25 @@ export default function CreatePurchasePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [srcRes, whRes, varRes, specRes] = await Promise.all([
+        const [srcRes, whRes, varRes, specRes, partaisRes] = await Promise.all([
           api.get("/inventory/master-data/timber-source").catch(() => ({ data: [] })),
           api.get("/inventory/warehouses").catch(() => ({ data: [] })),
           api.get("/inventory/master-data/timber-variant").catch(() => ({ data: [] })),
-          api.get("/inventory/master-data/timber-species").catch(() => ({ data: [] }))
+          api.get("/inventory/master-data/timber-species").catch(() => ({ data: [] })),
+          PartaiAPI.getPartais().catch(() => [])
         ]);
 
         const rawSrc = srcRes?.data?.data || srcRes?.data || [];
         const rawWh = whRes?.data?.data || whRes?.data || [];
         const rawVar = varRes?.data?.data || varRes?.data || [];
         const rawSpec = specRes?.data?.data || specRes?.data || [];
+        const rawPartais = Array.isArray(partaisRes) ? partaisRes : partaisRes?.data || [];
 
         setSources(Array.isArray(rawSrc) ? rawSrc : []);
         setWarehouses(Array.isArray(rawWh) ? rawWh : []);
         setVariants(Array.isArray(rawVar) ? rawVar : []);
         setSpeciesList(Array.isArray(rawSpec) ? rawSpec : []);
+        setPartais(rawPartais);
       } catch (err) {
         console.error(err);
       }
@@ -201,6 +211,12 @@ export default function CreatePurchasePage() {
     e.preventDefault()
     setLoading(true)
     setError("")
+
+    if (!form.partaiId) {
+      setError("Silakan pilih Partai / Project terlebih dahulu agar pembelian tercatat di manajemen partai.")
+      setLoading(false)
+      return
+    }
     
     try {
       await api.post("/inventory/timber-purchase", {
@@ -212,13 +228,20 @@ export default function CreatePurchasePage() {
         partaiId: form.partaiId,
         status: form.status,
         items: form.purchaseType === "sawn-timber" ? form.items : [],
-        logItems: form.purchaseType === "raw-log" ? form.logItems : []
+        logItems: form.purchaseType === "raw-log" ? form.logItems.map((li, idx) => ({
+          ...li,
+          logNumber: li.logNumber?.trim() || `LOG-${form.purchaseNumber}-${idx + 1}`,
+          species: li.species || 'UNKNOWN',
+          purchaseLength: Number(li.purchaseLength || 0),
+          purchaseDiameter1: Number(li.purchaseDiameter1 || 0),
+          purchaseDiameter2: Number(li.purchaseDiameter2 || 0),
+          purchaseDiameter3: Number((li as any).purchaseDiameter3 || 0),
+          purchaseDiameter4: Number((li as any).purchaseDiameter4 || 0),
+          purchaseVolume: Number(li.purchaseVolume || 0)
+        })) : []
       })
-      if (form.partaiId) {
-        router.push(`/inventory/partai/${form.partaiId}?tab=purchase`)
-      } else {
-        router.push("/inventory/purchase")
-      }
+      const targetTab = form.purchaseType === "raw-log" ? "rawlogs" : "purchase";
+      router.push(`/inventory/partai/${form.partaiId}?tab=${targetTab}`)
       router.refresh()
     } catch (err: any) {
       setError((err.response?.data?.error?.message || err.response?.data?.message) || "Failed to create purchase")
@@ -229,7 +252,7 @@ export default function CreatePurchasePage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        <Button variant="ghost" size="icon" onClick={() => form.partaiId ? router.push(`/inventory/partai/${form.partaiId}?tab=purchase`) : router.push('/inventory/partai')}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <h1 className="text-2xl font-bold">Buat Purchase (Pembelian Kayu)</h1>
@@ -243,6 +266,40 @@ export default function CreatePurchasePage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
+
+            <div className="space-y-2 md:col-span-2">
+              <Label className="font-semibold text-foreground flex items-center justify-between">
+                <span>Partai / Project *</span>
+                {form.partaiId && (
+                  <span className="text-xs text-primary font-normal">
+                    Pembelian otomatis tercatat di partai ini
+                  </span>
+                )}
+              </Label>
+              <Select value={form.partaiId} onValueChange={val => setForm({...form, partaiId: val || ""})} required>
+                <SelectTrigger className="font-medium h-10 border-primary/40">
+                  <SelectValue placeholder="Pilih Partai / Project">
+                    {(() => {
+                      const p = partais.find(item => item.id === form.partaiId);
+                      if (p) return `${p.code} - ${p.name || 'Tanpa Nama'}`;
+                      return form.partaiId ? "Memuat data partai..." : "Pilih Partai / Project";
+                    })()}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {partais.map(p => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.code} - {p.name || 'Tanpa Nama'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!form.partaiId && (
+                <p className="text-[12px] text-destructive font-medium">
+                  Wajib memilih Partai agar pembelian otomatis tercatat di Manajemen Partai.
+                </p>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

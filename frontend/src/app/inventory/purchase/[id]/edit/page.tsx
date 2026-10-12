@@ -39,6 +39,7 @@ export default function EditPurchasePage() {
   const [creatingVariant, setCreatingVariant] = useState(false);
 
   const [form, setForm] = useState({
+    partaiId: "",
     purchaseNumber: "",
     purchaseDate: "",
     sourceId: "",
@@ -139,6 +140,7 @@ export default function EditPurchasePage() {
         const isRawLog = p.logItems && p.logItems.length > 0 && (!p.items || p.items.length === 0);
 
         setForm({
+          partaiId: p.partaiId || "",
           purchaseNumber: p.purchaseNumber || p.code || "",
           purchaseDate: p.purchaseDate ? p.purchaseDate.substring(0, 10) : new Date().toISOString().split("T")[0],
           sourceId: p.sourceId || p.source?.id || "",
@@ -259,6 +261,7 @@ export default function EditPurchasePage() {
         sourceId: form.sourceId,
         warehouseId: form.warehouseId,
         notes: form.notes,
+        partaiId: form.partaiId,
         status: form.status,
         items:
           form.purchaseType === "sawn-timber"
@@ -287,7 +290,11 @@ export default function EditPurchasePage() {
               }))
             : [],
       });
-      router.back();
+      if (form.partaiId) {
+        router.push(`/inventory/partai/${form.partaiId}?tab=purchase`);
+      } else {
+        router.back();
+      }
     } catch (err: any) {
       setError(
         err.response?.data?.error?.message ||
@@ -310,7 +317,7 @@ export default function EditPurchasePage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300 pb-12">
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        <Button variant="ghost" size="icon" onClick={() => form.partaiId ? router.push(`/inventory/partai/${form.partaiId}?tab=purchase`) : router.back()}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div>

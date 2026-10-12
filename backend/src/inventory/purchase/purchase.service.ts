@@ -122,31 +122,48 @@ export class PurchaseService {
 
         // Raw log conversion
         if (purchase.logItems && purchase.logItems.length > 0) {
-          for (const item of purchase.logItems) {
-            const existingLog = await tx.rawLog.findFirst({ where: { logNumber: item.logNumber } });
+          for (let i = 0; i < purchase.logItems.length; i++) {
+            const item = purchase.logItems[i];
+            const existingLog = await tx.rawLog.findFirst({
+              where: {
+                OR: [
+                  { purchaseLogItemId: item.id },
+                  ...(item.logNumber ? [{ partaiId: purchase.partaiId, logNumber: item.logNumber }] : []),
+                ],
+              },
+            });
             if (!existingLog) {
+              const d1 = Number(item.purchaseDiameter1 || 0);
+              const d2 = Number(item.purchaseDiameter2 || 0);
+              const d3 = Number(item.purchaseDiameter3 || 0);
+              const d4 = Number(item.purchaseDiameter4 || 0);
               let diaSum = 0;
               let diaCount = 0;
-              if (item.purchaseDiameter1) { diaSum += item.purchaseDiameter1; diaCount++; }
-              if (item.purchaseDiameter2) { diaSum += item.purchaseDiameter2; diaCount++; }
-              if (item.purchaseDiameter3) { diaSum += item.purchaseDiameter3; diaCount++; }
-              if (item.purchaseDiameter4) { diaSum += item.purchaseDiameter4; diaCount++; }
-              const avgDia = diaCount > 0 ? diaSum / diaCount : 0;
+              if (d1 > 0) { diaSum += d1; diaCount++; }
+              if (d2 > 0) { diaSum += d2; diaCount++; }
+              if (d3 > 0) { diaSum += d3; diaCount++; }
+              if (d4 > 0) { diaSum += d4; diaCount++; }
+              const avgDia = diaCount > 0 ? diaSum / diaCount : (d1 || d2 || 0);
               const rndDia = Math.floor(avgDia);
-              const grossVol = ((rndDia * rndDia * 0.7854) / 10000) * item.purchaseLength;
+              const len = Number(item.purchaseLength || 0);
+              const grossVol = item.purchaseVolume ? Number(item.purchaseVolume) : Number((((rndDia * rndDia * 0.7854) / 10000) * len).toFixed(4));
+
+              const logNum = (item.logNumber && item.logNumber.trim() !== '')
+                ? item.logNumber.trim()
+                : `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}`;
 
               await tx.rawLog.create({
                 data: {
                   partaiId: purchase.partaiId,
                   purchaseLogItemId: item.id,
-                  logNumber: item.logNumber,
-                  species: item.species,
-                  speciesId: item.speciesId,
-                  originalLength: item.purchaseLength,
-                  diameter1: item.purchaseDiameter1,
-                  diameter2: item.purchaseDiameter2,
-                  diameter3: item.purchaseDiameter3,
-                  diameter4: item.purchaseDiameter4,
+                  logNumber: logNum,
+                  species: item.species || 'UNKNOWN',
+                  speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
+                  originalLength: len,
+                  diameter1: d1,
+                  diameter2: d2,
+                  diameter3: d3,
+                  diameter4: d4,
                   averageDiameter: avgDia,
                   roundedDiameter: rndDia,
                   grossVolume: grossVol,
@@ -188,7 +205,14 @@ export class PurchaseService {
       }
 
       if (purchase.status === 'RECEIVED' || purchase.status === 'CONFIRMED') {
-        throw new BadRequestException('Pembelian ini sudah diterima dan masuk ke stok');
+        const rawLogsCount = await tx.rawLog.count({
+          where: {
+            purchaseLogItemId: { in: (purchase.logItems || []).map((li: any) => li.id) },
+          },
+        });
+        if (rawLogsCount >= (purchase.logItems || []).length) {
+          throw new BadRequestException('Pembelian ini sudah diterima dan masuk ke stok');
+        }
       }
 
       if (purchase.status === 'CANCELLED') {
@@ -222,31 +246,48 @@ export class PurchaseService {
 
       // 2. Convert log items to RawLog
       if (purchase.logItems && purchase.logItems.length > 0) {
-        for (const item of purchase.logItems) {
-          const existing = await tx.rawLog.findFirst({ where: { logNumber: item.logNumber } });
+        for (let i = 0; i < purchase.logItems.length; i++) {
+          const item = purchase.logItems[i];
+          const existing = await tx.rawLog.findFirst({
+            where: {
+              OR: [
+                { purchaseLogItemId: item.id },
+                ...(item.logNumber ? [{ partaiId: purchase.partaiId, logNumber: item.logNumber }] : []),
+              ],
+            },
+          });
           if (!existing) {
+            const d1 = Number(item.purchaseDiameter1 || 0);
+            const d2 = Number(item.purchaseDiameter2 || 0);
+            const d3 = Number(item.purchaseDiameter3 || 0);
+            const d4 = Number(item.purchaseDiameter4 || 0);
             let diaSum = 0;
             let diaCount = 0;
-            if (item.purchaseDiameter1) { diaSum += item.purchaseDiameter1; diaCount++; }
-            if (item.purchaseDiameter2) { diaSum += item.purchaseDiameter2; diaCount++; }
-            if (item.purchaseDiameter3) { diaSum += item.purchaseDiameter3; diaCount++; }
-            if (item.purchaseDiameter4) { diaSum += item.purchaseDiameter4; diaCount++; }
-            const avgDia = diaCount > 0 ? diaSum / diaCount : 0;
+            if (d1 > 0) { diaSum += d1; diaCount++; }
+            if (d2 > 0) { diaSum += d2; diaCount++; }
+            if (d3 > 0) { diaSum += d3; diaCount++; }
+            if (d4 > 0) { diaSum += d4; diaCount++; }
+            const avgDia = diaCount > 0 ? diaSum / diaCount : (d1 || d2 || 0);
             const rndDia = Math.floor(avgDia);
-            const grossVol = ((rndDia * rndDia * 0.7854) / 10000) * item.purchaseLength;
+            const len = Number(item.purchaseLength || 0);
+            const grossVol = item.purchaseVolume ? Number(item.purchaseVolume) : Number((((rndDia * rndDia * 0.7854) / 10000) * len).toFixed(4));
+
+            const logNum = (item.logNumber && item.logNumber.trim() !== '')
+              ? item.logNumber.trim()
+              : `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}`;
 
             await tx.rawLog.create({
               data: {
                 partaiId: purchase.partaiId,
                 purchaseLogItemId: item.id,
-                logNumber: item.logNumber,
-                species: item.species,
-                speciesId: item.speciesId,
-                originalLength: item.purchaseLength,
-                diameter1: item.purchaseDiameter1,
-                diameter2: item.purchaseDiameter2,
-                diameter3: item.purchaseDiameter3,
-                diameter4: item.purchaseDiameter4,
+                logNumber: logNum,
+                species: item.species || 'UNKNOWN',
+                speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
+                originalLength: len,
+                diameter1: d1,
+                diameter2: d2,
+                diameter3: d3,
+                diameter4: d4,
                 averageDiameter: avgDia,
                 roundedDiameter: rndDia,
                 grossVolume: grossVol,

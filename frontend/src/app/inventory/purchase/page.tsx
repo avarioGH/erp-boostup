@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PurchaseAPI } from "@/lib/api";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -8,8 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Eye, PackageOpen, FileText, Edit, Trash2, CheckCircle2, Clock, XCircle } from "lucide-react";
 
 export default function PurchaseListPage() {
+  const router = useRouter();
   const [purchases, setPurchases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    router.replace("/inventory/partai");
+  }, [router]);
 
   const fetchPurchases = () => {
     setLoading(true);

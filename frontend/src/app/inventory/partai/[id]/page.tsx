@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { api, PartaiAPI, TimberAPI, PurchaseAPI, MasterDataAPI } from "@/lib/api";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,15 +11,24 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 
 export default function PartaiDetailPage({ params }: { params: any }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { id } = React.use(params as Promise<{ id: string }>);
-const [partai, setPartai] = useState<any>(null);
+  const [partai, setPartai] = useState<any>(null);
+  const [currentTab, setCurrentTab] = useState("purchase");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setCurrentTab(tab);
+    }
+  }, [searchParams]);
   
   // -- Inline DUKB state --
   const [inlineDukbRows, setInlineDukbRows] = useState<any[]>([]);
@@ -251,7 +260,7 @@ const [partai, setPartai] = useState<any>(null);
   const handleReceivePurchase = async (purchaseId: string) => {
     try {
       await PurchaseAPI.receivePurchase(purchaseId);
-      toast({ title: "Success", description: "Purchase marked as Received. Logs have been added to DUKB." });
+      toast({ title: "Berhasil", description: "Pembelian berhasil diterima! Stok kayu telah masuk ke inventaris gudang." });
       fetchPartai();
     } catch (e: any) {
       toast({ title: "Error", description: e.response?.data?.message || "Failed to receive", variant: "destructive" });
@@ -366,7 +375,7 @@ const [partai, setPartai] = useState<any>(null);
         </Badge>
       </div>
 
-      <Tabs defaultValue="purchase" className="w-full">
+      <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
         <TabsList className="grid w-full grid-cols-6 h-12 mb-6">
           <TabsTrigger value="purchase">1. Purchase</TabsTrigger>
           <TabsTrigger value="rawlogs">2. DUKB (Raw Logs)</TabsTrigger>
@@ -449,6 +458,16 @@ const [partai, setPartai] = useState<any>(null);
                       </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2 ">
+                          {p.status !== 'RECEIVED' && p.status !== 'CONFIRMED' && p.status !== 'CANCELLED' && (
+                            <Button 
+                              size="sm" 
+                              className="h-8 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs shadow-sm" 
+                              title="Terima Barang (Masuk Stok)" 
+                              onClick={(e) => { e.stopPropagation(); handleReceivePurchase(p.id); }}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Terima
+                            </Button>
+                          )}
                           <Button variant="ghost" size="sm" className="h-8 px-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/purchase/${p.id}`) }}>
                             <Eye className="w-4 h-4 mr-1" /> View
                           </Button>
