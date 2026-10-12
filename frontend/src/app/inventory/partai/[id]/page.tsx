@@ -52,6 +52,10 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const [outputPage, setOutputPage] = useState(1);
   const [outputPageSize, setOutputPageSize] = useState(50);
   
+  // DUKB selection & bulk trimming state
+  const [selectedDukbLogIds, setSelectedDukbLogIds] = useState<string[]>([]);
+  const [isBulkTrimming, setIsBulkTrimming] = useState(false);
+  
   const [grades, setGrades] = useState<any[]>([]);
   const [selectedOutputItems, setSelectedOutputItems] = useState<{id: string, outputId: string}[]>([]);
   const [isGrading, setIsGrading] = useState(false);
@@ -376,6 +380,22 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     return flattenedPurchases.slice(start, start + purchasePageSize);
   }, [flattenedPurchases, purchasePage, purchasePageSize]);
 
+  // Trimming mapping: track which raw logs have already been trimmed
+  const trimmedLogMap = React.useMemo(() => {
+    const map = new Map<string, string>(); // rawLogId -> trimNumber
+    (partai?.trimmedLogs || []).forEach((t: any) => {
+      if (t.rawLogId) {
+        map.set(t.rawLogId, t.trimNumber || "Trimmed");
+      }
+    });
+    (partai?.rawLogs || []).forEach((r: any) => {
+      if (r.trimmedLogs && r.trimmedLogs.length > 0) {
+        map.set(r.id, r.trimmedLogs[0]?.trimNumber || "Trimmed");
+      }
+    });
+    return map;
+  }, [partai?.trimmedLogs, partai?.rawLogs]);
+
   // 2. DUKB (Raw Logs) sorted newest first
   const sortedRawLogs = React.useMemo(() => {
     return [...(partai?.rawLogs || [])].sort((a: any, b: any) => {
@@ -386,11 +406,53 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     });
   }, [partai?.rawLogs]);
 
+  const untrimmedLogs = React.useMemo(() => {
+    return sortedRawLogs.filter((r: any) => r.status !== 'TRIMMED' && !trimmedLogMap.has(r.id));
+  }, [sortedRawLogs, trimmedLogMap]);
+
   const paginatedRawLogs = React.useMemo(() => {
     if (dukbPageSize >= 9999) return sortedRawLogs;
     const start = (dukbPage - 1) * dukbPageSize;
     return sortedRawLogs.slice(start, start + dukbPageSize);
   }, [sortedRawLogs, dukbPage, dukbPageSize]);
+
+  const handleBulkTrim = async (targetIds?: string[]) => {
+    const idsToTrim = targetIds || selectedDukbLogIds;
+    const finalIds = idsToTrim.filter((id) => !trimmedLogMap.has(id));
+
+    if (finalIds.length === 0) {
+      toast({
+        title: "Tidak ada log untuk di-trim",
+        description: "Semua log yang dipilih sudah berstatus trim.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const confirmMsg = `Trimming penuh (100% full length) untuk ${finalIds.length} log?\nLog yang di-trim akan otomatis mendapatkan nomor trim dan siap masuk ke Input Sawmill.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsBulkTrimming(true);
+    try {
+      const res = await TimberAPI.bulkTrimLogs(finalIds, 0);
+      toast({
+        title: "Trimming Berhasil!",
+        description: `${res?.successCount || finalIds.length} log berhasil di-trim penuh.`,
+      });
+      setSelectedDukbLogIds([]);
+      fetchPartai();
+    } catch (e: any) {
+      console.error(e);
+      const msg = e.response?.data?.message || e.message || "Gagal melakukan bulk trimming";
+      toast({
+        title: "Gagal Bulk Trimming",
+        description: msg,
+        variant: "destructive",
+      });
+    } finally {
+      setIsBulkTrimming(false);
+    }
+  };
 
   // 3. Trimming sorted newest first
   const sortedTrimmedLogs = React.useMemo(() => {
@@ -666,22 +728,87 @@ export default function PartaiDetailPage({ params }: { params: any }) {
         {/* 2. DUKB (RAW LOGS) */}
         <TabsContent value="rawlogs">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <CardTitle>Data Ukur Kayu Bulat (DUKB)</CardTitle>
-                <CardDescription>Daftar log mentah yang telah diterima dalam partai ini.</CardDescription>
+                <CardDescription>
+                  Daftar log mentah yang telah diterima. Pilih log untuk proses Trimming sebelum masuk mesin gesek Sawmill.
+                </CardDescription>
               </div>
-              <Button 
-                onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=raw-log`)}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
-              >
-                <Plus className="w-4 h-4 mr-1.5" /> + Beli Log Baru (DUKB)
-              </Button>
+              <div className="flex items-center gap-2 flex-wrap">
+                {untrimmedLogs.length > 0 && (
+                  <Button 
+                    onClick={() => handleBulkTrim(untrimmedLogs.map((l: any) => l.id))}
+                    disabled={isBulkTrimming}
+                    variant="outline"
+                    className="border-emerald-500 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 font-semibold shadow-sm"
+                    title={`Trim Semua (${untrimmedLogs.length}) Log yang Belum Di-trim`}
+                  >
+                    <Scissors className="w-4 h-4 mr-1.5" />
+                    {isBulkTrimming ? "Memproses..." : `Trim Semua (${untrimmedLogs.length} Log)`}
+                  </Button>
+                )}
+                <Button 
+                  onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=raw-log`)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> + Beli Log Baru (DUKB)
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
+              {selectedDukbLogIds.length > 0 && (
+                <div className="mb-4 p-3 bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-lg flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-emerald-600 text-white font-bold">
+                      {selectedDukbLogIds.length} Log Terpilih
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      Log siap di-trim penuh (100% full length) dan masuk ke tab Trimming & Input Sawmill.
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => handleBulkTrim()}
+                      disabled={isBulkTrimming}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-8 text-xs"
+                    >
+                      <Scissors className="w-3.5 h-3.5 mr-1" />
+                      {isBulkTrimming ? "Memproses..." : `Trim Terpilih (${selectedDukbLogIds.length})`}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSelectedDukbLogIds([])}
+                      className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Batal Pilih
+                    </Button>
+                  </div>
+                </div>
+              )}
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[40px] text-center">
+                      <Checkbox
+                        checked={
+                          paginatedRawLogs.length > 0 &&
+                          paginatedRawLogs.filter((r: any) => !trimmedLogMap.has(r.id)).length > 0 &&
+                          paginatedRawLogs.filter((r: any) => !trimmedLogMap.has(r.id)).every((r: any) => selectedDukbLogIds.includes(r.id))
+                        }
+                        onCheckedChange={(checked) => {
+                          const untrimmedOnPage = paginatedRawLogs.filter((r: any) => !trimmedLogMap.has(r.id)).map((r: any) => r.id);
+                          if (checked) {
+                            setSelectedDukbLogIds((prev) => Array.from(new Set([...prev, ...untrimmedOnPage])));
+                          } else {
+                            setSelectedDukbLogIds((prev) => prev.filter((id) => !untrimmedOnPage.includes(id)));
+                          }
+                        }}
+                        aria-label="Pilih semua log belum trim di halaman ini"
+                      />
+                    </TableHead>
                     <TableHead>No. Log</TableHead>
                     <TableHead>Spesies</TableHead>
                     <TableHead>Tgl Diterima</TableHead>
@@ -690,13 +817,42 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                     <TableHead className="text-right">Grw (cm)</TableHead>
                     <TableHead className="text-right">Gross (m³)</TableHead>
                     <TableHead className="text-right">Net (m³)</TableHead>
+                    <TableHead className="text-center">Status Trim</TableHead>
                     <TableHead className="text-center w-[120px]">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedRawLogs.map((r: any) => (
-                    <TableRow key={r.id} className="hover:bg-muted/50 cursor-pointer group" onClick={() => router.push(`/inventory/logs/${r.id}`)}>
-                        <TableCell className="font-medium">{r.logNumber}</TableCell>
+                  {paginatedRawLogs.map((r: any) => {
+                    const isTrimmed = r.status === 'TRIMMED' || trimmedLogMap.has(r.id);
+                    const trimCode = trimmedLogMap.get(r.id);
+                    const isSelected = selectedDukbLogIds.includes(r.id);
+
+                    return (
+                      <TableRow 
+                        key={r.id} 
+                        className={`hover:bg-muted/50 cursor-pointer group ${isSelected ? "bg-emerald-50/30 dark:bg-emerald-950/20" : ""}`} 
+                        onClick={() => router.push(`/inventory/logs/${r.id}`)}
+                      >
+                        <TableCell className="text-center p-2" onClick={(e) => e.stopPropagation()}>
+                          {isTrimmed ? (
+                            <span title="Log sudah selesai di-trim">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto opacity-70" />
+                            </span>
+                          ) : (
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedDukbLogIds((prev) => [...prev, r.id]);
+                                } else {
+                                  setSelectedDukbLogIds((prev) => prev.filter((id) => id !== r.id));
+                                }
+                              }}
+                              aria-label={`Pilih log ${r.logNumber}`}
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell className="font-semibold text-foreground">{r.logNumber}</TableCell>
                         <TableCell>{r.species}</TableCell>
                         <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
                           {r.receivingDate ? new Date(r.receivingDate).toLocaleDateString("id-ID") : (r.date ? new Date(r.date).toLocaleDateString("id-ID") : (r.createdAt ? new Date(r.createdAt).toLocaleDateString("id-ID") : "-"))}
@@ -706,26 +862,49 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                         <TableCell className="text-right">{r.gerowong ? Number(r.gerowong).toFixed(1) : "-"}</TableCell>
                         <TableCell className="text-right text-muted-foreground">{Number(r.grossVolume || 0).toFixed(4)}</TableCell>
                         <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">{Number(r.netVolume || 0).toFixed(4)}</TableCell>
-                        <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                        <TableCell className="text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          {isTrimmed ? (
+                            <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-semibold text-xs py-0.5">
+                              <CheckCircle2 className="w-3 h-3 mr-1 inline" />
+                              Sudah Di-trim {trimCode ? `(${trimCode})` : ""}
+                            </Badge>
+                          ) : r.status === 'IN_TRIMMING' ? (
+                            <Badge variant="outline" className="border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-500/10 text-xs py-0.5">
+                              Trim Sebagian
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-amber-600 dark:text-amber-400 border-amber-400/40 bg-amber-500/10 text-xs py-0.5">
+                              Belum Di-trim
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}`) }}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Detail Log" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}`); }}>
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20" title="Tanpa Trimming (Langsung Trim Penuh)" onClick={(e) => { e.stopPropagation(); handleDirectTrim(r) }}>
-                              <Scissors className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Edit" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}/edit`) }}>
+                            {!isTrimmed ? (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20" title="Tanpa Trimming (Langsung Trim Penuh)" onClick={(e) => { e.stopPropagation(); handleDirectTrim(r); }}>
+                                <Scissors className="w-4 h-4" />
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-40 cursor-not-allowed" title="Log sudah selesai di-trim" disabled>
+                                <Scissors className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Edit" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}/edit`); }}>
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete" onClick={(e) => { e.stopPropagation(); handleDeleteLog(r.id) }}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete" onClick={(e) => { e.stopPropagation(); handleDeleteLog(r.id); }}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
                         </TableCell>
                       </TableRow>
-                  ))}
+                    );
+                  })}
                   {sortedRawLogs.length === 0 && (
-                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Belum ada raw log (DUKB) terdaftar.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">Belum ada raw log (DUKB) terdaftar.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>

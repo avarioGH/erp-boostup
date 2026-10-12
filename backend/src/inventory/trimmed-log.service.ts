@@ -1,4 +1,4 @@
-﻿import { AuditService } from '../core/audit.service';
+import { AuditService } from '../core/audit.service';
 import {
   Injectable,
   BadRequestException,
@@ -240,5 +240,65 @@ export class TrimmedLogService {
     }
 
     return this.prisma.trimmedLog.delete({ where: { id } });
+  }
+
+  async bulkDirectTrim(logIds: string[], trimmingLength: number = 0) {
+    if (!logIds || !Array.isArray(logIds) || logIds.length === 0) {
+      throw new BadRequestException('logIds must be a non-empty array');
+    }
+
+    const results: any[] = [];
+    const errors: any[] = [];
+
+    for (const rawLogId of logIds) {
+      try {
+        const parent = await this.prisma.rawLog.findUnique({
+          where: { id: rawLogId },
+          include: { trimmedLogs: true },
+        });
+
+        if (!parent) {
+          errors.push({ id: rawLogId, error: 'Raw log not found' });
+          continue;
+        }
+
+        const allocated = (parent.trimmedLogs || []).reduce(
+          (sum, c) => sum + Number(c.length || 0),
+          0,
+        );
+        const remaining = Number(parent.originalLength) - allocated;
+
+        if (remaining <= 0.01) {
+          results.push({ id: rawLogId, status: 'ALREADY_TRIMMED', logNumber: parent.logNumber });
+          continue;
+        }
+
+        const trimData = {
+          length: remaining,
+          diameter1: parent.diameter1 || 0,
+          diameter2: parent.diameter2 || 0,
+          diameter3: parent.diameter3 || 0,
+          diameter4: parent.diameter4 || 0,
+          averageDiameter: parent.averageDiameter || 0,
+          gerowong: parent.gerowong || 0,
+          trimmingLength: trimmingLength || 0,
+          species: parent.species,
+          locationId: parent.locationId,
+        };
+
+        const child = await this.createTrimmedLog(rawLogId, trimData);
+        results.push({ id: rawLogId, status: 'SUCCESS', trimmedLog: child, logNumber: parent.logNumber });
+      } catch (err: any) {
+        errors.push({ id: rawLogId, error: err.message });
+      }
+    }
+
+    return {
+      successCount: results.filter(r => r.status === 'SUCCESS').length,
+      alreadyTrimmedCount: results.filter(r => r.status === 'ALREADY_TRIMMED').length,
+      errorCount: errors.length,
+      results,
+      errors,
+    };
   }
 }

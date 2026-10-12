@@ -191,7 +191,7 @@ export class PartaiService {
             warehouse: true,
           },
         },
-        rawLogs: { orderBy: { createdAt: 'desc' } },
+        rawLogs: { orderBy: { createdAt: 'desc' }, include: { trimmedLogs: true } },
         trimmedLogs: { orderBy: { createdAt: 'desc' }, include: { rawLog: true } },
         inputLogs: {
           orderBy: { createdAt: 'desc' },
@@ -298,7 +298,7 @@ export class PartaiService {
                   status: 'AVAILABLE',
                 },
               });
-              partai.rawLogs.push(newRawLog);
+              partai.rawLogs.push({ ...newRawLog, trimmedLogs: [] } as any);
               existingPurchaseLogItemIds.add(item.id);
             } catch (err) {
               try {
@@ -323,7 +323,7 @@ export class PartaiService {
                     status: 'AVAILABLE',
                   },
                 });
-                partai.rawLogs.push(retryLog);
+                partai.rawLogs.push({ ...retryLog, trimmedLogs: [] } as any);
                 existingPurchaseLogItemIds.add(item.id);
               } catch (retryErr) {
                 console.error('Failed to auto-sync raw log for item:', item.id, retryErr);

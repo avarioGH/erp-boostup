@@ -98,6 +98,7 @@ export const TimberAPI: any = {
   getTrimmedLog: async (id: string) => (await api.get('/inventory/trimming/' + id)).data,
   getRawLogTrimming: async (rawLogId: string) => (await api.get('/inventory/logs/' + rawLogId + '/trimming')).data,
   createTrimmedLog: async (rawLogId: string, data: any) => (await api.post('/inventory/logs/' + rawLogId + '/trimming', data)).data,
+  bulkTrimLogs: async (logIds: string[], trimmingLength?: number) => (await api.post('/inventory/trimming/bulk', { logIds, trimmingLength })).data,
   cancelTrimmedLog: async (id: string) => (await api.post('/inventory/trimming/' + id + '/cancel')).data,
 
   // --- Input Logs ---

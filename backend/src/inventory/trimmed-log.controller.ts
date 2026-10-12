@@ -41,6 +41,12 @@ export class TrimmedLogController {
     return this.trimService.createTrimmedLog(rawLogId, data);
   }
 
+  @Post('trimming/bulk')
+  @Permissions('write_inventory')
+  async bulkDirectTrim(@Body() body: { logIds: string[]; trimmingLength?: number }) {
+    return this.trimService.bulkDirectTrim(body.logIds, body.trimmingLength);
+  }
+
   @Get('trimming/:id')
   @Permissions('read_inventory')
   async getChild(@Param('id') id: string) {
