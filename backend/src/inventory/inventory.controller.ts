@@ -163,11 +163,11 @@ export class InventoryController {
     }
   }
 
-  @Permissions('inventory.warehouse.view')
-
+  @Permissions('inventory.view')
   @Get('warehouses')
   async getWarehouses(@Request() req) {
-    return this.inventoryService.getWarehouses(req.user.company_id);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.inventoryService.getWarehouses(companyId);
   }
 
   @Permissions('inventory.warehouse.create')

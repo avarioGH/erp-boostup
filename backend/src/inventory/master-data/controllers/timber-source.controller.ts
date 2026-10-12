@@ -25,7 +25,8 @@ export class TimberSourceController {
   @Get()
   @Permissions('inventory.view')
   findAll(@Request() req: any) {
-    return this.service.findAll(req.user.company_id);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.service.findAll(companyId);
   }
 
   @Get(':id')

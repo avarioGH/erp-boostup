@@ -148,22 +148,28 @@ export default function CreatePurchasePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [srcData, whData, varData, specData] = await Promise.all([
-          api.get("/inventory/master-data/timber-source").then(res => res.data).catch(() => []),
-          api.get("/inventory/warehouses").then(res => res.data).catch(() => []),
-          api.get("/inventory/master-data/timber-variant").then(res => res.data).catch(() => []),
-          api.get("/inventory/master-data/timber-species").then(res => res.data).catch(() => [])
-        ])
-        setSources(srcData)
-        setWarehouses(whData)
-        setVariants(varData)
-        setSpeciesList(specData)
+        const [srcRes, whRes, varRes, specRes] = await Promise.all([
+          api.get("/inventory/master-data/timber-source").catch(() => ({ data: [] })),
+          api.get("/inventory/warehouses").catch(() => ({ data: [] })),
+          api.get("/inventory/master-data/timber-variant").catch(() => ({ data: [] })),
+          api.get("/inventory/master-data/timber-species").catch(() => ({ data: [] }))
+        ]);
+
+        const rawSrc = srcRes?.data?.data || srcRes?.data || [];
+        const rawWh = whRes?.data?.data || whRes?.data || [];
+        const rawVar = varRes?.data?.data || varRes?.data || [];
+        const rawSpec = specRes?.data?.data || specRes?.data || [];
+
+        setSources(Array.isArray(rawSrc) ? rawSrc : []);
+        setWarehouses(Array.isArray(rawWh) ? rawWh : []);
+        setVariants(Array.isArray(rawVar) ? rawVar : []);
+        setSpeciesList(Array.isArray(rawSpec) ? rawSpec : []);
       } catch (err) {
-        console.error(err)
+        console.error(err);
       }
     }
-    fetchData()
-  }, [])
+    fetchData();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -223,18 +229,42 @@ export default function CreatePurchasePage() {
               <div className="space-y-2">
                 <Label>Supplier / Sumber Kayu</Label>
                 <Select value={form.sourceId} onValueChange={val => setForm({...form, sourceId: val || ""})} required>
-                  <SelectTrigger><SelectValue placeholder="Pilih Supplier" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Supplier">
+                      {(() => {
+                        const s = sources.find(item => item.id === form.sourceId);
+                        if (s) return s.name ? `${s.name}${s.code ? ` (${s.code})` : ''}` : (s.code || s.id);
+                        return form.sourceId ? "Memuat supplier..." : "Pilih Supplier";
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
-                    {sources.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                    {sources.map(s => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name ? `${s.name}${s.code ? ` (${s.code})` : ''}` : (s.code || s.id)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Gudang Penerima</Label>
                 <Select value={form.warehouseId} onValueChange={val => setForm({...form, warehouseId: val || ""})} required>
-                  <SelectTrigger><SelectValue placeholder="Pilih Gudang" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Gudang">
+                      {(() => {
+                        const w = warehouses.find(item => item.id === form.warehouseId);
+                        if (w) return w.name ? `${w.name}${w.code ? ` (${w.code})` : ''}` : (w.code || w.id);
+                        return form.warehouseId ? "Memuat gudang..." : "Pilih Gudang";
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
-                    {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                    {warehouses.map(w => (
+                      <SelectItem key={w.id} value={w.id}>
+                        {w.name ? `${w.name}${w.code ? ` (${w.code})` : ''}` : (w.code || w.id)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

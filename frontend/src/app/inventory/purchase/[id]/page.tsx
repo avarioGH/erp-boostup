@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { PurchaseAPI } from "@/lib/api";
@@ -62,8 +62,8 @@ export default function PurchaseDetailPage() {
           <CardTitle>Overview</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
-          <div><span className="text-gray-500">Supplier:</span> {purchase.source?.name || purchase.sourceId}</div>
-          <div><span className="text-gray-500">Warehouse:</span> {purchase.warehouse?.name || purchase.warehouseId}</div>
+          <div><span className="text-gray-500">Supplier:</span> {purchase.source?.name ? `${purchase.source.name}${purchase.source.code ? ` (${purchase.source.code})` : ''}` : (purchase.source?.code || purchase.sourceId || '-')}</div>
+          <div><span className="text-gray-500">Warehouse:</span> {purchase.warehouse?.name ? `${purchase.warehouse.name}${purchase.warehouse.code ? ` (${purchase.warehouse.code})` : ''}` : (purchase.warehouse?.code || purchase.warehouseId || '-')}</div>
           <div>
             <span className="text-gray-500">Status: </span>
             <Badge variant={purchase.status === 'CONFIRMED' ? 'default' : purchase.status === 'CANCELLED' ? 'destructive' : 'secondary'}>

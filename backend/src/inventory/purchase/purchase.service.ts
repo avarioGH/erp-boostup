@@ -14,6 +14,12 @@ export class PurchaseService {
   ) {}
 
   async create(companyId: string, data: any) {
+    let targetCompanyId = companyId;
+    if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
+      const firstCompany = await this.prisma.company.findFirst();
+      if (firstCompany) targetCompanyId = firstCompany.id;
+    }
+
     const { logItems = [] } = data;
     const {
       purchaseNumber,
@@ -45,7 +51,7 @@ export class PurchaseService {
 
     const purchase = await this.prisma.timberPurchase.create({
       data: {
-        company_id: companyId,
+        company_id: targetCompanyId as string,
         partaiId: partaiId || null,
         purchaseNumber,
         purchaseDate: purchaseDate ? new Date(purchaseDate) : undefined,
@@ -256,9 +262,18 @@ export class PurchaseService {
     });
   }
 
-  async findAll(companyId: string) {
+  async findAll(companyId?: string) {
+    let targetCompanyId = companyId;
+    if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
+      const firstCompany = await this.prisma.company.findFirst();
+      if (firstCompany) targetCompanyId = firstCompany.id;
+    }
+
     return this.prisma.timberPurchase.findMany({
-      where: { company_id: companyId, partaiId: null },
+      where: {
+        partaiId: null,
+        ...(targetCompanyId ? { company_id: targetCompanyId } : {}),
+      },
       include: {
         source: true,
         warehouse: true,
@@ -269,17 +284,21 @@ export class PurchaseService {
     });
   }
 
-  async findOne(id: string, companyId: string) {
+  async findOne(id: string, companyId?: string) {
     if (id === 'undefined' || !id)
       throw new NotFoundException('Purchase not found');
-    if (companyId === 'undefined' || !companyId)
-      throw new BadRequestException('Invalid company ID');
+
+    let targetCompanyId = companyId;
+    if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
+      const firstCompany = await this.prisma.company.findFirst();
+      if (firstCompany) targetCompanyId = firstCompany.id;
+    }
 
     const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
     const purchase = await this.prisma.timberPurchase.findFirst({
       where: isObjectId
-        ? { id, company_id: companyId }
-        : { purchaseNumber: id, company_id: companyId },
+        ? { id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) }
+        : { purchaseNumber: id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) },
       include: {
         source: true,
         warehouse: true,

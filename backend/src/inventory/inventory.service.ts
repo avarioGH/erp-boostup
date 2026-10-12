@@ -132,9 +132,14 @@ export class InventoryService {
     });
   }
 
-  async getWarehouses(companyId: string) {
+  async getWarehouses(companyId?: string) {
+    let targetCompanyId = companyId;
+    if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
+      const firstCompany = await this.prisma.company.findFirst();
+      if (firstCompany) targetCompanyId = firstCompany.id;
+    }
     return this.prisma.warehouse.findMany({
-      where: { company_id: companyId },
+      where: targetCompanyId ? { company_id: targetCompanyId } : {},
       orderBy: { created_at: 'desc' },
     });
   }

@@ -107,10 +107,10 @@ export default function PurchaseListPage() {
                       {p.code || p.purchaseNumber}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {p.source?.name || p.sourceId || '-'}
+                      {p.source?.name ? `${p.source.name}${p.source.code ? ` (${p.source.code})` : ''}` : (p.source?.code || p.sourceId || '-')}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {p.warehouse?.name || p.warehouseId}
+                      {p.warehouse?.name ? `${p.warehouse.name}${p.warehouse.code ? ` (${p.warehouse.code})` : ''}` : (p.warehouse?.code || p.warehouseId || '-')}
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(p.status)}

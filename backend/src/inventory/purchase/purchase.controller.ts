@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Post,
   Body,
@@ -32,44 +32,50 @@ export class PurchaseController {
   @Post()
   @Permissions('inventory.create')
   create(@Body() data: any, @Request() req) {
-    return this.purchaseService.create(req.user.companyId, data);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.purchaseService.create(companyId, data);
   }
 
   @Post(':id/confirm')
   @Permissions('inventory.create')
   confirm(@Param('id') id: string, @Request() req) {
-    return this.purchaseService.confirm(id, req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.purchaseService.confirm(id, companyId);
   }
 
-  
   @Post(':id/receive')
   @Permissions('inventory.create')
   receive(@Param('id') id: string, @Request() req) {
-    return this.purchaseService.markAsReceived(id, req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.purchaseService.markAsReceived(id, companyId);
   }
 
   @Post(':id/cancel')
   @Permissions('inventory.create')
   cancel(@Param('id') id: string, @Request() req) {
-    return this.purchaseService.cancel(id, req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.purchaseService.cancel(id, companyId);
   }
 
   @Get()
   @Permissions('inventory.read')
   findAll(@Request() req) {
-    return this.purchaseService.findAll(req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.purchaseService.findAll(companyId);
   }
 
   @Get(':id')
   @Permissions('inventory.read')
   findOne(@Param('id') id: string, @Request() req) {
-    return this.purchaseService.findOne(id, req.user.companyId);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.purchaseService.findOne(id, companyId);
   }
 
   @Post(':id/log-items')
   @Permissions('inventory.create')
   addLogItem(@Param('id') id: string, @Body() data: any, @Request() req) {
-    return this.purchaseService.addLogItem(id, req.user.companyId, data);
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.purchaseService.addLogItem(id, companyId, data);
   }
 
   @Put(':id/log-items/:itemId')
@@ -80,10 +86,11 @@ export class PurchaseController {
     @Body() data: any,
     @Request() req,
   ) {
+    const companyId = req.user?.company_id || req.user?.companyId;
     return this.purchaseService.updateLogItem(
       id,
       itemId,
-      req.user.companyId,
+      companyId,
       data,
     );
   }

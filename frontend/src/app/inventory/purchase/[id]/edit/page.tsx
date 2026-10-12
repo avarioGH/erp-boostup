@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
@@ -149,27 +149,35 @@ export default function EditPurchasePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [srcData, whData, varData, specData] = await Promise.all([
-          api.get("/inventory/master-data/timber-source").then(res => res.data).catch(() => []),
-          api.get("/inventory/warehouses").then(res => res.data).catch(() => []),
-          api.get("/inventory/master-data/timber-variant").then(res => res.data).catch(() => []),
-          api.get("/inventory/master-data/timber-species").then(res => res.data).catch(() => [])
-        ])
-        setSources(srcData)
-        setWarehouses(whData)
-        setVariants(varData)
-        setSpeciesList(specData)
+        const [srcRes, whRes, varRes, specRes] = await Promise.all([
+          api.get("/inventory/master-data/timber-source").catch(() => ({ data: [] })),
+          api.get("/inventory/warehouses").catch(() => ({ data: [] })),
+          api.get("/inventory/master-data/timber-variant").catch(() => ({ data: [] })),
+          api.get("/inventory/master-data/timber-species").catch(() => ({ data: [] }))
+        ]);
+
+        const rawSrc = srcRes?.data?.data || srcRes?.data || [];
+        const rawWh = whRes?.data?.data || whRes?.data || [];
+        const rawVar = varRes?.data?.data || varRes?.data || [];
+        const rawSpec = specRes?.data?.data || specRes?.data || [];
+
+        setSources(Array.isArray(rawSrc) ? rawSrc : []);
+        setWarehouses(Array.isArray(rawWh) ? rawWh : []);
+        setVariants(Array.isArray(rawVar) ? rawVar : []);
+        setSpeciesList(Array.isArray(rawSpec) ? rawSpec : []);
       } catch (err) {
-        console.error(err)
+        console.error(err);
       }
     }
-    fetchData()
-  }, [])
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (purchaseId) {
       api.get(`/inventory/timber-purchase/${purchaseId}`).then((res) => {
-        const p = res.data;
+        const p = res.data?.data || res.data;
+        if (!p) return;
+
         setForm(prev => ({
           ...prev,
           purchaseNumber: p.purchaseNumber || "",
@@ -178,12 +186,21 @@ export default function EditPurchasePage() {
           warehouseId: p.warehouseId || "",
           notes: p.notes || ""
         }));
+
+        if (p.source) {
+          setSources(prev => prev.some(s => s.id === p.source.id) ? prev : [...prev, p.source]);
+        }
+        if (p.warehouse) {
+          setWarehouses(prev => prev.some(w => w.id === p.warehouse.id) ? prev : [...prev, p.warehouse]);
+        }
         
         if (p.items) {
-          setForm(prev => ({ ...prev, items: p.items.map((i: any) => ({ variantId: i.timberVariantId || "", quantityPcs: i.quantityPcs || 0, volumeM3: i.volumeM3 || 0, unitPrice: i.unitPrice || 0 })) })); }
+          setForm(prev => ({ ...prev, items: p.items.map((i: any) => ({ variantId: i.timberVariantId || "", quantityPcs: i.quantityPcs || 0, volumeM3: i.volumeM3 || 0, unitPrice: i.unitPrice || 0 })) })); 
+        }
         
         if (p.logItems) {
-          setForm(prev => ({ ...prev, logItems: p.logItems.map((i: any) => ({ logNumber: i.logNumber || "", species: i.species || "", diameter: i.diameter || 0, length: i.length || 0, volume: i.volume || 0, unitPrice: i.unitPrice || 0 })) })); }
+          setForm(prev => ({ ...prev, logItems: p.logItems.map((i: any) => ({ logNumber: i.logNumber || "", species: i.species || "", diameter: i.diameter || 0, length: i.length || 0, volume: i.volume || 0, unitPrice: i.unitPrice || 0 })) })); 
+        }
       }).catch(err => {
         console.error(err);
         setError("Failed to load purchase data for editing");
@@ -220,7 +237,7 @@ export default function EditPurchasePage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-2xl font-bold">Buat Purchase (Pembelian Kayu)</h1>
+        <h1 className="text-2xl font-bold">Edit Purchase (Pembelian Kayu)</h1>
       </div>
 
       <Card>
@@ -244,18 +261,42 @@ export default function EditPurchasePage() {
               <div className="space-y-2">
                 <Label>Supplier / Sumber Kayu</Label>
                 <Select value={form.sourceId} onValueChange={val => setForm({...form, sourceId: val || ""})} required>
-                  <SelectTrigger><SelectValue placeholder="Pilih Supplier" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Supplier">
+                      {(() => {
+                        const s = sources.find(item => item.id === form.sourceId);
+                        if (s) return s.name ? `${s.name}${s.code ? ` (${s.code})` : ''}` : (s.code || s.id);
+                        return form.sourceId ? "Memuat supplier..." : "Pilih Supplier";
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
-                    {sources.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                    {sources.map(s => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name ? `${s.name}${s.code ? ` (${s.code})` : ''}` : (s.code || s.id)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Gudang Penerima</Label>
                 <Select value={form.warehouseId} onValueChange={val => setForm({...form, warehouseId: val || ""})} required>
-                  <SelectTrigger><SelectValue placeholder="Pilih Gudang" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Gudang">
+                      {(() => {
+                        const w = warehouses.find(item => item.id === form.warehouseId);
+                        if (w) return w.name ? `${w.name}${w.code ? ` (${w.code})` : ''}` : (w.code || w.id);
+                        return form.warehouseId ? "Memuat gudang..." : "Pilih Gudang";
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
-                    {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                    {warehouses.map(w => (
+                      <SelectItem key={w.id} value={w.id}>
+                        {w.name ? `${w.name}${w.code ? ` (${w.code})` : ''}` : (w.code || w.id)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

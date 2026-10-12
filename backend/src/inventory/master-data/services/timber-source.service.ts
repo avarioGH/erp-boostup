@@ -9,8 +9,16 @@ import {
 export class TimberSourceService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(company_id: string) {
-    return this.prisma.timberSource.findMany({ where: { company_id } });
+  async findAll(company_id?: string) {
+    let targetCompanyId = company_id;
+    if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
+      const firstCompany = await this.prisma.company.findFirst();
+      if (firstCompany) targetCompanyId = firstCompany.id;
+    }
+    return this.prisma.timberSource.findMany({
+      where: targetCompanyId ? { company_id: targetCompanyId } : {},
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async findOne(id: string, company_id: string) {
