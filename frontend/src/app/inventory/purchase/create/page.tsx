@@ -94,6 +94,18 @@ export default function CreatePurchasePage() {
       setForm(prev => ({ ...prev, purchaseType: 'sawn-timber' }));
     }
   }, [partaiIdFromUrl, typeFromUrl]);
+
+  const handleBack = () => {
+    const targetPartaiId = searchParams.get('partaiId') || form.partaiId;
+    const fromTab = searchParams.get('tab') || (form.purchaseType === 'raw-log' ? 'rawlogs' : 'purchase');
+    if (targetPartaiId) {
+      router.push(`/inventory/partai/${targetPartaiId}?tab=${fromTab}`);
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/inventory/partai');
+    }
+  };
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false)
   const [activeVariantRowIndex, setActiveVariantRowIndex] = useState<number>(0)
   const [newVariant, setNewVariant] = useState({ species: "", speciesId: "", grade: "", gradeId: "", thickness: "", width: "", length: "" })
@@ -323,7 +335,7 @@ export default function CreatePurchasePage() {
           purchaseVolume: Number(li.purchaseVolume || 0)
         })) : []
       })
-      const targetTab = form.purchaseType === "raw-log" ? "rawlogs" : "purchase";
+      const targetTab = searchParams.get('tab') || (form.purchaseType === "raw-log" ? "rawlogs" : "purchase");
       router.push(`/inventory/partai/${form.partaiId}?tab=${targetTab}`)
       router.refresh()
     } catch (err: any) {
@@ -335,7 +347,7 @@ export default function CreatePurchasePage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" onClick={() => form.partaiId ? router.push(`/inventory/partai/${form.partaiId}?tab=purchase`) : router.push('/inventory/partai')}>
+        <Button variant="ghost" size="icon" onClick={handleBack}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <h1 className="text-2xl font-bold">Buat Purchase (Pembelian Kayu)</h1>

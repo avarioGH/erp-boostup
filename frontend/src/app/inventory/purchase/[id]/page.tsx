@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PurchaseAPI } from "@/lib/api";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,7 @@ import { ReceiveLogModal } from "@/components/timber/receive-log-modal";
 export default function PurchaseDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [purchase, setPurchase] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -34,6 +35,18 @@ export default function PurchaseDetailPage() {
   const [receiveModalOpen, setReceiveModalOpen] = useState<boolean>(false);
 
   const purchaseId = typeof params?.id === "string" ? params.id : "";
+
+  const handleBack = () => {
+    const targetPartaiId = searchParams?.get('partaiId') || purchase?.partaiId;
+    const fromTab = searchParams?.get('tab') || 'purchase';
+    if (targetPartaiId) {
+      router.push(`/inventory/partai/${targetPartaiId}?tab=${fromTab}`);
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/inventory/partai");
+    }
+  };
 
   useEffect(() => {
     if (purchaseId && purchaseId !== "undefined") {
@@ -85,7 +98,7 @@ export default function PurchaseDetailPage() {
     return (
       <div className="max-w-xl mx-auto mt-10 p-6 bg-destructive/10 rounded-xl border border-destructive/20 text-center space-y-4">
         <p className="text-destructive font-semibold">{error}</p>
-        <Button variant="outline" onClick={() => router.back()}>
+        <Button variant="outline" onClick={handleBack}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
         </Button>
       </div>
@@ -117,7 +130,7 @@ export default function PurchaseDetailPage() {
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => purchase?.partaiId ? router.push(`/inventory/partai/${purchase.partaiId}?tab=purchase`) : router.push("/inventory/partai")} 
+              onClick={handleBack} 
               className="h-8 w-8"
               title="Kembali ke Manajemen Partai"
             >

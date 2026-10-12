@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Loader2, ArrowLeft, ArrowRight, Box, CheckCircle2, Factory, Calendar, Package, Plus, Trash, Check, Edit, X, AlertCircle } from "lucide-react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { Loader2, ArrowLeft, ArrowRight, Box, CheckCircle2, Factory, Calendar, Package, Plus, Trash, Check, Edit, X, AlertCircle } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
@@ -16,7 +16,20 @@ import { useToast } from "@/hooks/use-toast"
 export default function InputLogDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
+  
+  const handleBack = () => {
+    const targetPartaiId = searchParams.get('partaiId') || data?.partaiId
+    const fromTab = searchParams.get('tab') || 'input'
+    if (targetPartaiId) {
+      router.push(`/inventory/partai/${targetPartaiId}?tab=${fromTab}`)
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/inventory/input-logs')
+    }
+  }
   
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -190,7 +203,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
     <div className="p-8 md:p-24 flex flex-col items-center justify-center gap-4 text-center">
       <Package className="w-10 h-10 text-muted-foreground opacity-40" />
       <p className="text-base font-semibold text-foreground">{error || "Input log tidak ditemukan."}</p>
-      <Button variant="outline" onClick={() => router.push("/inventory/partai")}>
+      <Button variant="outline" onClick={handleBack}>
         <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
       </Button>
     </div>
@@ -208,7 +221,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="icon" onClick={() => router.push(data.partaiId ? `/inventory/partai/${data.partaiId}` : '/inventory/input-logs')}>
+            <Button variant="outline" size="icon" onClick={handleBack}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div>

@@ -1,20 +1,33 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from "react"
 import { TimberAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, ArrowLeft, Ruler, Box, Waypoints, CheckCircle2, Factory, Printer } from "lucide-react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 
 export default function TrimmedLogDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const id = params?.id as string
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const handleBack = () => {
+    const targetPartaiId = searchParams.get('partaiId') || data?.rawLog?.partaiId || data?.partaiId
+    const fromTab = searchParams.get('tab') || 'trimming'
+    if (targetPartaiId) {
+      router.push(`/inventory/partai/${targetPartaiId}?tab=${fromTab}`)
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/inventory/trimming')
+    }
+  }
 
   useEffect(() => {
     if (!id || id === 'undefined' || id.length !== 24) {
@@ -33,7 +46,7 @@ export default function TrimmedLogDetailPage() {
   if (error || !data) return (
     <div className="p-8 md:p-24 text-center space-y-4">
       <p className="text-red-500 font-semibold">{error || 'Trimmed log not found.'}</p>
-      <Button variant="outline" onClick={() => router.back()}><ArrowLeft className="w-4 h-4 mr-2" />Go Back</Button>
+      <Button variant="outline" onClick={handleBack}><ArrowLeft className="w-4 h-4 mr-2" />Go Back</Button>
     </div>
   )
 
@@ -42,7 +55,7 @@ export default function TrimmedLogDetailPage() {
  <div className="space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-8 px-4 md:px-6 box-border">
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
  <div className="flex items-center gap-4">
- <Button variant="outline" size="icon" onClick={() => router.back()}><ArrowLeft className="w-4 h-4" /></Button>
+ <Button variant="outline" size="icon" onClick={handleBack}><ArrowLeft className="w-4 h-4" /></Button>
  <div>
  <div className="flex items-center gap-3">
  <h1 className="text-2xl font-bold tracking-tight text-foreground">{data.trimNumber}</h1>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { api, MasterDataAPI } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,6 +23,19 @@ const calculateLogVolume = (length: number, d1: number, d2: number) => {
 export default function EditPurchasePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const handleBack = () => {
+    const targetPartaiId = searchParams?.get('partaiId') || form.partaiId;
+    const fromTab = searchParams?.get('tab') || 'purchase';
+    if (targetPartaiId) {
+      router.push(`/inventory/partai/${targetPartaiId}?tab=${fromTab}`);
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/inventory/partai");
+    }
+  };
   const purchaseId = typeof params?.id === "string" ? params.id : "";
 
   const [pageLoading, setPageLoading] = useState(true);
@@ -365,11 +378,7 @@ export default function EditPurchasePage() {
               }))
             : [],
       });
-      if (form.partaiId) {
-        router.push(`/inventory/partai/${form.partaiId}?tab=purchase`);
-      } else {
-        router.back();
-      }
+      handleBack();
     } catch (err: any) {
       setError(
         err.response?.data?.error?.message ||
@@ -392,7 +401,7 @@ export default function EditPurchasePage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300 pb-12">
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" onClick={() => form.partaiId ? router.push(`/inventory/partai/${form.partaiId}?tab=purchase`) : router.back()}>
+        <Button variant="ghost" size="icon" onClick={handleBack}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div>

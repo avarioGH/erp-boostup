@@ -6,18 +6,31 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Loader2, ArrowLeft, Box, Waypoints, CheckCircle2, Factory, Calendar, FileCheck, XCircle, Package, Printer } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 
 export default function SawnTimberOutputDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
   const [grades, setGrades] = useState<any[]>([])
+
+  const handleBack = () => {
+    const targetPartaiId = searchParams.get('partaiId') || data?.partaiId
+    const fromTab = searchParams.get('tab') || 'output'
+    if (targetPartaiId) {
+      router.push(`/inventory/partai/${targetPartaiId}?tab=${fromTab}`)
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/inventory/sawn-timber/output')
+    }
+  }
 
   const loadData = () => {
     TimberAPI.getSawnOutput(id).then(setData).catch(console.error).finally(() => setLoading(false))
@@ -58,7 +71,7 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
   }
 
   if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
-  if (!data) return <div className="p-8 md:p-24 flex flex-col items-center justify-center text-center animate-in fade-in"><Box className="w-12 h-12 text-muted-foreground opacity-30 mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Output not found</h2><p className="text-muted-foreground max-w-md mb-6 text-[15px]">Output yang diminta tidak ditemukan atau sudah tidak tersedia.</p><Button onClick={() => data?.partaiId ? router.push(`/inventory/partai/${data.partaiId}?tab=output`) : router.push('/inventory/sawn-timber/output')} variant="outline" className="h-10 px-6 font-semibold"><ArrowLeft className="w-4 h-4 mr-2" /> Back to Sawn Timber Output</Button></div>
+  if (!data) return <div className="p-8 md:p-24 flex flex-col items-center justify-center text-center animate-in fade-in"><Box className="w-12 h-12 text-muted-foreground opacity-30 mb-4" /><h2 className="text-xl font-bold text-foreground mb-2">Output not found</h2><p className="text-muted-foreground max-w-md mb-6 text-[15px]">Output yang diminta tidak ditemukan atau sudah tidak tersedia.</p><Button onClick={handleBack} variant="outline" className="h-10 px-6 font-semibold"><ArrowLeft className="w-4 h-4 mr-2" /> Back to Sawn Timber Output</Button></div>
 
   const totalPcs = data.items?.reduce((s:number, i:any)=>s+(i.quantityPcs||0), 0) || 0;
   const totalM3 = data.items?.reduce((s:number, i:any)=>s+(i.volumeM3||0), 0) || 0;
@@ -69,7 +82,7 @@ export default function SawnTimberOutputDetailPage({ params }: { params: Promise
       {/* Header section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => data?.partaiId ? router.push(`/inventory/partai/${data.partaiId}?tab=output`) : router.push('/inventory/sawn-timber/output')} className="shrink-0 h-10 w-10">
+          <Button variant="outline" size="icon" onClick={handleBack} className="shrink-0 h-10 w-10">
             <ArrowLeft className="w-4 h-4 text-muted-foreground" />
           </Button>
           <div>

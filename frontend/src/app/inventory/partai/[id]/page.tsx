@@ -29,12 +29,39 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
   const [selectedPurchaseForReceive, setSelectedPurchaseForReceive] = useState<any>(null);
 
-  useEffect(() => {
-    const tab = searchParams.get("tab");
-    if (tab) {
-      setCurrentTab(tab);
+  const handleTabChange = (tab: string) => {
+    setCurrentTab(tab);
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(`partai_${id}_active_tab`, tab);
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", tab);
+        window.history.replaceState(null, "", url.toString());
+      } catch (e) {}
     }
-  }, [searchParams]);
+  };
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get("tab");
+    if (tabFromUrl) {
+      setCurrentTab(tabFromUrl);
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem(`partai_${id}_active_tab`, tabFromUrl);
+        } catch (e) {}
+      }
+    } else if (typeof window !== "undefined") {
+      try {
+        const savedTab = sessionStorage.getItem(`partai_${id}_active_tab`);
+        if (savedTab) {
+          setCurrentTab(savedTab);
+          const url = new URL(window.location.href);
+          url.searchParams.set("tab", savedTab);
+          window.history.replaceState(null, "", url.toString());
+        }
+      } catch (e) {}
+    }
+  }, [searchParams, id]);
 
   // -- Pagination & Page Size states --
   const [purchasePage, setPurchasePage] = useState(1);
@@ -533,7 +560,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
         </Badge>
       </div>
 
-      <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+      <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-6 h-12 mb-6">
           <TabsTrigger value="purchase">1. Purchase</TabsTrigger>
           <TabsTrigger value="rawlogs">2. DUKB (Raw Logs)</TabsTrigger>
@@ -553,14 +580,14 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               </div>
               <div className="flex items-center gap-2">
                 <Button 
-                  onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=raw-log`)}
+                  onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=raw-log&tab=purchase`)}
                   className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold"
                 >
                   <Plus className="w-4 h-4 mr-1.5" /> + Beli Log Bulat (DUKB)
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=sawn-timber`)}
+                  onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=sawn-timber&tab=purchase`)}
                   className="border-emerald-600/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 font-semibold"
                 >
                   <Plus className="w-4 h-4 mr-1.5" /> + Beli Sawn Timber
@@ -588,7 +615,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                     <TableRow 
                       key={r.id} 
                       className="group hover:bg-muted/50 cursor-pointer" 
-                      onClick={() => router.push(`/inventory/purchase/${r.purchaseId}`)}
+                      onClick={() => router.push(`/inventory/purchase/${r.purchaseId}?partaiId=${id}&tab=purchase`)}
                     >
                       <TableCell className="font-medium text-foreground">
                         {r.purchaseNumber}
@@ -668,7 +695,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             title="View" 
                             onClick={(e) => { 
                               e.stopPropagation(); 
-                              router.push(`/inventory/purchase/${r.purchaseId}`);
+                              router.push(`/inventory/purchase/${r.purchaseId}?partaiId=${id}&tab=purchase`);
                             }}
                           >
                             <Eye className="w-4 h-4 mr-1" /> View
@@ -680,7 +707,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             title="Edit" 
                             onClick={(e) => { 
                               e.stopPropagation(); 
-                              router.push(`/inventory/purchase/${r.purchaseId}/edit`);
+                              router.push(`/inventory/purchase/${r.purchaseId}/edit?partaiId=${id}&tab=purchase`);
                             }}
                           >
                             <Edit className="w-4 h-4" />
@@ -749,7 +776,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                   </Button>
                 )}
                 <Button 
-                  onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=raw-log`)}
+                  onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=raw-log&tab=rawlogs`)}
                   className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
                 >
                   <Plus className="w-4 h-4 mr-1.5" /> + Beli Log Baru (DUKB)
@@ -831,7 +858,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                       <TableRow 
                         key={r.id} 
                         className={`hover:bg-muted/50 cursor-pointer group ${isSelected ? "bg-emerald-50/30 dark:bg-emerald-950/20" : ""}`} 
-                        onClick={() => router.push(`/inventory/logs/${r.id}`)}
+                        onClick={() => router.push(`/inventory/logs/${r.id}?partaiId=${id}&tab=rawlogs`)}
                       >
                         <TableCell className="text-center p-2" onClick={(e) => e.stopPropagation()}>
                           {isTrimmed ? (
@@ -880,7 +907,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                         </TableCell>
                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Detail Log" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}`); }}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Detail Log" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}?partaiId=${id}&tab=rawlogs`); }}>
                               <Eye className="w-4 h-4" />
                             </Button>
                             {!isTrimmed ? (
@@ -892,7 +919,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                                 <Scissors className="w-4 h-4" />
                               </Button>
                             )}
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Edit" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}/edit`); }}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Edit" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}/edit?partaiId=${id}&tab=rawlogs`); }}>
                               <Edit className="w-4 h-4" />
                             </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete" onClick={(e) => { e.stopPropagation(); handleDeleteLog(r.id); }}>
@@ -945,7 +972,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 </TableHeader>
                 <TableBody>
                   {paginatedTrimmedLogs.map((t: any) => (
-                    <TableRow key={t.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => router.push(`/inventory/trimming/${t.id}`)}>
+                    <TableRow key={t.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => router.push(`/inventory/trimming/${t.id}?partaiId=${id}&tab=trimming`)}>
                       <TableCell className="font-medium">{t.trimNumber || t.logNumber}</TableCell>
                       <TableCell className="text-primary font-medium">{t.rawLog?.logNumber || "-"}</TableCell>
                       <TableCell className="text-right font-bold text-foreground/90">{Number(t.netVolume || 0).toFixed(4)}</TableCell>
@@ -956,8 +983,8 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             <MoreHorizontal className="h-4 w-4" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/inventory/trimming/${t.id}`)}><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => router.push(`/inventory/trimming/${t.id}/edit`)}><Pencil className="w-4 h-4 mr-2" /> Edit Log</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push(`/inventory/trimming/${t.id}?partaiId=${id}&tab=trimming`)}><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push(`/inventory/trimming/${t.id}?partaiId=${id}&tab=trimming`)}><Pencil className="w-4 h-4 mr-2" /> Edit Log</DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteTrim(t.id) }} className="text-destructive"><Trash className="w-4 h-4 mr-2" /> Delete Log</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1043,7 +1070,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 const progressPct = totalInputVol > 0 ? Math.min(100, Math.round((totalOutputVol / totalInputVol) * 100)) : 0;
                 
                 return (
-                  <Card key={i.id} className="overflow-hidden border-border/60 hover:border-primary/40 transition-all cursor-pointer shadow-sm group" onClick={() => router.push(`/inventory/input-logs/${i.id}`)}>
+                  <Card key={i.id} className="overflow-hidden border-border/60 hover:border-primary/40 transition-all cursor-pointer shadow-sm group" onClick={() => router.push(`/inventory/input-logs/${i.id}?partaiId=${id}&tab=input`)}>
                     <div className="p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                       <div className="md:col-span-3 space-y-1">
                         <div className="flex items-center gap-2">
@@ -1071,7 +1098,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                       </div>
                       
                       <div className="md:col-span-2 flex justify-end">
-                        <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/input-logs/${i.id}`) }}>
+                        <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/input-logs/${i.id}?partaiId=${id}&tab=input`) }}>
                           Detail Pekerjaan <ArrowRight className="w-4 h-4 ml-1" />
                         </Button>
                       </div>
@@ -1173,7 +1200,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                       (i.parentNotes && i.parentNotes.includes("Beli Masak")) ||
                       (i.notes && i.notes.includes("Penerimaan Sawn Timber"));
                     return (
-                      <TableRow key={i.id} className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/inventory/sawn-timber/output/${i.parentOutputId}`)}>
+                      <TableRow key={i.id} className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/inventory/sawn-timber/output/${i.parentOutputId}?partaiId=${id}&tab=output`)}>
                         <TableCell onClick={e => e.stopPropagation()}>
                           <Checkbox 
                             checked={!!selectedOutputItems.find(x => x.id === i.id)} 

@@ -6,17 +6,31 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, ArrowLeft, Save, Calculator } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
 export default function EditRawLogPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   
+  const [partaiId, setPartaiId] = useState<string | null>(null)
   const [warehouses, setWarehouses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+
+  const handleBack = () => {
+    const targetPartaiId = searchParams.get('partaiId') || partaiId
+    const fromTab = searchParams.get('tab') || 'rawlogs'
+    if (targetPartaiId) {
+      router.push(`/inventory/partai/${targetPartaiId}?tab=${fromTab}`)
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/inventory/logs')
+    }
+  }
 
   const [form, setForm] = useState({
     logNumber: "",
@@ -41,6 +55,7 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
     ]).then(([wRes, lRes]) => {
       setWarehouses(Array.isArray(wRes) ? wRes : [])
       if (lRes) {
+        if (lRes.partaiId) setPartaiId(lRes.partaiId)
         setForm({
           logNumber: lRes.logNumber || "",
           species: lRes.species || "Ulin Lokal",
@@ -96,7 +111,7 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
         gerowong: parseFloat(form.gerowong) || 0,
       })
       toast({ title: "Berhasil", description: "Log berhasil diperbarui." })
-      router.push('/inventory/logs')
+      handleBack()
     } catch (err: any) {
       toast({ title: "Error", description: (err.response?.data?.error?.message || err.response?.data?.message) || "Gagal memperbarui log.", variant: "destructive" })
     } finally {
@@ -111,7 +126,7 @@ export default function EditRawLogPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="space-y-6 pb-10">
       <div className="flex items-center gap-4 border-b pb-4">
-        <Button variant="outline" size="icon" onClick={() => router.push('/inventory/logs')}>
+        <Button variant="outline" size="icon" onClick={handleBack}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
