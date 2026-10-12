@@ -75,27 +75,113 @@ export class TimberVariantController {
       productId = genericProduct.id;
     }
 
-    const volume =
-      ((data.thickness || 0) * (data.width || 0) * (data.length || 0)) /
-      1000000000;
+    const species = String(data.species || 'UNKNOWN').trim().toUpperCase();
+    const grade = String(data.grade || 'PENDING').trim().toUpperCase();
+    const thickness = Math.round(Number(data.thickness || 0));
+    const width = Math.round(Number(data.width || 0));
+    const length = Math.round(Number(data.length || 0));
+
+    const volume = (thickness * width * length) / 1000000000;
 
     // Auto-generate SKU if not provided
-    const sku =
+    const sku = (
       data.sku ||
-      `${data.species || 'MIX'}-${data.grade || 'PENDING'}-${data.thickness || 0}x${data.width || 0}x${data.length || 0}`;
+      `${species}-${grade}-${thickness}x${width}x${length}`
+    ).trim().toUpperCase();
+
+    // Check if variant with SKU or exact specs already exists
+    const existing = await this.prisma.timberVariant.findFirst({
+      where: {
+        OR: [
+          { sku: sku },
+          {
+            species: species,
+            grade: grade,
+            thickness: thickness,
+            width: width,
+            length: length,
+          },
+        ],
+        ...(targetCompanyId ? { company_id: targetCompanyId } : {}),
+      },
+      include: { product: true },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    // Attempt to link speciesId
+    let speciesId = data.speciesId;
+    if (!speciesId && species) {
+      const sp = await this.prisma.timberSpecies.findFirst({
+        where: {
+          OR: [
+            { name: { equals: species, mode: 'insensitive' } },
+            { code: { equals: species, mode: 'insensitive' } },
+          ],
+          ...(targetCompanyId ? { company_id: targetCompanyId } : {}),
+        },
+      });
+      if (sp) speciesId = sp.id;
+    }
+
+    // Attempt to link gradeId
+    let gradeId = data.gradeId;
+    if (!gradeId && grade) {
+      const gr = await this.prisma.timberGrade.findFirst({
+        where: {
+          OR: [
+            { code: { equals: grade, mode: 'insensitive' } },
+            { name: { equals: grade, mode: 'insensitive' } },
+          ],
+          ...(targetCompanyId ? { company_id: targetCompanyId } : {}),
+        },
+      });
+      if (gr) gradeId = gr.id;
+    }
 
     return this.prisma.timberVariant.create({
       data: {
         company_id: targetCompanyId as string,
         productId: productId,
-        species: data.species || 'UNKNOWN',
-        grade: data.grade || 'PENDING',
-        thickness: Number(data.thickness || 0),
-        width: Number(data.width || 0),
-        length: Number(data.length || 0),
+        species: species,
+        grade: grade,
+        speciesId: speciesId || undefined,
+        gradeId: gradeId || undefined,
+        thickness: thickness,
+        width: width,
+        length: length,
         volumePerPiece: volume,
         sku: sku,
       },
+      include: { product: true },
     });
+  }
+
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() data: any) {
+    const updateData: any = {};
+    if (data.species) updateData.species = String(data.species).trim().toUpperCase();
+    if (data.grade) updateData.grade = String(data.grade).trim().toUpperCase();
+    if (data.thickness !== undefined) updateData.thickness = Math.round(Number(data.thickness));
+    if (data.width !== undefined) updateData.width = Math.round(Number(data.width));
+    if (data.length !== undefined) updateData.length = Math.round(Number(data.length));
+    if (data.sku) updateData.sku = String(data.sku).trim().toUpperCase();
+
+    if (updateData.thickness !== undefined && updateData.width !== undefined && updateData.length !== undefined) {
+      updateData.volumePerPiece = (updateData.thickness * updateData.width * updateData.length) / 1000000000;
+    }
+
+    return this.prisma.timberVariant.update({
+      where: { id },
+      data: updateData,
+      include: { product: true },
+    });
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    return this.prisma.timberVariant.delete({ where: { id } });
   }
 }

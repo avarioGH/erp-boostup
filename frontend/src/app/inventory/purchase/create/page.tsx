@@ -79,6 +79,7 @@ export default function CreatePurchasePage() {
   const [speciesList, setSpeciesList] = useState<any[]>([])
   const [error, setError] = useState("")
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false)
+  const [activeVariantRowIndex, setActiveVariantRowIndex] = useState<number>(0)
   const [newVariant, setNewVariant] = useState({ species: "", grade: "", thickness: "", width: "", length: "" })
   const [creatingVariant, setCreatingVariant] = useState(false)
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false)
@@ -106,13 +107,37 @@ export default function CreatePurchasePage() {
     e.preventDefault()
     setCreatingVariant(true)
     try {
-      const res = await MasterDataAPI.createTimberVariant(newVariant)
-      setVariants([...variants, res])
-      setIsVariantModalOpen(false)
-      setNewVariant({ species: "", grade: "", thickness: "", width: "", length: "" })
-      // toast notification would go here if useToast was imported, but let's just log or ignore for now to avoid breaking imports
+      const payload = {
+        species: (newVariant.species || "").trim().toUpperCase(),
+        grade: (newVariant.grade || "").trim().toUpperCase(),
+        thickness: Number(newVariant.thickness || 0),
+        width: Number(newVariant.width || 0),
+        length: Number(newVariant.length || 0),
+      }
+      const res = await MasterDataAPI.createTimberVariant(payload)
+      if (res && res.id) {
+        setVariants(prev => {
+          const exists = prev.some(v => v.id === res.id);
+          return exists ? prev.map(v => v.id === res.id ? res : v) : [res, ...prev];
+        });
+
+        const newItems = [...form.items];
+        const targetIdx = activeVariantRowIndex >= 0 && activeVariantRowIndex < newItems.length ? activeVariantRowIndex : 0;
+        if (newItems[targetIdx]) {
+          newItems[targetIdx].timberVariantId = res.id;
+          newItems[targetIdx].purchaseThickness = res.thickness || payload.thickness;
+          newItems[targetIdx].purchaseWidth = res.width || payload.width;
+          newItems[targetIdx].purchaseLength = res.length || payload.length;
+          newItems[targetIdx].volumeM3 = (res.volumePerPiece || 0) * (newItems[targetIdx].quantityPcs || 1);
+          setForm(prev => ({ ...prev, items: newItems }));
+        }
+
+        setIsVariantModalOpen(false)
+        setNewVariant({ species: "", grade: "", thickness: "", width: "", length: "" })
+      }
     } catch (err: any) {
       console.error("Failed to create variant", err)
+      alert("Gagal menyimpan master kayu: " + (err?.response?.data?.message || err.message || "Pastikan koneksi server tersedia"));
     } finally {
       setCreatingVariant(false)
     }
@@ -300,27 +325,16 @@ export default function CreatePurchasePage() {
                       <div className="space-y-2 md:col-span-2">
                         <div className="flex items-center justify-between">
                           <Label>Variant / Sku Kayu</Label>
-                          <Dialog open={isVariantModalOpen} onOpenChange={setIsVariantModalOpen}>
-                            <button type="button" onClick={() => setIsVariantModalOpen(true)} className="text-xs text-primary hover:underline font-medium">+ Buat Master Baru</button>
-<DialogTrigger className="hidden">
-                              <button type="button" className="text-xs text-primary hover:underline font-medium">+ Buat Master Baru</button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Buat Master Data Kayu</DialogTitle>
-                              </DialogHeader>
-                              <form onSubmit={handleCreateVariant} className="space-y-4">
-                                <div><Label>Species (Jenis Kayu)</Label><Input value={newVariant.species} onChange={e=>setNewVariant({...newVariant, species: e.target.value})} placeholder="e.g. MERANTI" required /></div>
-                                <div><Label>Grade</Label><Input value={newVariant.grade} onChange={e=>setNewVariant({...newVariant, grade: e.target.value})} placeholder="e.g. A" required /></div>
-                                <div className="grid grid-cols-3 gap-2">
-                                  <div><Label>Tebal (mm)</Label><Input type="number" value={newVariant.thickness} onChange={e=>setNewVariant({...newVariant, thickness: e.target.value})} required /></div>
-                                  <div><Label>Lebar (mm)</Label><Input type="number" value={newVariant.width} onChange={e=>setNewVariant({...newVariant, width: e.target.value})} required /></div>
-                                  <div><Label>Panjang (mm)</Label><Input type="number" value={newVariant.length} onChange={e=>setNewVariant({...newVariant, length: e.target.value})} required /></div>
-                                </div>
-                                <Button type="submit" disabled={creatingVariant} className="w-full">{creatingVariant ? "Menyimpan..." : "Simpan Variant"}</Button>
-                              </form>
-                            </DialogContent>
-                          </Dialog>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              setActiveVariantRowIndex(index);
+                              setIsVariantModalOpen(true);
+                            }} 
+                            className="text-xs text-primary hover:underline font-medium"
+                          >
+                            + Buat Master Baru
+                          </button>
                         </div>
                         <Select value={item.timberVariantId} onValueChange={(val: any) => {
                           const newItems = [...form.items];
@@ -411,6 +425,87 @@ export default function CreatePurchasePage() {
                 }}>
                   <Plus className="w-4 h-4 mr-2" /> Tambah Sawn Timber
                 </Button>
+
+                <Dialog open={isVariantModalOpen} onOpenChange={setIsVariantModalOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Buat Master Data Kayu (Sawn Timber)</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateVariant} className="space-y-4">
+                      <div>
+                        <Label>Species (Jenis Kayu)</Label>
+                        <Input 
+                          value={newVariant.species} 
+                          onChange={e => setNewVariant({ ...newVariant, species: e.target.value })} 
+                          placeholder="e.g. MERANTI / KERUING / JATI" 
+                          list="species-options"
+                          required 
+                        />
+                        {speciesList.length > 0 && (
+                          <datalist id="species-options">
+                            {speciesList.map((s: any, idx: number) => (
+                              <option key={idx} value={s.name || s.code} />
+                            ))}
+                          </datalist>
+                        )}
+                      </div>
+                      <div>
+                        <Label>Grade (Kualitas)</Label>
+                        <Input 
+                          value={newVariant.grade} 
+                          onChange={e => setNewVariant({ ...newVariant, grade: e.target.value })} 
+                          placeholder="e.g. A / B / C / EXPORT / REJECT" 
+                          list="grade-options"
+                          required 
+                        />
+                        <datalist id="grade-options">
+                          <option value="A" />
+                          <option value="B" />
+                          <option value="C" />
+                          <option value="EXPORT" />
+                          <option value="REJECT" />
+                          <option value="BALOK" />
+                          <option value="PAPAN" />
+                        </datalist>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <Label>Tebal (mm)</Label>
+                          <Input 
+                            type="number" 
+                            value={newVariant.thickness} 
+                            onChange={e => setNewVariant({ ...newVariant, thickness: e.target.value })} 
+                            placeholder="cth: 20"
+                            required 
+                          />
+                        </div>
+                        <div>
+                          <Label>Lebar (mm)</Label>
+                          <Input 
+                            type="number" 
+                            value={newVariant.width} 
+                            onChange={e => setNewVariant({ ...newVariant, width: e.target.value })} 
+                            placeholder="cth: 200"
+                            required 
+                          />
+                        </div>
+                        <div>
+                          <Label>Panjang (mm)</Label>
+                          <Input 
+                            type="number" 
+                            value={newVariant.length} 
+                            onChange={e => setNewVariant({ ...newVariant, length: e.target.value })} 
+                            placeholder="cth: 4000"
+                            required 
+                          />
+                        </div>
+                      </div>
+                      <Button type="submit" disabled={creatingVariant} className="w-full">
+                        {creatingVariant ? "Menyimpan..." : "Simpan Master Kayu"}
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
 
               <TabsContent value="raw-log" className="space-y-4">

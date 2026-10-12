@@ -302,6 +302,11 @@ export const ProductionAPI: any = {
 };
 
 export const MasterDataAPI: any = {
+  getTimberVariants: async () => (await api.get('/inventory/master-data/timber-variant')).data,
+  createTimberVariant: async (data: any) => (await api.post('/inventory/master-data/timber-variant', data)).data,
+  updateTimberVariant: async (id: string, data: any) => (await api.put('/inventory/master-data/timber-variant/' + id, data)).data,
+  deleteTimberVariant: async (id: string) => (await api.delete('/inventory/master-data/timber-variant/' + id)).data,
+
   getSpecies: async () => (await api.get('/inventory/master-data/timber-species')).data,
   createSpecies: async (data: any) => (await api.post('/inventory/master-data/timber-species', data)).data,
   updateSpecies: async (id: string, data: any) => (await api.put('/inventory/master-data/timber-species/' + id, data)).data,
