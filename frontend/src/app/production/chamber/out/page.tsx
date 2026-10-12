@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI, InventoryAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
@@ -89,14 +89,30 @@ export default function ChamberOutPage() {
  <div className="space-y-2">
  <label className="text-sm font-medium">Kiln Chamber (From)</label>
  <Select value={form.fromLocationId} onValueChange={(v) => setForm({...form, fromLocationId: v || ''})}>
- <SelectTrigger><SelectValue placeholder="Select Chamber" /></SelectTrigger>
+ <SelectTrigger>
+   <SelectValue placeholder="Select Chamber">
+     {(() => {
+       const w = chambers.find(item => item.id === form.fromLocationId);
+       if (w) return w.name ? `${w.name}${w.code ? ` (${w.code})` : ''}` : (w.code || w.id);
+       return form.fromLocationId ? "Memuat chamber..." : "Select Chamber";
+     })()}
+   </SelectValue>
+ </SelectTrigger>
  <SelectContent>{chambers.map(w => <SelectItem key={w.id} value={w.id}>{w.name || w.code || w.id}</SelectItem>)}</SelectContent>
  </Select>
  </div>
  <div className="space-y-2">
  <label className="text-sm font-medium">Destination Yard (To)</label>
  <Select value={form.toLocationId} onValueChange={(v) => setForm({...form, toLocationId: v || ''})}>
- <SelectTrigger><SelectValue placeholder="Select Destination" /></SelectTrigger>
+ <SelectTrigger>
+   <SelectValue placeholder="Select Destination">
+     {(() => {
+       const w = normalWarehouses.find(item => item.id === form.toLocationId);
+       if (w) return w.name ? `${w.name}${w.code ? ` (${w.code})` : ''}` : (w.code || w.id);
+       return form.toLocationId ? "Memuat gudang..." : "Select Destination";
+     })()}
+   </SelectValue>
+ </SelectTrigger>
  <SelectContent>{normalWarehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name || w.code || w.id}</SelectItem>)}</SelectContent>
  </Select>
  </div>
@@ -105,11 +121,19 @@ export default function ChamberOutPage() {
  <div className="space-y-2">
  <label className="text-sm font-medium">Timber Variant</label>
  <Select value={item.timberVariantId} onValueChange={(v) => setItem({...item, timberVariantId: v || ''})}>
- <SelectTrigger><SelectValue placeholder="Select Variant in Chamber" /></SelectTrigger>
+ <SelectTrigger>
+   <SelectValue placeholder="Select Variant in Chamber">
+     {(() => {
+       const s = (Array.isArray(stocks) ? stocks : []).find(st => st.timberVariantId === item.timberVariantId);
+       if (s) return `${s.timberVariant?.name || s.timberVariant?.sku || s.timberVariantId} (Avail: ${s.currentPcs} PCS)`;
+       return item.timberVariantId ? "Memuat variant..." : "Select Variant in Chamber";
+     })()}
+   </SelectValue>
+ </SelectTrigger>
  <SelectContent>
  {(Array.isArray(stocks) ? stocks : []).filter(s => s.currentPcs > 0).map(s => (
  <SelectItem key={s.timberVariantId} value={s.timberVariantId}>
- {s.timberVariant?.name} (Avail: {s.currentPcs} PCS)
+ {s.timberVariant?.name || s.timberVariant?.sku || `${s.timberVariant?.species || ''} ${s.timberVariant?.grade || ''} ${s.timberVariant?.thickness || 0}x${s.timberVariant?.width || 0}x${s.timberVariant?.length || 0}`.trim()} (Avail: {s.currentPcs} PCS)
  </SelectItem>
  ))}
  </SelectContent>

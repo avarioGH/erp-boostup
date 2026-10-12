@@ -334,9 +334,21 @@ export default function CreatePurchasePage() {
                           }
                           setForm({ ...form, items: newItems });
                         }}>
-                          <SelectTrigger><SelectValue placeholder="Pilih Variant Kayu" /></SelectTrigger>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih Variant Kayu">
+                              {(() => {
+                                const v = variants.find(itemVar => itemVar.id === item.timberVariantId);
+                                if (v) return v.sku || `${v.species || ''} ${v.grade || ''} ${v.thickness || 0}x${v.width || 0}x${v.length || 0}`.trim();
+                                return item.timberVariantId ? "Memuat variant..." : "Pilih Variant Kayu";
+                              })()}
+                            </SelectValue>
+                          </SelectTrigger>
                           <SelectContent>
-                            {variants.map(v => <SelectItem key={v.id} value={v.id}>{v.sku || `${v.species} ${v.grade} ${v.thickness}x${v.width}x${v.length}`}</SelectItem>)}
+                            {variants.map(v => (
+                              <SelectItem key={v.id} value={v.id}>
+                                {v.sku || `${v.species || ''} ${v.grade || ''} ${v.thickness || 0}x${v.width || 0}x${v.length || 0}`.trim() || v.id}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>

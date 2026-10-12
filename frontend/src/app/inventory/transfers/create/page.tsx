@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from "react"
 import { TimberAPI, InventoryAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -149,7 +149,13 @@ export default function CreateTransferPage() {
                               setItems(newItems)
                             }}>
                               <SelectTrigger className="h-10 bg-background font-medium">
-                                <SelectValue placeholder="Select available SKU..." />
+                                <SelectValue placeholder="Select available SKU...">
+                                  {(() => {
+                                    const s = availableVariants.find(av => av.timberVariantId === item.timberVariantId);
+                                    if (s) return `${s.timberVariant?.sku || s.timberVariantId} (${s.currentPcs} PCS)`;
+                                    return item.timberVariantId ? "Memuat SKU..." : "Select available SKU...";
+                                  })()}
+                                </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 {availableVariants.length === 0 ? (
@@ -233,10 +239,16 @@ export default function CreateTransferPage() {
                   <Label className="text-[12px] uppercase text-primary font-bold tracking-wider">FROM: Source Location *</Label>
                   <Select value={form.fromLocationId} onValueChange={(val: any) => setForm({...form, fromLocationId: val || ""})}>
                     <SelectTrigger className="h-10 bg-background font-medium border-primary/30 hover:border-primary/50">
-                      <SelectValue placeholder="Select Source..." />
+                      <SelectValue placeholder="Select Source...">
+                        {(() => {
+                          const w = warehouses.find(item => item.id === form.fromLocationId);
+                          if (w) return w.name ? `${w.name}${w.code ? ` (${w.code})` : ''}` : (w.code || w.id);
+                          return form.fromLocationId ? "Memuat gudang..." : "Select Source...";
+                        })()}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                      {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name ? `${w.name}${w.code ? ` (${w.code})` : ''}` : (w.code || w.id)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -251,10 +263,16 @@ export default function CreateTransferPage() {
                   <Label className="text-[12px] uppercase text-indigo-600 dark:text-indigo-400 font-bold tracking-wider">TO: Destination Location *</Label>
                   <Select value={form.toLocationId} onValueChange={(val: any) => setForm({...form, toLocationId: val || ""})}>
                     <SelectTrigger className="h-10 bg-background font-medium border-indigo-200 dark:border-indigo-900/50 hover:border-indigo-300">
-                      <SelectValue placeholder="Select Destination..." />
+                      <SelectValue placeholder="Select Destination...">
+                        {(() => {
+                          const w = warehouses.find(item => item.id === form.toLocationId);
+                          if (w) return w.name ? `${w.name}${w.code ? ` (${w.code})` : ''}` : (w.code || w.id);
+                          return form.toLocationId ? "Memuat gudang..." : "Select Destination...";
+                        })()}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                      {warehouses.map(w => <SelectItem key={w.id} value={w.id}>{w.name ? `${w.name}${w.code ? ` (${w.code})` : ''}` : (w.code || w.id)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

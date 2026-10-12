@@ -195,7 +195,29 @@ export default function EditPurchasePage() {
         }
         
         if (p.items) {
-          setForm(prev => ({ ...prev, items: p.items.map((i: any) => ({ variantId: i.timberVariantId || "", quantityPcs: i.quantityPcs || 0, volumeM3: i.volumeM3 || 0, unitPrice: i.unitPrice || 0 })) })); 
+          setForm(prev => ({
+            ...prev,
+            items: p.items.map((i: any) => ({
+              timberVariantId: i.timberVariantId || i.variantId || "",
+              quantityPcs: i.quantityPcs || 0,
+              volumeM3: i.volumeM3 || 0,
+              purchaseThickness: i.purchaseThickness || i.timberVariant?.thickness || 0,
+              purchaseWidth: i.purchaseWidth || i.timberVariant?.width || 0,
+              purchaseLength: i.purchaseLength || i.timberVariant?.length || 0,
+              unitPrice: i.unitPrice || 0,
+            }))
+          }));
+
+          const itemVariants = p.items
+            .map((i: any) => i.timberVariant)
+            .filter((v: any) => v && v.id);
+          if (itemVariants.length > 0) {
+            setVariants(prev => {
+              const ids = new Set(prev.map(v => v.id));
+              const fresh = itemVariants.filter((v: any) => !ids.has(v.id));
+              return fresh.length > 0 ? [...prev, ...fresh] : prev;
+            });
+          }
         }
         
         if (p.logItems) {
@@ -366,9 +388,21 @@ export default function EditPurchasePage() {
                           }
                           setForm({ ...form, items: newItems });
                         }}>
-                          <SelectTrigger><SelectValue placeholder="Pilih Variant Kayu" /></SelectTrigger>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih Variant Kayu">
+                              {(() => {
+                                const v = variants.find(itemVar => itemVar.id === item.timberVariantId);
+                                if (v) return v.sku || `${v.species || ''} ${v.grade || ''} ${v.thickness || 0}x${v.width || 0}x${v.length || 0}`.trim();
+                                return item.timberVariantId ? "Memuat variant..." : "Pilih Variant Kayu";
+                              })()}
+                            </SelectValue>
+                          </SelectTrigger>
                           <SelectContent>
-                            {variants.map(v => <SelectItem key={v.id} value={v.id}>{v.sku || `${v.species} ${v.grade} ${v.thickness}x${v.width}x${v.length}`}</SelectItem>)}
+                            {variants.map(v => (
+                              <SelectItem key={v.id} value={v.id}>
+                                {v.sku || `${v.species || ''} ${v.grade || ''} ${v.thickness || 0}x${v.width || 0}x${v.length || 0}`.trim() || v.id}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
