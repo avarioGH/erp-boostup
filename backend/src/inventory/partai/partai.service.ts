@@ -183,19 +183,21 @@ export class PartaiService {
       where,
       include: {
         purchases: {
+          orderBy: { createdAt: 'desc' },
           include: { items: true, logItems: true },
         },
-        rawLogs: true,
-        trimmedLogs: { include: { rawLog: true } },
+        rawLogs: { orderBy: { createdAt: 'desc' } },
+        trimmedLogs: { orderBy: { createdAt: 'desc' }, include: { rawLog: true } },
         inputLogs: {
+          orderBy: { createdAt: 'desc' },
           include: {
             items: {
               include: { trimmedLog: true, rawLog: true },
             },
-            sawnOutputs: { include: { items: { include: { timberVariant: true } } } },
+            sawnOutputs: { orderBy: { createdAt: 'desc' }, include: { items: { include: { timberVariant: true } } } },
           },
         },
-        sawnOutputs: { include: { items: { include: { timberVariant: true } } } },
+        sawnOutputs: { orderBy: { createdAt: 'desc' }, include: { items: { include: { timberVariant: true } } } },
       },
     });
 

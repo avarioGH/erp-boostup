@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 export default function PartaiDetailPage({ params }: { params: any }) {
   const router = useRouter();
@@ -29,6 +30,22 @@ export default function PartaiDetailPage({ params }: { params: any }) {
       setCurrentTab(tab);
     }
   }, [searchParams]);
+
+  // -- Pagination & Page Size states --
+  const [purchasePage, setPurchasePage] = useState(1);
+  const [purchasePageSize, setPurchasePageSize] = useState(50);
+
+  const [dukbPage, setDukbPage] = useState(1);
+  const [dukbPageSize, setDukbPageSize] = useState(50);
+
+  const [trimmingPage, setTrimmingPage] = useState(1);
+  const [trimmingPageSize, setTrimmingPageSize] = useState(50);
+
+  const [inputPage, setInputPage] = useState(1);
+  const [inputPageSize, setInputPageSize] = useState(50);
+
+  const [outputPage, setOutputPage] = useState(1);
+  const [outputPageSize, setOutputPageSize] = useState(50);
   
   // -- Inline DUKB state --
   const [inlineDukbRows, setInlineDukbRows] = useState<any[]>([]);
@@ -356,6 +373,187 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     }
   };
 
+  // 1. Flatten Purchases: Each log / sawn timber item has its own row ("di jejerkan langsung 2 log")
+  const flattenedPurchases = React.useMemo(() => {
+    if (!partai?.purchases) return [];
+    const list: any[] = [];
+
+    partai.purchases.forEach((p: any) => {
+      const pDate = p.purchaseDate || p.createdAt;
+      const pStatus = p.status || "DRAFT";
+      const docNum = p.purchaseNumber || p.code || "PO";
+
+      let hasItems = false;
+
+      // Raw Log items
+      if (p.logItems && p.logItems.length > 0) {
+        hasItems = true;
+        p.logItems.forEach((li: any, idx: number) => {
+          list.push({
+            id: li.id || `${p.id}-log-${idx}`,
+            purchaseId: p.id,
+            purchaseNumber: docNum,
+            purchaseDate: pDate,
+            createdAt: li.createdAt || p.createdAt,
+            itemType: "RAW_LOG",
+            itemCode: li.logNumber || `Log #${idx + 1}`,
+            species: li.species || "Log",
+            dimensions: li.purchaseLength
+              ? `${li.purchaseLength}m (D: ${li.purchaseDiameter1 || li.purchaseDiameter2 || "-"}cm)`
+              : "-",
+            quantityStr: "1 Log",
+            volume: Number(li.purchaseVolume || 0),
+            status: li.status === "RECEIVED" ? "RECEIVED" : pStatus,
+            purchaseStatus: pStatus,
+            source: p.source?.name ? `${p.source.name}${p.source.code ? ` (${p.source.code})` : ""}` : (p.source?.code || p.sourceId || "-"),
+            rawPurchase: p,
+          });
+        });
+      }
+
+      // Sawn Timber items
+      if (p.items && p.items.length > 0) {
+        hasItems = true;
+        p.items.forEach((it: any, idx: number) => {
+          const t = it.purchaseThickness || it.timberVariant?.thickness || 0;
+          const w = it.purchaseWidth || it.timberVariant?.width || 0;
+          const l = it.purchaseLength || it.timberVariant?.length || 0;
+          const dimStr = t && w && l ? `${t}×${w}×${l} mm` : "-";
+          const sku = it.timberVariant?.sku || (dimStr !== "-" ? dimStr : `Item #${idx + 1}`);
+          const sp = it.timberVariant?.species || it.timberVariant?.timberSpecies?.name || "Sawn Timber";
+
+          list.push({
+            id: it.id || `${p.id}-item-${idx}`,
+            purchaseId: p.id,
+            purchaseNumber: docNum,
+            purchaseDate: pDate,
+            createdAt: it.createdAt || p.createdAt,
+            itemType: "SAWN_TIMBER",
+            itemCode: sku,
+            species: sp,
+            dimensions: dimStr,
+            quantityStr: `${it.quantityPcs || 0} Pcs`,
+            volume: Number(it.volumeM3 || 0),
+            status: pStatus,
+            purchaseStatus: pStatus,
+            source: p.source?.name ? `${p.source.name}${p.source.code ? ` (${p.source.code})` : ""}` : (p.source?.code || p.sourceId || "-"),
+            rawPurchase: p,
+          });
+        });
+      }
+
+      // Fallback if purchase has no items yet
+      if (!hasItems) {
+        list.push({
+          id: p.id,
+          purchaseId: p.id,
+          purchaseNumber: docNum,
+          purchaseDate: pDate,
+          createdAt: p.createdAt,
+          itemType: "EMPTY",
+          itemCode: "-",
+          species: "-",
+          dimensions: "-",
+          quantityStr: "-",
+          volume: Number(p.totalVolumeM3 || 0),
+          status: pStatus,
+          purchaseStatus: pStatus,
+          source: p.source?.name ? `${p.source.name}${p.source.code ? ` (${p.source.code})` : ""}` : (p.source?.code || p.sourceId || "-"),
+          rawPurchase: p,
+        });
+      }
+    });
+
+    // Sort newest first
+    return list.sort((a, b) => {
+      const timeA = new Date(a.purchaseDate || a.createdAt || 0).getTime();
+      const timeB = new Date(b.purchaseDate || b.createdAt || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.id || "").localeCompare(a.id || "");
+    });
+  }, [partai?.purchases]);
+
+  const paginatedPurchases = React.useMemo(() => {
+    if (purchasePageSize >= 9999) return flattenedPurchases;
+    const start = (purchasePage - 1) * purchasePageSize;
+    return flattenedPurchases.slice(start, start + purchasePageSize);
+  }, [flattenedPurchases, purchasePage, purchasePageSize]);
+
+  // 2. DUKB (Raw Logs) sorted newest first
+  const sortedRawLogs = React.useMemo(() => {
+    return [...(partai?.rawLogs || [])].sort((a: any, b: any) => {
+      const timeA = new Date(a.date || a.createdAt || 0).getTime();
+      const timeB = new Date(b.date || b.createdAt || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.logNumber || "").localeCompare(a.logNumber || "");
+    });
+  }, [partai?.rawLogs]);
+
+  const paginatedRawLogs = React.useMemo(() => {
+    if (dukbPageSize >= 9999) return sortedRawLogs;
+    const start = (dukbPage - 1) * dukbPageSize;
+    return sortedRawLogs.slice(start, start + dukbPageSize);
+  }, [sortedRawLogs, dukbPage, dukbPageSize]);
+
+  // 3. Trimming sorted newest first
+  const sortedTrimmedLogs = React.useMemo(() => {
+    return [...(partai?.trimmedLogs || [])].sort((a: any, b: any) => {
+      const timeA = new Date(a.trimDate || a.createdAt || 0).getTime();
+      const timeB = new Date(b.trimDate || b.createdAt || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.trimNumber || "").localeCompare(a.trimNumber || "");
+    });
+  }, [partai?.trimmedLogs]);
+
+  const paginatedTrimmedLogs = React.useMemo(() => {
+    if (trimmingPageSize >= 9999) return sortedTrimmedLogs;
+    const start = (trimmingPage - 1) * trimmingPageSize;
+    return sortedTrimmedLogs.slice(start, start + trimmingPageSize);
+  }, [sortedTrimmedLogs, trimmingPage, trimmingPageSize]);
+
+  // 4. Input (WIP) sorted newest first
+  const sortedInputLogs = React.useMemo(() => {
+    return [...(partai?.inputLogs || [])].sort((a: any, b: any) => {
+      const timeA = new Date(a.inputDate || a.createdAt || 0).getTime();
+      const timeB = new Date(b.inputDate || b.createdAt || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.inputNumber || "").localeCompare(a.inputNumber || "");
+    });
+  }, [partai?.inputLogs]);
+
+  const paginatedInputLogs = React.useMemo(() => {
+    if (inputPageSize >= 9999) return sortedInputLogs;
+    const start = (inputPage - 1) * inputPageSize;
+    return sortedInputLogs.slice(start, start + inputPageSize);
+  }, [sortedInputLogs, inputPage, inputPageSize]);
+
+  // 5. Output (Sawn Timber) sorted newest first
+  const allOutputItems = React.useMemo(() => {
+    const list = (partai?.sawnOutputs || []).flatMap((o: any) =>
+      (o.items || []).map((item: any) => ({
+        ...item,
+        parentDate: o.outputDate,
+        parentInputId: o.inputLogId,
+        parentBundleNumber: o.bundleNumber,
+        parentOutputId: o.id,
+        parentStatus: o.status,
+        parentCreatedAt: o.createdAt,
+      }))
+    );
+    return list.sort((a: any, b: any) => {
+      const timeA = new Date(a.parentDate || a.parentCreatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.parentDate || b.parentCreatedAt || b.createdAt || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.id || "").localeCompare(a.id || "");
+    });
+  }, [partai?.sawnOutputs]);
+
+  const paginatedOutputItems = React.useMemo(() => {
+    if (outputPageSize >= 9999) return allOutputItems;
+    const start = (outputPage - 1) * outputPageSize;
+    return allOutputItems.slice(start, start + outputPageSize);
+  }, [allOutputItems, outputPage, outputPageSize]);
+
   if (!partai) return <div className="p-8 text-center">Loading...</div>;
 
   return (
@@ -414,115 +612,139 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>No. Pembelian</TableHead>
-                    <TableHead>Tipe Pembelian</TableHead>
-                    <TableHead>Spesies / Detail</TableHead>
+                    <TableHead>No. Log / SKU</TableHead>
+                    <TableHead>Spesies</TableHead>
                     <TableHead>Tanggal</TableHead>
+                    <TableHead>Dimensi / Ukuran</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Total Item</TableHead>
-                    <TableHead>Total Volume (m³)</TableHead>
+                    <TableHead>Jumlah</TableHead>
+                    <TableHead className="text-right">Volume (m³)</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(partai.purchases || []).map((p: any) => {
-                    const hasLogs = p.logItems && p.logItems.length > 0;
-                    const hasItems = p.items && p.items.length > 0;
-                    const logCount = (p.logItems || []).length;
-                    const itemCount = p.totalPcs || (p.items || []).reduce((sum: number, it: any) => sum + Number(it.quantityPcs || 0), 0);
-
-                    return (
-                    <TableRow key={p.id} className="group hover:bg-muted/50 cursor-pointer" onClick={() => router.push(`/inventory/purchase/${p.id}`)}>
-                      <TableCell className="font-semibold text-foreground font-mono">{p.purchaseNumber || p.code}</TableCell>
-                      <TableCell>
-                        {hasLogs && !hasItems && (
-                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-300 dark:border-blue-800 text-xs font-semibold py-0.5">
-                            🪵 Log Bulat (DUKB)
-                          </Badge>
-                        )}
-                        {hasItems && !hasLogs && (
-                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800 text-xs font-semibold py-0.5">
-                            🌲 Sawn Timber
-                          </Badge>
-                        )}
-                        {hasLogs && hasItems && (
-                          <Badge variant="outline" className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-800 text-xs font-semibold py-0.5">
-                            Campuran
-                          </Badge>
-                        )}
-                        {!hasLogs && !hasItems && (
-                          <span className="text-muted-foreground text-xs">-</span>
-                        )}
+                  {paginatedPurchases.map((r: any) => (
+                    <TableRow 
+                      key={r.id} 
+                      className="group hover:bg-muted/50 cursor-pointer" 
+                      onClick={() => router.push(`/inventory/purchase/${r.purchaseId}`)}
+                    >
+                      <TableCell className="font-medium text-foreground">
+                        {r.purchaseNumber}
                       </TableCell>
                       <TableCell>
-                        {(() => {
-                          if (hasLogs) {
-                            const species = Array.from(new Set(p.logItems.map((l: any) => l.species).filter(Boolean)));
-                            if (species.length > 0) return species.join(', ');
-                            return "Raw Logs";
-                          }
-                          if (hasItems) {
-                            return `${p.items.length} varian kayu`;
-                          }
-                          return "-";
-                        })()}
+                        <span className="font-semibold text-primary">
+                          {r.itemCode}
+                        </span>
+                        {r.itemType === "RAW_LOG" ? (
+                          <Badge variant="outline" className="ml-2 text-xs py-0 border-blue-400/60 text-blue-600 dark:text-blue-400">
+                            Log
+                          </Badge>
+                        ) : r.itemType === "SAWN_TIMBER" ? (
+                          <Badge variant="outline" className="ml-2 text-xs py-0 border-emerald-400/60 text-emerald-600 dark:text-emerald-400">
+                            Sawn
+                          </Badge>
+                        ) : null}
                       </TableCell>
-                      <TableCell>{p.purchaseDate ? new Date(p.purchaseDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                      <TableCell>{r.species || "-"}</TableCell>
+                      <TableCell>{r.purchaseDate ? new Date(r.purchaseDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                      <TableCell className="text-muted-foreground">{r.dimensions || "-"}</TableCell>
                       <TableCell>
                         <Badge
                           variant="outline"
                           className={
-                            p.status === 'CONFIRMED' || p.status === 'RECEIVED'
-                              ? 'text-emerald-500 border-emerald-500 bg-emerald-500/10 font-bold'
-                              : p.status === 'CANCELLED'
+                            r.status === 'CONFIRMED' || r.status === 'RECEIVED'
+                              ? 'text-emerald-500 border-emerald-500 bg-emerald-500/10'
+                              : r.status === 'CANCELLED'
                               ? 'text-destructive border-destructive/30'
                               : 'text-amber-500 border-amber-500/40 bg-amber-500/10'
                           }
                         >
-                          {p.status === 'RECEIVED' ? 'DITERIMA' : (p.status || "DRAFT")}
+                          {r.status === 'RECEIVED' ? 'DITERIMA' : (r.status || "DRAFT")}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-semibold text-foreground">
-                        {hasLogs && !hasItems && `${logCount} Log`}
-                        {hasItems && !hasLogs && `${itemCount} Pcs`}
-                        {hasLogs && hasItems && `${itemCount} Pcs / ${logCount} Log`}
-                        {!hasLogs && !hasItems && "-"}
+                      <TableCell className="font-medium text-foreground">
+                        {r.quantityStr}
                       </TableCell>
-                      <TableCell className="font-mono font-medium">
-                        {(() => {
-                          const vol = p.totalVolumeM3 || (p.items || []).reduce((sum: number, it: any) => sum + Number(it.volumeM3 || 0), 0) || (p.logItems || []).reduce((sum: number, it: any) => sum + Number(it.purchaseVolume || 0), 0);
-                          return Number(vol || 0).toFixed(4);
-                        })()}
+                      <TableCell className="text-right font-semibold text-foreground">
+                        {Number(r.volume || 0).toFixed(4)}
                       </TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-2 ">
-                          {p.status !== 'RECEIVED' && p.status !== 'CONFIRMED' && p.status !== 'CANCELLED' && (
-                            <Button 
-                              size="sm" 
-                              className="h-8 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs shadow-sm" 
-                              title="Terima Barang (Masuk Stok)" 
-                              onClick={(e) => { e.stopPropagation(); handleReceivePurchase(p.id); }}
+                        <div className="flex items-center justify-end gap-1.5">
+                          {r.purchaseStatus === 'DRAFT' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-2 text-emerald-600 border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                              title="Terima Purchase (Buat DUKB)"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReceivePurchase(r.purchaseId);
+                              }}
                             >
                               <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Terima
                             </Button>
                           )}
-                          <Button variant="ghost" size="sm" className="h-8 px-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/purchase/${p.id}`) }}>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 px-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" 
+                            title="View" 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              router.push(`/inventory/purchase/${r.purchaseId}`);
+                            }}
+                          >
                             <Eye className="w-4 h-4 mr-1" /> View
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Edit" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/purchase/${p.id}/edit`) }}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" 
+                            title="Edit" 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              router.push(`/inventory/purchase/${r.purchaseId}/edit`);
+                            }}
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete" onClick={(e) => { e.stopPropagation(); handleDeletePurchase(p.id) }}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" 
+                            title="Delete" 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              handleDeletePurchase(r.purchaseId);
+                            }}
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </TableCell>
                     </TableRow>
                   ))}
-                  {(!partai.purchases || partai.purchases.length === 0) && (
-                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Belum ada pembelian untuk partai ini.</TableCell></TableRow>
+                  {flattenedPurchases.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                        Belum ada pembelian untuk partai ini.
+                      </TableCell>
+                    </TableRow>
                   )}
                 </TableBody>
               </Table>
+              <TablePagination
+                currentPage={purchasePage}
+                pageSize={purchasePageSize}
+                totalItems={flattenedPurchases.length}
+                onPageChange={setPurchasePage}
+                onPageSizeChange={(newSize) => {
+                  setPurchasePageSize(newSize);
+                  setPurchasePage(1);
+                }}
+                itemLabel="item pembelian / log"
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -628,7 +850,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                     <TableHead className="text-center w-[120px]">Action</TableHead></TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(partai.rawLogs || []).map((r: any) => (
+                  {paginatedRawLogs.map((r: any) => (
                     <TableRow key={r.id} className="hover:bg-muted/50 cursor-pointer group" onClick={() => router.push(`/inventory/logs/${r.id}`)}>
                         <TableCell className="font-medium">{r.logNumber}</TableCell>
                         <TableCell>{r.species}</TableCell>
@@ -655,11 +877,22 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                         </TableCell>
                       </TableRow>
                   ))}
-                  {(!partai.rawLogs || partai.rawLogs.length === 0) && (
+                  {sortedRawLogs.length === 0 && (
                     <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada raw log (DUKB) terdaftar.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
+              <TablePagination
+                currentPage={dukbPage}
+                pageSize={dukbPageSize}
+                totalItems={sortedRawLogs.length}
+                onPageChange={setDukbPage}
+                onPageSizeChange={(newSize) => {
+                  setDukbPageSize(newSize);
+                  setDukbPage(1);
+                }}
+                itemLabel="log mentah (DUKB)"
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -685,7 +918,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(partai.trimmedLogs || []).map((t: any) => (
+                  {paginatedTrimmedLogs.map((t: any) => (
                     <TableRow key={t.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => router.push(`/inventory/trimming/${t.id}`)}>
                       <TableCell className="font-medium">{t.trimNumber || t.logNumber}</TableCell>
                       <TableCell className="text-primary font-medium">{t.rawLog?.logNumber || "-"}</TableCell>
@@ -705,11 +938,22 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {(!partai.trimmedLogs || partai.trimmedLogs.length === 0) && (
-                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada proses trimming.</TableCell></TableRow>
+                  {sortedTrimmedLogs.length === 0 && (
+                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Belum ada proses trimming.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
+              <TablePagination
+                currentPage={trimmingPage}
+                pageSize={trimmingPageSize}
+                totalItems={sortedTrimmedLogs.length}
+                onPageChange={setTrimmingPage}
+                onPageSizeChange={(newSize) => {
+                  setTrimmingPageSize(newSize);
+                  setTrimmingPage(1);
+                }}
+                itemLabel="hasil trimming"
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -766,7 +1010,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
-              {(partai.inputLogs || []).map((i: any) => {
+              {paginatedInputLogs.map((i: any) => {
                 const totalInputVol = Number(i.totalVolume || 0);
                 const outItems = (i.sawnOutputs || []).flatMap((o: any) => o.items || []);
                 const totalOutputVol = outItems.reduce((acc: number, cur: any) => acc + (cur.volumeM3 || 0), 0);
@@ -813,11 +1057,22 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                   </Card>
                 );
               })}
-              {(!partai.inputLogs || partai.inputLogs.length === 0) && (
+              {sortedInputLogs.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
                   Belum ada pekerjaan produksi (WIP). Lakukan Trimming pada log terlebih dahulu, lalu klik "Mulai Gergaji (Buat WIP)" di atas.
                 </div>
               )}
+              <TablePagination
+                currentPage={inputPage}
+                pageSize={inputPageSize}
+                totalItems={sortedInputLogs.length}
+                onPageChange={setInputPage}
+                onPageSizeChange={(newSize) => {
+                  setInputPageSize(newSize);
+                  setInputPage(1);
+                }}
+                itemLabel="pekerjaan WIP"
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -864,76 +1119,85 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               </div>
               <Table>
                 <TableHeader className="bg-muted/30">
-                  
-                    <TableRow>
-                        <TableHead className="w-[50px]"></TableHead>
-                        <TableHead>Tgl Produksi</TableHead>
-                      <TableHead>Bundle No</TableHead>
-                      <TableHead>Source WIP</TableHead>
-                      <TableHead>Kategori</TableHead>
-                      <TableHead>Tebal</TableHead>
-                      <TableHead>Lebar</TableHead>
-                      <TableHead>Panjang</TableHead>
-                      <TableHead className="text-right">PCS</TableHead>
-                      <TableHead className="text-right">M&sup3;</TableHead>
-                      <TableHead className="text-center">Grade</TableHead>
-                      <TableHead className="text-center">Status</TableHead>
-                    </TableRow>
-
+                  <TableRow>
+                    <TableHead className="w-[50px]">
+                      <Checkbox 
+                        checked={allOutputItems.length > 0 && selectedOutputItems.length === allOutputItems.length}
+                        onCheckedChange={() => toggleSelectAllOutputItems(allOutputItems)}
+                      />
+                    </TableHead>
+                    <TableHead>Tgl Produksi</TableHead>
+                    <TableHead>Bundle No</TableHead>
+                    <TableHead>Source WIP</TableHead>
+                    <TableHead>Kategori</TableHead>
+                    <TableHead>Tebal</TableHead>
+                    <TableHead>Lebar</TableHead>
+                    <TableHead>Panjang</TableHead>
+                    <TableHead className="text-right">PCS</TableHead>
+                    <TableHead className="text-right">M&sup3;</TableHead>
+                    <TableHead className="text-center">Grade</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                  </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(() => {
-  const allOutputItems = (partai.sawnOutputs || []).flatMap((o: any) => (o.items || []).map((item: any) => ({ ...item, parentDate: o.outputDate, parentInputId: o.inputLogId, parentBundleNumber: o.bundleNumber, parentOutputId: o.id, parentStatus: o.status })));
-  return allOutputItems.map((i: any) => {
+                  {paginatedOutputItems.map((i: any) => {
                     const wip = (partai.inputLogs || []).find((log: any) => log.id === i.parentInputId);
                     return (
-                      
-                        <TableRow key={i.id} className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/inventory/sawn-timber/output/${i.parentOutputId}`)}>
-                          <TableCell onClick={e => e.stopPropagation()}>
-     <Checkbox 
-       checked={!!selectedOutputItems.find(x => x.id === i.id)} 
-       onCheckedChange={() => toggleSelectOutputItem(i.id, i.parentOutputId)} 
-     />
-   </TableCell>
-                            <TableCell>{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
-                          <TableCell className="font-medium text-blue-600 dark:text-blue-400">{i.parentBundleNumber}</TableCell>
-                          <TableCell className="font-medium text-primary"><Link href={`/inventory/input-logs/${i.parentInputId}`} onClick={e => e.stopPropagation()}>{wip?.inputNumber || "WIP"}</Link></TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={
-                              i.productType === 'RENG' ? 'border-amber-500 text-amber-600 bg-amber-50/50' :
-                              i.productType === 'AFKIR_BS' ? 'border-red-500 text-red-600 bg-red-50/50' :
-                              i.productType === 'AIR_DRY' ? 'border-sky-500 text-sky-600 bg-sky-50/50' :
-                              i.productType === 'FJL' ? 'border-purple-500 text-purple-600 bg-purple-50/50' :
-                              'border-emerald-500 text-emerald-600 bg-emerald-50/50'
-                            }>
-                              {i.productType === 'BALOK' ? 'Balok / Main' :
-                               i.productType === 'RENG' ? 'Reng / Papan' :
-                               i.productType === 'AFKIR_BS' ? 'BS / Afkir' :
-                               i.productType === 'AIR_DRY' ? 'Air Dry' :
-                               i.productType === 'FJL' ? 'FJL' : (i.productType || 'Balok / Main')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{i.thicknessMm / 10} cm</TableCell>
-                          <TableCell>{i.widthMm / 10} cm</TableCell>
-                          <TableCell>{i.lengthMm / 10} cm</TableCell>
-                          <TableCell className="text-right font-medium">{i.quantityPcs}</TableCell>
-                          <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400">{Number(i.volumeM3.toFixed(4))}</TableCell>
-                          <TableCell className="text-center">
-                            {i.grade === 'PENDING' ? <Badge variant="outline" className="text-amber-500 border-amber-500">PENDING</Badge> : <Badge className="bg-primary">{grades.find(g => g.code === i.grade)?.name || i.grade}</Badge>}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {i.parentStatus === 'POSTED' ? <Badge className="bg-emerald-500">POSTED</Badge> : <Badge variant="outline">DRAFT</Badge>}
-                          </TableCell>
-                        </TableRow>
-
+                      <TableRow key={i.id} className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/inventory/sawn-timber/output/${i.parentOutputId}`)}>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <Checkbox 
+                            checked={!!selectedOutputItems.find(x => x.id === i.id)} 
+                            onCheckedChange={() => toggleSelectOutputItem(i.id, i.parentOutputId)} 
+                          />
+                        </TableCell>
+                        <TableCell>{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                        <TableCell className="font-medium text-blue-600 dark:text-blue-400">{i.parentBundleNumber}</TableCell>
+                        <TableCell className="font-medium text-primary"><Link href={`/inventory/input-logs/${i.parentInputId}`} onClick={e => e.stopPropagation()}>{wip?.inputNumber || "WIP"}</Link></TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={
+                            i.productType === 'RENG' ? 'border-amber-500 text-amber-600 bg-amber-50/50' :
+                            i.productType === 'AFKIR_BS' ? 'border-red-500 text-red-600 bg-red-50/50' :
+                            i.productType === 'AIR_DRY' ? 'border-sky-500 text-sky-600 bg-sky-50/50' :
+                            i.productType === 'FJL' ? 'border-purple-500 text-purple-600 bg-purple-50/50' :
+                            'border-emerald-500 text-emerald-600 bg-emerald-50/50'
+                          }>
+                            {i.productType === 'BALOK' ? 'Balok / Main' :
+                             i.productType === 'RENG' ? 'Reng / Papan' :
+                             i.productType === 'AFKIR_BS' ? 'BS / Afkir' :
+                             i.productType === 'AIR_DRY' ? 'Air Dry' :
+                             i.productType === 'FJL' ? 'FJL' : (i.productType || 'Balok / Main')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{i.thicknessMm / 10} cm</TableCell>
+                        <TableCell>{i.widthMm / 10} cm</TableCell>
+                        <TableCell>{i.lengthMm / 10} cm</TableCell>
+                        <TableCell className="text-right font-medium">{i.quantityPcs}</TableCell>
+                        <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400">{Number((i.volumeM3 || 0).toFixed(4))}</TableCell>
+                        <TableCell className="text-center">
+                          {i.grade === 'PENDING' ? <Badge variant="outline" className="text-amber-500 border-amber-500">PENDING</Badge> : <Badge className="bg-primary">{grades.find(g => g.code === i.grade)?.name || i.grade}</Badge>}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {i.parentStatus === 'POSTED' ? <Badge className="bg-emerald-500">POSTED</Badge> : <Badge variant="outline">DRAFT</Badge>}
+                        </TableCell>
+                      </TableRow>
                     );
-                  });
-                  })()}
-                  {(!partai.sawnOutputs || partai.sawnOutputs.length === 0 || partai.sawnOutputs.flatMap((o: any) => o.items).length === 0) && (
+                  })}
+                  {allOutputItems.length === 0 && (
                     <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-8">Belum ada output produksi.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
+              <TablePagination
+                currentPage={outputPage}
+                pageSize={outputPageSize}
+                totalItems={allOutputItems.length}
+                onPageChange={setOutputPage}
+                onPageSizeChange={(newSize) => {
+                  setOutputPageSize(newSize);
+                  setOutputPage(1);
+                }}
+                itemLabel="output sawn timber"
+              />
             </CardContent>
           </Card>
         </TabsContent>
