@@ -140,7 +140,60 @@ export default function CreatePurchasePage() {
         width: Number(newVariant.width || 0),
         length: Number(newVariant.length || 0),
       }
-      const res = await MasterDataAPI.createTimberVariant(payload)
+
+      // Check if this variant already exists in local list
+      const existingLocal = variants.find(v =>
+        (v.species || "").trim().toUpperCase() === payload.species &&
+        (v.grade || "").trim().toUpperCase() === payload.grade &&
+        Number(v.thickness || 0) === payload.thickness &&
+        Number(v.width || 0) === payload.width &&
+        Number(v.length || 0) === payload.length
+      );
+
+      if (existingLocal) {
+        const newItems = [...form.items];
+        const targetIdx = activeVariantRowIndex >= 0 && activeVariantRowIndex < newItems.length ? activeVariantRowIndex : 0;
+        if (newItems[targetIdx]) {
+          newItems[targetIdx].timberVariantId = existingLocal.id;
+          newItems[targetIdx].purchaseThickness = existingLocal.thickness || payload.thickness;
+          newItems[targetIdx].purchaseWidth = existingLocal.width || payload.width;
+          newItems[targetIdx].purchaseLength = existingLocal.length || payload.length;
+          newItems[targetIdx].volumeM3 = (existingLocal.volumePerPiece || 0) * (newItems[targetIdx].quantityPcs || 1);
+          setForm(prev => ({ ...prev, items: newItems }));
+        }
+        setIsVariantModalOpen(false);
+        setNewVariant({ species: "", speciesId: "", grade: "", gradeId: "", thickness: "", width: "", length: "" });
+        return;
+      }
+
+      let res: any = null;
+      try {
+        res = await MasterDataAPI.createTimberVariant(payload);
+      } catch (apiErr: any) {
+        const errMsg = apiErr?.response?.data?.message || apiErr.message || "";
+        if (errMsg.includes("duplikat") || errMsg.includes("DUPLICATE_ENTRY") || errMsg.includes("terdaftar")) {
+          const freshData = await MasterDataAPI.getTimberVariants().catch(() => []);
+          const freshList = Array.isArray(freshData) ? freshData : freshData?.data || [];
+          setVariants(freshList);
+
+          const found = freshList.find((v: any) =>
+            (v.species || "").trim().toUpperCase() === payload.species &&
+            (v.grade || "").trim().toUpperCase() === payload.grade &&
+            Number(v.thickness || 0) === payload.thickness &&
+            Number(v.width || 0) === payload.width &&
+            Number(v.length || 0) === payload.length
+          ) || freshList.find((v: any) => (v.sku || "").toUpperCase() === `${payload.species}-${payload.grade}-${payload.thickness}X${payload.width}X${payload.length}`);
+
+          if (found) {
+            res = found;
+          } else {
+            throw apiErr;
+          }
+        } else {
+          throw apiErr;
+        }
+      }
+
       if (res && res.id) {
         setVariants(prev => {
           const exists = prev.some(v => v.id === res.id);

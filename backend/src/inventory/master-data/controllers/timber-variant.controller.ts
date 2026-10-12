@@ -24,11 +24,18 @@ export class TimberVariantController {
       const firstCompany = await this.prisma.company.findFirst();
       if (firstCompany) targetCompanyId = firstCompany.id;
     }
-    return this.prisma.timberVariant.findMany({
+    const items = await this.prisma.timberVariant.findMany({
       where: targetCompanyId ? { company_id: targetCompanyId } : {},
       include: { product: true },
       orderBy: { createdAt: 'desc' },
     });
+    if (items.length === 0 && targetCompanyId) {
+      return this.prisma.timberVariant.findMany({
+        include: { product: true },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+    return items;
   }
 
   @Post()
@@ -37,42 +44,6 @@ export class TimberVariantController {
     if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
       const firstCompany = await this.prisma.company.findFirst();
       if (firstCompany) targetCompanyId = firstCompany.id;
-    }
-
-    let productId = data.productId;
-
-    if (!productId) {
-      let genericProduct = await this.prisma.product.findFirst({
-        where: {
-          name: 'SAWN TIMBER',
-          ...(targetCompanyId ? { company_id: targetCompanyId } : {}),
-        },
-      });
-      if (!genericProduct) {
-        // We need a default unit
-        let defaultUnit = await this.prisma.unit.findFirst({
-          where: targetCompanyId ? { company_id: targetCompanyId } : {},
-        });
-        if (!defaultUnit) {
-          defaultUnit = await this.prisma.unit.create({
-            data: { company_id: targetCompanyId as string, name: 'Pieces' },
-          });
-        }
-
-        genericProduct = await this.prisma.product.create({
-          data: {
-            name: 'SAWN TIMBER',
-            company_id: targetCompanyId as string,
-
-            unit_id: defaultUnit.id,
-            code: 'SAWN-TIMBER',
-            barcode: `GENERIC-SAWN-${Date.now()}`,
-            purchase_price: 0,
-            selling_price: 0,
-          },
-        });
-      }
-      productId = genericProduct.id;
     }
 
     const species = String(data.species || 'UNKNOWN').trim().toUpperCase();
@@ -89,14 +60,15 @@ export class TimberVariantController {
       `${species}-${grade}-${thickness}x${width}x${length}`
     ).trim().toUpperCase();
 
-    // Check if variant with SKU or exact specs already exists
-    const existing = await this.prisma.timberVariant.findFirst({
+    // 1. Check if variant with SKU or exact specs already exists (within target company)
+    let existing = await this.prisma.timberVariant.findFirst({
       where: {
         OR: [
           { sku: sku },
+          { sku: { equals: sku, mode: 'insensitive' } },
           {
-            species: species,
-            grade: grade,
+            species: { equals: species, mode: 'insensitive' },
+            grade: { equals: grade, mode: 'insensitive' },
             thickness: thickness,
             width: width,
             length: length,
@@ -109,6 +81,77 @@ export class TimberVariantController {
 
     if (existing) {
       return existing;
+    }
+
+    // 2. Also check globally across all companies if not found in target company
+    const globalExisting = await this.prisma.timberVariant.findFirst({
+      where: {
+        OR: [
+          { sku: sku },
+          { sku: { equals: sku, mode: 'insensitive' } },
+          {
+            species: { equals: species, mode: 'insensitive' },
+            grade: { equals: grade, mode: 'insensitive' },
+            thickness: thickness,
+            width: width,
+            length: length,
+          },
+        ],
+      },
+      include: { product: true },
+    });
+
+    if (globalExisting) {
+      return globalExisting;
+    }
+
+    let productId = data.productId;
+
+    if (!productId) {
+      let genericProduct = await this.prisma.product.findFirst({
+        where: {
+          OR: [
+            { code: 'SAWN-TIMBER' },
+            { name: { equals: 'SAWN TIMBER', mode: 'insensitive' } },
+          ],
+          ...(targetCompanyId ? { company_id: targetCompanyId } : {}),
+        },
+      });
+
+      if (!genericProduct && targetCompanyId) {
+        genericProduct = await this.prisma.product.findFirst({
+          where: { company_id: targetCompanyId },
+        });
+      }
+
+      if (!genericProduct) {
+        // We need a default unit
+        let defaultUnit = await this.prisma.unit.findFirst({
+          where: targetCompanyId ? { company_id: targetCompanyId } : {},
+        });
+        if (!defaultUnit) {
+          defaultUnit = await this.prisma.unit.findFirst();
+        }
+        if (!defaultUnit) {
+          defaultUnit = await this.prisma.unit.create({
+            data: { company_id: targetCompanyId as string, name: 'Pieces' },
+          });
+        }
+
+        const safeCode = `SAWN-TIMBER-${Date.now().toString().slice(-4)}`;
+        genericProduct = await this.prisma.product.create({
+          data: {
+            name: 'SAWN TIMBER',
+            company_id: targetCompanyId as string,
+            unit_id: defaultUnit.id,
+            code: safeCode,
+            barcode: `GENERIC-SAWN-${Date.now()}`,
+            purchase_price: 0,
+            selling_price: 0,
+          },
+        });
+      }
+      productId = genericProduct.id;
     }
 
     // Attempt to link speciesId
@@ -141,22 +184,65 @@ export class TimberVariantController {
       if (gr) gradeId = gr.id;
     }
 
-    return this.prisma.timberVariant.create({
-      data: {
-        company_id: targetCompanyId as string,
-        productId: productId,
-        species: species,
-        grade: grade,
-        speciesId: speciesId || undefined,
-        gradeId: gradeId || undefined,
-        thickness: thickness,
-        width: width,
-        length: length,
-        volumePerPiece: volume,
-        sku: sku,
-      },
-      include: { product: true },
-    });
+    try {
+      return await this.prisma.timberVariant.create({
+        data: {
+          company_id: targetCompanyId as string,
+          productId: productId,
+          species: species,
+          grade: grade,
+          speciesId: speciesId || undefined,
+          gradeId: gradeId || undefined,
+          thickness: thickness,
+          width: width,
+          length: length,
+          volumePerPiece: volume,
+          sku: sku,
+        },
+        include: { product: true },
+      });
+    } catch (err: any) {
+      // If duplicate constraint error occurs (P2002 or unique constraint failure)
+      if (err?.code === 'P2002' || err?.message?.includes('Unique constraint') || err?.message?.includes('duplicate key')) {
+        const fallback = await this.prisma.timberVariant.findFirst({
+          where: {
+            OR: [
+              { sku: sku },
+              { sku: { equals: sku, mode: 'insensitive' } },
+              {
+                thickness: thickness,
+                width: width,
+                length: length,
+              },
+            ],
+          },
+          include: { product: true },
+        });
+        if (fallback) {
+          return fallback;
+        }
+
+        // Retry with disambiguated SKU if collision occurred
+        const disambiguatedSku = `${sku}-${Date.now().toString().slice(-4)}`;
+        return await this.prisma.timberVariant.create({
+          data: {
+            company_id: targetCompanyId as string,
+            productId: productId,
+            species: species,
+            grade: grade,
+            speciesId: speciesId || undefined,
+            gradeId: gradeId || undefined,
+            thickness: thickness,
+            width: width,
+            length: length,
+            volumePerPiece: volume,
+            sku: disambiguatedSku,
+          },
+          include: { product: true },
+        });
+      }
+      throw err;
+    }
   }
 
   @Put(':id')
