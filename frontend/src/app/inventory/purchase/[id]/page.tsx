@@ -22,6 +22,7 @@ import {
   Edit,
   FileText
 } from "lucide-react";
+import { ReceiveLogModal } from "@/components/timber/receive-log-modal";
 
 export default function PurchaseDetailPage() {
   const params = useParams();
@@ -30,6 +31,7 @@ export default function PurchaseDetailPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [actionLoading, setActionLoading] = useState<boolean>(false);
+  const [receiveModalOpen, setReceiveModalOpen] = useState<boolean>(false);
 
   const purchaseId = typeof params?.id === "string" ? params.id : "";
 
@@ -52,18 +54,8 @@ export default function PurchaseDetailPage() {
       });
   };
 
-  const handleReceive = async () => {
-    if (!confirm("Konfirmasi penerimaan barang? Stok kayu akan otomatis ditambahkan ke stok gudang yang dipilih.")) return;
-    try {
-      setActionLoading(true);
-      await PurchaseAPI.receivePurchase(purchaseId);
-      alert("Barang berhasil diterima! Stok kayu telah masuk ke inventaris.");
-      fetchData();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err.message || "Gagal memproses penerimaan barang");
-    } finally {
-      setActionLoading(false);
-    }
+  const handleReceive = () => {
+    setReceiveModalOpen(true);
   };
 
   const handleCancel = async () => {
@@ -446,6 +438,14 @@ export default function PurchaseDetailPage() {
           Tidak ada data barang (sawn timber atau log bulat) untuk transaksi ini.
         </Card>
       )}
+
+      <ReceiveLogModal
+        isOpen={receiveModalOpen}
+        onClose={() => setReceiveModalOpen(false)}
+        purchase={purchase}
+        partaiId={purchase?.partaiId}
+        onSuccess={fetchData}
+      />
     </div>
   );
 }

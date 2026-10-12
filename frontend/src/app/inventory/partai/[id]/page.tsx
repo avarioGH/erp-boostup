@@ -15,6 +15,7 @@ import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizonta
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { TablePagination } from "@/components/ui/table-pagination";
+import { ReceiveLogModal } from "@/components/timber/receive-log-modal";
 
 export default function PartaiDetailPage({ params }: { params: any }) {
   const router = useRouter();
@@ -23,6 +24,10 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const { id } = React.use(params as Promise<{ id: string }>);
   const [partai, setPartai] = useState<any>(null);
   const [currentTab, setCurrentTab] = useState("purchase");
+
+  // Receive inspection modal state
+  const [receiveModalOpen, setReceiveModalOpen] = useState(false);
+  const [selectedPurchaseForReceive, setSelectedPurchaseForReceive] = useState<any>(null);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -159,18 +164,21 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     if (partai && partai.purchases) {
       const pending: any[] = [];
       partai.purchases.forEach((p: any) => {
-        if (p.logItems && p.status === 'CONFIRMED') {
+        if (p.logItems && p.status !== 'CANCELLED') {
           p.logItems.forEach((li: any) => {
             if (li.status !== 'RECEIVED') {
               pending.push({
                 purchaseLogItemId: li.id,
+                purchaseId: p.id,
+                purchaseNumber: p.purchaseNumber || p.code || "PO",
                 logNumber: li.logNumber || "",
                 species: li.species || "",
-                length: li.length || "",
-                d1: li.diameter1 || "",
-                d2: li.diameter2 || "",
-                d3: li.diameter3 || "",
-                d4: li.diameter4 || "",
+                length: li.purchaseLength || li.length || "",
+                d1: li.purchaseDiameter1 || li.diameter1 || "",
+                d2: li.purchaseDiameter2 || li.diameter2 || "",
+                d3: li.purchaseDiameter3 || li.diameter3 || "",
+                d4: li.purchaseDiameter4 || li.diameter4 || "",
+                avgDia: "",
                 gerowong: "",
                 locationId: p.warehouseId || partai.company_id
               });
@@ -274,6 +282,16 @@ export default function PartaiDetailPage({ params }: { params: any }) {
 
   
   
+  const handleOpenReceiveModal = (purchaseId: string, rawPurchase?: any) => {
+    const p = rawPurchase || (partai?.purchases || []).find((x: any) => x.id === purchaseId);
+    if (p) {
+      setSelectedPurchaseForReceive(p);
+      setReceiveModalOpen(true);
+    } else {
+      handleReceivePurchase(purchaseId);
+    }
+  };
+
   const handleReceivePurchase = async (purchaseId: string) => {
     try {
       await PurchaseAPI.receivePurchase(purchaseId);
@@ -676,10 +694,10 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                               variant="outline"
                               size="sm"
                               className="h-8 px-2 text-emerald-600 border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                              title="Terima Purchase (Buat DUKB)"
+                              title="Terima Purchase (Cek Ukuran & Masuk DUKB)"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleReceivePurchase(r.purchaseId);
+                                handleOpenReceiveModal(r.purchaseId, r.rawPurchase);
                               }}
                             >
                               <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Terima
@@ -1451,6 +1469,17 @@ export default function PartaiDetailPage({ params }: { params: any }) {
             })()}
           </TabsContent>
       </Tabs>
+
+      <ReceiveLogModal
+        isOpen={receiveModalOpen}
+        onClose={() => {
+          setReceiveModalOpen(false);
+          setSelectedPurchaseForReceive(null);
+        }}
+        purchase={selectedPurchaseForReceive}
+        partaiId={id}
+        onSuccess={fetchPartai}
+      />
     </div>
   );
 }

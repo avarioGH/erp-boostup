@@ -272,10 +272,8 @@ export class RawLogService {
           });
           if (!pItem)
             throw new NotFoundException('Purchase Log Item not found');
-          if (pItem.status === 'RECEIVED')
-            throw new BadRequestException('Purchase Log Item already received');
-          data.logNumber = pItem.logNumber;
-          data.species = pItem.species;
+          data.logNumber = (data.logNumber && data.logNumber.trim()) || pItem.logNumber;
+          data.species = (data.species && data.species.trim()) || pItem.species;
         }
         if (!data.logNumber)
           throw new BadRequestException('Log Number is required');
@@ -370,8 +368,33 @@ export class RawLogService {
         if (data.purchaseLogItemId) {
           await tx.timberPurchaseLogItem.update({
             where: { id: data.purchaseLogItemId },
-            data: { status: 'RECEIVED' },
+            data: { 
+              status: 'RECEIVED',
+              receivingDate: data.receivingDate ? new Date(data.receivingDate) : new Date(),
+              logNumber: data.logNumber,
+              purchaseLength: Number(data.originalLength) || pItem.purchaseLength,
+              purchaseDiameter1: d1,
+              purchaseDiameter2: d2,
+              purchaseDiameter3: d3,
+              purchaseDiameter4: d4,
+              purchaseVolume: netVol || grossVol,
+            },
           });
+
+          if (pItem?.timberPurchaseId) {
+            const unreceivedCount = await tx.timberPurchaseLogItem.count({
+              where: {
+                timberPurchaseId: pItem.timberPurchaseId,
+                status: { not: 'RECEIVED' },
+              },
+            });
+            if (unreceivedCount === 0) {
+              await tx.timberPurchase.update({
+                where: { id: pItem.timberPurchaseId },
+                data: { status: 'RECEIVED' },
+              });
+            }
+          }
         }
         createdLogs.push(log);
       }
