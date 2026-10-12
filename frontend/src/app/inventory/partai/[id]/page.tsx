@@ -556,6 +556,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
         parentOutputId: o.id,
         parentStatus: o.status,
         parentCreatedAt: o.createdAt,
+        parentNotes: o.notes,
       }))
     );
     return list.sort((a: any, b: any) => {
@@ -1160,6 +1161,10 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 <TableBody>
                   {paginatedOutputItems.map((i: any) => {
                     const wip = (partai.inputLogs || []).find((log: any) => log.id === i.parentInputId);
+                    const isDirectPurchase =
+                      (wip?.inputNumber && wip.inputNumber.startsWith("DIRECT-PURCHASE")) ||
+                      (i.parentNotes && i.parentNotes.includes("Beli Masak")) ||
+                      (i.notes && i.notes.includes("Penerimaan Sawn Timber"));
                     return (
                       <TableRow key={i.id} className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/inventory/sawn-timber/output/${i.parentOutputId}`)}>
                         <TableCell onClick={e => e.stopPropagation()}>
@@ -1170,7 +1175,17 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                         </TableCell>
                         <TableCell>{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
                         <TableCell className="font-medium text-blue-600 dark:text-blue-400">{i.parentBundleNumber}</TableCell>
-                        <TableCell className="font-medium text-primary"><Link href={`/inventory/input-logs/${i.parentInputId}`} onClick={e => e.stopPropagation()}>{wip?.inputNumber || "WIP"}</Link></TableCell>
+                        <TableCell className="font-medium text-primary">
+                          {isDirectPurchase ? (
+                            <Badge variant="outline" className="border-blue-500 text-blue-600 bg-blue-50/50">
+                              Beli Jadi
+                            </Badge>
+                          ) : (
+                            <Link href={`/inventory/input-logs/${i.parentInputId}`} onClick={e => e.stopPropagation()}>
+                              {wip?.inputNumber || "WIP"}
+                            </Link>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={
                             i.productType === 'RENG' ? 'border-amber-500 text-amber-600 bg-amber-50/50' :

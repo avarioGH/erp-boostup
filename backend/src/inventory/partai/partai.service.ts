@@ -184,7 +184,12 @@ export class PartaiService {
       include: {
         purchases: {
           orderBy: { createdAt: 'desc' },
-          include: { items: true, logItems: true },
+          include: {
+            items: { include: { timberVariant: true } },
+            logItems: true,
+            source: true,
+            warehouse: true,
+          },
         },
         rawLogs: { orderBy: { createdAt: 'desc' } },
         trimmedLogs: { orderBy: { createdAt: 'desc' }, include: { rawLog: true } },
@@ -284,6 +289,74 @@ export class PartaiService {
               } catch (retryErr) {
                 console.error('Failed to auto-sync raw log for item:', item.id, retryErr);
               }
+            }
+          }
+        }
+
+        // Auto-heal: Ensure any received sawn timber purchases are linked to SawnTimberOutput
+        if (p.status === 'RECEIVED' && p.items && p.items.length > 0) {
+          const bundlePrefix = `BUNDLE-${p.purchaseNumber || 'PUR'}`;
+          const existingOutput = (partai.sawnOutputs || []).find(
+            (o: any) =>
+              (o.bundleNumber && o.bundleNumber.startsWith(bundlePrefix)) ||
+              (o.notes && o.notes.includes(p.purchaseNumber || p.id))
+          );
+
+          if (!existingOutput) {
+            try {
+              let directInput = await this.prisma.inputLog.findFirst({
+                where: {
+                  partaiId: partai.id,
+                  inputNumber: `DIRECT-PURCHASE-${p.purchaseNumber || p.id.slice(-6)}`,
+                },
+              });
+              if (!directInput) {
+                directInput = await this.prisma.inputLog.create({
+                  data: {
+                    partaiId: partai.id,
+                    inputNumber: `DIRECT-PURCHASE-${p.purchaseNumber || p.id.slice(-6)}`,
+                    species: p.items[0]?.timberVariant?.species || 'SAWN-TIMBER',
+                    shift: '1',
+                    date: p.purchaseDate ? new Date(p.purchaseDate) : new Date(),
+                    status: 'DONE',
+                    totalQty: 0,
+                    totalVolume: 0,
+                  },
+                });
+              }
+
+              const validItems = p.items.filter((it: any) => it.quantityPcs > 0 && it.timberVariantId);
+              if (validItems.length > 0) {
+                const newOutput = await this.prisma.sawnTimberOutput.create({
+                  data: {
+                    partaiId: partai.id,
+                    bundleNumber: `${bundlePrefix}-${Date.now().toString().slice(-4)}`,
+                    outputDate: p.purchaseDate ? new Date(p.purchaseDate) : new Date(),
+                    shift: '1',
+                    locationId: p.warehouseId,
+                    inputLogId: directInput.id,
+                    status: 'POSTED',
+                    notes: `Penerimaan Pembelian Sawn Timber (Beli Masak) ${p.purchaseNumber}`,
+                    items: {
+                      create: validItems.map((it: any) => ({
+                        timberVariantId: it.timberVariantId,
+                        grade: it.timberVariant?.grade || 'A',
+                        productType: 'BALOK',
+                        quantityPcs: it.quantityPcs,
+                        thicknessMm: Math.round(Number(it.purchaseThickness || it.timberVariant?.thickness || 0)),
+                        widthMm: Math.round(Number(it.purchaseWidth || it.timberVariant?.width || 0)),
+                        lengthMm: Math.round(Number(it.purchaseLength || it.timberVariant?.length || 0)),
+                        volumeM3: Number(it.volumeM3 || 0),
+                        notes: `Dari PO ${p.purchaseNumber}`,
+                      })),
+                    },
+                  },
+                  include: { items: { include: { timberVariant: true } } },
+                });
+                partai.sawnOutputs.push(newOutput);
+              }
+            } catch (outputErr: any) {
+              this.logger.warn(`Failed to auto-sync sawn timber output for purchase ${p.purchaseNumber}: ${outputErr?.message || outputErr}`);
             }
           }
         }

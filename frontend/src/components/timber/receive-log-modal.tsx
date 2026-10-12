@@ -84,18 +84,32 @@ export function ReceiveLogModal({
 
     // 2. Sawn Timber
     if (purchase.items && purchase.items.length > 0) {
-      const rows = purchase.items.map((it: any) => ({
-        id: it.id,
-        timberVariantId: it.timberVariantId,
-        sku: it.timberVariant?.sku || it.sku || "-",
-        species: it.timberVariant?.species || it.timberVariant?.timberSpecies?.name || it.species || "Sawn Timber",
-        thickness: it.purchaseThickness || it.timberVariant?.thickness || 0,
-        width: it.purchaseWidth || it.timberVariant?.width || 0,
-        length: it.purchaseLength || it.timberVariant?.length || 0,
-        orderedPcs: it.quantityPcs || 0,
-        receivedPcs: it.quantityPcs || 0,
-        volumeM3: it.volumeM3 || 0,
-      }));
+      const rows = purchase.items.map((it: any) => {
+        const t = Number(it.purchaseThickness || it.timberVariant?.thickness || 0);
+        const w = Number(it.purchaseWidth || it.timberVariant?.width || 0);
+        const l = Number(it.purchaseLength || it.timberVariant?.length || 0);
+        const pcs = Number(it.quantityPcs || 0);
+        let vol = Number(it.volumeM3 || 0);
+        if ((!vol || vol === 0) && t > 0 && w > 0 && l > 0 && pcs > 0) {
+          vol = Number((((t * w * l) / 1000000000) * pcs).toFixed(4));
+        }
+        return {
+          id: it.id,
+          timberVariantId: it.timberVariantId,
+          sku: it.timberVariant?.sku || it.sku || "-",
+          species: it.timberVariant?.species || it.timberVariant?.timberSpecies?.name || it.species || "Sawn Timber",
+          grade: it.timberVariant?.grade || it.grade || "A",
+          productType: it.productType || it.timberVariant?.productType || "BALOK",
+          thickness: t || "",
+          width: w || "",
+          length: l || "",
+          orderedPcs: pcs,
+          receivedPcs: pcs || "",
+          volumeM3: vol,
+          selected: purchase.status !== "RECEIVED",
+          isAlreadyReceived: purchase.status === "RECEIVED",
+        };
+      });
       setSawnRows(rows);
     } else {
       setSawnRows([]);
@@ -106,6 +120,31 @@ export function ReceiveLogModal({
     setLogRows((prev) => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const handleSawnRowChange = (index: number, field: string, value: any) => {
+    setSawnRows((prev) => {
+      const updated = [...prev];
+      const row = { ...updated[index], [field]: value };
+      if (
+        field === "thickness" ||
+        field === "width" ||
+        field === "length" ||
+        field === "receivedPcs"
+      ) {
+        const t = parseFloat(row.thickness) || 0;
+        const w = parseFloat(row.width) || 0;
+        const l = parseFloat(row.length) || 0;
+        const pcs = parseFloat(row.receivedPcs) || 0;
+        if (t > 0 && w > 0 && l > 0 && pcs > 0) {
+          row.volumeM3 = Number((((t * w * l) / 1000000000) * pcs).toFixed(4));
+        } else {
+          row.volumeM3 = 0;
+        }
+      }
+      updated[index] = row;
       return updated;
     });
   };
@@ -205,12 +244,39 @@ export function ReceiveLogModal({
   // Save Sawn Timber directly
   const handleSaveSawn = async () => {
     if (!purchase?.id) return;
+    const toSave = sawnRows.filter((r) => r.selected && !r.isAlreadyReceived);
+    if (toSave.length === 0) {
+      toast({
+        title: "Data belum dipilih",
+        description: "Pilih minimal satu item sawn timber yang akan diterima.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSaving(true);
     try {
-      await PurchaseAPI.receivePurchase(purchase.id);
+      const payload = toSave.map((r) => ({
+        id: r.id,
+        timberVariantId: r.timberVariantId,
+        species: r.species,
+        grade: r.grade || "A",
+        productType: r.productType || "BALOK",
+        quantityPcs: Number(r.receivedPcs) || 0,
+        thickness: Number(r.thickness) || 0,
+        width: Number(r.width) || 0,
+        length: Number(r.length) || 0,
+        volumeM3: Number(r.volumeM3) || 0,
+      }));
+
+      await PurchaseAPI.receivePurchase(purchase.id, {
+        partaiId: partaiId || purchase?.partaiId,
+        items: payload,
+      });
+
       toast({
         title: "Berhasil Diterima!",
-        description: "Kayu olahan (Sawn Timber) berhasil masuk ke stok gudang.",
+        description: `${payload.length} item kayu olahan (Sawn Timber) berhasil diverifikasi dan masuk ke output stok jadi.`,
       });
       onSuccess?.();
       onClose();
@@ -225,13 +291,104 @@ export function ReceiveLogModal({
     }
   };
 
+  // Save Both if both are present
+  const handleSaveAll = async () => {
+    if (hasLogItems && hasSawnItems) {
+      const logsToSave = logRows.filter(
+        (r) => r.selected && !r.isAlreadyReceived && r.length && (r.avgDia || (r.d1 && r.d2 && r.d3 && r.d4))
+      );
+      const sawnToSave = sawnRows.filter((r) => r.selected && !r.isAlreadyReceived);
+
+      if (logsToSave.length === 0 && sawnToSave.length === 0) {
+        toast({
+          title: "Pilih item untuk diterima",
+          description: "Tidak ada log atau sawn timber yang dipilih untuk diproses.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsSaving(true);
+      try {
+        if (logsToSave.length > 0) {
+          const logPayload = logsToSave.map((r) => {
+            const calc = calculateRow(r);
+            return {
+              purchaseLogItemId: r.purchaseLogItemId,
+              logNumber: r.logNumber,
+              species: r.species,
+              speciesId: r.speciesId || undefined,
+              originalLength: calc.meterLength,
+              diameter1: Number(r.d1) || 0,
+              diameter2: Number(r.d2) || 0,
+              diameter3: Number(r.d3) || 0,
+              diameter4: Number(r.d4) || 0,
+              averageDiameter: calc.avg || Number(r.avgDia) || 0,
+              gerowong: Number(r.gerowong) || 0,
+              partaiId: partaiId || purchase?.partaiId,
+              locationId: r.locationId || purchase?.warehouseId,
+              date: new Date().toISOString(),
+            };
+          });
+          await TimberAPI.createBulkLogs({ items: logPayload });
+        }
+
+        if (sawnToSave.length > 0) {
+          const sawnPayload = sawnToSave.map((r) => ({
+            id: r.id,
+            timberVariantId: r.timberVariantId,
+            species: r.species,
+            grade: r.grade || "A",
+            productType: r.productType || "BALOK",
+            quantityPcs: Number(r.receivedPcs) || 0,
+            thickness: Number(r.thickness) || 0,
+            width: Number(r.width) || 0,
+            length: Number(r.length) || 0,
+            volumeM3: Number(r.volumeM3) || 0,
+          }));
+          await PurchaseAPI.receivePurchase(purchase.id, {
+            partaiId: partaiId || purchase?.partaiId,
+            items: sawnPayload,
+          });
+        }
+
+        toast({
+          title: "Berhasil Diterima!",
+          description: "Semua item terpilih berhasil diverifikasi dan dicatat ke inventaris.",
+        });
+        onSuccess?.();
+        onClose();
+      } catch (e: any) {
+        toast({
+          title: "Gagal Menerima",
+          description: e.response?.data?.message || e.message || "Gagal memproses penerimaan",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    } else if (hasLogItems) {
+      await handleSaveLogs();
+    } else {
+      await handleSaveSawn();
+    }
+  };
+
   const totalNetLive = logRows
     .filter((r) => r.selected && !r.isAlreadyReceived)
     .reduce((sum, r) => sum + calculateRow(r).net, 0);
 
+  const totalSawnPcs = sawnRows
+    .filter((r) => r.selected && !r.isAlreadyReceived)
+    .reduce((sum, r) => sum + (Number(r.receivedPcs) || 0), 0);
+
+  const totalSawnVol = sawnRows
+    .filter((r) => r.selected && !r.isAlreadyReceived)
+    .reduce((sum, r) => sum + (Number(r.volumeM3) || 0), 0);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader className="border-b pb-3">
           <div className="flex items-center justify-between pr-6">
             <div className="flex items-center gap-2">
@@ -450,51 +607,187 @@ export function ReceiveLogModal({
         {hasSawnItems && (
           <div className="space-y-4 py-2 border-t pt-4">
             <div className="flex items-center justify-between text-xs bg-muted/40 p-2.5 rounded-lg border">
-              <span className="font-semibold text-foreground">Kayu Olahan (Sawn Timber)</span>
-              <span className="text-muted-foreground">
-                Total:{" "}
-                <span className="font-semibold text-foreground">
-                  {sawnRows.reduce((sum, r) => sum + Number(r.orderedPcs || 0), 0)} Pcs
-                </span>{" "}
-                |{" "}
-                <span className="font-semibold text-foreground">
-                  {sawnRows.reduce((sum, r) => sum + Number(r.volumeM3 || 0), 0).toFixed(4)} m³
+              <div className="flex items-center gap-2">
+                <PackageCheck className="w-4 h-4 text-emerald-500" />
+                <span className="font-semibold text-foreground">Kayu Olahan (Sawn Timber)</span>
+                <Badge variant="outline" className="text-xs">
+                  {sawnRows.filter((r) => r.selected && !r.isAlreadyReceived).length} dari {sawnRows.length} terpilih
+                </Badge>
+              </div>
+              <div className="text-muted-foreground flex items-center gap-3">
+                <span>
+                  Total Fisik:{" "}
+                  <strong className="text-foreground">
+                    {totalSawnPcs} Pcs
+                  </strong>
                 </span>
-              </span>
+                <span>
+                  Volume Aktual:{" "}
+                  <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                    {totalSawnVol.toFixed(4)} m³
+                  </strong>
+                </span>
+              </div>
             </div>
 
-            <Table className="text-xs border rounded-lg">
-              <TableHeader className="bg-muted/30">
-                <TableRow>
-                  <TableHead>SKU / Dimensi</TableHead>
-                  <TableHead>Spesies</TableHead>
-                  <TableHead className="text-right">Qty (Pcs)</TableHead>
-                  <TableHead className="text-right">Volume (m³)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sawnRows.map((it, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell className="font-medium text-primary">{it.sku}</TableCell>
-                    <TableCell>{it.species}</TableCell>
-                    <TableCell className="text-right font-semibold">{it.orderedPcs} Pcs</TableCell>
-                    <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400">
-                      {Number(it.volumeM3 || 0).toFixed(4)}
-                    </TableCell>
+            <div className="overflow-x-auto border rounded-lg">
+              <Table className="text-xs">
+                <TableHeader className="bg-muted/30">
+                  <TableRow>
+                    <TableHead className="w-[40px] text-center">
+                      <Checkbox
+                        checked={
+                          sawnRows.length > 0 &&
+                          sawnRows.filter((r) => !r.isAlreadyReceived).every((r) => r.selected)
+                        }
+                        onCheckedChange={(checked) => {
+                          setSawnRows((prev) =>
+                            prev.map((r) => (r.isAlreadyReceived ? r : { ...r, selected: !!checked }))
+                          );
+                        }}
+                      />
+                    </TableHead>
+                    <TableHead className="w-[140px]">SKU / Produk</TableHead>
+                    <TableHead className="w-[100px]">Spesies</TableHead>
+                    <TableHead className="w-[110px]">Tipe</TableHead>
+                    <TableHead className="w-[80px]">Grade</TableHead>
+                    <TableHead className="w-[80px]">Tebal (mm)</TableHead>
+                    <TableHead className="w-[80px]">Lebar (mm)</TableHead>
+                    <TableHead className="w-[85px]">Panjang (mm)</TableHead>
+                    <TableHead className="w-[75px] text-center">PO (Pcs)</TableHead>
+                    <TableHead className="w-[85px] text-center">Fisik (Pcs)</TableHead>
+                    <TableHead className="w-[95px] text-right text-emerald-600 dark:text-emerald-400 font-bold">
+                      Vol Aktual (m³)
+                    </TableHead>
+                    <TableHead className="w-[85px] text-center">Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {sawnRows.map((r, idx) => (
+                    <TableRow
+                      key={idx}
+                      className={r.isAlreadyReceived ? "bg-muted/20 opacity-60" : "hover:bg-muted/30"}
+                    >
+                      <TableCell className="text-center p-2">
+                        <Checkbox
+                          checked={r.selected}
+                          disabled={r.isAlreadyReceived}
+                          onCheckedChange={(val) => handleSawnRowChange(idx, "selected", !!val)}
+                        />
+                      </TableCell>
+                      <TableCell className="p-2 font-medium text-primary">
+                        {r.sku}
+                      </TableCell>
+                      <TableCell className="p-2 font-medium">{r.species}</TableCell>
+                      <TableCell className="p-1">
+                        <select
+                          className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs font-medium focus:ring-1 focus:ring-ring outline-none"
+                          value={r.productType}
+                          disabled={r.isAlreadyReceived}
+                          onChange={(e) => handleSawnRowChange(idx, "productType", e.target.value)}
+                        >
+                          <option value="BALOK">BALOK</option>
+                          <option value="PAPAN">PAPAN</option>
+                          <option value="RENG">RENG</option>
+                          <option value="AFKIR_BS">AFKIR_BS</option>
+                          <option value="AIR_DRY">AIR_DRY</option>
+                          <option value="FJL">FJL</option>
+                          <option value="LAINNYA">LAINNYA</option>
+                        </select>
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Input
+                          className="h-8 text-xs font-semibold uppercase"
+                          value={r.grade}
+                          disabled={r.isAlreadyReceived}
+                          onChange={(e) => handleSawnRowChange(idx, "grade", e.target.value)}
+                          placeholder="Grade"
+                        />
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Input
+                          type="number"
+                          step="1"
+                          className="h-8 text-xs text-right"
+                          value={r.thickness}
+                          disabled={r.isAlreadyReceived}
+                          onChange={(e) => handleSawnRowChange(idx, "thickness", e.target.value)}
+                          placeholder="Tebal"
+                        />
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Input
+                          type="number"
+                          step="1"
+                          className="h-8 text-xs text-right"
+                          value={r.width}
+                          disabled={r.isAlreadyReceived}
+                          onChange={(e) => handleSawnRowChange(idx, "width", e.target.value)}
+                          placeholder="Lebar"
+                        />
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Input
+                          type="number"
+                          step="1"
+                          className="h-8 text-xs text-right"
+                          value={r.length}
+                          disabled={r.isAlreadyReceived}
+                          onChange={(e) => handleSawnRowChange(idx, "length", e.target.value)}
+                          placeholder="Panjang"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center p-2 font-medium text-muted-foreground">
+                        {r.orderedPcs}
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Input
+                          type="number"
+                          step="1"
+                          className="h-8 text-xs text-center font-bold"
+                          value={r.receivedPcs}
+                          disabled={r.isAlreadyReceived}
+                          onChange={(e) => handleSawnRowChange(idx, "receivedPcs", e.target.value)}
+                          placeholder="Pcs"
+                        />
+                      </TableCell>
+                      <TableCell className="p-2 text-right bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                        {Number(r.volumeM3 || 0).toFixed(4)}
+                      </TableCell>
+                      <TableCell className="text-center p-2">
+                        {r.isAlreadyReceived ? (
+                          <Badge variant="outline" className="text-xs border-emerald-500 text-emerald-600">
+                            Diterima
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-amber-500 border-amber-500">
+                            Pending
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
 
         <DialogFooter className="mt-4 pt-3 border-t flex flex-row items-center justify-between sm:justify-between">
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs text-muted-foreground flex items-center gap-4">
             {hasLogItems && (
               <span>
-                Total Net:{" "}
+                Total Net Log:{" "}
                 <strong className="text-blue-600 dark:text-blue-400 text-sm">
                   {totalNetLive.toFixed(4)} m³
+                </strong>
+              </span>
+            )}
+            {hasSawnItems && (
+              <span>
+                Total Sawn:{" "}
+                <strong className="text-emerald-600 dark:text-emerald-400 text-sm">
+                  {totalSawnVol.toFixed(4)} m³ ({totalSawnPcs} Pcs)
                 </strong>
               </span>
             )}
@@ -503,27 +796,25 @@ export function ReceiveLogModal({
             <Button variant="outline" size="sm" onClick={onClose} disabled={isSaving}>
               Batal
             </Button>
-            {hasLogItems ? (
-              <Button
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                onClick={handleSaveLogs}
-                disabled={isSaving || logRows.filter((r) => r.selected && !r.isAlreadyReceived).length === 0}
-              >
-                <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                {isSaving ? "Menyimpan..." : "Simpan DUKB & Terima Log"}
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                onClick={handleSaveSawn}
-                disabled={isSaving}
-              >
-                <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                {isSaving ? "Memproses..." : "Konfirmasi Terima Sawn Timber"}
-              </Button>
-            )}
+            <Button
+              size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+              onClick={handleSaveAll}
+              disabled={
+                isSaving ||
+                (hasLogItems && logRows.filter((r) => r.selected && !r.isAlreadyReceived).length === 0 &&
+                 hasSawnItems && sawnRows.filter((r) => r.selected && !r.isAlreadyReceived).length === 0)
+              }
+            >
+              <CheckCircle2 className="w-4 h-4 mr-1.5" />
+              {isSaving
+                ? "Memproses..."
+                : hasLogItems && hasSawnItems
+                ? "Konfirmasi Terima Semua"
+                : hasLogItems
+                ? "Simpan DUKB & Terima Log"
+                : "Konfirmasi Terima Sawn Timber"}
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>

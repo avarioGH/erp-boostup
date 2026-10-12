@@ -7,11 +7,14 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Eye, PackageOpen, FileText, Edit, Trash2, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { ReceiveLogModal } from "@/components/timber/receive-log-modal";
 
 export default function PurchaseListPage() {
   const router = useRouter();
   const [purchases, setPurchases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [receiveModalOpen, setReceiveModalOpen] = useState(false);
+  const [selectedPurchaseForReceive, setSelectedPurchaseForReceive] = useState<any>(null);
 
   useEffect(() => {
     router.replace("/inventory/partai");
@@ -34,16 +37,9 @@ export default function PurchaseListPage() {
     fetchPurchases();
   }, []);
 
-  const handleReceive = async (id: string, code: string) => {
-    if (!confirm(`Konfirmasi penerimaan barang untuk ${code}? Stok kayu akan langsung dimasukkan ke gudang.`)) return;
-    try {
-      await PurchaseAPI.receivePurchase(id);
-      alert("Barang berhasil diterima! Stok kayu telah masuk ke inventaris.");
-      fetchPurchases();
-    } catch (err: any) {
-      console.error(err);
-      alert(err?.response?.data?.message || "Gagal memproses penerimaan barang");
-    }
+  const handleOpenReceive = (purchase: any) => {
+    setSelectedPurchaseForReceive(purchase);
+    setReceiveModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -184,9 +180,9 @@ export default function PurchaseListPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleReceive(p.id, docNum)}
+                              onClick={() => handleOpenReceive(p)}
                               className="h-8 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900 border-emerald-300 dark:border-emerald-800"
-                              title="Terima Barang ke Stok"
+                              title="Terima Barang (Cek Ukuran Fisik)"
                             >
                               <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600 dark:text-emerald-400" />
                               Terima Barang
@@ -218,6 +214,17 @@ export default function PurchaseListPage() {
           </Table>
         </div>
       </div>
+
+      <ReceiveLogModal
+        isOpen={receiveModalOpen}
+        onClose={() => {
+          setReceiveModalOpen(false);
+          setSelectedPurchaseForReceive(null);
+        }}
+        purchase={selectedPurchaseForReceive}
+        partaiId={selectedPurchaseForReceive?.partaiId}
+        onSuccess={fetchPurchases}
+      />
     </div>
   );
 }

@@ -2,12 +2,15 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryLedgerService } from '../inventory-ledger.service';
 
 @Injectable()
 export class PurchaseService {
+  private readonly logger = new Logger(PurchaseService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly inventoryLedgerService: InventoryLedgerService,
@@ -104,12 +107,74 @@ export class PurchaseService {
         },
       });
 
-      // If directly received upon creation, immediately stock into warehouse
+      // If directly received upon creation, immediately stock into warehouse and Output (Sawn Timber)
       if (isDirectlyReceived) {
-        // Sawn timber stock mutation
+        // Sawn timber stock mutation & SawnTimberOutput
         if (purchase.items && purchase.items.length > 0) {
+          let directOutput: any = null;
+          if (purchase.partaiId) {
+            try {
+              let directInput = await tx.inputLog.findFirst({
+                where: {
+                  partaiId: purchase.partaiId,
+                  inputNumber: `DIRECT-PURCHASE-${purchase.purchaseNumber || purchase.id.slice(-6)}`,
+                },
+              });
+              if (!directInput) {
+                directInput = await tx.inputLog.create({
+                  data: {
+                    partaiId: purchase.partaiId,
+                    inputNumber: `DIRECT-PURCHASE-${purchase.purchaseNumber || purchase.id.slice(-6)}`,
+                    species: (purchase.items[0] as any)?.species || (purchase.items[0] as any)?.timberVariant?.species || 'SAWN-TIMBER',
+                    shift: '1',
+                    date: purchase.purchaseDate ? new Date(purchase.purchaseDate) : new Date(),
+                    status: 'DONE',
+                    totalQty: 0,
+                    totalVolume: 0,
+                  },
+                });
+              }
+
+              directOutput = await tx.sawnTimberOutput.create({
+                data: {
+                  partaiId: purchase.partaiId,
+                  bundleNumber: `BUNDLE-${purchase.purchaseNumber || 'PUR'}-${Date.now().toString().slice(-4)}`,
+                  outputDate: purchase.purchaseDate ? new Date(purchase.purchaseDate) : new Date(),
+                  shift: '1',
+                  locationId: purchase.warehouseId,
+                  inputLogId: directInput.id,
+                  status: 'POSTED',
+                  notes: `Penerimaan Pembelian Sawn Timber (Beli Masak) ${purchase.purchaseNumber}`,
+                },
+              });
+            } catch (outErr) {
+              this.logger.warn(`Failed to create sawnTimberOutput in direct receive: ${outErr}`);
+            }
+          }
+
           for (const item of purchase.items) {
             if (item.quantityPcs > 0 && item.volumeM3 > 0 && item.timberVariantId) {
+              if (directOutput) {
+                try {
+                  await tx.sawnTimberOutputItem.create({
+                    data: {
+                      outputId: directOutput.id,
+                      timberVariantId: item.timberVariantId,
+                      grade: 'A',
+                      productType: 'BALOK',
+                      quantityPcs: item.quantityPcs,
+                      thicknessMm: Math.round(Number(item.purchaseThickness || 0)),
+                      widthMm: Math.round(Number(item.purchaseWidth || 0)),
+                      lengthMm: Math.round(Number(item.purchaseLength || 0)),
+                      volumeM3: Number(item.volumeM3 || 0),
+                      notes: `Dari PO ${purchase.purchaseNumber}`,
+                    },
+                  });
+                } catch (itErr) {
+                  this.logger.warn(`Failed to create sawnTimberOutputItem: ${itErr}`);
+                }
+              }
+
               await this.inventoryLedgerService.createMovement(
                 tx,
                 purchase.warehouseId,
@@ -215,7 +280,7 @@ export class PurchaseService {
     return this.markAsReceived(id, companyId);
   }
 
-  async markAsReceived(id: string, companyId: string) {
+  async markAsReceived(id: string, companyId: string, data?: any) {
     return this.prisma.$transaction(async (tx) => {
       let targetCompanyId = companyId;
       if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
@@ -228,22 +293,11 @@ export class PurchaseService {
         where: isObjectId
           ? { id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) }
           : { purchaseNumber: id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) },
-        include: { items: true, logItems: true },
+        include: { items: { include: { timberVariant: true } }, logItems: true },
       });
 
       if (!purchase) {
         throw new NotFoundException('Timber purchase not found');
-      }
-
-      if (purchase.status === 'RECEIVED' || purchase.status === 'CONFIRMED') {
-        const rawLogsCount = await tx.rawLog.count({
-          where: {
-            purchaseLogItemId: { in: (purchase.logItems || []).map((li: any) => li.id) },
-          },
-        });
-        if (rawLogsCount >= (purchase.logItems || []).length) {
-          throw new BadRequestException('Pembelian ini sudah diterima dan masuk ke stok');
-        }
       }
 
       if (purchase.status === 'CANCELLED') {
@@ -256,21 +310,158 @@ export class PurchaseService {
         data: { status: 'RECEIVED' },
       });
 
-      // 1. Stock mutations for sawn timber
+      // 1. Stock mutations & SawnTimberOutput for sawn timber
       if (purchase.items && purchase.items.length > 0) {
-        for (const item of purchase.items) {
-          if (item.quantityPcs > 0 && item.volumeM3 > 0 && item.timberVariantId) {
-            await this.inventoryLedgerService.createMovement(
-              tx,
-              purchase.warehouseId,
-              item.timberVariantId,
-              'IN',
-              'TIMBER_PURCHASE',
-              purchase.id,
-              item.quantityPcs,
-              item.volumeM3,
-              item.batch || 'UNKNOWN',
-            );
+        const sawnItemsToProcess =
+          (data?.items || data?.sawnItems || []).length > 0
+            ? (data?.items || data?.sawnItems)
+            : purchase.items;
+
+        let createdOutput: any = null;
+        const targetPartaiId = purchase.partaiId || data?.partaiId;
+
+        let effectiveWarehouseId = purchase.warehouseId;
+        if (!effectiveWarehouseId) {
+          const fallbackWh = await tx.warehouse.findFirst({
+            where: { company_id: purchase.company_id },
+          });
+          if (fallbackWh) effectiveWarehouseId = fallbackWh.id;
+        }
+
+        if (targetPartaiId) {
+          if (!purchase.partaiId && data?.partaiId) {
+            await tx.timberPurchase.update({
+              where: { id: purchase.id },
+              data: { partaiId: data.partaiId },
+            });
+          }
+          const bundlePrefix = `BUNDLE-${purchase.purchaseNumber || 'PUR'}`;
+          let existingOutput = await tx.sawnTimberOutput.findFirst({
+            where: {
+              partaiId: targetPartaiId,
+              bundleNumber: { startsWith: bundlePrefix },
+            },
+          });
+
+          if (!existingOutput) {
+            let directInputLog = await tx.inputLog.findFirst({
+              where: {
+                partaiId: targetPartaiId,
+                inputNumber: `DIRECT-PURCHASE-${purchase.purchaseNumber || purchase.id.slice(-6)}`,
+              },
+            });
+            if (!directInputLog) {
+              directInputLog = await tx.inputLog.create({
+                data: {
+                  partaiId: targetPartaiId,
+                  inputNumber: `DIRECT-PURCHASE-${purchase.purchaseNumber || purchase.id.slice(-6)}`,
+                  species: purchase.items[0]?.timberVariant?.species || 'SAWN-TIMBER',
+                  shift: '1',
+                  date: new Date(),
+                  status: 'DONE',
+                  totalQty: 0,
+                  totalVolume: 0,
+                },
+              });
+            }
+
+            createdOutput = await tx.sawnTimberOutput.create({
+              data: {
+                partaiId: targetPartaiId,
+                bundleNumber: `${bundlePrefix}-${Date.now().toString().slice(-4)}`,
+                outputDate: new Date(),
+                shift: '1',
+                locationId: effectiveWarehouseId || purchase.warehouseId,
+                inputLogId: directInputLog.id,
+                status: 'POSTED',
+                notes: `Penerimaan Pembelian Sawn Timber (Beli Masak) ${purchase.purchaseNumber}`,
+              },
+            });
+          } else {
+            createdOutput = existingOutput;
+          }
+        }
+
+        for (const item of sawnItemsToProcess) {
+          const qty = Number(item.quantityPcs || item.receivedPcs || 0);
+          const tMm = Math.round(Number(item.thickness || item.purchaseThickness || item.thicknessMm || 0));
+          const wMm = Math.round(Number(item.width || item.purchaseWidth || item.widthMm || 0));
+          const lMm = Math.round(Number(item.length || item.purchaseLength || item.lengthMm || 0));
+          let vol = Number(item.volumeM3 || 0);
+          if ((!vol || vol === 0) && tMm > 0 && wMm > 0 && lMm > 0 && qty > 0) {
+            vol = Number((((tMm * wMm * lMm) / 1000000000) * qty).toFixed(4));
+          }
+
+          const variantId = item.timberVariantId || (item as any).variantId;
+
+          if (qty > 0 && vol > 0 && variantId) {
+            // Update purchase line item if ID matches
+            if (item.id && /^[0-9a-fA-F]{24}$/.test(item.id)) {
+              await tx.timberPurchaseItem.updateMany({
+                where: { id: item.id, timberPurchaseId: purchase.id },
+                data: {
+                  quantityPcs: qty,
+                  volumeM3: vol,
+                  purchaseThickness: tMm || undefined,
+                  purchaseWidth: wMm || undefined,
+                  purchaseLength: lMm || undefined,
+                },
+              });
+            }
+
+            // Create or update SawnTimberOutputItem if createdOutput exists
+            if (createdOutput) {
+              const existingItem = await tx.sawnTimberOutputItem.findFirst({
+                where: {
+                  outputId: createdOutput.id,
+                  timberVariantId: variantId,
+                },
+              });
+              if (!existingItem) {
+                await tx.sawnTimberOutputItem.create({
+                  data: {
+                    outputId: createdOutput.id,
+                    timberVariantId: variantId,
+                    grade: item.grade || 'A',
+                    productType: item.productType || 'BALOK',
+                    quantityPcs: qty,
+                    thicknessMm: tMm,
+                    widthMm: wMm,
+                    lengthMm: lMm,
+                    volumeM3: vol,
+                    notes: `Penerimaan Sawn Timber ${purchase.purchaseNumber}`,
+                  },
+                });
+              } else {
+                await tx.sawnTimberOutputItem.update({
+                  where: { id: existingItem.id },
+                  data: {
+                    grade: item.grade || existingItem.grade || 'A',
+                    productType: item.productType || existingItem.productType || 'BALOK',
+                    quantityPcs: qty,
+                    thicknessMm: tMm,
+                    widthMm: wMm,
+                    lengthMm: lMm,
+                    volumeM3: vol,
+                  },
+                });
+              }
+            }
+
+            // Stock ledger mutation
+            if (effectiveWarehouseId) {
+              await this.inventoryLedgerService.createMovement(
+                tx,
+                effectiveWarehouseId,
+                variantId,
+                'IN',
+                'TIMBER_PURCHASE',
+                purchase.id,
+                qty,
+                vol,
+                item.batch || purchase.purchaseNumber || 'UNKNOWN',
+              );
+            }
           }
         }
       }

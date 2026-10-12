@@ -45,9 +45,9 @@ export class PurchaseController {
 
   @Post(':id/receive')
   @Permissions('inventory.create')
-  receive(@Param('id') id: string, @Request() req) {
+  receive(@Param('id') id: string, @Request() req, @Body() body?: any) {
     const companyId = req.user?.company_id || req.user?.companyId;
-    return this.purchaseService.markAsReceived(id, companyId);
+    return this.purchaseService.markAsReceived(id, companyId, body);
   }
 
   @Post(':id/cancel')
