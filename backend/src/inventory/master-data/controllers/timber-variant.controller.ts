@@ -60,6 +60,12 @@ export class TimberVariantController {
       `${species}-${grade}-${thickness}x${width}x${length}`
     ).trim().toUpperCase();
 
+    // Auto-generate unique barcode
+    const barcode = (
+      data.barcode ||
+      `V-${sku}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 10000)}`
+    ).trim().toUpperCase();
+
     // 1. Check if variant with SKU or exact specs already exists (within target company)
     let existing = await this.prisma.timberVariant.findFirst({
       where: {
@@ -198,17 +204,23 @@ export class TimberVariantController {
           length: length,
           volumePerPiece: volume,
           sku: sku,
+          barcode: barcode,
         },
         include: { product: true },
       });
     } catch (err: any) {
       // If duplicate constraint error occurs (P2002 or unique constraint failure)
-      if (err?.code === 'P2002' || err?.message?.includes('Unique constraint') || err?.message?.includes('duplicate key')) {
+      if (
+        err?.code === 'P2002' ||
+        err?.message?.includes('Unique constraint') ||
+        err?.message?.includes('duplicate key')
+      ) {
         const fallback = await this.prisma.timberVariant.findFirst({
           where: {
             OR: [
               { sku: sku },
               { sku: { equals: sku, mode: 'insensitive' } },
+              { barcode: barcode },
               {
                 thickness: thickness,
                 width: width,
@@ -222,24 +234,40 @@ export class TimberVariantController {
           return fallback;
         }
 
-        // Retry with disambiguated SKU if collision occurred
+        // Retry with disambiguated SKU & unique barcode
         const disambiguatedSku = `${sku}-${Date.now().toString().slice(-4)}`;
-        return await this.prisma.timberVariant.create({
-          data: {
-            company_id: targetCompanyId as string,
-            productId: productId,
-            species: species,
-            grade: grade,
-            speciesId: speciesId || undefined,
-            gradeId: gradeId || undefined,
-            thickness: thickness,
-            width: width,
-            length: length,
-            volumePerPiece: volume,
-            sku: disambiguatedSku,
-          },
-          include: { product: true },
-        });
+        const disambiguatedBarcode = `V-${disambiguatedSku}-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`;
+        try {
+          return await this.prisma.timberVariant.create({
+            data: {
+              company_id: targetCompanyId as string,
+              productId: productId,
+              species: species,
+              grade: grade,
+              speciesId: speciesId || undefined,
+              gradeId: gradeId || undefined,
+              thickness: thickness,
+              width: width,
+              length: length,
+              volumePerPiece: volume,
+              sku: disambiguatedSku,
+              barcode: disambiguatedBarcode,
+            },
+            include: { product: true },
+          });
+        } catch (retryErr) {
+          const anyExisting = await this.prisma.timberVariant.findFirst({
+            where: {
+              OR: [
+                { sku: { contains: sku, mode: 'insensitive' } },
+                { thickness, width, length },
+              ],
+            },
+            include: { product: true },
+          });
+          if (anyExisting) return anyExisting;
+          throw retryErr;
+        }
       }
       throw err;
     }

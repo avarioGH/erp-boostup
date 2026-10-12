@@ -7,6 +7,37 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { InventoryLedgerService } from '../inventory-ledger.service';
 
+async function runWithTransactionRetry<T>(
+  prisma: PrismaService,
+  fn: (tx: any) => Promise<T>,
+  maxRetries = 3,
+): Promise<T> {
+  let attempt = 0;
+  while (true) {
+    try {
+      return await prisma.$transaction(fn, {
+        maxWait: 10000,
+        timeout: 20000,
+      });
+    } catch (err: any) {
+      attempt++;
+      const isWriteConflict =
+        err?.code === 'P2034' ||
+        err?.message?.includes('write conflict') ||
+        err?.message?.includes('deadlock') ||
+        err?.message?.includes('WriteConflict') ||
+        err?.message?.includes('TransientTransactionError');
+
+      if (isWriteConflict && attempt < maxRetries) {
+        const delay = 50 * Math.pow(2, attempt) + Math.floor(Math.random() * 50);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 @Injectable()
 export class PurchaseService {
   private readonly logger = new Logger(PurchaseService.name);
@@ -60,47 +91,59 @@ export class PurchaseService {
     const isDirectlyReceived = data.status === 'RECEIVED' || data.isReceived === true;
     const initialStatus = isDirectlyReceived ? 'RECEIVED' : 'DRAFT';
 
-    return this.prisma.$transaction(async (tx) => {
-      const purchase = await tx.timberPurchase.create({
-        data: {
-          company_id: targetCompanyId as string,
-          partaiId: partaiId || null,
-          purchaseNumber,
-          purchaseDate: purchaseDate ? new Date(purchaseDate) : undefined,
-          sourceId,
-          warehouseId,
-          notes,
-          status: initialStatus,
-          totalPcs,
-          totalVolumeM3,
-          items: {
-            create: (items || []).map((item: any) => ({
-              timberVariantId: item.timberVariantId,
-              quantityPcs: Number(item.quantityPcs || 0),
-              volumeM3: Number(item.volumeM3 || 0),
-              purchaseThickness: Number(item.purchaseThickness || 0),
-              purchaseWidth: Number(item.purchaseWidth || 0),
-              purchaseLength: Number(item.purchaseLength || 0),
-              unitPrice: Number(item.unitPrice || 0),
-              notes: item.notes,
-              batch: item.batch || 'UNKNOWN',
-            })),
-          },
-          logItems: {
-            create: (logItems || []).map((li: any) => ({
-              logNumber: li.logNumber,
-              species: li.species,
-              speciesId: li.speciesId,
-              purchaseLength: Number(li.purchaseLength || 0),
-              purchaseDiameter1: Number(li.purchaseDiameter1 || 0),
-              purchaseDiameter2: Number(li.purchaseDiameter2 || 0),
-              purchaseDiameter3: Number(li.purchaseDiameter3 || 0),
-              purchaseDiameter4: Number(li.purchaseDiameter4 || 0),
-              purchaseVolume: Number(li.purchaseVolume || 0),
-              status: isDirectlyReceived ? 'RECEIVED' : 'PENDING',
-            })),
-          },
+    const purchaseData = {
+      company_id: targetCompanyId as string,
+      partaiId: partaiId || null,
+      purchaseNumber,
+      purchaseDate: purchaseDate ? new Date(purchaseDate) : undefined,
+      sourceId,
+      warehouseId,
+      notes,
+      status: initialStatus,
+      totalPcs,
+      totalVolumeM3,
+      items: {
+        create: (items || []).map((item: any) => ({
+          timberVariantId: item.timberVariantId,
+          quantityPcs: Number(item.quantityPcs || 0),
+          volumeM3: Number(item.volumeM3 || 0),
+          purchaseThickness: Number(item.purchaseThickness || 0),
+          purchaseWidth: Number(item.purchaseWidth || 0),
+          purchaseLength: Number(item.purchaseLength || 0),
+          unitPrice: Number(item.unitPrice || 0),
+          notes: item.notes,
+          batch: item.batch || 'UNKNOWN',
+        })),
+      },
+      logItems: {
+        create: (logItems || []).map((li: any) => ({
+          logNumber: li.logNumber,
+          species: li.species,
+          speciesId: li.speciesId,
+          purchaseLength: Number(li.purchaseLength || 0),
+          purchaseDiameter1: Number(li.purchaseDiameter1 || 0),
+          purchaseDiameter2: Number(li.purchaseDiameter2 || 0),
+          purchaseDiameter3: Number(li.purchaseDiameter3 || 0),
+          purchaseDiameter4: Number(li.purchaseDiameter4 || 0),
+          purchaseVolume: Number(li.purchaseVolume || 0),
+          status: isDirectlyReceived ? 'RECEIVED' : 'PENDING',
+        })),
+      },
+    };
+
+    if (!isDirectlyReceived) {
+      return this.prisma.timberPurchase.create({
+        data: purchaseData,
+        include: {
+          items: true,
+          logItems: true,
         },
+      });
+    }
+
+    return runWithTransactionRetry(this.prisma, async (tx) => {
+      const purchase = await tx.timberPurchase.create({
+        data: purchaseData,
         include: {
           items: true,
           logItems: true,
@@ -281,7 +324,7 @@ export class PurchaseService {
   }
 
   async markAsReceived(id: string, companyId: string, data?: any) {
-    return this.prisma.$transaction(async (tx) => {
+    return runWithTransactionRetry(this.prisma, async (tx) => {
       let targetCompanyId = companyId;
       if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
         const firstCompany = await this.prisma.company.findFirst();
@@ -556,7 +599,7 @@ export class PurchaseService {
   }
 
   async cancel(id: string, companyId: string) {
-    return this.prisma.$transaction(async (tx) => {
+    return runWithTransactionRetry(this.prisma, async (tx) => {
       let targetCompanyId = companyId;
       if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
         const firstCompany = await this.prisma.company.findFirst();
@@ -749,7 +792,7 @@ export class PurchaseService {
   }
 
   async updatePurchase(id: string, data: any) {
-    return this.prisma.$transaction(async (tx) => {
+    return runWithTransactionRetry(this.prisma, async (tx) => {
       const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
       const purchase = await tx.timberPurchase.findFirst({
         where: isObjectId ? { id } : { purchaseNumber: id },

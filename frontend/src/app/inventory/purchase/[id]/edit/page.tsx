@@ -276,15 +276,23 @@ export default function EditPurchasePage() {
             Number(v.thickness || 0) === payload.thickness &&
             Number(v.width || 0) === payload.width &&
             Number(v.length || 0) === payload.length
-          ) || freshList.find((v: any) => (v.sku || "").toUpperCase() === `${payload.species}-${payload.grade}-${payload.thickness}X${payload.width}X${payload.length}`);
+          ) || freshList.find((v: any) =>
+            (v.sku || "").toUpperCase().includes(payload.species) &&
+            Number(v.thickness || 0) === payload.thickness &&
+            Number(v.width || 0) === payload.width &&
+            Number(v.length || 0) === payload.length
+          ) || freshList.find((v: any) => (v.sku || "").toUpperCase() === `${payload.species}-${payload.grade}-${payload.thickness}X${payload.width}X${payload.length}`)
+          || freshList.find((v: any) => (v.sku || "").toUpperCase() === `${payload.species}-${payload.grade}-${payload.thickness}x${payload.width}x${payload.length}`);
 
           if (found) {
             res = found;
           } else {
-            throw apiErr;
+            alert("Master produk kayu dengan ukuran ini sudah ada di database, silakan pilih langsung dari dropdown.");
+            return;
           }
         } else {
-          throw apiErr;
+          alert("Gagal menyimpan master kayu: " + errMsg);
+          return;
         }
       }
 
