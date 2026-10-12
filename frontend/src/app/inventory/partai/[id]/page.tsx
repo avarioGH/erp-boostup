@@ -52,10 +52,6 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const [outputPage, setOutputPage] = useState(1);
   const [outputPageSize, setOutputPageSize] = useState(50);
   
-  // -- Inline DUKB state --
-  const [inlineDukbRows, setInlineDukbRows] = useState<any[]>([]);
-  const [isSavingDukb, setIsSavingDukb] = useState(false);
-  const [lengthUnit, setLengthUnit] = useState<'m' | 'cm' | 'mm'>('m');
   const [grades, setGrades] = useState<any[]>([]);
   const [selectedOutputItems, setSelectedOutputItems] = useState<{id: string, outputId: string}[]>([]);
   const [isGrading, setIsGrading] = useState(false);
@@ -142,130 +138,8 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     if (selectedOutputItems.length === allItems.length) {
        setSelectedOutputItems([]);
     } else {
-       setSelectedOutputItems(allItems.map(i => ({ id: i.id, outputId: i.parentOutputId })));
-    }
-  };
-
-  useEffect(() => {
-    const saved = localStorage.getItem('erp_length_unit_pref');
-    if (saved === 'm' || saved === 'cm' || saved === 'mm') {
-      setLengthUnit(saved);
-    }
-  }, []);
-
-  const handleUnitChange = (unit: 'm' | 'cm' | 'mm') => {
-    setLengthUnit(unit);
-    localStorage.setItem('erp_length_unit_pref', unit);
-  };
-
-
-
-  useEffect(() => {
-    if (partai && partai.purchases) {
-      const pending: any[] = [];
-      partai.purchases.forEach((p: any) => {
-        if (p.logItems && p.status !== 'CANCELLED') {
-          p.logItems.forEach((li: any) => {
-            if (li.status !== 'RECEIVED') {
-              pending.push({
-                purchaseLogItemId: li.id,
-                purchaseId: p.id,
-                purchaseNumber: p.purchaseNumber || p.code || "PO",
-                logNumber: li.logNumber || "",
-                species: li.species || "",
-                length: li.purchaseLength || li.length || "",
-                d1: li.purchaseDiameter1 || li.diameter1 || "",
-                d2: li.purchaseDiameter2 || li.diameter2 || "",
-                d3: li.purchaseDiameter3 || li.diameter3 || "",
-                d4: li.purchaseDiameter4 || li.diameter4 || "",
-                avgDia: "",
-                gerowong: "",
-                locationId: p.warehouseId || partai.company_id
-              });
-            }
-          });
-        }
-      });
-      setInlineDukbRows(pending);
-    }
-  }, [partai]);
-
-  const handleInlineDukbChange = (index: number, field: string, value: string) => {
-    const newRows = [...inlineDukbRows];
-    newRows[index][field] = value;
-    setInlineDukbRows(newRows);
-  };
-
-
-  const calculateRow = (row: any) => {
-    let lRaw = parseFloat(row.length) || 0;
-    let l = lRaw;
-    if (lengthUnit === 'cm') l = lRaw / 100;
-    if (lengthUnit === 'mm') l = lRaw / 1000;
-
-    const d1 = parseFloat(row.d1) || 0;
-    const d2 = parseFloat(row.d2) || 0;
-    const d3 = parseFloat(row.d3) || 0;
-    const d4 = parseFloat(row.d4) || 0;
-    const manualAvg = parseFloat(row.avgDia) || 0;
-    const g = parseFloat(row.gerowong) || 0;
-
-    let avgDiaStrict = 0;
-    if (d1 > 0 || d2 > 0 || d3 > 0 || d4 > 0) {
-      avgDiaStrict = (d1 + d2 + d3 + d4) / 4;
-    } else {
-      avgDiaStrict = manualAvg;
-    }
-    const rndDia = Math.round(avgDiaStrict);
-    
-    const grossVol = l > 0 && rndDia > 0 ? (Math.pow(rndDia, 2) * l * 0.7854) / 10000 : 0;
-    const gerowongVol = l > 0 && g > 0 ? (Math.pow(g, 2) * l * 0.7854) / 10000 : 0;
-    const netVol = grossVol - gerowongVol;
-
-    return {
-      meterLength: l,
-      avg: avgDiaStrict,
-      gross: grossVol,
-      net: netVol < 0 ? 0 : netVol
-    }
-  };
-
-  const handleSaveInlineDukb = async () => {
-
-    const toSave = inlineDukbRows.filter(r => r.length && (r.avgDia || (r.d1 && r.d2 && r.d3 && r.d4)));
-    if (toSave.length === 0) {
-      toast({ title: "Tidak ada data lengkap", description: "Isi dimensi minimal pada satu log (Panjang, serta D1-D4 atau Rata-rata) untuk menyimpannya.", variant: "destructive" });
-      return;
-    }
-    setIsSavingDukb(true);
-    try {
-      const payload = toSave.map(r => {
-        const calc = calculateRow(r);
-        return {
-        purchaseLogItemId: r.purchaseLogItemId,
-        logNumber: r.logNumber,
-        species: r.species,
-        originalLength: calc.meterLength,
-        diameter1: Number(r.d1) || 0,
-        diameter2: Number(r.d2) || 0,
-        diameter3: Number(r.d3) || 0,
-        diameter4: Number(r.d4) || 0,
-        averageDiameter: Number(r.avgDia) || 0,
-        gerowong: Number(r.gerowong) || 0,
-        partaiId: partai.id,
-        locationId: r.locationId,
-        date: new Date().toISOString()
-        };
-      });
-      await TimberAPI.createBulkLogs({ items: payload });
-      toast({ title: "Berhasil", description: `${payload.length} log berhasil diterima (DUKB dibuat)!` });
-      fetchPartai();
-    } catch (e: any) {
-      toast({ title: "Error", description: e.response?.data?.message || "Gagal menyimpan DUKB", variant: "destructive" });
-    } finally {
-      setIsSavingDukb(true);
-      setTimeout(() => setIsSavingDukb(false), 500); 
-    }
+        setSelectedOutputItems(allItems.map(i => ({ id: i.id, outputId: i.parentOutputId })));
+     }
   };
 
   const fetchPartai = () => {
@@ -407,11 +281,13 @@ export default function PartaiDetailPage({ params }: { params: any }) {
       if (p.logItems && p.logItems.length > 0) {
         hasItems = true;
         p.logItems.forEach((li: any, idx: number) => {
+          const itemReceivingDate = li.receivingDate || p.receivingDate || (li.status === 'RECEIVED' ? (p.receivingDate || li.updatedAt || p.updatedAt) : null);
           list.push({
             id: li.id || `${p.id}-log-${idx}`,
             purchaseId: p.id,
             purchaseNumber: docNum,
             purchaseDate: pDate,
+            receivingDate: itemReceivingDate,
             createdAt: li.createdAt || p.createdAt,
             itemType: "RAW_LOG",
             itemCode: li.logNumber || `Log #${idx + 1}`,
@@ -439,12 +315,14 @@ export default function PartaiDetailPage({ params }: { params: any }) {
           const dimStr = t && w && l ? `${t}×${w}×${l} mm` : "-";
           const sku = it.timberVariant?.sku || (dimStr !== "-" ? dimStr : `Item #${idx + 1}`);
           const sp = it.timberVariant?.species || it.timberVariant?.timberSpecies?.name || "Sawn Timber";
+          const itemReceivingDate = p.receivingDate || (pStatus === 'RECEIVED' ? (p.receivingDate || it.updatedAt || p.updatedAt) : null);
 
           list.push({
             id: it.id || `${p.id}-item-${idx}`,
             purchaseId: p.id,
             purchaseNumber: docNum,
             purchaseDate: pDate,
+            receivingDate: itemReceivingDate,
             createdAt: it.createdAt || p.createdAt,
             itemType: "SAWN_TIMBER",
             itemCode: sku,
@@ -467,6 +345,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
           purchaseId: p.id,
           purchaseNumber: docNum,
           purchaseDate: pDate,
+          receivingDate: p.receivingDate || (pStatus === 'RECEIVED' ? p.updatedAt : null),
           createdAt: p.createdAt,
           itemType: "EMPTY",
           itemCode: "-",
@@ -500,8 +379,8 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   // 2. DUKB (Raw Logs) sorted newest first
   const sortedRawLogs = React.useMemo(() => {
     return [...(partai?.rawLogs || [])].sort((a: any, b: any) => {
-      const timeA = new Date(a.date || a.createdAt || 0).getTime();
-      const timeB = new Date(b.date || b.createdAt || 0).getTime();
+      const timeA = new Date(a.receivingDate || a.date || a.createdAt || 0).getTime();
+      const timeB = new Date(b.receivingDate || b.date || b.createdAt || 0).getTime();
       if (timeB !== timeA) return timeB - timeA;
       return (b.logNumber || "").localeCompare(a.logNumber || "");
     });
@@ -633,7 +512,8 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                     <TableHead>No. Pembelian</TableHead>
                     <TableHead>No. Log / SKU</TableHead>
                     <TableHead>Spesies</TableHead>
-                    <TableHead>Tanggal</TableHead>
+                    <TableHead>Tgl Dibuat</TableHead>
+                    <TableHead>Tgl Diterima</TableHead>
                     <TableHead>Dimensi / Ukuran</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Jumlah</TableHead>
@@ -666,7 +546,22 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                         ) : null}
                       </TableCell>
                       <TableCell>{r.species || "-"}</TableCell>
-                      <TableCell>{r.purchaseDate ? new Date(r.purchaseDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{r.purchaseDate ? new Date(r.purchaseDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {r.status === 'RECEIVED' ? (
+                          r.receivingDate ? (
+                            <span className="text-foreground font-medium">
+                              {new Date(r.receivingDate).toLocaleDateString("id-ID")}
+                            </span>
+                          ) : (
+                            <Badge variant="outline" className="text-emerald-600 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 text-xs">
+                              Diterima
+                            </Badge>
+                          )
+                        ) : (
+                          <span className="text-muted-foreground italic">Belum diterima</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{r.dimensions || "-"}</TableCell>
                       <TableCell>
                         <Badge
@@ -746,7 +641,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                   ))}
                   {flattenedPurchases.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                         Belum ada pembelian untuk partai ini.
                       </TableCell>
                     </TableRow>
@@ -769,84 +664,12 @@ export default function PartaiDetailPage({ params }: { params: any }) {
         </TabsContent>
 
         {/* 2. DUKB (RAW LOGS) */}
-                {/* 2. DUKB (RAW LOGS) */}
         <TabsContent value="rawlogs">
-          {inlineDukbRows.length > 0 && (
-            <Card className="mb-6 border-blue-500/20 shadow-sm bg-blue-50/30 dark:bg-blue-900/20">
-              <CardHeader className="pb-3 flex flex-row items-start justify-between">
-                <div>
-                  <CardTitle className="text-blue-600 dark:text-blue-400">Penerimaan Log (Pending dari Purchase)</CardTitle>
-                  <CardDescription>Isi dimensi pada log yang datang untuk otomatis membuat DUKB. Baris yang kosong akan diabaikan (bisa diisi nanti).</CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground font-medium">Satuan Panjang:</span>
-                  <select 
-                    className="h-8 rounded-md border border-input bg-background px-3 text-sm focus:ring-1 focus:ring-ring outline-none transition-colors"
-                    value={lengthUnit} 
-                    onChange={(e: any) => handleUnitChange(e.target.value)}
-                  >
-                    <option value="m">Meter (m)</option>
-                    <option value="cm">Centimeter (cm)</option>
-                    <option value="mm">Millimeter (mm)</option>
-                  </select>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table className="text-sm">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[120px]">No. Log</TableHead>
-                        <TableHead className="w-[100px]">Spesies</TableHead>
-                        <TableHead className="w-[70px]">P ({lengthUnit})</TableHead>
-                        <TableHead className="w-[70px]">D1 (cm)</TableHead>
-                        <TableHead className="w-[70px]">D2 (cm)</TableHead>
-                        <TableHead className="w-[70px]">D3 (cm)</TableHead>
-                        <TableHead className="w-[70px]">D4 (cm)</TableHead>
-                        <TableHead className="w-[70px]">Grw (cm)</TableHead>
-                        <TableHead className="w-[70px] text-right">Avg</TableHead>
-                        <TableHead className="w-[80px] text-right">Gross</TableHead>
-                        <TableHead className="w-[80px] text-right text-blue-500 font-bold">Net</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {inlineDukbRows.map((r, idx) => {
-                        const calc = calculateRow(r);
-                        return (
-                        <TableRow key={idx} className="hover:bg-transparent">
-                          <TableCell className="p-1"><Input className="h-8 text-xs bg-muted/50 border-input cursor-not-allowed" value={r.logNumber} readOnly disabled/></TableCell>
-                          <TableCell className="p-1"><Input className="h-8 text-xs bg-muted/50 border-input cursor-not-allowed" value={r.species} readOnly disabled/></TableCell>
-                          <TableCell className="p-1"><Input type="number" step="0.1" className="h-8 text-sm" value={r.length} onChange={e => handleInlineDukbChange(idx, 'length', e.target.value)} /></TableCell>
-                          <TableCell className="p-1"><Input type="number" className="h-8 text-sm" value={r.d1} onChange={e => handleInlineDukbChange(idx, 'd1', e.target.value)} /></TableCell>
-                          <TableCell className="p-1"><Input type="number" className="h-8 text-sm" value={r.d2} onChange={e => handleInlineDukbChange(idx, 'd2', e.target.value)} /></TableCell>
-                          <TableCell className="p-1"><Input type="number" className="h-8 text-sm" value={r.d3} onChange={e => handleInlineDukbChange(idx, 'd3', e.target.value)} /></TableCell>
-                          <TableCell className="p-1"><Input type="number" className="h-8 text-sm" value={r.d4} onChange={e => handleInlineDukbChange(idx, 'd4', e.target.value)} /></TableCell>
-                          <TableCell className="p-1"><Input type="number" className="h-8 text-sm" value={r.gerowong} onChange={e => handleInlineDukbChange(idx, 'gerowong', e.target.value)} /></TableCell>
-                          <TableCell className="p-1 bg-muted/20 border-l"><Input type="number" step="0.1" className="h-8 text-sm text-right font-semibold bg-background" value={r.avgDia !== undefined && r.avgDia !== "" ? r.avgDia : (calc.avg > 0 ? calc.avg.toFixed(1) : "")} onChange={e => handleInlineDukbChange(idx, 'avgDia', e.target.value)} placeholder={calc.avg > 0 ? calc.avg.toFixed(1) : ""} /></TableCell>
-                          <TableCell className="p-2 text-right bg-muted/20 text-muted-foreground text-sm font-medium">{calc.gross > 0 ? calc.gross.toFixed(3) : "-"}</TableCell>
-                          <TableCell className="p-2 text-right bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold text-sm">{calc.net > 0 ? calc.net.toFixed(3) : "-"}</TableCell>
-                        </TableRow>
-                      )})}
-                    </TableBody>
-                  </Table>
-                </div>
-                <div className="mt-4 pt-4 border-t flex items-center justify-between">
-                  <div className="text-sm">
-                    Total Net Vol. (Live): <span className="font-bold text-lg text-blue-500">{inlineDukbRows.reduce((sum, r) => sum + calculateRow(r).net, 0).toFixed(4)} m3</span>
-                  </div>
-                  <Button onClick={handleSaveInlineDukb} disabled={isSavingDukb}>
-                    {isSavingDukb ? "Menyimpan..." : "Simpan DUKB (Terima Parsial/Full)"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Data Ukur Kayu Bulat (DUKB)</CardTitle>
-                <CardDescription>Daftar log mentah yang terdaftar dalam partai ini.</CardDescription>
+                <CardDescription>Daftar log mentah yang telah diterima dalam partai ini.</CardDescription>
               </div>
               <Button 
                 onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=raw-log`)}
@@ -861,18 +684,23 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                   <TableRow>
                     <TableHead>No. Log</TableHead>
                     <TableHead>Spesies</TableHead>
+                    <TableHead>Tgl Diterima</TableHead>
                     <TableHead className="text-right">Panjang (m)</TableHead>
                     <TableHead className="text-right">Avg (cm)</TableHead>
                     <TableHead className="text-right">Grw (cm)</TableHead>
-                    <TableHead className="text-right">Gross (m&sup3;)</TableHead>
-                    <TableHead className="text-right">Net (m&sup3;)</TableHead>
-                    <TableHead className="text-center w-[120px]">Action</TableHead></TableRow>
+                    <TableHead className="text-right">Gross (m³)</TableHead>
+                    <TableHead className="text-right">Net (m³)</TableHead>
+                    <TableHead className="text-center w-[120px]">Action</TableHead>
+                  </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedRawLogs.map((r: any) => (
                     <TableRow key={r.id} className="hover:bg-muted/50 cursor-pointer group" onClick={() => router.push(`/inventory/logs/${r.id}`)}>
                         <TableCell className="font-medium">{r.logNumber}</TableCell>
                         <TableCell>{r.species}</TableCell>
+                        <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+                          {r.receivingDate ? new Date(r.receivingDate).toLocaleDateString("id-ID") : (r.date ? new Date(r.date).toLocaleDateString("id-ID") : (r.createdAt ? new Date(r.createdAt).toLocaleDateString("id-ID") : "-"))}
+                        </TableCell>
                         <TableCell className="text-right">{r.originalLength}</TableCell>
                         <TableCell className="text-right">{Number(r.averageDiameter || 0).toFixed(1)}</TableCell>
                         <TableCell className="text-right">{r.gerowong ? Number(r.gerowong).toFixed(1) : "-"}</TableCell>
@@ -897,7 +725,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                       </TableRow>
                   ))}
                   {sortedRawLogs.length === 0 && (
-                    <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Belum ada raw log (DUKB) terdaftar.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Belum ada raw log (DUKB) terdaftar.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>

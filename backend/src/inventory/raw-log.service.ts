@@ -391,7 +391,10 @@ export class RawLogService {
             if (unreceivedCount === 0) {
               await tx.timberPurchase.update({
                 where: { id: pItem.timberPurchaseId },
-                data: { status: 'RECEIVED' },
+                data: {
+                  status: 'RECEIVED',
+                  receivingDate: data.receivingDate ? new Date(data.receivingDate) : new Date(),
+                },
               });
             }
           }

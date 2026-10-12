@@ -3438,8 +3438,9 @@ model TimberPurchase {
   warehouseId String    @db.ObjectId
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
 
-  status        String  @default("DRAFT") // DRAFT, CONFIRMED, CANCELLED
-  totalPcs      Int     @default(0)
+  status        String    @default("DRAFT") // DRAFT, CONFIRMED, CANCELLED
+  receivingDate DateTime?
+  totalPcs      Int       @default(0)
   totalVolumeM3 Float   @default(0)
   notes         String?
   createdBy     String?

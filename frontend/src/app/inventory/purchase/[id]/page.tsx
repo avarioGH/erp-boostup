@@ -259,12 +259,25 @@ export default function PurchaseDetailPage() {
                 </span>
               )}
             </div>
-            {purchase.purchaseDate && (
-              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
-                Tanggal: {new Date(purchase.purchaseDate).toLocaleDateString("id-ID", { dateStyle: "long" })}
-              </p>
-            )}
+            <div className="space-y-1 mt-2 text-xs text-muted-foreground">
+              {purchase.purchaseDate && (
+                <p className="flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-primary" />
+                  <span>Tgl Dibuat: <strong className="text-foreground">{new Date(purchase.purchaseDate).toLocaleDateString("id-ID", { dateStyle: "medium" })}</strong></span>
+                </p>
+              )}
+              {isReceived ? (
+                <p className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Tgl Diterima: <strong>{purchase.receivingDate ? new Date(purchase.receivingDate).toLocaleDateString("id-ID", { dateStyle: "medium" }) : "-"}</strong></span>
+                </p>
+              ) : (
+                <p className="flex items-center gap-1.5 italic text-amber-600 dark:text-amber-400">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Tgl Diterima: Belum diterima</span>
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

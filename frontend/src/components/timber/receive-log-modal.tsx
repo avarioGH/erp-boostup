@@ -35,6 +35,9 @@ export function ReceiveLogModal({
 }: ReceiveLogModalProps) {
   const { toast } = useToast();
   const [lengthUnit, setLengthUnit] = useState<"m" | "cm" | "mm">("m");
+  const [receivingDate, setReceivingDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
   const [logRows, setLogRows] = useState<any[]>([]);
   const [sawnRows, setSawnRows] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -57,6 +60,16 @@ export function ReceiveLogModal({
       setLogRows([]);
       setSawnRows([]);
       return;
+    }
+
+    if (purchase.receivingDate) {
+      try {
+        setReceivingDate(new Date(purchase.receivingDate).toISOString().split("T")[0]);
+      } catch (e) {
+        setReceivingDate(new Date().toISOString().split("T")[0]);
+      }
+    } else {
+      setReceivingDate(new Date().toISOString().split("T")[0]);
     }
 
     // 1. Raw Logs
@@ -202,6 +215,7 @@ export function ReceiveLogModal({
 
     setIsSaving(true);
     try {
+      const targetIsoDate = receivingDate ? new Date(receivingDate).toISOString() : new Date().toISOString();
       const payload = toSave.map((r) => {
         const calc = calculateRow(r);
         return {
@@ -218,11 +232,24 @@ export function ReceiveLogModal({
           gerowong: Number(r.gerowong) || 0,
           partaiId: partaiId || purchase?.partaiId,
           locationId: r.locationId || purchase?.warehouseId,
-          date: new Date().toISOString(),
+          date: targetIsoDate,
+          receivingDate: targetIsoDate,
         };
       });
 
       await TimberAPI.createBulkLogs({ items: payload });
+
+      if (purchase?.id) {
+        try {
+          await PurchaseAPI.receivePurchase(purchase.id, {
+            partaiId: partaiId || purchase?.partaiId,
+            receivingDate: targetIsoDate,
+          });
+        } catch (recErr) {
+          console.warn("PurchaseAPI.receivePurchase status sync:", recErr);
+        }
+      }
+
       toast({
         title: "Berhasil Diterima!",
         description: `${payload.length} log berhasil diverifikasi dan dicatat ke DUKB (Raw Log Stock).`,
@@ -256,6 +283,7 @@ export function ReceiveLogModal({
 
     setIsSaving(true);
     try {
+      const targetIsoDate = receivingDate ? new Date(receivingDate).toISOString() : new Date().toISOString();
       const payload = toSave.map((r) => ({
         id: r.id,
         timberVariantId: r.timberVariantId,
@@ -271,6 +299,7 @@ export function ReceiveLogModal({
 
       await PurchaseAPI.receivePurchase(purchase.id, {
         partaiId: partaiId || purchase?.partaiId,
+        receivingDate: targetIsoDate,
         items: payload,
       });
 
@@ -310,6 +339,7 @@ export function ReceiveLogModal({
 
       setIsSaving(true);
       try {
+        const targetIsoDate = receivingDate ? new Date(receivingDate).toISOString() : new Date().toISOString();
         if (logsToSave.length > 0) {
           const logPayload = logsToSave.map((r) => {
             const calc = calculateRow(r);
@@ -327,7 +357,8 @@ export function ReceiveLogModal({
               gerowong: Number(r.gerowong) || 0,
               partaiId: partaiId || purchase?.partaiId,
               locationId: r.locationId || purchase?.warehouseId,
-              date: new Date().toISOString(),
+              date: targetIsoDate,
+              receivingDate: targetIsoDate,
             };
           });
           await TimberAPI.createBulkLogs({ items: logPayload });
@@ -348,7 +379,13 @@ export function ReceiveLogModal({
           }));
           await PurchaseAPI.receivePurchase(purchase.id, {
             partaiId: partaiId || purchase?.partaiId,
+            receivingDate: targetIsoDate,
             items: sawnPayload,
+          });
+        } else if (purchase?.id) {
+          await PurchaseAPI.receivePurchase(purchase.id, {
+            partaiId: partaiId || purchase?.partaiId,
+            receivingDate: targetIsoDate,
           });
         }
 
@@ -390,27 +427,38 @@ export function ReceiveLogModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-6xl w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader className="border-b pb-3">
-          <div className="flex items-center justify-between pr-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pr-6">
             <div className="flex items-center gap-2">
               <PackageCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               <DialogTitle className="text-lg font-bold">
                 Penerimaan & Cek Ukur Fisik: {purchase?.purchaseNumber || purchase?.code || "Pembelian"}
               </DialogTitle>
             </div>
-            {hasLogItems && (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground font-medium">Satuan Panjang:</span>
-                <select
-                  className="h-8 rounded-md border border-input bg-background px-2 text-xs font-semibold focus:ring-1 focus:ring-ring outline-none"
-                  value={lengthUnit}
-                  onChange={(e: any) => handleUnitChange(e.target.value)}
-                >
-                  <option value="m">Meter (m)</option>
-                  <option value="cm">Centimeter (cm)</option>
-                  <option value="mm">Millimeter (mm)</option>
-                </select>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="text-muted-foreground font-medium whitespace-nowrap">Tgl Diterima:</span>
+                <Input
+                  type="date"
+                  className="h-8 text-xs w-[135px] font-medium"
+                  value={receivingDate}
+                  onChange={(e) => setReceivingDate(e.target.value)}
+                />
               </div>
-            )}
+              {hasLogItems && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <span className="text-muted-foreground font-medium whitespace-nowrap">Satuan:</span>
+                  <select
+                    className="h-8 rounded-md border border-input bg-background px-2 text-xs font-semibold focus:ring-1 focus:ring-ring outline-none"
+                    value={lengthUnit}
+                    onChange={(e: any) => handleUnitChange(e.target.value)}
+                  >
+                    <option value="m">Meter (m)</option>
+                    <option value="cm">Centimeter (cm)</option>
+                    <option value="mm">Millimeter (mm)</option>
+                  </select>
+                </div>
+              )}
+            </div>
           </div>
           <DialogDescription className="text-xs text-muted-foreground pt-1">
             Silakan cek ulang fisik kayu yang dikirim, sesuaikan nomor log dan ukurannya (Panjang, D1-D4, Gerowong) untuk memastikan volume aktual sebelum dicatat ke inventaris.

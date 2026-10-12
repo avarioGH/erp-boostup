@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Eye, PackageOpen, FileText, Edit, Trash2, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { ReceiveLogModal } from "@/components/timber/receive-log-modal";
 
 export default function PurchaseListPage() {
@@ -107,6 +108,8 @@ export default function PurchaseListPage() {
             <TableHeader className="bg-muted/30 border-b border-border">
               <TableRow className="hover:bg-transparent">
                 <TableHead className="font-semibold text-foreground/80 h-11">No. Dokumen</TableHead>
+                <TableHead className="font-semibold text-foreground/80 h-11">Tgl Dibuat</TableHead>
+                <TableHead className="font-semibold text-foreground/80 h-11">Tgl Diterima</TableHead>
                 <TableHead className="font-semibold text-foreground/80 h-11">Supplier / Asal</TableHead>
                 <TableHead className="font-semibold text-foreground/80 h-11">Gudang Tujuan</TableHead>
                 <TableHead className="font-semibold text-foreground/80 h-11 text-center">Total Item / Vol</TableHead>
@@ -117,7 +120,7 @@ export default function PurchaseListPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                       <span className="text-sm">Memuat data pembelian...</span>
@@ -126,7 +129,7 @@ export default function PurchaseListPage() {
                 </TableRow>
               ) : purchases.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-48 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="h-48 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <FileText className="w-10 h-10 text-muted-foreground/30" />
                       <div className="space-y-1">
@@ -150,6 +153,22 @@ export default function PurchaseListPage() {
                     <TableRow key={p.id} className="group hover:bg-muted/40 transition-colors">
                       <TableCell className="font-semibold text-foreground">
                         {docNum}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                        {p.purchaseDate ? new Date(p.purchaseDate).toLocaleDateString("id-ID") : (p.createdAt ? new Date(p.createdAt).toLocaleDateString("id-ID") : "-")}
+                      </TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {p.status === "RECEIVED" ? (
+                          p.receivingDate ? (
+                            <span className="text-foreground font-medium">{new Date(p.receivingDate).toLocaleDateString("id-ID")}</span>
+                          ) : (
+                            <Badge variant="outline" className="text-emerald-600 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 text-xs">
+                              Diterima
+                            </Badge>
+                          )
+                        ) : (
+                          <span className="text-muted-foreground italic">Belum diterima</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {p.source?.name ? `${p.source.name}${p.source.code ? ` (${p.source.code})` : ''}` : (p.source?.code || p.sourceId || '-')}

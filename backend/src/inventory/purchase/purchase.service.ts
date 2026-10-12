@@ -347,10 +347,15 @@ export class PurchaseService {
         throw new BadRequestException('Pembelian yang dibatalkan tidak dapat diterima');
       }
 
-      // Update status to RECEIVED
+      const targetReceivingDate = data?.receivingDate ? new Date(data.receivingDate) : new Date();
+
+      // Update status to RECEIVED and set receivingDate
       const received = await tx.timberPurchase.update({
         where: { id: purchase.id },
-        data: { status: 'RECEIVED' },
+        data: {
+          status: 'RECEIVED',
+          receivingDate: targetReceivingDate,
+        },
       });
 
       // 1. Stock mutations & SawnTimberOutput for sawn timber
@@ -513,6 +518,7 @@ export class PurchaseService {
       if (purchase.logItems && purchase.logItems.length > 0) {
         for (let i = 0; i < purchase.logItems.length; i++) {
           const item = purchase.logItems[i];
+          const incoming = (data?.logItems || data?.items || []).find((x: any) => x.id === item.id || x.purchaseLogItemId === item.id);
           const existing = await tx.rawLog.findFirst({
             where: {
               OR: [
@@ -521,36 +527,38 @@ export class PurchaseService {
               ],
             },
           });
+          const d1 = Number(incoming?.diameter1 || incoming?.d1 || item.purchaseDiameter1 || 0);
+          const d2 = Number(incoming?.diameter2 || incoming?.d2 || item.purchaseDiameter2 || 0);
+          const d3 = Number(incoming?.diameter3 || incoming?.d3 || item.purchaseDiameter3 || 0);
+          const d4 = Number(incoming?.diameter4 || incoming?.d4 || item.purchaseDiameter4 || 0);
+          const grw = Number(incoming?.gerowong || 0);
+          let diaSum = 0;
+          let diaCount = 0;
+          if (d1 > 0) { diaSum += d1; diaCount++; }
+          if (d2 > 0) { diaSum += d2; diaCount++; }
+          if (d3 > 0) { diaSum += d3; diaCount++; }
+          if (d4 > 0) { diaSum += d4; diaCount++; }
+          const avgDia = diaCount > 0 ? diaSum / diaCount : (incoming?.averageDiameter || d1 || d2 || 0);
+          const rndDia = Math.floor(avgDia);
+          const len = Number(incoming?.originalLength || incoming?.length || item.purchaseLength || 0);
+          const grossVol = incoming?.grossVolume ? Number(incoming.grossVolume) : (item.purchaseVolume ? Number(item.purchaseVolume) : Number((((rndDia * rndDia * 0.7854) / 10000) * len).toFixed(4)));
+          const netVol = incoming?.netVolume ? Number(incoming.netVolume) : grossVol;
+
+          let logNum = (incoming?.logNumber && incoming.logNumber.trim() !== '')
+            ? incoming.logNumber.trim()
+            : ((item.logNumber && item.logNumber.trim() !== '') ? item.logNumber.trim() : `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}`);
+
+          const uniqueBarcode = (item as any).barcode || `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
+
           if (!existing) {
-            const d1 = Number(item.purchaseDiameter1 || 0);
-            const d2 = Number(item.purchaseDiameter2 || 0);
-            const d3 = Number(item.purchaseDiameter3 || 0);
-            const d4 = Number(item.purchaseDiameter4 || 0);
-            let diaSum = 0;
-            let diaCount = 0;
-            if (d1 > 0) { diaSum += d1; diaCount++; }
-            if (d2 > 0) { diaSum += d2; diaCount++; }
-            if (d3 > 0) { diaSum += d3; diaCount++; }
-            if (d4 > 0) { diaSum += d4; diaCount++; }
-            const avgDia = diaCount > 0 ? diaSum / diaCount : (d1 || d2 || 0);
-            const rndDia = Math.floor(avgDia);
-            const len = Number(item.purchaseLength || 0);
-            const grossVol = item.purchaseVolume ? Number(item.purchaseVolume) : Number((((rndDia * rndDia * 0.7854) / 10000) * len).toFixed(4));
-
-            let logNum = (item.logNumber && item.logNumber.trim() !== '')
-              ? item.logNumber.trim()
-              : `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}`;
-
-            const uniqueBarcode = (item as any).barcode || `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
-
             try {
               await tx.rawLog.create({
                 data: {
                   partaiId: purchase.partaiId,
                   purchaseLogItemId: item.id,
                   logNumber: logNum,
-                  species: item.species || 'UNKNOWN',
-                  speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
+                  species: item.species || incoming?.species || 'UNKNOWN',
+                  speciesId: (incoming?.speciesId && /^[0-9a-fA-F]{24}$/.test(incoming.speciesId)) ? incoming.speciesId : (item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null),
                   originalLength: len,
                   diameter1: d1,
                   diameter2: d2,
@@ -558,9 +566,11 @@ export class PurchaseService {
                   diameter4: d4,
                   averageDiameter: avgDia,
                   roundedDiameter: rndDia,
+                  gerowong: grw || undefined,
                   grossVolume: grossVol,
-                  netVolume: grossVol,
+                  netVolume: netVol,
                   barcode: uniqueBarcode,
+                  receivingDate: targetReceivingDate,
                   status: 'AVAILABLE',
                 },
               });
@@ -570,8 +580,8 @@ export class PurchaseService {
                   partaiId: purchase.partaiId,
                   purchaseLogItemId: item.id,
                   logNumber: `${logNum}-${Date.now().toString().slice(-4)}`,
-                  species: item.species || 'UNKNOWN',
-                  speciesId: item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null,
+                  species: item.species || incoming?.species || 'UNKNOWN',
+                  speciesId: (incoming?.speciesId && /^[0-9a-fA-F]{24}$/.test(incoming.speciesId)) ? incoming.speciesId : (item.speciesId && /^[0-9a-fA-F]{24}$/.test(item.speciesId) ? item.speciesId : null),
                   originalLength: len,
                   diameter1: d1,
                   diameter2: d2,
@@ -579,17 +589,46 @@ export class PurchaseService {
                   diameter4: d4,
                   averageDiameter: avgDia,
                   roundedDiameter: rndDia,
+                  gerowong: grw || undefined,
                   grossVolume: grossVol,
-                  netVolume: grossVol,
+                  netVolume: netVol,
                   barcode: `${uniqueBarcode}-${Math.floor(Math.random() * 10000)}`,
+                  receivingDate: targetReceivingDate,
                   status: 'AVAILABLE',
                 },
               });
             }
+          } else {
+            // Update existing rawLog if needed
+            await tx.rawLog.update({
+              where: { id: existing.id },
+              data: {
+                receivingDate: targetReceivingDate,
+                originalLength: len || existing.originalLength,
+                diameter1: d1 || existing.diameter1,
+                diameter2: d2 || existing.diameter2,
+                diameter3: d3 || existing.diameter3,
+                diameter4: d4 || existing.diameter4,
+                averageDiameter: avgDia || existing.averageDiameter,
+                roundedDiameter: rndDia || existing.roundedDiameter,
+                grossVolume: grossVol || existing.grossVolume,
+                netVolume: netVol || existing.netVolume,
+              },
+            });
           }
+
           await tx.timberPurchaseLogItem.update({
             where: { id: item.id },
-            data: { status: 'RECEIVED' },
+            data: {
+              status: 'RECEIVED',
+              receivingDate: targetReceivingDate,
+              purchaseLength: len,
+              purchaseDiameter1: d1,
+              purchaseDiameter2: d2,
+              purchaseDiameter3: d3,
+              purchaseDiameter4: d4,
+              purchaseVolume: netVol || grossVol,
+            },
           });
         }
       }

@@ -208,15 +208,50 @@ export class PartaiService {
 
     if (!partai) throw new NotFoundException('Partai not found');
 
-    // Auto-heal: Ensure any logItems from purchases are converted to RawLogs in DUKB
+    // Auto-heal: Ensure any logItems from purchases are converted to RawLogs in DUKB ONLY if received
     if (partai.purchases && partai.purchases.length > 0) {
+      // 1. Clean up stale rawLogs that were erroneously created for DRAFT purchases
+      const draftPurchaseLogItemIds = new Set<string>();
+      for (const p of partai.purchases) {
+        if (p.status === 'DRAFT') {
+          for (const item of (p.logItems || [])) {
+            if (item.id) draftPurchaseLogItemIds.add(item.id);
+          }
+        }
+      }
+
+      if (draftPurchaseLogItemIds.size > 0 && partai.rawLogs && partai.rawLogs.length > 0) {
+        const staleRawLogs = partai.rawLogs.filter(
+          (r: any) => r.purchaseLogItemId && draftPurchaseLogItemIds.has(r.purchaseLogItemId)
+        );
+        if (staleRawLogs.length > 0) {
+          const staleIds = staleRawLogs.map((r: any) => r.id);
+          try {
+            await this.prisma.rawLog.deleteMany({
+              where: {
+                id: { in: staleIds },
+                trimmedLogs: { none: {} },
+                inputLogItems: { none: {} },
+              },
+            });
+            partai.rawLogs = partai.rawLogs.filter((r: any) => !staleIds.includes(r.id));
+          } catch (delErr) {
+            console.error('Failed to cleanup draft raw logs:', delErr);
+          }
+        }
+      }
+
+      // 2. Auto-heal: Only for purchases that are RECEIVED or CONFIRMED
       const existingPurchaseLogItemIds = new Set(
         (partai.rawLogs || []).map((r: any) => r.purchaseLogItemId).filter(Boolean)
       );
 
       for (const p of partai.purchases) {
+        if (p.status !== 'RECEIVED' && p.status !== 'CONFIRMED') continue;
+
         for (let i = 0; i < (p.logItems || []).length; i++) {
           const item = p.logItems[i];
+          if (item.status !== 'RECEIVED') continue;
           if (!existingPurchaseLogItemIds.has(item.id)) {
             const d1 = Number(item.purchaseDiameter1 || 0);
             const d2 = Number(item.purchaseDiameter2 || 0);
@@ -239,6 +274,8 @@ export class PartaiService {
 
             const uniqueBarcode = (item as any).barcode || `LOG-${p.purchaseNumber || 'PUR'}-${i + 1}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
 
+            const targetReceivingDate = item.receivingDate || p.receivingDate || new Date();
+
             try {
               const newRawLog = await this.prisma.rawLog.create({
                 data: {
@@ -257,6 +294,7 @@ export class PartaiService {
                   grossVolume: grossVol,
                   netVolume: grossVol,
                   barcode: uniqueBarcode,
+                  receivingDate: targetReceivingDate,
                   status: 'AVAILABLE',
                 },
               });
@@ -281,6 +319,7 @@ export class PartaiService {
                     grossVolume: grossVol,
                     netVolume: grossVol,
                     barcode: `${uniqueBarcode}-${Math.floor(Math.random() * 10000)}`,
+                    receivingDate: targetReceivingDate,
                     status: 'AVAILABLE',
                   },
                 });
