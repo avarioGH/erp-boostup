@@ -75,11 +75,7 @@ export class PurchaseService {
       );
     }
 
-    const hasLogItems = logItems && logItems.length > 0;
-    // Log purchases go directly into DUKB, while sawn timber purchases (beli masak) remain DRAFT until physical arrival
-    const isDirectlyReceived = hasLogItems
-      ? true
-      : (data.status === 'RECEIVED' || data.isReceived === true);
+    const isDirectlyReceived = (data.status === 'RECEIVED' || data.isReceived === true);
     const initialStatus = isDirectlyReceived ? 'RECEIVED' : 'DRAFT';
 
     const processedItems: any[] = [];

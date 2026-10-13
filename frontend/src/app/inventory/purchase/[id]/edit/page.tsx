@@ -15,18 +15,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const calculateLogVolume = (length: number, d1: number, d2: number, rtManual?: number) => {
   if (!length) return 0;
+  const pkl = Number(d1) || 0;
+  const ujung = Number(d2) || 0;
   let rt = typeof rtManual === "number" && rtManual > 0 ? rtManual : 0;
   if (!rt) {
-    if (d1 > 0 && d2 > 0) {
-      rt = (d1 + d2) / 2;
+    if (pkl > 0 && ujung > 0) {
+      rt = (pkl + ujung) / 2;
     } else {
-      rt = d1 || d2 || 0;
+      rt = pkl || ujung || 0;
     }
   }
-  if (rt <= 0) return 0;
 
   const lengthCm = length <= 50 ? length * 100 : length;
-  return Number(((lengthCm * rt * rt) / 1000000).toFixed(4));
+
+  if (pkl > 0 && ujung > 0 && rt > 0) {
+    return Number(((0.7854 * lengthCm * pkl * ujung * rt) / 1000000).toFixed(4));
+  } else if (rt > 0) {
+    return Number(((0.7854 * lengthCm * rt * rt) / 1000000).toFixed(4));
+  }
+  return 0;
 };
 
 export default function EditPurchasePage() {
@@ -894,7 +901,7 @@ export default function EditPurchasePage() {
                   <div>
                     <h3 className="font-bold text-lg">Daftar Raw Logs (DUKB)</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Input ukuran log bulat: Panjang, Ø Pangkal (D1), Ø Ujung (D2), dan Diameter Rata-rata <strong>(RT)</strong>. Rumus Volume m³: (Panjang × RT × RT) / 1.000.000.
+                      Input ukuran log bulat: Panjang, Ø Pangkal (D1), Ø Ujung (D2), dan Diameter Rata-rata <strong>(RT)</strong>. Rumus Volume m³: <strong>(0,7854 × Panjang × Pkl × Ujung × RT) / 1.000.000</strong>.
                     </p>
                   </div>
                   <Button

@@ -20,21 +20,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
   const calculateLogVolume = (length: number, d1: number, d2: number, rtManual?: number) => {
     if (!length) return 0;
-    // Calculate average diameter (RT) if not explicitly provided
+    const pkl = Number(d1) || 0;
+    const ujung = Number(d2) || 0;
     let rt = typeof rtManual === "number" && rtManual > 0 ? rtManual : 0;
     if (!rt) {
-      if (d1 > 0 && d2 > 0) {
-        rt = (d1 + d2) / 2;
+      if (pkl > 0 && ujung > 0) {
+        rt = (pkl + ujung) / 2;
       } else {
-        rt = d1 || d2 || 0;
+        rt = pkl || ujung || 0;
       }
     }
-    if (rt <= 0) return 0;
 
     // Length in cm (if <= 50, assumed in meters so convert to cm)
     const lengthCm = length <= 50 ? length * 100 : length;
-    // User formula: (Panjang cm * RT * RT) / 1.000.000
-    return Number(((lengthCm * rt * rt) / 1000000).toFixed(4));
+
+    // Rumus revisi user: 0.7854 * panjang * pkl * ujung * RT / 1000000
+    // Jika salah satu pkl atau ujung belum diisi, fallback ke (0.7854 * panjang * RT * RT) / 1000000 atau (panjang * RT * RT) / 1000000
+    if (pkl > 0 && ujung > 0 && rt > 0) {
+      return Number(((0.7854 * lengthCm * pkl * ujung * rt) / 1000000).toFixed(4));
+    } else if (rt > 0) {
+      return Number(((0.7854 * lengthCm * rt * rt) / 1000000).toFixed(4));
+    }
+    return 0;
   };
 
 
@@ -336,8 +343,8 @@ export default function CreatePurchasePage() {
         warehouseId: form.warehouseId,
         notes: form.notes,
         partaiId: form.partaiId,
-        status: form.purchaseType === "raw-log" ? "RECEIVED" : form.status,
-        isReceived: form.purchaseType === "raw-log" ? true : undefined,
+        status: form.status,
+        isReceived: form.status === "RECEIVED",
         items: form.purchaseType === "sawn-timber" ? form.items : [],
         logItems: form.purchaseType === "raw-log" ? form.logItems.map((li, idx) => ({
           ...li,
@@ -873,7 +880,7 @@ export default function CreatePurchasePage() {
                   <div>
                     <h3 className="font-bold text-lg">Daftar Raw Logs (DUKB)</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Input ukuran log bulat: Panjang, Ø Pangkal (D1), Ø Ujung (D2), dan Diameter Rata-rata <strong>(RT)</strong>. Rumus Volume m³: (Panjang × RT × RT) / 1.000.000.
+                      Input ukuran log bulat: Panjang, Ø Pangkal (D1), Ø Ujung (D2), dan Diameter Rata-rata <strong>(RT)</strong>. Rumus Volume m³: <strong>(0,7854 × Panjang × Pkl × Ujung × RT) / 1.000.000</strong>.
                     </p>
                   </div>
                   <Button 
