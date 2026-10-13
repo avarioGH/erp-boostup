@@ -2276,7 +2276,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
 
       {/* MODAL INPUT TALLY HARIAN (LANGSUNG DARI TAB WIP) */}
       <Dialog open={isTallyModalOpen} onOpenChange={setIsTallyModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-4xl md:max-w-5xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <span>Input Tally Harian</span>
@@ -2333,18 +2333,18 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               </div>
             )}
             
-            <div className="border rounded-md overflow-hidden">
+            <div className="border rounded-md overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <Table>
-                  <TableHeader className="bg-muted">
+                  <TableHeader className="bg-muted/80">
                     <TableRow>
-                      <TableHead className="min-w-[90px]">P (cm)</TableHead>
-                      <TableHead className="min-w-[80px]">L (cm)</TableHead>
-                      <TableHead className="min-w-[80px]">T (cm)</TableHead>
-                      <TableHead className="min-w-[80px]">PCS</TableHead>
-                      <TableHead className="min-w-[130px]">Kategori</TableHead>
-                      <TableHead className="min-w-[100px] text-right">M&sup3; (Auto)</TableHead>
-                      <TableHead className="w-[40px]"></TableHead>
+                      <TableHead className="w-[120px]">P (cm)</TableHead>
+                      <TableHead className="w-[110px]">L (cm)</TableHead>
+                      <TableHead className="w-[110px]">T (cm)</TableHead>
+                      <TableHead className="w-[110px]">PCS</TableHead>
+                      <TableHead className="min-w-[150px]">Kategori</TableHead>
+                      <TableHead className="w-[130px] text-right">M&sup3; (Auto)</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

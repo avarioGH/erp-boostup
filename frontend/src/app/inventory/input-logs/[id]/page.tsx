@@ -395,7 +395,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                 <DialogTrigger>
                   <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-emerald-600 text-primary-foreground shadow hover:bg-emerald-700 h-8 rounded-md px-3" style={data.status === "DONE" ? {opacity: 0.5, pointerEvents: "none"} : {}}><Plus className="w-4 h-4" /> Tally Hari Ini</div>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl">
+                <DialogContent className="w-[95vw] sm:max-w-4xl md:max-w-5xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
                   <DialogHeader>
                     <DialogTitle>Input Tally Harian</DialogTitle>
                     <DialogDescription>Masukkan hasil produksi gergajian. Sistem otomatis menghitung M&sup3; (T &times; L &times; P &times; PCS &divide; 1.000.000).</DialogDescription>
@@ -422,17 +422,17 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                       </div>
                     </div>
                     
-                    <div className="border rounded-md overflow-hidden">
+                    <div className="border rounded-md overflow-hidden shadow-sm">
                       <Table>
-                        <TableHeader className="bg-muted">
+                        <TableHeader className="bg-muted/80">
                           <TableRow>
-                            <TableHead className="min-w-[70px]">T (cm)</TableHead>
-                              <TableHead className="min-w-[70px]">L (cm)</TableHead>
-                              <TableHead className="min-w-[80px]">P (cm)</TableHead>
-                              <TableHead className="min-w-[70px]">PCS</TableHead>
-                              <TableHead className="min-w-[120px]">Kategori</TableHead>
-                              <TableHead className="min-w-[90px]">M&sup3; (Auto)</TableHead>
-                            <TableHead className="w-[40px]"></TableHead>
+                            <TableHead className="w-[110px]">T (cm)</TableHead>
+                            <TableHead className="w-[110px]">L (cm)</TableHead>
+                            <TableHead className="w-[120px]">P (cm)</TableHead>
+                            <TableHead className="w-[110px]">PCS</TableHead>
+                            <TableHead className="min-w-[150px]">Kategori</TableHead>
+                            <TableHead className="w-[130px] text-right">M&sup3; (Auto)</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
