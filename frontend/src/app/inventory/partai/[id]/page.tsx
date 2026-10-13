@@ -1,17 +1,19 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { api, PartaiAPI, TimberAPI, PurchaseAPI, MasterDataAPI } from "@/lib/api";
+import { api, PartaiAPI, TimberAPI, PurchaseAPI, MasterDataAPI, InventoryAPI } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2, Check, X, Loader2, Package, CheckSquare, Square } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -88,9 +90,129 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const [isGrading, setIsGrading] = useState(false);
   const [selectedGradeId, setSelectedGradeId] = useState("");
   
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [selectedTrimmedLogIds, setSelectedTrimmedLogIds] = useState<string[]>([]);
+  
+  // Tally Modal State for Tab 4 WIP
+  const [isTallyModalOpen, setIsTallyModalOpen] = useState(false);
+  const [targetInputLogForTally, setTargetInputLogForTally] = useState<any>(null);
+  const [tallyDate, setTallyDate] = useState(new Date().toISOString().split('T')[0]);
+  const [tallyWarehouseId, setTallyWarehouseId] = useState("");
+  const [tallyLines, setTallyLines] = useState<any[]>([
+    { t: "", l: "", p: "", pcs: "", productType: "BALOK" }
+  ]);
+  const [isSavingTally, setIsSavingTally] = useState(false);
+
   useEffect(() => {
     MasterDataAPI.getGrades().then((res: any) => setGrades(res.data || res)).catch(() => {});
+    InventoryAPI.getWarehouses().then((res: any) => {
+      const list = Array.isArray(res) ? res : (res?.data || []);
+      setWarehouses(list);
+      if (list.length > 0) setTallyWarehouseId(list[0].id);
+    }).catch(() => {});
   }, []);
+
+  const openTallyModalWithSelection = (specificLogIds?: string[], existingInputLog?: any) => {
+    const logsToUse = specificLogIds || selectedTrimmedLogIds;
+    if (!existingInputLog && (!logsToUse || logsToUse.length === 0)) {
+      toast({ 
+        title: "Pilih Log Terlebih Dahulu", 
+        description: "Silakan centang log hasil trimming yang ingin diproses.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    setTargetInputLogForTally(existingInputLog || null);
+    if (!existingInputLog && logsToUse) {
+      setSelectedTrimmedLogIds(logsToUse);
+    }
+    setTallyDate(new Date().toISOString().split('T')[0]);
+    if (!tallyWarehouseId && warehouses.length > 0) {
+      setTallyWarehouseId(warehouses[0].id);
+    }
+    setTallyLines([{ t: "", l: "", p: "", pcs: "", productType: "BALOK" }]);
+    setIsTallyModalOpen(true);
+  };
+
+  const handleSaveWipTally = async () => {
+    const validLines = tallyLines.filter(l => 
+      parseFloat(l.t) > 0 && parseFloat(l.l) > 0 && parseFloat(l.p) > 0 && parseInt(l.pcs) > 0
+    );
+
+    if (validLines.length === 0) {
+      toast({ 
+        title: "Ukuran Belum Lengkap", 
+        description: "Isi minimal 1 baris ukuran (T, L, P, dan PCS harus lebih dari 0).", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    let whId = tallyWarehouseId || partai?.warehouseId || partai?.warehouse?.id;
+    if (!whId && warehouses.length > 0) whId = warehouses[0].id;
+    if (!whId) {
+      toast({ title: "Gudang Belum Tersedia", description: "Pilih gudang tujuan output terlebih dahulu.", variant: "destructive" });
+      return;
+    }
+
+    setIsSavingTally(true);
+    try {
+      let inputLogId = targetInputLogForTally?.id;
+
+      // If no existing inputLog, create one from selected trimmed logs first
+      if (!inputLogId) {
+        if (!selectedTrimmedLogIds || selectedTrimmedLogIds.length === 0) {
+          throw new Error("Tidak ada log trimming yang dipilih");
+        }
+        const createdInputLog = await TimberAPI.createInputLog({
+          trimmedLogIds: selectedTrimmedLogIds,
+          locationId: whId,
+          partaiId: id,
+          date: tallyDate,
+        });
+        inputLogId = createdInputLog.id;
+      }
+
+      // Create Sawn Timber Output (Daily Tally)
+      const payload = {
+        inputLogId: inputLogId,
+        partaiId: id,
+        outputDate: tallyDate,
+        locationId: whId,
+        items: validLines.map(line => ({
+          thickness: parseFloat(line.t) * 10, // cm to mm
+          width: parseFloat(line.l) * 10,     // cm to mm
+          length: parseFloat(line.p) * 10,    // cm to mm
+          quantityPcs: parseInt(line.pcs),
+          grade: "PENDING",
+          productType: line.productType || "BALOK"
+        }))
+      };
+
+      const res = await api.post('/inventory/sawn-timber/output', payload);
+      // Auto-post the tally so it directly enters output stock
+      await api.post(`/inventory/sawn-timber/output/${res.data.id}/post`);
+
+      toast({ 
+        title: "Tally Berhasil Disimpan!", 
+        description: `Hasil tally ${validLines.length} ukuran berhasil dicatat ke WIP dan diposting ke output.` 
+      });
+      setIsTallyModalOpen(false);
+      setSelectedTrimmedLogIds([]);
+      setTargetInputLogForTally(null);
+      setTallyLines([{ t: "", l: "", p: "", pcs: "", productType: "BALOK" }]);
+      fetchPartai();
+    } catch (err: any) {
+      console.error(err);
+      toast({ 
+        title: "Gagal Menyimpan Tally", 
+        description: err?.response?.data?.error?.message || err?.response?.data?.message || err.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsSavingTally(false);
+    }
+  };
   
   const handleBulkGrade = async () => {
     if (!selectedGradeId) {
@@ -1011,57 +1133,140 @@ export default function PartaiDetailPage({ params }: { params: any }) {
           </Card>
         </TabsContent>
 
-        {/* 4. INPUT LOGS */}
-        <TabsContent value="input">
-          {/* AVAILABLE TRIMMED LOGS */}
-          {partai.trimmedLogs?.filter((t: any) => t.status === 'AVAILABLE').length > 0 && (
-            <Card className="mb-6 border-amber-500/20 bg-amber-50/30 dark:bg-amber-900/10">
-              <CardHeader className="border-b pb-4">
-                <CardTitle className="text-amber-700 dark:text-amber-500">Log Siap Masuk Mesin (Dari Trimming)</CardTitle>
-                <CardDescription>Pilih log hasil trimming di bawah ini untuk memulai pekerjaan produksi (WIP) baru.</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {partai.trimmedLogs.filter((t: any) => t.status === 'AVAILABLE').map((t: any) => (
-                    <div key={t.id} className="flex flex-col border rounded-lg p-4 bg-background shadow-sm hover:border-amber-400 transition-colors">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="font-bold text-lg">{t.trimNumber}</span>
-                        <Badge variant="outline" className="text-amber-600 border-amber-600 bg-amber-50 dark:bg-amber-900/20">SIAP POTONG</Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground mb-4">
-                        <p>Spesies: <span className="font-medium text-foreground">{t.species}</span></p>
-                        <p>Dimensi: <span className="font-medium text-foreground">{t.roundedDiameter} cm x {t.length} m</span></p>
-                        <p>Volume: <span className="font-medium text-foreground">{Number(t.netVolume || 0).toFixed(4)} m&sup3;</span></p>
-                      </div>
-                      <Button 
-                        className="w-full bg-amber-500 hover:bg-amber-600 text-white" 
-                        onClick={async () => {
-                          try {
-                            await TimberAPI.createInputLog({ 
-                              trimmedLogIds: [t.id],
-                              locationId: t.locationId || partai?.warehouseId || partai?.warehouse?.id,
-                            });
-                            toast({ title: "Berhasil", description: `WIP Job untuk log ${t.trimNumber} berhasil dibuat.` });
-                            fetchPartai();
-                          } catch (err: any) {
-                            toast({ title: "Gagal", description: err.response?.data?.error?.message || err.response?.data?.message || err.message, variant: "destructive" });
-                          }
-                        }}
-                      >
-                        <ArrowRight className="w-4 h-4 mr-2" /> Mulai Gergaji (Buat WIP)
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card>
-                        <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+        {/* 4. INPUT LOGS (WIP & INPUT TALLY) */}
+        <TabsContent value="input" className="space-y-6">
+          {/* SECTION 1: PILIH LOG DARI TRIMMING & LANGSUNG INPUT TALLY */}
+          <Card className="border-amber-500/30 bg-amber-50/20 dark:bg-amber-950/20 shadow-sm">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
               <div>
-                <CardTitle>Production Jobs (Input WIP)</CardTitle>
-                <CardDescription>Pekerjaan gergajian berjalan yang diambil dari DUKB/Trimmed Log.</CardDescription>
+                <CardTitle className="text-amber-800 dark:text-amber-400 text-lg flex items-center gap-2">
+                  <span className="text-xl">🪵</span> Log Siap Masuk Mesin & Input Hasil Tally
+                </CardTitle>
+                <CardDescription>
+                  Centang log hasil trimming di bawah ini, lalu klik tombol <strong>Input Tally Harian</strong> untuk langsung memasukkan hasil ukuran gergajian (P &times; L &times; T &times; PCS).
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {(() => {
+                  const availableLogs = (partai.trimmedLogs || []).filter((t: any) => t.status === 'AVAILABLE');
+                  const isAllSelected = availableLogs.length > 0 && selectedTrimmedLogIds.length === availableLogs.length;
+                  return (
+                    <>
+                      {availableLogs.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (isAllSelected) {
+                              setSelectedTrimmedLogIds([]);
+                            } else {
+                              setSelectedTrimmedLogIds(availableLogs.map((t: any) => t.id));
+                            }
+                          }}
+                          className="h-9 text-xs font-semibold"
+                        >
+                          {isAllSelected ? "Batal Pilih Semua" : "Pilih Semua Log"}
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        onClick={() => openTallyModalWithSelection()}
+                        disabled={selectedTrimmedLogIds.length === 0}
+                        className="h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Input Tally Harian ({selectedTrimmedLogIds.length} Log Terpilih)
+                      </Button>
+                    </>
+                  );
+                })()}
+              </div>
+            </CardHeader>
+            <CardContent className="pt-4">
+              {(() => {
+                const availableLogs = (partai.trimmedLogs || []).filter((t: any) => t.status === 'AVAILABLE');
+                if (availableLogs.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
+                      <p className="font-medium text-sm">Tidak ada log trimming yang berstatus SIAP POTONG saat ini.</p>
+                      <p className="text-xs mt-1">Lakukan trimming log terlebih dahulu pada tab <strong>3. Trimming</strong> untuk menghasilkan log siap potong.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {availableLogs.map((t: any) => {
+                        const isSelected = selectedTrimmedLogIds.includes(t.id);
+                        return (
+                          <div
+                            key={t.id}
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedTrimmedLogIds(selectedTrimmedLogIds.filter(x => x !== t.id));
+                              } else {
+                                setSelectedTrimmedLogIds([...selectedTrimmedLogIds, t.id]);
+                              }
+                            }}
+                            className={`flex flex-col border rounded-lg p-3.5 bg-background shadow-sm cursor-pointer transition-all ${
+                              isSelected
+                                ? "border-blue-500 bg-blue-50/30 dark:bg-blue-950/30 ring-2 ring-blue-500/20"
+                                : "hover:border-amber-400"
+                            }`}
+                          >
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex items-center gap-2.5">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedTrimmedLogIds([...selectedTrimmedLogIds, t.id]);
+                                    } else {
+                                      setSelectedTrimmedLogIds(selectedTrimmedLogIds.filter(x => x !== t.id));
+                                    }
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                                <span className="font-bold text-base text-foreground font-mono">{t.trimNumber}</span>
+                              </div>
+                              <Badge variant="outline" className="text-amber-600 border-amber-500 bg-amber-500/10 text-xs">
+                                SIAP POTONG
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground space-y-1 mb-3 pl-6">
+                              <p>Spesies: <span className="font-semibold text-foreground">{t.species}</span></p>
+                              <p>Dimensi: <span className="font-medium text-foreground">{t.roundedDiameter} cm &times; {t.length} m</span></p>
+                              <p>Volume: <span className="font-bold text-foreground font-mono">{Number(t.netVolume || 0).toFixed(4)} m&sup3;</span></p>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="w-full mt-auto bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs h-8"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openTallyModalWithSelection([t.id]);
+                              }}
+                            >
+                              <Plus className="w-3.5 h-3.5 mr-1" /> Langsung Input Tally Log Ini
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* SECTION 2: PRODUCTION JOBS (INPUT WIP) YANG SEDANG BERJALAN */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+              <div>
+                <CardTitle className="text-lg">Daftar Pekerjaan Produksi (Input WIP)</CardTitle>
+                <CardDescription>Pekerjaan gergajian berjalan beserta rekapan hasil tally output masing-masing pekerjaan.</CardDescription>
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
@@ -1076,22 +1281,28 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                     <div className="p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
                       <div className="md:col-span-3 space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-base text-primary group-hover:underline">{i.inputNumber}</span>
-                          {i.status === 'DONE' ? <Badge className="bg-emerald-500 hover:bg-emerald-600">DONE</Badge> : i.status === 'IN_PROCESS' ? <Badge className="bg-amber-500 hover:bg-amber-600">IN PROCESS</Badge> : <Badge className="bg-rose-500 hover:bg-rose-600">AVAILABLE</Badge>}
+                          <span className="font-bold text-base text-primary group-hover:underline font-mono">{i.inputNumber}</span>
+                          {i.status === 'DONE' ? (
+                            <Badge className="bg-emerald-500 hover:bg-emerald-600">DONE</Badge>
+                          ) : i.status === 'IN_PROCESS' || i.status === 'PROCESSING' ? (
+                            <Badge className="bg-amber-500 hover:bg-amber-600">IN PROCESS</Badge>
+                          ) : (
+                            <Badge className="bg-blue-500 hover:bg-blue-600">AVAILABLE</Badge>
+                          )}
                         </div>
                         <div className="text-xs text-muted-foreground flex gap-1 items-center">
                           <span className="font-medium text-foreground/80">{i.species}</span> &bull; {i.items?.length || 0} Source Logs
                         </div>
                       </div>
                       
-                      <div className="md:col-span-7 grid grid-cols-3 gap-4 text-sm text-center">
+                      <div className="md:col-span-6 grid grid-cols-3 gap-3 text-sm text-center">
                         <div className="bg-muted/30 rounded-md p-2">
                           <div className="text-xs text-muted-foreground mb-1">Input (m&sup3;)</div>
-                          <div className="font-semibold text-foreground/90">{totalInputVol.toFixed(4)}</div>
+                          <div className="font-semibold text-foreground/90 font-mono">{totalInputVol.toFixed(4)}</div>
                         </div>
                         <div className="bg-muted/30 rounded-md p-2">
                           <div className="text-xs text-muted-foreground mb-1">Output (m&sup3;)</div>
-                          <div className="font-semibold text-emerald-600 dark:text-emerald-400">{totalOutputVol.toFixed(4)}</div>
+                          <div className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">{totalOutputVol.toFixed(4)}</div>
                         </div>
                         <div className="bg-muted/30 rounded-md p-2">
                           <div className="text-xs text-muted-foreground mb-1">Yield</div>
@@ -1099,9 +1310,27 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                         </div>
                       </div>
                       
-                      <div className="md:col-span-2 flex justify-end">
-                        <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/input-logs/${i.id}?partaiId=${id}&tab=input`) }}>
-                          Detail Pekerjaan <ArrowRight className="w-4 h-4 ml-1" />
+                      <div className="md:col-span-3 flex justify-end items-center gap-2">
+                        <Button 
+                          size="sm" 
+                          className="h-8 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs shadow-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openTallyModalWithSelection([], i);
+                          }}
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" /> + Tambah Tally
+                        </Button>
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          className="h-8 text-xs"
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            router.push(`/inventory/input-logs/${i.id}?partaiId=${id}&tab=input`);
+                          }}
+                        >
+                          Detail <ArrowRight className="w-3.5 h-3.5 ml-1" />
                         </Button>
                       </div>
                     </div>
@@ -1114,7 +1343,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               })}
               {sortedInputLogs.length === 0 && (
                 <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
-                  Belum ada pekerjaan produksi (WIP). Lakukan Trimming pada log terlebih dahulu, lalu klik "Mulai Gergaji (Buat WIP)" di atas.
+                  Belum ada pekerjaan produksi (WIP). Pilih log hasil trimming di atas dan klik <strong>Input Tally Harian</strong> untuk memulai pekerjaan.
                 </div>
               )}
               <TablePagination
@@ -1531,6 +1760,224 @@ export default function PartaiDetailPage({ params }: { params: any }) {
         partaiId={id}
         onSuccess={fetchPartai}
       />
+
+      {/* MODAL INPUT TALLY HARIAN (LANGSUNG DARI TAB WIP) */}
+      <Dialog open={isTallyModalOpen} onOpenChange={setIsTallyModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <span>Input Tally Harian</span>
+              {targetInputLogForTally && (
+                <Badge variant="outline" className="font-mono text-xs text-primary border-primary">
+                  {targetInputLogForTally.inputNumber}
+                </Badge>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {targetInputLogForTally 
+                ? `Masukkan hasil gergajian untuk WIP Job ${targetInputLogForTally.inputNumber}. Sistem otomatis menghitung M³ (T × L × P × PCS ÷ 1.000.000).`
+                : `Masukkan hasil gergajian untuk ${selectedTrimmedLogIds.length} log trimming terpilih. Sistem akan membuat pekerjaan WIP dan otomatis posting output ke stok.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Tanggal Produksi</Label>
+                <Input 
+                  type="date" 
+                  value={tallyDate} 
+                  onChange={e => setTallyDate(e.target.value)} 
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Gudang Tujuan Output</Label>
+                <select
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={tallyWarehouseId}
+                  onChange={(e) => setTallyWarehouseId(e.target.value)}
+                >
+                  {warehouses.map((wh: any) => (
+                    <option key={wh.id} value={wh.id}>
+                      {wh.name || wh.code}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* LIST OF SELECTED LOGS INFO */}
+            {!targetInputLogForTally && selectedTrimmedLogIds.length > 0 && (
+              <div className="p-3 bg-muted/40 rounded-lg border text-xs">
+                <span className="font-semibold text-foreground">Log Trimming Sumber ({selectedTrimmedLogIds.length} log): </span>
+                <span className="text-muted-foreground">
+                  {(partai?.trimmedLogs || [])
+                    .filter((t: any) => selectedTrimmedLogIds.includes(t.id))
+                    .map((t: any) => `${t.trimNumber} (${Number(t.netVolume || 0).toFixed(4)} m³)`)
+                    .join(", ")}
+                </span>
+              </div>
+            )}
+            
+            <div className="border rounded-md overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted">
+                    <TableRow>
+                      <TableHead className="min-w-[80px]">T (cm)</TableHead>
+                      <TableHead className="min-w-[80px]">L (cm)</TableHead>
+                      <TableHead className="min-w-[90px]">P (cm)</TableHead>
+                      <TableHead className="min-w-[80px]">PCS</TableHead>
+                      <TableHead className="min-w-[130px]">Kategori</TableHead>
+                      <TableHead className="min-w-[100px] text-right">M&sup3; (Auto)</TableHead>
+                      <TableHead className="w-[40px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tallyLines.map((line, idx) => {
+                      const vol = (Number(line.t || 0) * Number(line.l || 0) * Number(line.p || 0) * Number(line.pcs || 0)) / 1000000;
+                      return (
+                        <TableRow key={idx}>
+                          <TableCell className="p-2">
+                            <Input 
+                              type="number" 
+                              step="any"
+                              placeholder="5" 
+                              value={line.t} 
+                              onChange={e => { 
+                                const n = [...tallyLines]; 
+                                n[idx].t = e.target.value; 
+                                setTallyLines(n); 
+                              }} 
+                              className="h-8 text-sm"
+                            />
+                          </TableCell>
+                          <TableCell className="p-2">
+                            <Input 
+                              type="number" 
+                              step="any"
+                              placeholder="10" 
+                              value={line.l} 
+                              onChange={e => { 
+                                const n = [...tallyLines]; 
+                                n[idx].l = e.target.value; 
+                                setTallyLines(n); 
+                              }} 
+                              className="h-8 text-sm"
+                            />
+                          </TableCell>
+                          <TableCell className="p-2">
+                            <Input 
+                              type="number" 
+                              step="any"
+                              placeholder="400" 
+                              value={line.p} 
+                              onChange={e => { 
+                                const n = [...tallyLines]; 
+                                n[idx].p = e.target.value; 
+                                setTallyLines(n); 
+                              }} 
+                              className="h-8 text-sm"
+                            />
+                          </TableCell>
+                          <TableCell className="p-2">
+                            <Input 
+                              type="number" 
+                              placeholder="15" 
+                              value={line.pcs} 
+                              onChange={e => { 
+                                const n = [...tallyLines]; 
+                                n[idx].pcs = e.target.value; 
+                                setTallyLines(n); 
+                              }} 
+                              className="h-8 text-sm"
+                            />
+                          </TableCell>
+                          <TableCell className="p-2">
+                            <select 
+                              className="h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs font-semibold focus:outline-none"
+                              value={line.productType || "BALOK"} 
+                              onChange={e => { 
+                                const n = [...tallyLines]; 
+                                n[idx].productType = e.target.value; 
+                                setTallyLines(n); 
+                              }}
+                            >
+                              <option value="BALOK">Balok (Main)</option>
+                              <option value="RENG">Reng / Papan</option>
+                              <option value="AFKIR_BS">BS / Afkir</option>
+                              <option value="AIR_DRY">Air Dry</option>
+                              <option value="FJL">FJL / Jasa</option>
+                            </select>
+                          </TableCell>
+                          <TableCell className="p-2 font-mono font-bold text-right text-emerald-600 text-sm">
+                            {vol > 0 ? vol.toFixed(4) : "0.0000"}
+                          </TableCell>
+                          <TableCell className="p-2 text-center">
+                            <Button 
+                              type="button"
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                              onClick={() => setTallyLines(tallyLines.filter((_, i) => i !== idx))} 
+                              disabled={tallyLines.length === 1}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="p-2.5 bg-muted/30 border-t flex items-center justify-between">
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setTallyLines([...tallyLines, { t: "", l: "", p: "", pcs: "", productType: "BALOK" }])} 
+                  className="border border-dashed text-xs h-8"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1.5" /> Tambah Ukuran Lain
+                </Button>
+                <div className="text-xs font-medium text-muted-foreground mr-2">
+                  Total Estimasi:{" "}
+                  <span className="font-bold text-emerald-600 font-mono text-sm ml-1">
+                    {tallyLines.reduce((sum, line) => {
+                      const v = (Number(line.t || 0) * Number(line.l || 0) * Number(line.p || 0) * Number(line.pcs || 0)) / 1000000;
+                      return sum + (isNaN(v) ? 0 : v);
+                    }, 0).toFixed(4)} m³
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t">
+            <Button type="button" variant="outline" onClick={() => setIsTallyModalOpen(false)}>
+              Batal
+            </Button>
+            <Button 
+              type="button"
+              onClick={handleSaveWipTally} 
+              disabled={isSavingTally}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+            >
+              {isSavingTally ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 mr-2" /> Simpan Tally (POST)
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
