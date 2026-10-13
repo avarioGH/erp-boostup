@@ -208,51 +208,30 @@ export class PartaiService {
 
     if (!partai) throw new NotFoundException('Partai not found');
 
-    // Auto-heal: Ensure any logItems from purchases are converted to RawLogs in DUKB ONLY if received
+    // Auto-heal: Ensure any logItems from purchases are restored into RawLogs (DUKB) if missing
     if (partai.purchases && partai.purchases.length > 0) {
-      // 1. Clean up stale rawLogs that were erroneously created for DRAFT purchases
-      const draftPurchaseLogItemIds = new Set<string>();
-      for (const p of partai.purchases) {
-        if (p.status === 'DRAFT') {
-          for (const item of (p.logItems || [])) {
-            if (item.id) draftPurchaseLogItemIds.add(item.id);
-          }
-        }
-      }
-
-      if (draftPurchaseLogItemIds.size > 0 && partai.rawLogs && partai.rawLogs.length > 0) {
-        const staleRawLogs = partai.rawLogs.filter(
-          (r: any) => r.purchaseLogItemId && draftPurchaseLogItemIds.has(r.purchaseLogItemId)
-        );
-        if (staleRawLogs.length > 0) {
-          const staleIds = staleRawLogs.map((r: any) => r.id);
-          try {
-            await this.prisma.rawLog.deleteMany({
-              where: {
-                id: { in: staleIds },
-                trimmedLogs: { none: {} },
-                inputLogItems: { none: {} },
-              },
-            });
-            partai.rawLogs = partai.rawLogs.filter((r: any) => !staleIds.includes(r.id));
-          } catch (delErr) {
-            console.error('Failed to cleanup draft raw logs:', delErr);
-          }
-        }
-      }
-
-      // 2. Auto-heal: Only for purchases that are RECEIVED or CONFIRMED
       const existingPurchaseLogItemIds = new Set(
         (partai.rawLogs || []).map((r: any) => r.purchaseLogItemId).filter(Boolean)
       );
 
+      const existingLogNumbers = new Set(
+        (partai.rawLogs || []).map((r: any) => (r.logNumber || '').trim()).filter(Boolean)
+      );
+
       for (const p of partai.purchases) {
-        if (p.status !== 'RECEIVED') continue;
 
         for (let i = 0; i < (p.logItems || []).length; i++) {
           const item = p.logItems[i];
-          if (item.status !== 'RECEIVED') continue;
-          if (!existingPurchaseLogItemIds.has(item.id)) {
+          const itemLogNumber = (item.logNumber || '').trim();
+          // If already in partai.rawLogs, skip
+          if (existingPurchaseLogItemIds.has(item.id)) continue;
+          if (itemLogNumber && existingLogNumbers.has(itemLogNumber)) continue;
+
+          // If item is pending but purchase was received or item has dimensions, ensure it's treated as received/restored
+          if (item.status !== 'RECEIVED' && p.status !== 'RECEIVED') {
+            // If both purchase and item are draft/pending, skip
+            continue;
+          }
             const d1 = Number(item.purchaseDiameter1 || 0);
             const d2 = Number(item.purchaseDiameter2 || 0);
             const d3 = Number(item.purchaseDiameter3 || 0);
@@ -331,7 +310,6 @@ export class PartaiService {
                 console.error('Failed to auto-sync raw log for item:', item.id, retryErr);
               }
             }
-          }
         }
 
         // Auto-heal: Ensure any received sawn timber purchases are linked to SawnTimberOutput
