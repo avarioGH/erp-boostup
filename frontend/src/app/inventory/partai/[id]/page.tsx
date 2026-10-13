@@ -551,15 +551,44 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     return map;
   }, [partai?.trimmedLogs, partai?.rawLogs]);
 
-  // 2. DUKB (Raw Logs) sorted newest first
+  // 2. DUKB (Raw Logs) deduplicated by logNumber and sorted newest first
   const sortedRawLogs = React.useMemo(() => {
-    return [...(partai?.rawLogs || [])].sort((a: any, b: any) => {
+    const rawList = partai?.rawLogs || [];
+    const groupMap = new Map<string, any[]>();
+    for (const r of rawList) {
+      const key = (r.logNumber || "").trim();
+      if (!key) continue;
+      if (!groupMap.has(key)) groupMap.set(key, []);
+      groupMap.get(key)!.push(r);
+    }
+
+    const uniqueList: any[] = [];
+    for (const [_, items] of groupMap.entries()) {
+      if (items.length === 1) {
+        uniqueList.push(items[0]);
+      } else {
+        items.sort((a: any, b: any) => {
+          const aTrim = (a.status === 'TRIMMED' || trimmedLogMap.has(a.id) || (a.trimmedLogs && a.trimmedLogs.length > 0)) ? 1 : 0;
+          const bTrim = (b.status === 'TRIMMED' || trimmedLogMap.has(b.id) || (b.trimmedLogs && b.trimmedLogs.length > 0)) ? 1 : 0;
+          if (aTrim !== bTrim) return bTrim - aTrim;
+          const aAvg = Number(a.averageDiameter || 0);
+          const bAvg = Number(b.averageDiameter || 0);
+          if (aAvg !== bAvg) return bAvg - aAvg;
+          const aTime = new Date(a.createdAt || 0).getTime();
+          const bTime = new Date(b.createdAt || 0).getTime();
+          return bTime - aTime;
+        });
+        uniqueList.push(items[0]);
+      }
+    }
+
+    return uniqueList.sort((a: any, b: any) => {
       const timeA = new Date(a.receivingDate || a.date || a.createdAt || 0).getTime();
       const timeB = new Date(b.receivingDate || b.date || b.createdAt || 0).getTime();
       if (timeB !== timeA) return timeB - timeA;
       return (b.logNumber || "").localeCompare(a.logNumber || "");
     });
-  }, [partai?.rawLogs]);
+  }, [partai?.rawLogs, trimmedLogMap]);
 
   const untrimmedLogs = React.useMemo(() => {
     return sortedRawLogs.filter((r: any) => r.status !== 'TRIMMED' && !trimmedLogMap.has(r.id));

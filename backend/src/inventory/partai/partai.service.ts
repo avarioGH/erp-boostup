@@ -208,6 +208,54 @@ export class PartaiService {
 
     if (!partai) throw new NotFoundException('Partai not found');
 
+    // DEDUPLICATE RAW LOGS IN THIS PARTAI (Clean up duplicate dummies in DB)
+    const logGroups = new Map<string, any[]>();
+    for (const r of partai.rawLogs || []) {
+      const key = (r.logNumber || '').trim();
+      if (!key) continue;
+      if (!logGroups.has(key)) logGroups.set(key, []);
+      logGroups.get(key)!.push(r);
+    }
+
+    const dedupedRawLogs: any[] = [];
+    for (const [_, logs] of logGroups.entries()) {
+      if (logs.length === 1) {
+        dedupedRawLogs.push(logs[0]);
+        continue;
+      }
+
+      logs.sort((a, b) => {
+        const aTrimmed = ((a.trimmedLogs && a.trimmedLogs.length > 0) || a.status === 'TRIMMED') ? 1 : 0;
+        const bTrimmed = ((b.trimmedLogs && b.trimmedLogs.length > 0) || b.status === 'TRIMMED') ? 1 : 0;
+        if (aTrimmed !== bTrimmed) return bTrimmed - aTrimmed;
+
+        const aAvg = Number(a.averageDiameter || 0);
+        const bAvg = Number(b.averageDiameter || 0);
+        if (aAvg !== bAvg) return bAvg - aAvg;
+
+        const aVol = Number(a.netVolume || a.grossVolume || 0);
+        const bVol = Number(b.netVolume || b.grossVolume || 0);
+        if (aVol !== bVol) return bVol - aVol;
+
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
+      const keeper = logs[0];
+      dedupedRawLogs.push(keeper);
+
+      for (let j = 1; j < logs.length; j++) {
+        const dup = logs[j];
+        if (!dup.trimmedLogs || dup.trimmedLogs.length === 0) {
+          try {
+            await this.prisma.rawLog.delete({ where: { id: dup.id } });
+          } catch (delErr) {
+            this.logger.warn(`Failed to clean up duplicate raw log ${dup.id}: ${delErr}`);
+          }
+        }
+      }
+    }
+    partai.rawLogs = dedupedRawLogs;
+
     // Auto-heal: Ensure any logItems from purchases are restored into RawLogs (DUKB) if missing
     if (partai.purchases && partai.purchases.length > 0) {
       const existingPurchaseLogItemIds = new Set(
