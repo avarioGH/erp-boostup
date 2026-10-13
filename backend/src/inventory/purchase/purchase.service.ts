@@ -981,11 +981,78 @@ export class PurchaseService {
         let totalVolume = 0;
 
         for (const item of data.items) {
-          const variantId = item.timberVariantId || item.variantId;
-          if (!variantId) continue;
+          let variantId = item.timberVariantId || item.variantId;
+          const tCm = Number(item.purchaseThickness ?? item.thickness ?? item.t ?? 0);
+          const wCm = Number(item.purchaseWidth ?? item.width ?? item.l ?? 0);
+          const pCm = Number(item.purchaseLength ?? item.length ?? item.p ?? 0);
+
+          const tMm = Math.round(tCm > 50 ? tCm : tCm * 10);
+          const wMm = Math.round(wCm > 100 ? wCm : wCm * 10);
+          const lMm = Math.round(pCm > 1000 ? pCm : (pCm >= 50 ? pCm * 10 : pCm * 1000));
 
           const pcs = Number(item.quantityPcs || 0);
-          const vol = Number(item.volumeM3 || 0);
+          let vol = Number(item.volumeM3 || 0);
+          if ((!vol || vol === 0) && tCm > 0 && wCm > 0 && pCm > 0 && pcs > 0) {
+            vol = Number(((pCm * tCm * wCm * pcs) / 1000000).toFixed(4));
+          }
+
+          const spec = (item.species || item.jenis || 'SAWN-TIMBER').trim().toUpperCase();
+          const grd = (item.grade || 'A').trim().toUpperCase();
+
+          if (!variantId && tMm > 0 && wMm > 0 && lMm > 0) {
+            try {
+              const found = await tx.timberVariant.findFirst({
+                where: {
+                  species: { equals: spec, mode: 'insensitive' },
+                  thickness: tMm,
+                  width: wMm,
+                  length: lMm,
+                },
+              });
+              if (found) {
+                variantId = found.id;
+              } else {
+                let genericProduct = await tx.product.findFirst({
+                  where: {
+                    OR: [{ code: 'SAWN-TIMBER' }, { name: 'Sawn Timber' }],
+                  },
+                });
+                if (!genericProduct) {
+                  genericProduct = await tx.product.create({
+                    data: {
+                      name: 'Kayu Olahan (Sawn Timber)',
+                      code: 'SAWN-TIMBER',
+                      category: 'TIMBER',
+                      type: 'RAW_MATERIAL',
+                      uom: 'PCS',
+                      status: 'ACTIVE',
+                    },
+                  });
+                }
+                const skuCode = `${spec}-${grd}-${tMm}X${wMm}X${lMm}`;
+                const newVar = await tx.timberVariant.create({
+                  data: {
+                    company_id: purchase.company_id,
+                    productId: genericProduct.id,
+                    species: spec,
+                    grade: grd,
+                    thickness: tMm,
+                    width: wMm,
+                    length: lMm,
+                    sku: skuCode,
+                    barcode: `V-${skuCode}-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`,
+                    volumePerPiece: (tMm * wMm * lMm) / 1000000000,
+                  },
+                });
+                variantId = newVar.id;
+              }
+            } catch (vErr) {
+              this.logger.warn(`Failed to auto-create variant in update: ${vErr}`);
+            }
+          }
+
+          if (!variantId) continue;
+
           totalPcs += pcs;
           totalVolume += vol;
 
@@ -995,12 +1062,12 @@ export class PurchaseService {
               timberVariantId: variantId,
               quantityPcs: pcs,
               volumeM3: vol,
-              purchaseThickness: Number(item.purchaseThickness || 0),
-              purchaseWidth: Number(item.purchaseWidth || 0),
-              purchaseLength: Number(item.purchaseLength || 0),
+              purchaseThickness: tCm,
+              purchaseWidth: wCm,
+              purchaseLength: pCm,
               unitPrice: Number(item.unitPrice || 0),
               batch: item.batch || 'UNKNOWN',
-              notes: item.notes,
+              notes: item.notes || item.jenis || spec,
             },
           });
           finalItems.push(createdItem);

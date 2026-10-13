@@ -64,11 +64,13 @@ export default function EditPurchasePage() {
     items: [
       {
         timberVariantId: "",
+        species: "BKR",
+        grade: "A",
         quantityPcs: 1,
         volumeM3: 0,
         purchaseThickness: 0,
         purchaseWidth: 0,
-        purchaseLength: 0,
+        purchaseLength: 400,
         unitPrice: 0,
         batch: "UNKNOWN",
         notes: "",
@@ -169,6 +171,8 @@ export default function EditPurchasePage() {
             p.items && p.items.length > 0
               ? p.items.map((i: any) => ({
                   timberVariantId: i.timberVariantId || i.variantId || "",
+                  species: i.timberVariant?.species || i.species || i.notes || "BKR",
+                  grade: i.timberVariant?.grade || i.grade || "A",
                   quantityPcs: Number(i.quantityPcs || 0),
                   volumeM3: Number(i.volumeM3 || 0),
                   purchaseThickness: Number(i.purchaseThickness || i.timberVariant?.thickness || 0),
@@ -181,11 +185,13 @@ export default function EditPurchasePage() {
               : [
                   {
                     timberVariantId: "",
+                    species: "BKR",
+                    grade: "A",
                     quantityPcs: 1,
                     volumeM3: 0,
                     purchaseThickness: 0,
                     purchaseWidth: 0,
-                    purchaseLength: 0,
+                    purchaseLength: 400,
                     unitPrice: 0,
                     batch: "UNKNOWN",
                     notes: "",
@@ -356,6 +362,8 @@ export default function EditPurchasePage() {
             ? form.items.map((i: any) => ({
                 timberVariantId: i.timberVariantId,
                 variantId: i.timberVariantId,
+                species: i.species || i.notes || "BKR",
+                grade: i.grade || "A",
                 quantityPcs: Number(i.quantityPcs || 0),
                 volumeM3: Number(i.volumeM3 || 0),
                 purchaseThickness: Number(i.purchaseThickness || 0),
@@ -363,7 +371,7 @@ export default function EditPurchasePage() {
                 purchaseLength: Number(i.purchaseLength || 0),
                 unitPrice: Number(i.unitPrice || 0),
                 batch: i.batch || "UNKNOWN",
-                notes: i.notes || "",
+                notes: i.notes || i.species || "",
               }))
             : [],
         logItems:
@@ -508,293 +516,360 @@ export default function EditPurchasePage() {
               </TabsList>
 
               <TabsContent value="sawn-timber" className="space-y-4">
-                <div className="flex justify-between items-center border-b pb-2">
-                  <h3 className="font-bold text-lg">Daftar Sawn Timber</h3>
-                </div>
-                {form.items.map((item, index) => (
-                  <div key={index} className="border border-border rounded-lg p-4 bg-muted/10 relative">
-                    <div className="absolute top-2 right-2">
-                      {form.items.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:bg-destructive/10"
-                          onClick={() => {
-                            setForm({ ...form, items: form.items.filter((_, i) => i !== index) });
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mt-2 pr-6">
-                      <div className="space-y-2 md:col-span-2">
-                        <div className="flex items-center justify-between">
-                          <Label>Variant / Sku Kayu</Label>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveVariantRowIndex(index);
-                              setIsVariantModalOpen(true);
-                            }}
-                            className="text-xs text-primary hover:underline font-medium"
-                          >
-                            + Buat Master Baru
-                          </button>
-                        </div>
-                        <Select
-                          value={item.timberVariantId}
-                          onValueChange={(val: any) => {
-                            const newItems = [...form.items];
-                            const variant = variants.find((v) => v.id === val);
-                            newItems[index].timberVariantId = val || "";
-                            if (variant) {
-                              newItems[index].volumeM3 = variant.volumePerPiece * newItems[index].quantityPcs;
-                              newItems[index].purchaseThickness = variant.thickness;
-                              newItems[index].purchaseWidth = variant.width;
-                              newItems[index].purchaseLength = variant.length;
-                            }
-                            setForm({ ...form, items: newItems });
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih Variant Kayu">
-                              {(() => {
-                                const v = variants.find((itemVar) => itemVar.id === item.timberVariantId);
-                                if (v) return v.sku || `${v.species || ""} ${v.grade || ""} ${v.thickness || 0}x${v.width || 0}x${v.length || 0}`.trim();
-                                return item.timberVariantId ? "Memuat variant..." : "Pilih Variant Kayu";
-                              })()}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {variants.map((v) => (
-                              <SelectItem key={v.id} value={v.id}>
-                                {v.sku || `${v.species || ""} ${v.grade || ""} ${v.thickness || 0}x${v.width || 0}x${v.length || 0}`.trim() || v.id}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Quantity (PCS)</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantityPcs}
-                          onChange={(e) => {
-                            const newItems = [...form.items];
-                            const pcs = parseInt(e.target.value) || 0;
-                            newItems[index].quantityPcs = pcs;
-                            const variant = variants.find((v) => v.id === newItems[index].timberVariantId);
-                            if (variant) {
-                              newItems[index].volumeM3 = Number((pcs * (variant.volumePerPiece || 0)).toFixed(4));
-                            }
-                            setForm({ ...form, items: newItems });
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Net Vol (M3)</Label>
-                        <Input
-                          type="number"
-                          step="0.0001"
-                          value={item.volumeM3}
-                          onChange={(e) => {
-                            const newItems = [...form.items];
-                            newItems[index].volumeM3 = parseFloat(e.target.value) || 0;
-                            setForm({ ...form, items: newItems });
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>T Tebal (mm)</Label>
-                        <Input
-                          type="number"
-                          step="1"
-                          value={item.purchaseThickness}
-                          onChange={(e) => {
-                            const newItems = [...form.items];
-                            newItems[index].purchaseThickness = parseFloat(e.target.value) || 0;
-                            setForm({ ...form, items: newItems });
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>L Lebar (mm)</Label>
-                        <Input
-                          type="number"
-                          step="1"
-                          value={item.purchaseWidth}
-                          onChange={(e) => {
-                            const newItems = [...form.items];
-                            newItems[index].purchaseWidth = parseFloat(e.target.value) || 0;
-                            setForm({ ...form, items: newItems });
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>P Panjang (mm)</Label>
-                        <Input
-                          type="number"
-                          step="1"
-                          value={item.purchaseLength}
-                          onChange={(e) => {
-                            const newItems = [...form.items];
-                            newItems[index].purchaseLength = parseFloat(e.target.value) || 0;
-                            setForm({ ...form, items: newItems });
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Harga Satuan (Rp)</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={item.unitPrice}
-                          onChange={(e) => {
-                            const newItems = [...form.items];
-                            newItems[index].unitPrice = parseFloat(e.target.value) || 0;
-                            setForm({ ...form, items: newItems });
-                          }}
-                        />
-                      </div>
-                    </div>
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b pb-3">
+                  <div>
+                    <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                      <span>📋 Tally Sheet Pembelian Sawn Timber (Beli Masak)</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Input langsung data surat jalan fisik dari supplier (Panjang, Tebal, Lebar dlm cm). Tidak perlu pilih/buat Master Variant SKU secara manual.
+                    </p>
                   </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    setForm({
-                      ...form,
-                      items: [
-                        ...form.items,
-                        {
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const last = form.items[form.items.length - 1];
+                        setForm((prev) => ({
+                          ...prev,
+                          items: [
+                            ...prev.items,
+                            {
+                              species: last?.species || "BKR",
+                              grade: last?.grade || "A",
+                              timberVariantId: "",
+                              quantityPcs: 1,
+                              volumeM3: 0,
+                              purchaseThickness: last?.purchaseThickness || 0,
+                              purchaseWidth: last?.purchaseWidth || 0,
+                              purchaseLength: last?.purchaseLength || 400,
+                              unitPrice: last?.unitPrice || 0,
+                              batch: "UNKNOWN",
+                              notes: "",
+                            },
+                          ],
+                        }));
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" /> +1 Baris
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        const last = form.items[form.items.length - 1];
+                        const newRows = Array.from({ length: 5 }).map(() => ({
+                          species: last?.species || "BKR",
+                          grade: last?.grade || "A",
                           timberVariantId: "",
                           quantityPcs: 1,
                           volumeM3: 0,
-                          purchaseThickness: 0,
-                          purchaseWidth: 0,
-                          purchaseLength: 0,
-                          unitPrice: 0,
+                          purchaseThickness: last?.purchaseThickness || 0,
+                          purchaseWidth: last?.purchaseWidth || 0,
+                          purchaseLength: last?.purchaseLength || 400,
+                          unitPrice: last?.unitPrice || 0,
                           batch: "UNKNOWN",
                           notes: "",
-                        },
-                      ],
-                    });
-                  }}
-                >
-                  <Plus className="w-4 h-4 mr-2" /> Tambah Sawn Timber
-                </Button>
+                        }));
+                        setForm((prev) => ({
+                          ...prev,
+                          items: [...prev.items, ...newRows],
+                        }));
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-1" /> +5 Baris
+                    </Button>
+                  </div>
+                </div>
 
-                <Dialog open={isVariantModalOpen} onOpenChange={setIsVariantModalOpen}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Buat Master Data Kayu (Sawn Timber)</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleCreateVariant} className="space-y-4">
-                      <div>
-                        <Label>Species (Jenis Kayu) <span className="text-destructive">*</span></Label>
-                        <Select
-                          value={newVariant.speciesId || ""}
-                          onValueChange={(val) => {
-                            const selected = speciesList.find((s: any) => s.id === val);
-                            if (selected) {
-                              setNewVariant((prev) => ({
-                                ...prev,
-                                speciesId: selected.id,
-                                species: selected.name || selected.code || "",
-                              }));
-                            }
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih Jenis Kayu (Species)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {speciesList.length === 0 ? (
-                              <SelectItem value="__EMPTY__" disabled>Belum ada master species</SelectItem>
-                            ) : (
-                              speciesList.map((s: any) => (
-                                <SelectItem key={s.id} value={s.id}>
-                                  {s.name} {s.code && s.code !== s.name ? `(${s.code})` : ""}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Grade (Kualitas) <span className="text-destructive">*</span></Label>
-                        <Select
-                          value={newVariant.gradeId || ""}
-                          onValueChange={(val) => {
-                            const selected = gradeList.find((g: any) => g.id === val);
-                            if (selected) {
-                              setNewVariant((prev) => ({
-                                ...prev,
-                                gradeId: selected.id,
-                                grade: selected.code || selected.name || "",
-                              }));
-                            }
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Pilih Kualitas (Grade)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {gradeList.length === 0 ? (
-                              <SelectItem value="__EMPTY__" disabled>Belum ada master grade</SelectItem>
-                            ) : (
-                              gradeList.map((g: any) => (
-                                <SelectItem key={g.id} value={g.id}>
-                                  {g.code && g.name && g.code !== g.name ? `${g.code} - ${g.name}` : (g.name || g.code)}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <Label>Tebal (mm)</Label>
-                          <Input
-                            type="number"
-                            value={newVariant.thickness}
-                            onChange={(e) => setNewVariant({ ...newVariant, thickness: e.target.value })}
-                            placeholder="cth: 20"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label>Lebar (mm)</Label>
-                          <Input
-                            type="number"
-                            value={newVariant.width}
-                            onChange={(e) => setNewVariant({ ...newVariant, width: e.target.value })}
-                            placeholder="cth: 200"
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label>Panjang (mm)</Label>
-                          <Input
-                            type="number"
-                            value={newVariant.length}
-                            onChange={(e) => setNewVariant({ ...newVariant, length: e.target.value })}
-                            placeholder="cth: 4000"
-                            required
-                          />
-                        </div>
-                      </div>
-                      <Button type="submit" disabled={creatingVariant} className="w-full">
-                        {creatingVariant ? "Menyimpan..." : "Simpan Master Kayu"}
-                      </Button>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                {/* TALLY SHEET GRID TABLE */}
+                <div className="overflow-x-auto border rounded-xl shadow-sm bg-card">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-muted/60 border-b text-muted-foreground font-semibold">
+                        <th className="py-2.5 px-2 text-center w-10">No</th>
+                        <th className="py-2.5 px-2 text-left w-24">Jenis</th>
+                        <th className="py-2.5 px-2 text-center w-24">P (cm)</th>
+                        <th className="py-2.5 px-2 text-center w-24">T (cm)</th>
+                        <th className="py-2.5 px-2 text-center w-24">L (cm)</th>
+                        <th className="py-2.5 px-2 text-center w-20">Pcs</th>
+                        <th className="py-2.5 px-2 text-right w-28 text-emerald-700 dark:text-emerald-400 font-bold">Vol (m³)</th>
+                        <th className="py-2.5 px-2 text-right w-28">Harga / m³</th>
+                        <th className="py-2.5 px-2 text-right w-28">Subtotal</th>
+                        <th className="py-2.5 px-2 text-center w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {form.items.map((item: any, index: number) => {
+                        const p = Number(item.purchaseLength || 0);
+                        const t = Number(item.purchaseThickness || 0);
+                        const l = Number(item.purchaseWidth || 0);
+                        const pcs = Number(item.quantityPcs || 0);
+                        const vol =
+                          p > 0 && t > 0 && l > 0 && pcs > 0
+                            ? Number(((p * t * l * pcs) / 1000000).toFixed(4))
+                            : Number(item.volumeM3 || 0);
+                        const subtotal = item.unitPrice ? Math.round(vol * Number(item.unitPrice)) : 0;
+
+                        return (
+                          <tr key={index} className="hover:bg-muted/30 transition-colors">
+                            <td className="py-1 px-2 text-center font-mono text-muted-foreground font-medium">
+                              {index + 1}
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                value={item.species || ""}
+                                onChange={(e) => {
+                                  const newItems = [...form.items];
+                                  newItems[index].species = e.target.value.toUpperCase();
+                                  setForm({ ...form, items: newItems });
+                                }}
+                                placeholder="cth: BKR"
+                                className="h-8 text-xs font-bold uppercase"
+                              />
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                type="number"
+                                step="any"
+                                value={item.purchaseLength || ""}
+                                onChange={(e) => {
+                                  const newItems = [...form.items];
+                                  const val = parseFloat(e.target.value) || 0;
+                                  newItems[index].purchaseLength = val;
+                                  const thick = Number(newItems[index].purchaseThickness || 0);
+                                  const wid = Number(newItems[index].purchaseWidth || 0);
+                                  const count = Number(newItems[index].quantityPcs || 0);
+                                  if (val > 0 && thick > 0 && wid > 0 && count > 0) {
+                                    newItems[index].volumeM3 = Number(((val * thick * wid * count) / 1000000).toFixed(4));
+                                  }
+                                  setForm({ ...form, items: newItems });
+                                }}
+                                placeholder="cth: 400"
+                                className="h-8 text-xs text-center font-mono"
+                              />
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                type="number"
+                                step="any"
+                                value={item.purchaseThickness || ""}
+                                onChange={(e) => {
+                                  const newItems = [...form.items];
+                                  const val = parseFloat(e.target.value) || 0;
+                                  newItems[index].purchaseThickness = val;
+                                  const len = Number(newItems[index].purchaseLength || 0);
+                                  const wid = Number(newItems[index].purchaseWidth || 0);
+                                  const count = Number(newItems[index].quantityPcs || 0);
+                                  if (len > 0 && val > 0 && wid > 0 && count > 0) {
+                                    newItems[index].volumeM3 = Number(((len * val * wid * count) / 1000000).toFixed(4));
+                                  }
+                                  setForm({ ...form, items: newItems });
+                                }}
+                                placeholder="cth: 12"
+                                className="h-8 text-xs text-center font-mono"
+                              />
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                type="number"
+                                step="any"
+                                value={item.purchaseWidth || ""}
+                                onChange={(e) => {
+                                  const newItems = [...form.items];
+                                  const val = parseFloat(e.target.value) || 0;
+                                  newItems[index].purchaseWidth = val;
+                                  const len = Number(newItems[index].purchaseLength || 0);
+                                  const thick = Number(newItems[index].purchaseThickness || 0);
+                                  const count = Number(newItems[index].quantityPcs || 0);
+                                  if (len > 0 && thick > 0 && val > 0 && count > 0) {
+                                    newItems[index].volumeM3 = Number(((len * thick * val * count) / 1000000).toFixed(4));
+                                  }
+                                  setForm({ ...form, items: newItems });
+                                }}
+                                placeholder="cth: 25"
+                                className="h-8 text-xs text-center font-mono"
+                              />
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={item.quantityPcs || ""}
+                                onChange={(e) => {
+                                  const newItems = [...form.items];
+                                  const val = parseInt(e.target.value) || 0;
+                                  newItems[index].quantityPcs = val;
+                                  const len = Number(newItems[index].purchaseLength || 0);
+                                  const thick = Number(newItems[index].purchaseThickness || 0);
+                                  const wid = Number(newItems[index].purchaseWidth || 0);
+                                  if (len > 0 && thick > 0 && wid > 0 && val > 0) {
+                                    newItems[index].volumeM3 = Number(((len * thick * wid * val) / 1000000).toFixed(4));
+                                  }
+                                  setForm({ ...form, items: newItems });
+                                }}
+                                placeholder="Pcs"
+                                className="h-8 text-xs text-center font-bold"
+                              />
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                type="number"
+                                step="0.0001"
+                                value={item.volumeM3 !== undefined ? item.volumeM3 : vol}
+                                onChange={(e) => {
+                                  const newItems = [...form.items];
+                                  newItems[index].volumeM3 = parseFloat(e.target.value) || 0;
+                                  setForm({ ...form, items: newItems });
+                                }}
+                                placeholder="0.0000"
+                                className="h-8 text-xs text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/5"
+                              />
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                type="number"
+                                min="0"
+                                value={item.unitPrice || ""}
+                                onChange={(e) => {
+                                  const newItems = [...form.items];
+                                  newItems[index].unitPrice = parseFloat(e.target.value) || 0;
+                                  setForm({ ...form, items: newItems });
+                                }}
+                                placeholder="Rp / m³"
+                                className="h-8 text-xs text-right font-mono"
+                              />
+                            </td>
+                            <td className="py-1 px-2 text-right font-mono font-semibold text-foreground">
+                              {subtotal > 0 ? `Rp ${subtotal.toLocaleString("id-ID")}` : "-"}
+                            </td>
+                            <td className="py-1 px-2 text-center">
+                              {form.items.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setForm({ ...form, items: form.items.filter((_, i) => i !== index) });
+                                  }}
+                                  className="text-muted-foreground hover:text-destructive p-1 rounded transition-colors"
+                                  title="Hapus Baris"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="bg-muted/40 font-bold border-t">
+                      <tr>
+                        <td colSpan={5} className="py-2.5 px-3 text-right">TOTAL KESELURUHAN:</td>
+                        <td className="py-2.5 px-2 text-center font-bold text-foreground">
+                          {form.items.reduce((sum, it) => sum + (Number(it.quantityPcs) || 0), 0)} Pcs
+                        </td>
+                        <td className="py-2.5 px-2 text-right text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                          {form.items
+                            .reduce((sum, it) => {
+                              const p = Number(it.purchaseLength || 0);
+                              const t = Number(it.purchaseThickness || 0);
+                              const l = Number(it.purchaseWidth || 0);
+                              const pcs = Number(it.quantityPcs || 0);
+                              const v =
+                                it.volumeM3 !== undefined && it.volumeM3 > 0
+                                  ? Number(it.volumeM3)
+                                  : p > 0 && t > 0 && l > 0 && pcs > 0
+                                  ? (p * t * l * pcs) / 1000000
+                                  : 0;
+                              return sum + v;
+                            }, 0)
+                            .toFixed(4)}{" "}
+                          m³
+                        </td>
+                        <td colSpan={3} className="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400 font-mono">
+                          Rp{" "}
+                          {form.items
+                            .reduce((sum, it) => {
+                              const p = Number(it.purchaseLength || 0);
+                              const t = Number(it.purchaseThickness || 0);
+                              const l = Number(it.purchaseWidth || 0);
+                              const pcs = Number(it.quantityPcs || 0);
+                              const v =
+                                it.volumeM3 !== undefined && it.volumeM3 > 0
+                                  ? Number(it.volumeM3)
+                                  : p > 0 && t > 0 && l > 0 && pcs > 0
+                                  ? (p * t * l * pcs) / 1000000
+                                  : 0;
+                              const pr = Number(it.unitPrice || 0);
+                              return sum + Math.round(v * pr);
+                            }, 0)
+                            .toLocaleString("id-ID")}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      const last = form.items[form.items.length - 1];
+                      setForm((prev) => ({
+                        ...prev,
+                        items: [
+                          ...prev.items,
+                          {
+                            species: last?.species || "BKR",
+                            grade: last?.grade || "A",
+                            timberVariantId: "",
+                            quantityPcs: 1,
+                            volumeM3: 0,
+                            purchaseThickness: last?.purchaseThickness || 0,
+                            purchaseWidth: last?.purchaseWidth || 0,
+                            purchaseLength: last?.purchaseLength || 400,
+                            unitPrice: last?.unitPrice || 0,
+                            batch: "UNKNOWN",
+                            notes: "",
+                          },
+                        ],
+                      }));
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Tambah 1 Baris Tally
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="flex-1"
+                    onClick={() => {
+                      const last = form.items[form.items.length - 1];
+                      const newRows = Array.from({ length: 5 }).map(() => ({
+                        species: last?.species || "BKR",
+                        grade: last?.grade || "A",
+                        timberVariantId: "",
+                        quantityPcs: 1,
+                        volumeM3: 0,
+                        purchaseThickness: last?.purchaseThickness || 0,
+                        purchaseWidth: last?.purchaseWidth || 0,
+                        purchaseLength: last?.purchaseLength || 400,
+                        unitPrice: last?.unitPrice || 0,
+                        batch: "UNKNOWN",
+                        notes: "",
+                      }));
+                      setForm((prev) => ({
+                        ...prev,
+                        items: [...prev.items, ...newRows],
+                      }));
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-2" /> Tambah 5 Baris Tally
+                  </Button>
+                </div>
               </TabsContent>
 
               <TabsContent value="raw-log" className="space-y-4">
