@@ -247,7 +247,7 @@ export class PartaiService {
       );
 
       for (const p of partai.purchases) {
-        if (p.status !== 'RECEIVED' && p.status !== 'CONFIRMED') continue;
+        if (p.status !== 'RECEIVED') continue;
 
         for (let i = 0; i < (p.logItems || []).length; i++) {
           const item = p.logItems[i];

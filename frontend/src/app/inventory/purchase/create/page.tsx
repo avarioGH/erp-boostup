@@ -250,7 +250,7 @@ export default function CreatePurchasePage() {
     warehouseId: "",
     notes: "",
     purchaseType: initialPurchaseType,
-    status: "RECEIVED",
+    status: "DRAFT",
     items: [{ 
       timberVariantId: "", 
       quantityPcs: 1, 

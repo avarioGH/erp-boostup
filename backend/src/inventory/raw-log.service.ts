@@ -85,19 +85,18 @@ export class RawLogService {
         include: { timberPurchase: true },
       });
       if (!pItem) throw new NotFoundException('Purchase Log Item not found');
-      if (pItem.status === 'RECEIVED')
-        throw new BadRequestException('Purchase Log Item already received');
-      data.logNumber = pItem.logNumber;
-      data.species = pItem.species;
+      data.logNumber = data.logNumber || pItem.logNumber;
+      data.species = data.species || pItem.species;
     }
-    // Validate uniqueness
+    // Validate uniqueness or update if same purchase log item
     const existingLog = await this.prisma.rawLog.findFirst({
-        where: { logNumber: data.logNumber, partaiId: data.partaiId || undefined },
-      });
-    if (existingLog)
-      throw new BadRequestException(
-        `Log Number ${data.logNumber} already exists.`,
-      );
+      where: {
+        OR: [
+          ...(data.purchaseLogItemId ? [{ purchaseLogItemId: data.purchaseLogItemId }] : []),
+          { logNumber: data.logNumber, partaiId: data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : undefined) },
+        ],
+      },
+    });
 
     if (data.barcode) {
       const existingBarcode = await this.prisma.rawLog.findFirst({
@@ -184,49 +183,103 @@ export class RawLogService {
         'Calculated net volume cannot be negative.',
       );
 
-    const created = await this.prisma.rawLog.create({
-      data: {
-        logNumber: data.logNumber,
-        partaiId:
-          data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : null),
-        sequence: data.sequence ? Number(data.sequence) : null,
-        code: data.code,
-        species: speciesStr,
-        speciesId: data.speciesId || null,
-        sourceId: data.sourceId || null,
-        quantity: 1,
-        originalLength: Number(data.originalLength),
-        diameter1: Number(data.diameter1),
-        diameter2: Number(data.diameter2),
-        diameter3: Number(data.diameter3),
-        diameter4: Number(data.diameter4),
-        averageDiameter: avgDia,
-        roundedDiameter: rndDia,
-        diameterClass: diaClass,
-        grossVolume: grossVol,
-        gerowong: data.gerowong ? Number(data.gerowong) : null,
-        hollowVolume: gerowongVol || null,
-        trimmingLength: data.trimmingLength
-          ? Number(data.trimmingLength)
-          : null,
-        trimmingVolume: trimmingVol || null,
-        netVolume: netVol,
-        barcode: data.barcode || `LOG-${Date.now()}`,
-        batch: data.batch,
-        receivingDate: data.receivingDate
-          ? new Date(data.receivingDate)
-          : new Date(),
-        locationId: data.locationId || null,
-        notes: data.notes,
-      },
-    });
-    await this.audit.log({
-      company_id: data.companyId || '000000000000000000000000',
-      action: 'CREATE',
-      entity: 'RAW_LOG',
-      entity_id: created.id,
-      after_data: { logNumber: created.logNumber },
-    });
+    let created: any;
+    if (existingLog) {
+      const isSameLog =
+        (data.purchaseLogItemId && existingLog.purchaseLogItemId === data.purchaseLogItemId) ||
+        (!existingLog.purchaseLogItemId && pItem && existingLog.logNumber === data.logNumber) ||
+        (existingLog.logNumber === data.logNumber && existingLog.partaiId === (data.partaiId || pItem?.timberPurchase?.partaiId));
+
+      if (!isSameLog) {
+        throw new BadRequestException(
+          `Log Number ${data.logNumber} already exists.`,
+        );
+      }
+
+      created = await this.prisma.rawLog.update({
+        where: { id: existingLog.id },
+        data: {
+          purchaseLogItemId: data.purchaseLogItemId || existingLog.purchaseLogItemId,
+          species: speciesStr,
+          speciesId: data.speciesId || existingLog.speciesId || null,
+          sourceId: data.sourceId || existingLog.sourceId || null,
+          originalLength: Number(data.originalLength),
+          diameter1: Number(data.diameter1),
+          diameter2: Number(data.diameter2),
+          diameter3: Number(data.diameter3),
+          diameter4: Number(data.diameter4),
+          averageDiameter: avgDia,
+          roundedDiameter: rndDia,
+          diameterClass: diaClass,
+          grossVolume: grossVol,
+          gerowong: data.gerowong ? Number(data.gerowong) : null,
+          hollowVolume: gerowongVol || null,
+          trimmingLength: data.trimmingLength ? Number(data.trimmingLength) : null,
+          trimmingVolume: trimmingVol || null,
+          netVolume: netVol,
+          barcode: data.barcode || existingLog.barcode || `LOG-${Date.now()}`,
+          batch: data.batch || existingLog.batch,
+          receivingDate: data.receivingDate
+            ? new Date(data.receivingDate)
+            : (existingLog.receivingDate || new Date()),
+          locationId: data.locationId || existingLog.locationId || null,
+          notes: data.notes || existingLog.notes,
+          status: 'AVAILABLE',
+        },
+      });
+
+      await this.audit.log({
+        company_id: data.companyId || '000000000000000000000000',
+        action: 'UPDATE',
+        entity: 'RAW_LOG',
+        entity_id: created.id,
+        after_data: { logNumber: created.logNumber, updatedOnReceive: true },
+      });
+    } else {
+      created = await this.prisma.rawLog.create({
+        data: {
+          logNumber: data.logNumber,
+          partaiId:
+            data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : null),
+          sequence: data.sequence ? Number(data.sequence) : null,
+          code: data.code,
+          species: speciesStr,
+          speciesId: data.speciesId || null,
+          sourceId: data.sourceId || null,
+          quantity: 1,
+          originalLength: Number(data.originalLength),
+          diameter1: Number(data.diameter1),
+          diameter2: Number(data.diameter2),
+          diameter3: Number(data.diameter3),
+          diameter4: Number(data.diameter4),
+          averageDiameter: avgDia,
+          roundedDiameter: rndDia,
+          diameterClass: diaClass,
+          grossVolume: grossVol,
+          gerowong: data.gerowong ? Number(data.gerowong) : null,
+          hollowVolume: gerowongVol || null,
+          trimmingLength: data.trimmingLength
+            ? Number(data.trimmingLength)
+            : null,
+          trimmingVolume: trimmingVol || null,
+          netVolume: netVol,
+          barcode: data.barcode || `LOG-${Date.now()}`,
+          batch: data.batch,
+          receivingDate: data.receivingDate
+            ? new Date(data.receivingDate)
+            : new Date(),
+          locationId: data.locationId || null,
+          notes: data.notes,
+        },
+      });
+      await this.audit.log({
+        company_id: data.companyId || '000000000000000000000000',
+        action: 'CREATE',
+        entity: 'RAW_LOG',
+        entity_id: created.id,
+        after_data: { logNumber: created.logNumber },
+      });
+    }
 
     if (data.purchaseLogItemId) {
       await this.prisma.timberPurchaseLogItem.update({
@@ -279,14 +332,15 @@ export class RawLogService {
           throw new BadRequestException('Log Number is required');
 
         const existingLog = await tx.rawLog.findFirst({
-          where: { logNumber: data.logNumber, partaiId: data.partaiId || undefined },
+          where: {
+            OR: [
+              ...(data.purchaseLogItemId ? [{ purchaseLogItemId: data.purchaseLogItemId }] : []),
+              { logNumber: data.logNumber, partaiId: data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : undefined) },
+            ],
+          },
         });
-        if (existingLog)
-          throw new BadRequestException(
-            `Log Number ${data.logNumber} already exists.`,
-          );
 
-        if (data.barcode) {
+        if (!existingLog && data.barcode) {
           const existingBarcode = await tx.rawLog.findFirst({
             where: { barcode: data.barcode },
           });
@@ -336,35 +390,78 @@ export class RawLogService {
           0,
         );
 
-        const log = await tx.rawLog.create({
-          data: {
-            logNumber: data.logNumber,
-            partaiId:
-              data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : null),
-            species: data.species,
-            speciesId: data.speciesId || undefined,
-            sourceId: data.sourceId || undefined,
-            originalLength: Number(data.originalLength),
-            diameter1: d1,
-            diameter2: d2,
-            diameter3: d3,
-            diameter4: d4,
-            averageDiameter: avgDia,
-            roundedDiameter: rndDia,
-            diameterClass: diaClass,
-            grossVolume: grossVol,
-            gerowong: g || null,
-            hollowVolume: hollowVol || null,
-            netVolume: netVol,
-            batch: data.batch,
-            locationId: data.locationId || undefined,
-            receivingDate: data.receivingDate
-              ? new Date(data.receivingDate)
-              : new Date(),
-            barcode: data.barcode || data.logNumber,
-            status: 'AVAILABLE',
-          },
-        });
+        let log: any;
+        if (existingLog) {
+          const isSameLog =
+            (data.purchaseLogItemId && existingLog.purchaseLogItemId === data.purchaseLogItemId) ||
+            (!existingLog.purchaseLogItemId && pItem && existingLog.logNumber === data.logNumber) ||
+            (existingLog.logNumber === data.logNumber && existingLog.partaiId === (data.partaiId || pItem?.timberPurchase?.partaiId));
+
+          if (!isSameLog) {
+            throw new BadRequestException(
+              `Log Number ${data.logNumber} already exists.`,
+            );
+          }
+
+          log = await tx.rawLog.update({
+            where: { id: existingLog.id },
+            data: {
+              purchaseLogItemId: data.purchaseLogItemId || existingLog.purchaseLogItemId,
+              species: data.species || existingLog.species,
+              speciesId: data.speciesId || existingLog.speciesId || undefined,
+              sourceId: data.sourceId || existingLog.sourceId || undefined,
+              originalLength: Number(data.originalLength),
+              diameter1: d1,
+              diameter2: d2,
+              diameter3: d3,
+              diameter4: d4,
+              averageDiameter: avgDia,
+              roundedDiameter: rndDia,
+              diameterClass: diaClass,
+              grossVolume: grossVol,
+              gerowong: g || null,
+              hollowVolume: hollowVol || null,
+              netVolume: netVol,
+              batch: data.batch || existingLog.batch,
+              locationId: data.locationId || existingLog.locationId || undefined,
+              receivingDate: data.receivingDate
+                ? new Date(data.receivingDate)
+                : (existingLog.receivingDate || new Date()),
+              barcode: data.barcode || existingLog.barcode || data.logNumber,
+              status: 'AVAILABLE',
+            },
+          });
+        } else {
+          log = await tx.rawLog.create({
+            data: {
+              logNumber: data.logNumber,
+              partaiId:
+                data.partaiId || (pItem ? pItem.timberPurchase?.partaiId : null),
+              species: data.species,
+              speciesId: data.speciesId || undefined,
+              sourceId: data.sourceId || undefined,
+              originalLength: Number(data.originalLength),
+              diameter1: d1,
+              diameter2: d2,
+              diameter3: d3,
+              diameter4: d4,
+              averageDiameter: avgDia,
+              roundedDiameter: rndDia,
+              diameterClass: diaClass,
+              grossVolume: grossVol,
+              gerowong: g || null,
+              hollowVolume: hollowVol || null,
+              netVolume: netVol,
+              batch: data.batch,
+              locationId: data.locationId || undefined,
+              receivingDate: data.receivingDate
+                ? new Date(data.receivingDate)
+                : new Date(),
+              barcode: data.barcode || data.logNumber,
+              status: 'AVAILABLE',
+            },
+          });
+        }
         if (data.purchaseLogItemId) {
           await tx.timberPurchaseLogItem.update({
             where: { id: data.purchaseLogItemId },

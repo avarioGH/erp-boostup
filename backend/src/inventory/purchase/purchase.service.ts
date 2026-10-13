@@ -320,7 +320,34 @@ export class PurchaseService {
   }
 
   async confirm(id: string, companyId: string) {
-    return this.markAsReceived(id, companyId);
+    return runWithTransactionRetry(this.prisma, async (tx) => {
+      let targetCompanyId = companyId;
+      if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
+        const firstCompany = await this.prisma.company.findFirst();
+        if (firstCompany) targetCompanyId = firstCompany.id;
+      }
+
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+      const purchase = await tx.timberPurchase.findFirst({
+        where: isObjectId
+          ? { id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) }
+          : { purchaseNumber: id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) },
+      });
+
+      if (!purchase) {
+        throw new NotFoundException('Timber purchase not found');
+      }
+
+      if (purchase.status === 'CANCELLED') {
+        throw new BadRequestException('Pembelian yang dibatalkan tidak dapat dikonfirmasi');
+      }
+
+      return tx.timberPurchase.update({
+        where: { id: purchase.id },
+        data: { status: 'CONFIRMED' },
+        include: { items: true, logItems: true },
+      });
+    });
   }
 
   async markAsReceived(id: string, companyId: string, data?: any) {

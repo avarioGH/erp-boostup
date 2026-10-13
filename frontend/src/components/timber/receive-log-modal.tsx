@@ -75,7 +75,7 @@ export function ReceiveLogModal({
     // 1. Raw Logs
     if (purchase.logItems && purchase.logItems.length > 0) {
       const rows = purchase.logItems.map((li: any, idx: number) => ({
-        selected: li.status !== "RECEIVED",
+        selected: true,
         isAlreadyReceived: li.status === "RECEIVED",
         purchaseLogItemId: li.id,
         logNumber: li.logNumber || `LOG-${purchase.purchaseNumber || "PUR"}-${idx + 1}`,
@@ -198,10 +198,9 @@ export function ReceiveLogModal({
   const hasLogItems = logRows.length > 0;
   const hasSawnItems = sawnRows.length > 0;
 
-  // Save Raw Logs to DUKB
   const handleSaveLogs = async () => {
     const toSave = logRows.filter(
-      (r) => r.selected && !r.isAlreadyReceived && r.length && (r.avgDia || (r.d1 && r.d2 && r.d3 && r.d4))
+      (r) => r.selected && r.length && (r.avgDia || (r.d1 && r.d2 && r.d3 && r.d4))
     );
 
     if (toSave.length === 0) {
@@ -324,9 +323,9 @@ export function ReceiveLogModal({
   const handleSaveAll = async () => {
     if (hasLogItems && hasSawnItems) {
       const logsToSave = logRows.filter(
-        (r) => r.selected && !r.isAlreadyReceived && r.length && (r.avgDia || (r.d1 && r.d2 && r.d3 && r.d4))
+        (r) => r.selected && r.length && (r.avgDia || (r.d1 && r.d2 && r.d3 && r.d4))
       );
-      const sawnToSave = sawnRows.filter((r) => r.selected && !r.isAlreadyReceived);
+      const sawnToSave = sawnRows.filter((r) => r.selected);
 
       if (logsToSave.length === 0 && sawnToSave.length === 0) {
         toast({
@@ -528,7 +527,6 @@ export function ReceiveLogModal({
                         <TableCell className="text-center p-2">
                           <Checkbox
                             checked={r.selected}
-                            disabled={r.isAlreadyReceived}
                             onCheckedChange={(val) => handleRowChange(idx, "selected", !!val)}
                           />
                         </TableCell>
@@ -536,7 +534,7 @@ export function ReceiveLogModal({
                           <Input
                             className="h-8 text-xs font-semibold"
                             value={r.logNumber}
-                            disabled={r.isAlreadyReceived}
+                            disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "logNumber", e.target.value)}
                             placeholder="No Log"
                           />
@@ -548,7 +546,7 @@ export function ReceiveLogModal({
                             step="0.01"
                             className="h-8 text-xs"
                             value={r.length}
-                            disabled={r.isAlreadyReceived}
+                            disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "length", e.target.value)}
                             placeholder="Panjang"
                           />
@@ -559,7 +557,7 @@ export function ReceiveLogModal({
                             step="0.1"
                             className="h-8 text-xs"
                             value={r.d1}
-                            disabled={r.isAlreadyReceived}
+                            disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "d1", e.target.value)}
                             placeholder="D1"
                           />
@@ -570,7 +568,7 @@ export function ReceiveLogModal({
                             step="0.1"
                             className="h-8 text-xs"
                             value={r.d2}
-                            disabled={r.isAlreadyReceived}
+                            disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "d2", e.target.value)}
                             placeholder="D2"
                           />
@@ -581,7 +579,7 @@ export function ReceiveLogModal({
                             step="0.1"
                             className="h-8 text-xs"
                             value={r.d3}
-                            disabled={r.isAlreadyReceived}
+                            disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "d3", e.target.value)}
                             placeholder="D3"
                           />
@@ -592,7 +590,7 @@ export function ReceiveLogModal({
                             step="0.1"
                             className="h-8 text-xs"
                             value={r.d4}
-                            disabled={r.isAlreadyReceived}
+                            disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "d4", e.target.value)}
                             placeholder="D4"
                           />
@@ -603,7 +601,7 @@ export function ReceiveLogModal({
                             step="0.1"
                             className="h-8 text-xs"
                             value={r.gerowong}
-                            disabled={r.isAlreadyReceived}
+                            disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "gerowong", e.target.value)}
                             placeholder="Grw"
                           />
@@ -620,7 +618,7 @@ export function ReceiveLogModal({
                                 ? calc.avg.toFixed(1)
                                 : ""
                             }
-                            disabled={r.isAlreadyReceived}
+                            disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "avgDia", e.target.value)}
                             placeholder={calc.avg > 0 ? calc.avg.toFixed(1) : "-"}
                           />
