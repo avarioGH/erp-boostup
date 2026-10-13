@@ -1422,11 +1422,19 @@ export default function PartaiDetailPage({ params }: { params: any }) {
 
           {/* SECTION 2: PRODUCTION JOBS (INPUT WIP) YANG SEDANG BERJALAN */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-4 flex-wrap gap-2">
               <div>
                 <CardTitle className="text-lg">Daftar Pekerjaan Produksi (Input WIP)</CardTitle>
-                <CardDescription>Pekerjaan gergajian berjalan beserta rekapan hasil tally output masing-masing pekerjaan.</CardDescription>
+                <CardDescription>Pekerjaan gergajian per tanggal beserta rekapan log yang dipotong dan hasil tally output.</CardDescription>
               </div>
+              <Button 
+                type="button" 
+                size="sm" 
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-9 shadow-sm"
+                onClick={() => openTallyModalWithSelection()}
+              >
+                <Plus className="w-4 h-4 mr-1.5" /> + Tambah Input Tally / Pekerjaan
+              </Button>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
               {paginatedInputLogs.map((i: any) => {
@@ -1457,20 +1465,16 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             {isExpanded ? <ChevronDown className="w-5 h-5 text-primary" /> : <ChevronRight className="w-5 h-5" />}
                           </button>
                           <span className="font-bold text-base text-primary font-mono">{i.inputNumber}</span>
-                          {i.status === 'DONE' ? (
-                            <Badge className="bg-emerald-500 hover:bg-emerald-600">DONE</Badge>
-                          ) : i.status === 'IN_PROCESS' || i.status === 'PROCESSING' ? (
-                            <Badge className="bg-amber-500 hover:bg-amber-600">IN PROCESS</Badge>
-                          ) : (
-                            <Badge className="bg-blue-500 hover:bg-blue-600">AVAILABLE</Badge>
-                          )}
                         </div>
-                        <div className="text-xs text-muted-foreground flex gap-1.5 items-center pl-7">
-                          <span>{i.date ? new Date(i.date).toLocaleDateString("id-ID") : (i.createdAt ? new Date(i.createdAt).toLocaleDateString("id-ID") : "-")}</span>
+                        <div className="text-xs text-muted-foreground flex flex-wrap gap-1.5 items-center pl-7">
+                          <span className="inline-flex items-center gap-1 font-semibold text-foreground">
+                            <Calendar className="w-3.5 h-3.5 text-primary" />
+                            {i.date ? new Date(i.date).toLocaleDateString("id-ID", { day: 'numeric', month: 'numeric', year: 'numeric' }) : (i.createdAt ? new Date(i.createdAt).toLocaleDateString("id-ID", { day: 'numeric', month: 'numeric', year: 'numeric' }) : "-")}
+                          </span>
                           <span>&bull;</span>
                           <span className="font-medium text-foreground/80">{i.species || "-"}</span> 
                           <span>&bull;</span>
-                          <span>{i.items?.length || 0} Source Logs</span>
+                          <span className="text-foreground/90 font-medium">{i.items?.length || 0} Log Sumber</span>
                         </div>
                       </div>
                       
@@ -1607,10 +1611,9 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                                 <TableRow className="bg-muted/20">
                                   <TableHead className="h-8 text-xs">Tgl Tally</TableHead>
                                   <TableHead className="h-8 text-xs">Kategori Produk</TableHead>
-                                  <TableHead className="h-8 text-xs font-bold">Ukuran: T × L × P (cm)</TableHead>
+                                  <TableHead className="h-8 text-xs font-bold text-foreground">Ukuran: P × L × T (cm)</TableHead>
                                   <TableHead className="h-8 text-xs text-right font-bold">Jumlah (PCS)</TableHead>
                                   <TableHead className="h-8 text-xs text-right font-bold text-emerald-600">Hasil (m³)</TableHead>
-                                  <TableHead className="h-8 text-xs text-center w-[90px]">Status</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
@@ -1622,7 +1625,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                                   const pCm = item.lengthMm ? (item.lengthMm / 10) : 0;
                                   return (
                                     <TableRow key={item.id || rowIdx} className="hover:bg-muted/30">
-                                      <TableCell className="py-2 text-xs text-muted-foreground">
+                                      <TableCell className="py-2 text-xs text-muted-foreground font-medium">
                                         {item.outputDate ? new Date(item.outputDate).toLocaleDateString("id-ID") : "-"}
                                       </TableCell>
                                       <TableCell className="py-2 text-xs">
@@ -1637,18 +1640,13 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                                         </span>
                                       </TableCell>
                                       <TableCell className="py-2 text-xs font-semibold font-mono text-foreground">
-                                        {tCm} &times; {lCm} &times; {pCm} cm
+                                        {pCm} &times; {lCm} &times; {tCm} cm
                                       </TableCell>
                                       <TableCell className="py-2 text-xs text-right font-bold text-foreground">
                                         {item.quantityPcs} pcs
                                       </TableCell>
                                       <TableCell className="py-2 text-xs text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                                         {Number(item.volumeM3 || 0).toFixed(4)} m³
-                                      </TableCell>
-                                      <TableCell className="py-2 text-xs text-center">
-                                        <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${item.status === 'POSTED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' : ''}`}>
-                                          {item.status || 'POSTED'}
-                                        </Badge>
                                       </TableCell>
                                     </TableRow>
                                   );
@@ -2162,9 +2160,9 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 <Table>
                   <TableHeader className="bg-muted">
                     <TableRow>
-                      <TableHead className="min-w-[80px]">T (cm)</TableHead>
-                      <TableHead className="min-w-[80px]">L (cm)</TableHead>
                       <TableHead className="min-w-[90px]">P (cm)</TableHead>
+                      <TableHead className="min-w-[80px]">L (cm)</TableHead>
+                      <TableHead className="min-w-[80px]">T (cm)</TableHead>
                       <TableHead className="min-w-[80px]">PCS</TableHead>
                       <TableHead className="min-w-[130px]">Kategori</TableHead>
                       <TableHead className="min-w-[100px] text-right">M&sup3; (Auto)</TableHead>
@@ -2180,11 +2178,11 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             <Input 
                               type="number" 
                               step="any"
-                              placeholder="5" 
-                              value={line.t} 
+                              placeholder="400" 
+                              value={line.p} 
                               onChange={e => { 
                                 const n = [...tallyLines]; 
-                                n[idx].t = e.target.value; 
+                                n[idx].p = e.target.value; 
                                 setTallyLines(n); 
                               }} 
                               className="h-8 text-sm"
@@ -2208,11 +2206,11 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             <Input 
                               type="number" 
                               step="any"
-                              placeholder="400" 
-                              value={line.p} 
+                              placeholder="5" 
+                              value={line.t} 
                               onChange={e => { 
                                 const n = [...tallyLines]; 
-                                n[idx].p = e.target.value; 
+                                n[idx].t = e.target.value; 
                                 setTallyLines(n); 
                               }} 
                               className="h-8 text-sm"
