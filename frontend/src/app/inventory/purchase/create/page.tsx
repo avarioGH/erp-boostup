@@ -18,11 +18,23 @@ import { Loader2, Plus, X, ArrowLeft } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 
-  const calculateLogVolume = (length: number, d1: number, d2: number) => {
-    if (!length || !d1 || !d2) return 0;
-    const avg = (d1 + d2) / 2;
-    const rnd = Math.floor(avg);
-    return (rnd * rnd * 0.7854 / 10000) * length;
+  const calculateLogVolume = (length: number, d1: number, d2: number, rtManual?: number) => {
+    if (!length) return 0;
+    // Calculate average diameter (RT) if not explicitly provided
+    let rt = typeof rtManual === "number" && rtManual > 0 ? rtManual : 0;
+    if (!rt) {
+      if (d1 > 0 && d2 > 0) {
+        rt = (d1 + d2) / 2;
+      } else {
+        rt = d1 || d2 || 0;
+      }
+    }
+    if (rt <= 0) return 0;
+
+    // Length in cm (if <= 50, assumed in meters so convert to cm)
+    const lengthCm = length <= 50 ? length * 100 : length;
+    // User formula: (Panjang cm * RT * RT) / 1.000.000
+    return Number(((lengthCm * rt * rt) / 1000000).toFixed(4));
   };
 
 
@@ -268,6 +280,7 @@ export default function CreatePurchasePage() {
       purchaseLength: 0,
       purchaseDiameter1: 0,
       purchaseDiameter2: 0,
+      purchaseDiameterAvg: 0,
       purchaseVolume: 0
     }]
   })
@@ -857,84 +870,212 @@ export default function CreatePurchasePage() {
 
               <TabsContent value="raw-log" className="space-y-4">
                 <div className="flex justify-between items-center border-b pb-2">
-                  <h3 className="font-bold text-lg">Daftar Raw Logs (DUKB)</h3>
-                </div>
-                {form.logItems.map((item, index) => (
-                  <div key={index} className="border border-border rounded-lg p-4 bg-muted/10 relative">
-                    <div className="absolute top-2 right-2">
-                      {form.logItems.length > 1 && (
-                        <Button type="button" variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => {
-                          setForm({ ...form, logItems: form.logItems.filter((_, i) => i !== index) });
-                        }}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mt-2 pr-6">
-                      <div className="space-y-2">
-                        <Label>No Log</Label>
-                        <Input value={item.logNumber} onChange={(e) => {
-                          const newLogItems = [...form.logItems];
-                          newLogItems[index].logNumber = e.target.value;
-                          setForm({ ...form, logItems: newLogItems });
-                        }} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Spesies</Label>
-                        <Select value={item.species} onValueChange={(val: any) => {
-                          const newLogItems = [...form.logItems];
-                          newLogItems[index].species = val;
-                          setForm({ ...form, logItems: newLogItems });
-                        }}>
-                          <SelectTrigger><SelectValue placeholder="Pilih Spesies" /></SelectTrigger>
-                          <SelectContent>
-                            {speciesList.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Panjang (m)</Label>
-                        <Input type="number" step="0.1" value={item.purchaseLength} onChange={(e) => {
-                          const newLogItems = [...form.logItems];
-                          newLogItems[index].purchaseLength = parseFloat(e.target.value) || 0;
-                            newLogItems[index].purchaseVolume = Number(calculateLogVolume(newLogItems[index].purchaseLength, newLogItems[index].purchaseDiameter1, newLogItems[index].purchaseDiameter2).toFixed(4));
-                            setForm({ ...form, logItems: newLogItems });
-                        }} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>&Oslash; Pangkal (cm)</Label>
-                        <Input type="number" step="0.1" value={item.purchaseDiameter1} onChange={(e) => {
-                          const newLogItems = [...form.logItems];
-                          newLogItems[index].purchaseDiameter1 = parseFloat(e.target.value) || 0;
-                            newLogItems[index].purchaseVolume = Number(calculateLogVolume(newLogItems[index].purchaseLength, newLogItems[index].purchaseDiameter1, newLogItems[index].purchaseDiameter2).toFixed(4));
-                            setForm({ ...form, logItems: newLogItems });
-                        }} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>&Oslash; Ujung (cm)</Label>
-                        <Input type="number" step="0.1" value={item.purchaseDiameter2} onChange={(e) => {
-                          const newLogItems = [...form.logItems];
-                          newLogItems[index].purchaseDiameter2 = parseFloat(e.target.value) || 0;
-                            newLogItems[index].purchaseVolume = Number(calculateLogVolume(newLogItems[index].purchaseLength, newLogItems[index].purchaseDiameter1, newLogItems[index].purchaseDiameter2).toFixed(4));
-                            setForm({ ...form, logItems: newLogItems });
-                        }} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Vol (M3)</Label>
-                        <Input type="number" step="0.0001" value={item.purchaseVolume} onChange={(e) => {
-                          const newLogItems = [...form.logItems];
-                          newLogItems[index].purchaseVolume = parseFloat(e.target.value) || 0;
-                          setForm({ ...form, logItems: newLogItems });
-                        }} />
-                      </div>
-                    </div>
+                  <div>
+                    <h3 className="font-bold text-lg">Daftar Raw Logs (DUKB)</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Input ukuran log bulat: Panjang, Ø Pangkal (D1), Ø Ujung (D2), dan Diameter Rata-rata <strong>(RT)</strong>. Rumus Volume m³: (Panjang × RT × RT) / 1.000.000.
+                    </p>
                   </div>
-                ))}
-                <Button type="button" variant="outline" className="w-full" onClick={() => {
-                  setForm({ ...form, logItems: [...form.logItems, { logNumber: "", species: "", purchaseLength: 0, purchaseDiameter1: 0, purchaseDiameter2: 0, purchaseVolume: 0 }] });
-                }}>
-                  <Plus className="w-4 h-4 mr-2" /> Tambah Raw Log
-                </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const last = form.logItems[form.logItems.length - 1];
+                      setForm({ 
+                        ...form, 
+                        logItems: [
+                          ...form.logItems, 
+                          { 
+                            logNumber: "", 
+                            species: last?.species || (speciesList[0]?.name || ""), 
+                            purchaseLength: last?.purchaseLength || 400, 
+                            purchaseDiameter1: 0, 
+                            purchaseDiameter2: 0, 
+                            purchaseDiameterAvg: 0,
+                            purchaseVolume: 0 
+                          }
+                        ] 
+                      });
+                    }}
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" /> +1 Log
+                  </Button>
+                </div>
+                {form.logItems.map((item, index) => {
+                  const currentRt = item.purchaseDiameterAvg || ((item.purchaseDiameter1 > 0 && item.purchaseDiameter2 > 0) ? Math.round(((item.purchaseDiameter1 + item.purchaseDiameter2) / 2) * 10) / 10 : (item.purchaseDiameter1 || item.purchaseDiameter2 || 0));
+                  return (
+                    <div key={index} className="border border-border rounded-lg p-4 bg-muted/10 relative">
+                      <div className="absolute top-2 right-2">
+                        {form.logItems.length > 1 && (
+                          <Button type="button" variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => {
+                            setForm({ ...form, logItems: form.logItems.filter((_, i) => i !== index) });
+                          }}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mt-2 pr-6">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold">No Log</Label>
+                          <Input 
+                            value={item.logNumber} 
+                            placeholder={`LOG-${index + 1}`}
+                            onChange={(e) => {
+                              const newLogItems = [...form.logItems];
+                              newLogItems[index].logNumber = e.target.value;
+                              setForm({ ...form, logItems: newLogItems });
+                            }} 
+                            className="h-9 text-xs font-mono"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold">Spesies</Label>
+                          <Select value={item.species} onValueChange={(val: any) => {
+                            const newLogItems = [...form.logItems];
+                            newLogItems[index].species = val;
+                            setForm({ ...form, logItems: newLogItems });
+                          }}>
+                            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih Spesies" /></SelectTrigger>
+                            <SelectContent>
+                              {speciesList.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold">Panjang (cm / m)</Label>
+                          <Input 
+                            type="number" 
+                            step="any" 
+                            value={item.purchaseLength || ""} 
+                            placeholder="cth: 400 cm / 4 m"
+                            onChange={(e) => {
+                              const newLogItems = [...form.logItems];
+                              const len = parseFloat(e.target.value) || 0;
+                              newLogItems[index].purchaseLength = len;
+                              const d1 = newLogItems[index].purchaseDiameter1 || 0;
+                              const d2 = newLogItems[index].purchaseDiameter2 || 0;
+                              const rt = newLogItems[index].purchaseDiameterAvg || ((d1 > 0 && d2 > 0) ? (d1 + d2) / 2 : (d1 || d2 || 0));
+                              newLogItems[index].purchaseVolume = calculateLogVolume(len, d1, d2, rt);
+                              setForm({ ...form, logItems: newLogItems });
+                            }} 
+                            className="h-9 text-xs font-mono"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold">&Oslash; Pangkal D1 (cm)</Label>
+                          <Input 
+                            type="number" 
+                            step="any" 
+                            value={item.purchaseDiameter1 || ""} 
+                            placeholder="D1 cm"
+                            onChange={(e) => {
+                              const newLogItems = [...form.logItems];
+                              const d1 = parseFloat(e.target.value) || 0;
+                              newLogItems[index].purchaseDiameter1 = d1;
+                              const d2 = newLogItems[index].purchaseDiameter2 || 0;
+                              const calcRt = (d1 > 0 && d2 > 0) ? Math.round(((d1 + d2) / 2) * 10) / 10 : (d1 || d2 || 0);
+                              newLogItems[index].purchaseDiameterAvg = calcRt;
+                              newLogItems[index].purchaseVolume = calculateLogVolume(newLogItems[index].purchaseLength, d1, d2, calcRt);
+                              setForm({ ...form, logItems: newLogItems });
+                            }} 
+                            className="h-9 text-xs font-mono"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-semibold">&Oslash; Ujung D2 (cm)</Label>
+                          <Input 
+                            type="number" 
+                            step="any" 
+                            value={item.purchaseDiameter2 || ""} 
+                            placeholder="D2 cm"
+                            onChange={(e) => {
+                              const newLogItems = [...form.logItems];
+                              const d2 = parseFloat(e.target.value) || 0;
+                              newLogItems[index].purchaseDiameter2 = d2;
+                              const d1 = newLogItems[index].purchaseDiameter1 || 0;
+                              const calcRt = (d1 > 0 && d2 > 0) ? Math.round(((d1 + d2) / 2) * 10) / 10 : (d1 || d2 || 0);
+                              newLogItems[index].purchaseDiameterAvg = calcRt;
+                              newLogItems[index].purchaseVolume = calculateLogVolume(newLogItems[index].purchaseLength, d1, d2, calcRt);
+                              setForm({ ...form, logItems: newLogItems });
+                            }} 
+                            className="h-9 text-xs font-mono"
+                          />
+                        </div>
+                        <div className="space-y-1.5 bg-blue-50/50 dark:bg-blue-950/20 p-1 rounded-md border border-blue-200/50 dark:border-blue-800/40">
+                          <Label className="text-xs font-bold text-blue-700 dark:text-blue-300">RT (cm)</Label>
+                          <Input 
+                            type="number" 
+                            step="any" 
+                            value={item.purchaseDiameterAvg || (currentRt > 0 ? currentRt : "")} 
+                            placeholder="Rata2 cm"
+                            onChange={(e) => {
+                              const newLogItems = [...form.logItems];
+                              const customRt = parseFloat(e.target.value) || 0;
+                              newLogItems[index].purchaseDiameterAvg = customRt;
+                              newLogItems[index].purchaseVolume = calculateLogVolume(newLogItems[index].purchaseLength, newLogItems[index].purchaseDiameter1, newLogItems[index].purchaseDiameter2, customRt);
+                              setForm({ ...form, logItems: newLogItems });
+                            }} 
+                            className="h-9 text-xs font-mono font-bold text-blue-700 dark:text-blue-300 bg-background"
+                            title="Diameter Rata-rata (RT)"
+                          />
+                        </div>
+                        <div className="space-y-1.5 bg-emerald-50/50 dark:bg-emerald-950/20 p-1 rounded-md border border-emerald-200/50 dark:border-emerald-800/40">
+                          <Label className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Vol (m³)</Label>
+                          <Input 
+                            type="number" 
+                            step="0.0001" 
+                            value={item.purchaseVolume || ""} 
+                            placeholder="m³"
+                            onChange={(e) => {
+                              const newLogItems = [...form.logItems];
+                              newLogItems[index].purchaseVolume = parseFloat(e.target.value) || 0;
+                              setForm({ ...form, logItems: newLogItems });
+                            }} 
+                            className="h-9 text-xs font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-background"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" className="flex-1" onClick={() => {
+                    const last = form.logItems[form.logItems.length - 1];
+                    setForm({ 
+                      ...form, 
+                      logItems: [
+                        ...form.logItems, 
+                        { 
+                          logNumber: "", 
+                          species: last?.species || (speciesList[0]?.name || ""), 
+                          purchaseLength: last?.purchaseLength || 400, 
+                          purchaseDiameter1: 0, 
+                          purchaseDiameter2: 0, 
+                          purchaseDiameterAvg: 0,
+                          purchaseVolume: 0 
+                        }
+                      ] 
+                    });
+                  }}>
+                    <Plus className="w-4 h-4 mr-2" /> Tambah 1 Raw Log
+                  </Button>
+                  <Button type="button" variant="secondary" className="flex-1" onClick={() => {
+                    const last = form.logItems[form.logItems.length - 1];
+                    const newRows = Array.from({ length: 5 }).map(() => ({
+                      logNumber: "",
+                      species: last?.species || (speciesList[0]?.name || ""),
+                      purchaseLength: last?.purchaseLength || 400,
+                      purchaseDiameter1: 0,
+                      purchaseDiameter2: 0,
+                      purchaseDiameterAvg: 0,
+                      purchaseVolume: 0,
+                    }));
+                    setForm({ ...form, logItems: [...form.logItems, ...newRows] });
+                  }}>
+                    <Plus className="w-4 h-4 mr-2" /> Tambah 5 Raw Log
+                  </Button>
+                </div>
               </TabsContent>
             </Tabs>
 

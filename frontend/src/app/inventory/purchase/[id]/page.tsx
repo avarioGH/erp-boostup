@@ -466,34 +466,46 @@ export default function PurchaseDetailPage() {
                   <TableRow>
                     <TableHead className="font-semibold">No. Log</TableHead>
                     <TableHead className="font-semibold">Jenis Kayu</TableHead>
-                    <TableHead className="font-semibold text-center">Panjang (m)</TableHead>
+                    <TableHead className="font-semibold text-center">Panjang</TableHead>
                     <TableHead className="font-semibold text-center">Diameter (cm)</TableHead>
+                    <TableHead className="font-semibold text-center text-blue-700 dark:text-blue-300">RT (cm)</TableHead>
                     <TableHead className="font-semibold text-center">Volume (M³)</TableHead>
                     <TableHead className="font-semibold text-center">Status Log</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {purchase.logItems.map((log: any, i: number) => (
-                    <TableRow key={i} className="hover:bg-muted/30">
-                      <TableCell className="font-semibold text-foreground font-mono">{log.logNumber}</TableCell>
-                      <TableCell className="font-medium">{log.species}</TableCell>
-                      <TableCell className="text-center font-mono">{log.purchaseLength} m</TableCell>
-                      <TableCell className="text-center font-mono text-xs">
-                        {log.purchaseDiameter1 || 0} / {log.purchaseDiameter2 || 0} {log.purchaseDiameter3 ? `/ ${log.purchaseDiameter3} / ${log.purchaseDiameter4}` : ''} cm
-                      </TableCell>
-                      <TableCell className="text-center font-mono font-bold text-blue-600 dark:text-blue-400">
-                        {Number(log.purchaseVolume || 0).toFixed(4)} m³
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge
-                          variant={log.status === "RECEIVED" ? "default" : "secondary"}
-                          className={log.status === "RECEIVED" ? "bg-emerald-500/10 text-emerald-600 border-emerald-300" : ""}
-                        >
-                          {log.status === "RECEIVED" ? "Diterima (DUKB)" : "Draft / Pending"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {purchase.logItems.map((log: any, i: number) => {
+                    const d1 = Number(log.purchaseDiameter1 || 0);
+                    const d2 = Number(log.purchaseDiameter2 || 0);
+                    const rt = (d1 > 0 && d2 > 0) ? Math.round(((d1 + d2) / 2) * 10) / 10 : (d1 || d2 || 0);
+                    const lengthVal = Number(log.purchaseLength || 0);
+                    const lengthUnit = lengthVal > 50 ? `${lengthVal} cm` : `${lengthVal} m`;
+
+                    return (
+                      <TableRow key={i} className="hover:bg-muted/30">
+                        <TableCell className="font-semibold text-foreground font-mono">{log.logNumber}</TableCell>
+                        <TableCell className="font-medium">{log.species}</TableCell>
+                        <TableCell className="text-center font-mono">{lengthUnit}</TableCell>
+                        <TableCell className="text-center font-mono text-xs">
+                          {d1 || 0} / {d2 || 0} {log.purchaseDiameter3 ? `/ ${log.purchaseDiameter3} / ${log.purchaseDiameter4}` : ''} cm
+                        </TableCell>
+                        <TableCell className="text-center font-mono font-bold text-blue-700 dark:text-blue-300">
+                          {rt > 0 ? `${rt} cm` : "-"}
+                        </TableCell>
+                        <TableCell className="text-center font-mono font-bold text-blue-600 dark:text-blue-400">
+                          {Number(log.purchaseVolume || 0).toFixed(4)} m³
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge
+                            variant={log.status === "RECEIVED" ? "default" : "secondary"}
+                            className={log.status === "RECEIVED" ? "bg-emerald-500/10 text-emerald-600 border-emerald-300" : ""}
+                          >
+                            {log.status === "RECEIVED" ? "Diterima (DUKB)" : "Draft / Pending"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
