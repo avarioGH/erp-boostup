@@ -387,7 +387,7 @@ export default function PurchaseDetailPage() {
                   <TableRow>
                     <TableHead className="font-semibold">Varian / SKU</TableHead>
                     <TableHead className="font-semibold">Jenis Kayu & Grade</TableHead>
-                    <TableHead className="font-semibold text-center">Ukuran (T x L x P)</TableHead>
+                    <TableHead className="font-semibold text-center">Ukuran (P × T × L)</TableHead>
                     <TableHead className="font-semibold text-center">Jumlah (Pcs)</TableHead>
                     <TableHead className="font-semibold text-center">Volume (M³)</TableHead>
                     <TableHead className="font-semibold text-right">Harga Satuan</TableHead>
@@ -400,9 +400,15 @@ export default function PurchaseDetailPage() {
                     const width = item.purchaseWidth || item.timberVariant?.width || 0;
                     const length = item.purchaseLength || item.timberVariant?.length || 0;
                     const sku = item.timberVariant?.sku || `VAR-${thickness}x${width}x${length}`;
-                    const species = item.timberVariant?.species || item.timberVariant?.timberSpecies?.name || "-";
+                    const species = item.notes || item.timberVariant?.species || item.timberVariant?.timberSpecies?.name || "-";
                     const grade = item.timberVariant?.grade || item.timberVariant?.timberGrade?.name || "-";
                     const subtotal = (item.quantityPcs || 0) * (item.unitPrice || 0);
+
+                    // If dimensions are stored as cm (< 1000 for length, < 100 for width/thick), display as cm
+                    const isCmFormat = length <= 1000 && thickness <= 100 && width <= 100;
+                    const dimDisplay = isCmFormat 
+                      ? `${length} × ${thickness} × ${width} cm` 
+                      : `${thickness} × ${width} × ${length} mm`;
 
                     return (
                       <TableRow key={i} className="hover:bg-muted/30">
@@ -417,7 +423,7 @@ export default function PurchaseDetailPage() {
                           <span className="text-xs text-muted-foreground block">Grade: {grade}</span>
                         </TableCell>
                         <TableCell className="text-center font-mono text-sm">
-                          {thickness} × {width} × {length} mm
+                          {dimDisplay}
                         </TableCell>
                         <TableCell className="text-center font-bold text-foreground">
                           {item.quantityPcs} Pcs

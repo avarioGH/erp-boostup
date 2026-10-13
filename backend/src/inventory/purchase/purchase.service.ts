@@ -75,21 +75,114 @@ export class PurchaseService {
       );
     }
 
+    const hasLogItems = logItems && logItems.length > 0;
+    // Log purchases go directly into DUKB, while sawn timber purchases (beli masak) remain DRAFT until physical arrival
+    const isDirectlyReceived = hasLogItems
+      ? true
+      : (data.status === 'RECEIVED' || data.isReceived === true);
+    const initialStatus = isDirectlyReceived ? 'RECEIVED' : 'DRAFT';
+
+    const processedItems: any[] = [];
+    for (const item of items || []) {
+      let variantId = item.timberVariantId;
+      const tCm = Number(item.purchaseThickness ?? item.thickness ?? item.t ?? 0);
+      const wCm = Number(item.purchaseWidth ?? item.width ?? item.l ?? 0);
+      const pCm = Number(item.purchaseLength ?? item.length ?? item.p ?? 0);
+
+      // Convert cm to mm for database TimberVariant
+      const tMm = Math.round(tCm > 50 ? tCm : tCm * 10);
+      const wMm = Math.round(wCm > 100 ? wCm : wCm * 10);
+      const lMm = Math.round(pCm > 1000 ? pCm : (pCm >= 50 ? pCm * 10 : pCm * 1000));
+
+      const pcs = Number(item.quantityPcs ?? item.pcs ?? 0);
+      let vol = Number(item.volumeM3 ?? item.volume ?? 0);
+      if ((!vol || vol === 0) && tCm > 0 && wCm > 0 && pCm > 0 && pcs > 0) {
+        // (Panjang cm * Tebal cm * Lebar cm * PCS) / 1.000.000
+        vol = Number(((pCm * tCm * wCm * pcs) / 1000000).toFixed(4));
+      }
+
+      const spec = (item.species || item.jenis || 'SAWN-TIMBER').trim().toUpperCase();
+      const grd = (item.grade || 'A').trim().toUpperCase();
+
+      if (!variantId && tMm > 0 && wMm > 0 && lMm > 0) {
+        try {
+          const found = await this.prisma.timberVariant.findFirst({
+            where: {
+              species: { equals: spec, mode: 'insensitive' },
+              thickness: tMm,
+              width: wMm,
+              length: lMm,
+            },
+          });
+          if (found) {
+            variantId = found.id;
+          } else {
+            let genericProduct = await this.prisma.product.findFirst({
+              where: {
+                OR: [{ code: 'SAWN-TIMBER' }, { name: 'Sawn Timber' }],
+              },
+            });
+            if (!genericProduct) {
+              genericProduct = await this.prisma.product.create({
+                data: {
+                  name: 'Kayu Olahan (Sawn Timber)',
+                  code: 'SAWN-TIMBER',
+                  category: 'TIMBER',
+                  type: 'RAW_MATERIAL',
+                  uom: 'PCS',
+                  status: 'ACTIVE',
+                },
+              });
+            }
+            const skuCode = `${spec}-${grd}-${tMm}X${wMm}X${lMm}`;
+            const newVar = await this.prisma.timberVariant.create({
+              data: {
+                company_id: targetCompanyId as string,
+                productId: genericProduct.id,
+                species: spec,
+                grade: grd,
+                thickness: tMm,
+                width: wMm,
+                length: lMm,
+                sku: skuCode,
+                barcode: `V-${skuCode}-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`,
+                volumePerPiece: (tMm * wMm * lMm) / 1000000000,
+              },
+            });
+            variantId = newVar.id;
+          }
+        } catch (vErr) {
+          this.logger.warn(`Failed to auto-create variant: ${vErr}`);
+        }
+      }
+
+      if (variantId) {
+        processedItems.push({
+          timberVariantId: variantId,
+          quantityPcs: pcs,
+          volumeM3: vol,
+          purchaseThickness: tCm,
+          purchaseWidth: wCm,
+          purchaseLength: pCm,
+          unitPrice: Number(item.unitPrice || 0),
+          notes: item.notes || item.jenis || spec,
+          batch: item.batch || 'UNKNOWN',
+        });
+      }
+    }
+
     let totalPcs = 0;
     let totalVolumeM3 = 0;
 
-    for (const item of items || []) {
-      totalPcs += Number(item.quantityPcs || 0);
-      totalVolumeM3 += Number(item.volumeM3 || 0);
+    for (const it of processedItems) {
+      totalPcs += Number(it.quantityPcs || 0);
+      totalVolumeM3 += Number(it.volumeM3 || 0);
     }
 
     for (const li of logItems || []) {
       totalPcs += 1;
       totalVolumeM3 += Number(li.purchaseVolume || 0);
     }
-
-    const isDirectlyReceived = data.status === 'RECEIVED' || data.isReceived === true || (logItems && logItems.length > 0);
-    const initialStatus = isDirectlyReceived ? 'RECEIVED' : 'DRAFT';
 
     const purchaseData = {
       company_id: targetCompanyId as string,
@@ -103,17 +196,7 @@ export class PurchaseService {
       totalPcs,
       totalVolumeM3,
       items: {
-        create: (items || []).map((item: any) => ({
-          timberVariantId: item.timberVariantId,
-          quantityPcs: Number(item.quantityPcs || 0),
-          volumeM3: Number(item.volumeM3 || 0),
-          purchaseThickness: Number(item.purchaseThickness || 0),
-          purchaseWidth: Number(item.purchaseWidth || 0),
-          purchaseLength: Number(item.purchaseLength || 0),
-          unitPrice: Number(item.unitPrice || 0),
-          notes: item.notes,
-          batch: item.batch || 'UNKNOWN',
-        })),
+        create: processedItems,
       },
       logItems: {
         create: (logItems || []).map((li: any) => ({
