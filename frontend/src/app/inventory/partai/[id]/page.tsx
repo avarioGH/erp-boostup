@@ -2006,23 +2006,34 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               const rawLogs = partai.rawLogs || [];
               const totalRawLogPcs = rawLogs.length;
               const totalRawLogVolM3 = rawLogs.reduce((s: number, r: any) => {
-                const d = (r.averageDiameter || r.diameter || 0) / 100;
-                const l = r.length || 0;
-                return s + (Math.PI / 4) * d * d * l;
+                if (r.netVolume && Number(r.netVolume) > 0) return s + Number(r.netVolume);
+                if (r.grossVolume && Number(r.grossVolume) > 0) return s + Number(r.grossVolume);
+                const d = (r.averageDiameter || r.roundedDiameter || r.diameter || 0);
+                const l = r.originalLength || r.length || 0;
+                if (d > 0 && l > 0) {
+                  return s + (l * d * d) / 1000000;
+                }
+                return s;
               }, 0);
 
               // Trimming
               const trimmedLogs = partai.trimmedLogs || [];
               const totalTrimmedPcs = trimmedLogs.length;
               const totalTrimmedVolM3 = trimmedLogs.reduce((s: number, t: any) => {
-                const d = (t.averageDiameter || t.diameter || 0) / 100;
+                if (t.netVolume && Number(t.netVolume) > 0) return s + Number(t.netVolume);
+                if (t.grossVolume && Number(t.grossVolume) > 0) return s + Number(t.grossVolume);
+                const d = (t.averageDiameter || t.roundedDiameter || t.diameter || 0);
                 const l = t.length || 0;
-                return s + (Math.PI / 4) * d * d * l;
+                if (d > 0 && l > 0) {
+                  return s + (l * d * d) / 1000000;
+                }
+                return s;
               }, 0);
 
               // Input WIP
               const inputLogs = partai.inputLogs || [];
               const totalInputPcs = inputLogs.length;
+              const totalInputVolM3 = inputLogs.reduce((s: number, i: any) => s + (Number(i.totalVolume || 0)), 0);
 
               // Output Sawn Timber
               const allOutputItems = (partai.sawnOutputs || []).flatMap((o: any) => o.items || []);
@@ -2032,8 +2043,9 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               const postedPcs = postedItems.reduce((s: number, i: any) => s + (i.quantityPcs || 0), 0);
               const postedM3 = postedItems.reduce((s: number, i: any) => s + (i.volumeM3 || 0), 0);
 
-              // Rendemen
-              const rendemen = totalRawLogVolM3 > 0 ? (totalOutputM3 / totalRawLogVolM3) * 100 : 0;
+              // Rendemen terhadap Log DUKB (atau fallback terhadap Log WIP jika DUKB kosong)
+              const baseLogVol = totalRawLogVolM3 > 0 ? totalRawLogVolM3 : (totalInputVolM3 > 0 ? totalInputVolM3 : totalTrimmedVolM3);
+              const rendemen = baseLogVol > 0 ? (totalOutputM3 / baseLogVol) * 100 : 0;
 
               // Product Category breakdown (Balok, Reng, BS, Air Dry, FJL)
               const CATEGORY_CONFIG: Record<string, { label: string; badgeClass: string }> = {
@@ -2129,7 +2141,9 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                           <TableRow>
                             <TableCell className="font-medium">4. Input Mesin (WIP)</TableCell>
                             <TableCell className="text-right">{totalInputPcs}</TableCell>
-                            <TableCell className="text-right text-muted-foreground">-</TableCell>
+                            <TableCell className="text-right font-medium text-amber-600 dark:text-amber-400">
+                              {totalInputVolM3 > 0 ? Number(totalInputVolM3.toFixed(4)) : "-"}
+                            </TableCell>
                             <TableCell className="text-right text-muted-foreground">-</TableCell>
                           </TableRow>
                           <TableRow className="bg-emerald-50/30 dark:bg-emerald-900/10">
@@ -2137,7 +2151,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400">{totalOutputPcs}</TableCell>
                             <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400">{Number(totalOutputM3.toFixed(4))}</TableCell>
                             <TableCell className="text-right">
-                              {totalRawLogVolM3 > 0 ? (
+                              {baseLogVol > 0 ? (
                                 <span className={`font-bold ${rendemen >= 50 ? 'text-emerald-600' : 'text-red-600'}`}>Rendemen {rendemen.toFixed(1)}%</span>
                               ) : '-'}
                             </TableCell>
@@ -2157,7 +2171,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                     <Card>
                       <CardHeader className="border-b pb-4">
                         <CardTitle>Rendemen & Rekap per Kategori Produk</CardTitle>
-                        <CardDescription>Distribusi Balok (Main Size), Reng/Papan, BS/Afkir & rendemen parsial terhadap Log Raw</CardDescription>
+                        <CardDescription>Distribusi Balok (Main Size), Reng/Papan, BS/Afkir & rendemen parsial terhadap Log Raw / WIP</CardDescription>
                       </CardHeader>
                       <CardContent className="pt-4">
                         <Table>
@@ -2174,7 +2188,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             {Object.entries(categoryBreakdown).map(([catKey, val]) => {
                               const conf = CATEGORY_CONFIG[catKey] || { label: catKey, badgeClass: 'border-slate-500 text-slate-600 bg-slate-50/50' };
                               const pctOutput = totalOutputM3 > 0 ? (val.m3 / totalOutputM3) * 100 : 0;
-                              const partialRendemen = totalRawLogVolM3 > 0 ? (val.m3 / totalRawLogVolM3) * 100 : 0;
+                              const partialRendemen = baseLogVol > 0 ? (val.m3 / baseLogVol) * 100 : 0;
                               return (
                                 <TableRow key={catKey}>
                                   <TableCell>
