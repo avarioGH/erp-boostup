@@ -321,7 +321,8 @@ export default function CreatePurchasePage() {
         warehouseId: form.warehouseId,
         notes: form.notes,
         partaiId: form.partaiId,
-        status: form.status,
+        status: form.purchaseType === "raw-log" ? "RECEIVED" : form.status,
+        isReceived: form.purchaseType === "raw-log" ? true : undefined,
         items: form.purchaseType === "sawn-timber" ? form.items : [],
         logItems: form.purchaseType === "raw-log" ? form.logItems.map((li, idx) => ({
           ...li,

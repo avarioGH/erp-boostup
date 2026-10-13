@@ -227,10 +227,20 @@ export class PartaiService {
           if (existingPurchaseLogItemIds.has(item.id)) continue;
           if (itemLogNumber && existingLogNumbers.has(itemLogNumber)) continue;
 
-          // If item is pending but purchase was received or item has dimensions, ensure it's treated as received/restored
-          if (item.status !== 'RECEIVED' && p.status !== 'RECEIVED') {
-            // If both purchase and item are draft/pending, skip
-            continue;
+          // Automatically restore any log items from purchases attached to this partai into DUKB (RawLog)
+          if (item.status !== 'RECEIVED' || p.status !== 'RECEIVED') {
+            try {
+              await this.prisma.purchaseLogItem.update({
+                where: { id: item.id },
+                data: { status: 'RECEIVED' },
+              });
+              if (p.status !== 'RECEIVED') {
+                await this.prisma.timberPurchase.update({
+                  where: { id: p.id },
+                  data: { status: 'RECEIVED' },
+                });
+              }
+            } catch (upErr) {}
           }
             const d1 = Number(item.purchaseDiameter1 || 0);
             const d2 = Number(item.purchaseDiameter2 || 0);

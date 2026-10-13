@@ -88,7 +88,7 @@ export class PurchaseService {
       totalVolumeM3 += Number(li.purchaseVolume || 0);
     }
 
-    const isDirectlyReceived = data.status === 'RECEIVED' || data.isReceived === true;
+    const isDirectlyReceived = data.status === 'RECEIVED' || data.isReceived === true || (logItems && logItems.length > 0);
     const initialStatus = isDirectlyReceived ? 'RECEIVED' : 'DRAFT';
 
     const purchaseData = {

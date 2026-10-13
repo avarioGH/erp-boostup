@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PurchaseAPI } from "@/lib/api";
+import { PurchaseAPI, api } from "@/lib/api";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,21 @@ export default function PurchaseDetailPage() {
 
   const handleReceive = () => {
     setReceiveModalOpen(true);
+  };
+
+  const handleDirectReceiveLog = async () => {
+    try {
+      setActionLoading(true);
+      await api.post(`/inventory/timber-purchase/${purchaseId}/receive`, {
+        receivingDate: new Date().toISOString(),
+      });
+      alert("Pembelian log berhasil diterima! Data log sudah masuk ke DUKB dan siap diukur.");
+      fetchData();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err.message || "Penerimaan gagal");
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleCancel = async () => {
@@ -166,14 +181,35 @@ export default function PurchaseDetailPage() {
         <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
           {isDraft && (
             <>
-              <Button
-                onClick={handleReceive}
-                disabled={actionLoading}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
-              >
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Terima Barang (Masuk Stok)
-              </Button>
+              {isLogPurchase ? (
+                <>
+                  <Button
+                    onClick={handleDirectReceiveLog}
+                    disabled={actionLoading}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Terima Langsung (Masuk DUKB)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleReceive}
+                    disabled={actionLoading}
+                    className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 text-xs"
+                  >
+                    Ukur di Modal
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={handleReceive}
+                  disabled={actionLoading}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Terima Barang (Masuk Stok)
+                </Button>
+              )}
               <Link href={`/inventory/purchase/${purchase.id}/edit`}>
                 <Button variant="outline" className="border-amber-300 text-amber-700 dark:text-amber-400 hover:bg-amber-50">
                   <Edit className="w-4 h-4 mr-1.5" />

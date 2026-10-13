@@ -1034,7 +1034,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                           )}
                         </TableCell>
                         <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center justify-end gap-1">
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Detail Log" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}?partaiId=${id}&tab=rawlogs`); }}>
                               <Eye className="w-4 h-4" />
                             </Button>
@@ -1047,7 +1047,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                                 <Scissors className="w-4 h-4" />
                               </Button>
                             )}
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Edit" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}/edit?partaiId=${id}&tab=rawlogs`); }}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Edit / Ukur DUKB" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}/edit?partaiId=${id}&tab=rawlogs`); }}>
                               <Edit className="w-4 h-4" />
                             </Button>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete" onClick={(e) => { e.stopPropagation(); handleDeleteLog(r.id); }}>
