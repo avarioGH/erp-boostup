@@ -119,14 +119,24 @@ export class PurchaseService {
               },
             });
             if (!genericProduct) {
+              let defaultUnit = await this.prisma.unit.findFirst({
+                where: targetCompanyId ? { company_id: targetCompanyId as string } : {},
+              });
+              if (!defaultUnit) defaultUnit = await this.prisma.unit.findFirst();
+              if (!defaultUnit) {
+                defaultUnit = await this.prisma.unit.create({
+                  data: { company_id: targetCompanyId as string, name: 'Pieces' },
+                });
+              }
               genericProduct = await this.prisma.product.create({
                 data: {
                   name: 'Kayu Olahan (Sawn Timber)',
                   code: 'SAWN-TIMBER',
-                  category: 'TIMBER',
-                  type: 'RAW_MATERIAL',
-                  uom: 'PCS',
-                  status: 'ACTIVE',
+                  company_id: targetCompanyId as string,
+                  unit_id: defaultUnit.id,
+                  purchase_price: 0,
+                  selling_price: 0,
+                  status: true,
                 },
               });
             }
@@ -1014,14 +1024,24 @@ export class PurchaseService {
                   },
                 });
                 if (!genericProduct) {
+                  let defaultUnit = await tx.unit.findFirst({
+                    where: { company_id: purchase.company_id },
+                  });
+                  if (!defaultUnit) defaultUnit = await tx.unit.findFirst();
+                  if (!defaultUnit) {
+                    defaultUnit = await tx.unit.create({
+                      data: { company_id: purchase.company_id, name: 'Pieces' },
+                    });
+                  }
                   genericProduct = await tx.product.create({
                     data: {
                       name: 'Kayu Olahan (Sawn Timber)',
                       code: 'SAWN-TIMBER',
-                      category: 'TIMBER',
-                      type: 'RAW_MATERIAL',
-                      uom: 'PCS',
-                      status: 'ACTIVE',
+                      company_id: purchase.company_id,
+                      unit_id: defaultUnit.id,
+                      purchase_price: 0,
+                      selling_price: 0,
+                      status: true,
                     },
                   });
                 }

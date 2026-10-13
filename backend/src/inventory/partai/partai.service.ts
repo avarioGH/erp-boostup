@@ -278,7 +278,7 @@ export class PartaiService {
           // Automatically restore any log items from purchases attached to this partai into DUKB (RawLog)
           if (item.status !== 'RECEIVED' || p.status !== 'RECEIVED') {
             try {
-              await this.prisma.purchaseLogItem.update({
+              await this.prisma.timberPurchaseLogItem.update({
                 where: { id: item.id },
                 data: { status: 'RECEIVED' },
               });
