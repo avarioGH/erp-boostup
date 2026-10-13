@@ -305,7 +305,7 @@ export default function ChamberOperationsPage() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => router.push(`/inventory/production/${p.id}`)}
+                                onClick={() => router.push(`/production/chamber/batch/${p.id}`)}
                                 className="h-7 px-2 text-xs text-primary hover:text-primary"
                               >
                                 <Eye className="w-3.5 h-3.5 mr-1" /> Buka
