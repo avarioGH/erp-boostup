@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2, Check, X, Loader2, Package, CheckSquare, Square } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2, Check, X, Loader2, Package, CheckSquare, Square, ChevronDown, ChevronRight, Calendar, Layers } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -102,6 +102,12 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     { t: "", l: "", p: "", pcs: "", productType: "BALOK" }
   ]);
   const [isSavingTally, setIsSavingTally] = useState(false);
+  const [expandedInputLogIds, setExpandedInputLogIds] = useState<string[]>([]);
+  const toggleExpandInputLog = (logId: string) => {
+    setExpandedInputLogIds(prev => 
+      prev.includes(logId) ? prev.filter(id => id !== logId) : [...prev, logId]
+    );
+  };
 
   useEffect(() => {
     MasterDataAPI.getGrades().then((res: any) => setGrades(res.data || res)).catch(() => {});
@@ -1089,16 +1095,31 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                     <TableHead>No. Log Asal</TableHead>
                     <TableHead className="text-right">Volume Hasil (m³)</TableHead>
                     <TableHead className="text-right">Sisa Gerowong</TableHead>
+                    <TableHead className="text-center">Status Pemrosesan</TableHead>
                     <TableHead className="text-center w-[80px]">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedTrimmedLogs.map((t: any) => (
+                  {paginatedTrimmedLogs.map((t: any) => {
+                    const isCut = t.status === 'ASSIGNED_TO_INPUT' || t.status === 'CONSUMED' || t.status === 'IN_PROCESS' || !!t.inputLogId;
+                    return (
                     <TableRow key={t.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => router.push(`/inventory/trimming/${t.id}?partaiId=${id}&tab=trimming`)}>
-                      <TableCell className="font-medium">{t.trimNumber || t.logNumber}</TableCell>
+                      <TableCell className="font-semibold text-foreground font-mono">{t.trimNumber || t.logNumber}</TableCell>
                       <TableCell className="text-primary font-medium">{t.rawLog?.logNumber || "-"}</TableCell>
                       <TableCell className="text-right font-bold text-foreground/90">{Number(t.netVolume || 0).toFixed(4)}</TableCell>
                       <TableCell className="text-right">{Number(t.hollowVolume || 0).toFixed(4)}</TableCell>
+                      <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                        {isCut ? (
+                          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-semibold py-0.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1 inline" />
+                            Sudah Dipotong (WIP)
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30 text-xs font-semibold py-0.5">
+                            Available (Siap Potong)
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">
@@ -1112,9 +1133,10 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  );
+                })}
                   {sortedTrimmedLogs.length === 0 && (
-                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Belum ada proses trimming.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Belum ada proses trimming.</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -1274,14 +1296,30 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 const totalInputVol = Number(i.totalVolume || 0);
                 const outItems = (i.sawnOutputs || []).flatMap((o: any) => o.items || []);
                 const totalOutputVol = outItems.reduce((acc: number, cur: any) => acc + (cur.volumeM3 || 0), 0);
+                const totalOutputPcs = outItems.reduce((acc: number, cur: any) => acc + (cur.quantityPcs || 0), 0);
                 const progressPct = totalInputVol > 0 ? Math.min(100, Math.round((totalOutputVol / totalInputVol) * 100)) : 0;
+                const isExpanded = expandedInputLogIds.includes(i.id);
                 
                 return (
-                  <Card key={i.id} className="overflow-hidden border-border/60 hover:border-primary/40 transition-all cursor-pointer shadow-sm group" onClick={() => router.push(`/inventory/input-logs/${i.id}?partaiId=${id}&tab=input`)}>
-                    <div className="p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                      <div className="md:col-span-3 space-y-1">
+                  <Card key={i.id} className="overflow-hidden border-border/70 hover:border-primary/50 transition-all shadow-sm">
+                    {/* Header Row */}
+                    <div 
+                      className="p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center cursor-pointer hover:bg-muted/30 transition-colors"
+                      onClick={() => toggleExpandInputLog(i.id)}
+                    >
+                      <div className="md:col-span-4 space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-base text-primary group-hover:underline font-mono">{i.inputNumber}</span>
+                          <button 
+                            type="button" 
+                            className="text-muted-foreground hover:text-foreground p-0.5 rounded transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleExpandInputLog(i.id);
+                            }}
+                          >
+                            {isExpanded ? <ChevronDown className="w-5 h-5 text-primary" /> : <ChevronRight className="w-5 h-5" />}
+                          </button>
+                          <span className="font-bold text-base text-primary font-mono">{i.inputNumber}</span>
                           {i.status === 'DONE' ? (
                             <Badge className="bg-emerald-500 hover:bg-emerald-600">DONE</Badge>
                           ) : i.status === 'IN_PROCESS' || i.status === 'PROCESSING' ? (
@@ -1290,23 +1328,30 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             <Badge className="bg-blue-500 hover:bg-blue-600">AVAILABLE</Badge>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground flex gap-1 items-center">
-                          <span className="font-medium text-foreground/80">{i.species}</span> &bull; {i.items?.length || 0} Source Logs
+                        <div className="text-xs text-muted-foreground flex gap-1.5 items-center pl-7">
+                          <span>{i.date ? new Date(i.date).toLocaleDateString("id-ID") : (i.createdAt ? new Date(i.createdAt).toLocaleDateString("id-ID") : "-")}</span>
+                          <span>&bull;</span>
+                          <span className="font-medium text-foreground/80">{i.species || "-"}</span> 
+                          <span>&bull;</span>
+                          <span>{i.items?.length || 0} Source Logs</span>
                         </div>
                       </div>
                       
-                      <div className="md:col-span-6 grid grid-cols-3 gap-3 text-sm text-center">
-                        <div className="bg-muted/30 rounded-md p-2">
-                          <div className="text-xs text-muted-foreground mb-1">Input (m&sup3;)</div>
-                          <div className="font-semibold text-foreground/90 font-mono">{totalInputVol.toFixed(4)}</div>
+                      <div className="md:col-span-5 grid grid-cols-3 gap-2.5 text-sm text-center">
+                        <div className="bg-muted/40 rounded-md p-2">
+                          <div className="text-[11px] text-muted-foreground mb-0.5">Input Bahan</div>
+                          <div className="font-semibold text-foreground/90 font-mono text-xs md:text-sm">{totalInputVol.toFixed(4)} m³</div>
                         </div>
-                        <div className="bg-muted/30 rounded-md p-2">
-                          <div className="text-xs text-muted-foreground mb-1">Output (m&sup3;)</div>
-                          <div className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">{totalOutputVol.toFixed(4)}</div>
+                        <div className="bg-muted/40 rounded-md p-2">
+                          <div className="text-[11px] text-muted-foreground mb-0.5">Output Hasil</div>
+                          <div className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono text-xs md:text-sm">
+                            {totalOutputVol.toFixed(4)} m³
+                            {totalOutputPcs > 0 && <span className="block text-[10px] text-muted-foreground font-normal">{totalOutputPcs} pcs</span>}
+                          </div>
                         </div>
-                        <div className="bg-muted/30 rounded-md p-2">
-                          <div className="text-xs text-muted-foreground mb-1">Yield</div>
-                          <div className="font-semibold text-blue-600 dark:text-blue-400">{progressPct}%</div>
+                        <div className="bg-muted/40 rounded-md p-2">
+                          <div className="text-[11px] text-muted-foreground mb-0.5">Rendemen</div>
+                          <div className="font-semibold text-blue-600 dark:text-blue-400 text-xs md:text-sm">{progressPct}%</div>
                         </div>
                       </div>
                       
@@ -1319,25 +1364,180 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             openTallyModalWithSelection([], i);
                           }}
                         >
-                          <Plus className="w-3.5 h-3.5 mr-1" /> + Tambah Tally
+                          <Plus className="w-3.5 h-3.5 mr-1" /> + Tally
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 text-xs font-semibold"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpandInputLog(i.id);
+                          }}
+                        >
+                          {isExpanded ? "Tutup" : "Buka Isi"}
                         </Button>
                         <Button 
                           variant="secondary" 
                           size="sm" 
-                          className="h-8 text-xs"
+                          className="h-8 text-xs px-2"
+                          title="Buka Halaman Job Card Lengkap"
                           onClick={(e) => { 
                             e.stopPropagation(); 
                             router.push(`/inventory/input-logs/${i.id}?partaiId=${id}&tab=input`);
                           }}
                         >
-                          Detail <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </div>
+
                     {/* Progress Bar Visualizer */}
                     <div className="h-1.5 w-full bg-muted/50">
                       <div className={`h-full transition-all duration-500 ${i.status === 'DONE' ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${progressPct}%` }} />
                     </div>
+
+                    {/* EXPANDED DETAILS (Log Sumber, Tanggal, Hasil Tally PxLxT=m3, PCS) */}
+                    {isExpanded && (
+                      <div className="border-t bg-muted/15 p-4 sm:p-5 space-y-4">
+                        {/* 1. Log Sumber yang Dipotong */}
+                        <div className="bg-background rounded-lg border p-3.5 shadow-sm space-y-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                              🪵 Log Sumber Yang Dipotong ({i.items?.length || 0} Log)
+                            </span>
+                            <span className="text-xs font-semibold text-muted-foreground">
+                              Total Input: <strong className="text-foreground font-mono">{totalInputVol.toFixed(4)} m³</strong>
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {(i.items || []).map((item: any, idx: number) => {
+                              const logCode = item.trimmedLog?.trimNumber || item.rawLog?.logNumber || `Log #${idx + 1}`;
+                              const pjg = item.trimmedLog?.length || item.rawLog?.length;
+                              const dia = item.trimmedLog?.averageDiameter || item.rawLog?.averageDiameter;
+                              const vol = item.volume || item.trimmedLog?.netVolume || item.rawLog?.netVolume || 0;
+                              return (
+                                <div key={item.id || idx} className="inline-flex items-center gap-2 bg-muted/60 border rounded-md px-2.5 py-1 text-xs">
+                                  <span className="font-bold font-mono text-primary">{logCode}</span>
+                                  {(dia || pjg) && <span className="text-muted-foreground text-[11px]">({dia ? `Ø${dia}cm` : ''} {pjg ? `P${pjg}m` : ''})</span>}
+                                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">{Number(vol).toFixed(4)} m³</span>
+                                </div>
+                              );
+                            })}
+                            {(!i.items || i.items.length === 0) && (
+                              <span className="text-xs text-muted-foreground italic">Tidak ada rincian data log sumber.</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 2. Info Tanggal & Spesies */}
+                        <div className="flex flex-wrap items-center justify-between text-xs text-muted-foreground px-1 gap-2">
+                          <div className="flex flex-wrap items-center gap-4">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5" /> Tanggal Pengerjaan: <strong className="text-foreground">{i.date ? new Date(i.date).toLocaleDateString("id-ID") : (i.createdAt ? new Date(i.createdAt).toLocaleDateString("id-ID") : "-")}</strong>
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Layers className="w-3.5 h-3.5" /> Spesies Kayu: <strong className="text-foreground">{i.species || "-"}</strong>
+                            </span>
+                          </div>
+                          <span className="text-xs font-medium">
+                            Total Hasil: <strong className="text-emerald-600 font-mono">{totalOutputPcs} PCS</strong> ({totalOutputVol.toFixed(4)} m³)
+                          </span>
+                        </div>
+
+                        {/* 3. Hasil Tally Gergajian (T x L x P = m3, PCS) */}
+                        <div className="bg-background rounded-lg border overflow-hidden shadow-sm">
+                          <div className="bg-muted/40 px-3.5 py-2 border-b flex items-center justify-between">
+                            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                              📋 Rincian Hasil Tally Gergajian (P × L × T = m³)
+                            </span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950 p-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openTallyModalWithSelection([], i);
+                              }}
+                            >
+                              <Plus className="w-3 h-3 mr-1" /> Tambah Tally
+                            </Button>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="bg-muted/20">
+                                  <TableHead className="h-8 text-xs">Tgl Tally</TableHead>
+                                  <TableHead className="h-8 text-xs">Kategori Produk</TableHead>
+                                  <TableHead className="h-8 text-xs font-bold">Ukuran: T × L × P (cm)</TableHead>
+                                  <TableHead className="h-8 text-xs text-right font-bold">Jumlah (PCS)</TableHead>
+                                  <TableHead className="h-8 text-xs text-right font-bold text-emerald-600">Hasil (m³)</TableHead>
+                                  <TableHead className="h-8 text-xs text-center w-[90px]">Status</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {(i.sawnOutputs || []).flatMap((o: any) => 
+                                  (o.items || []).map((item: any) => ({ ...item, outputDate: o.outputDate, status: o.status }))
+                                ).map((item: any, rowIdx: number) => {
+                                  const tCm = item.thicknessMm ? (item.thicknessMm / 10) : 0;
+                                  const lCm = item.widthMm ? (item.widthMm / 10) : 0;
+                                  const pCm = item.lengthMm ? (item.lengthMm / 10) : 0;
+                                  return (
+                                    <TableRow key={item.id || rowIdx} className="hover:bg-muted/30">
+                                      <TableCell className="py-2 text-xs text-muted-foreground">
+                                        {item.outputDate ? new Date(item.outputDate).toLocaleDateString("id-ID") : "-"}
+                                      </TableCell>
+                                      <TableCell className="py-2 text-xs">
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                          item.productType === 'RENG' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' :
+                                          item.productType === 'AFKIR_BS' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' :
+                                          item.productType === 'AIR_DRY' ? 'bg-cyan-500/10 text-cyan-600 border border-cyan-500/20' :
+                                          item.productType === 'FJL' ? 'bg-purple-500/10 text-purple-600 border border-purple-500/20' :
+                                          'bg-blue-500/10 text-blue-600 border border-blue-500/20'
+                                        }`}>
+                                          {item.productType || 'BALOK'}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="py-2 text-xs font-semibold font-mono text-foreground">
+                                        {tCm} &times; {lCm} &times; {pCm} cm
+                                      </TableCell>
+                                      <TableCell className="py-2 text-xs text-right font-bold text-foreground">
+                                        {item.quantityPcs} pcs
+                                      </TableCell>
+                                      <TableCell className="py-2 text-xs text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                                        {Number(item.volumeM3 || 0).toFixed(4)} m³
+                                      </TableCell>
+                                      <TableCell className="py-2 text-xs text-center">
+                                        <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${item.status === 'POSTED' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' : ''}`}>
+                                          {item.status || 'POSTED'}
+                                        </Badge>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                                {outItems.length === 0 && (
+                                  <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-6 text-xs text-muted-foreground">
+                                      Belum ada hasil tally gergajian yang dimasukkan untuk pekerjaan ini.
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                          {outItems.length > 0 && (
+                            <div className="bg-muted/30 px-3.5 py-2 border-t flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
+                              <span className="font-semibold text-muted-foreground">Total Rekapitulasi Output:</span>
+                              <div className="flex items-center gap-4">
+                                <span>Jumlah: <strong className="text-foreground font-mono">{totalOutputPcs} PCS</strong></span>
+                                <span>Volume: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{totalOutputVol.toFixed(4)} m³</strong></span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </Card>
                 );
               })}

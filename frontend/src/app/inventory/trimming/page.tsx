@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from"react"
 import { TimberAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
@@ -91,7 +91,17 @@ export default function TrimmingListPage() {
  <td className="py-3 px-6 text-[13px]">{log.species}</td>
  <td className="py-3 px-6 text-right text-[13px]">{log.length} m</td>
  <td className="py-3 px-6 text-right font-bold text-foreground/90">{log.netVolume}</td>
- <td className="py-3 px-6 text-center text-[13px]">{log.status === "AVAILABLE" || log.status === "CONFIRMED" ? <span className="inline-flex items-center rounded-sm bg-success/15 px-2 py-0.5 text-[11px] font-bold text-success-foreground uppercase tracking-wider">{log.status}</span> : <span className="inline-flex items-center rounded-sm bg-secondary/80 text-secondary-foreground px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider">{log.status}</span>}</td>
+ <td className="py-3 px-6 text-center text-[13px]">
+   {log.status === 'ASSIGNED_TO_INPUT' || log.status === 'CONSUMED' || log.status === 'IN_PROCESS' || !!log.inputLogId ? (
+     <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-semibold py-0.5">
+       Sudah Dipotong (WIP)
+     </Badge>
+   ) : (
+     <Badge variant="outline" className="border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30 text-xs font-semibold py-0.5">
+       Available (Siap Potong)
+     </Badge>
+   )}
+ </td>
  <td className="py-3 px-6 text-center text-[13px]" onClick={e => e.stopPropagation()}>
     <DropdownMenu>
       <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">

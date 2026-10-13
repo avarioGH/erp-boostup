@@ -329,19 +329,37 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
           <Card className="bg-card rounded-xl border border-border shadow-sm">
             <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10 flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-[16px] font-semibold">Source Material (Trimmed / Raw Logs)</CardTitle>
-                <CardDescription>Bahan baku yang dikonsumsi oleh pekerjaan ini.</CardDescription>
+                <CardTitle className="text-[16px] font-semibold flex items-center gap-2">
+                  <span>🪵</span> Source Material (Log Sumber)
+                </CardTitle>
+                <CardDescription>Bahan baku log yang diproses dalam pekerjaan gergajian ini.</CardDescription>
               </div>
             </CardHeader>
+            <div className="p-4 border-b bg-muted/20 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-muted-foreground uppercase mr-1">Log Terpilih:</span>
+              {(data.items || []).map((item: any, idx: number) => {
+                const logNum = item.trimmedLog?.trimNumber || item.rawLog?.logNumber || `Log #${idx + 1}`;
+                const vol = item.volume || item.trimmedLog?.netVolume || item.rawLog?.netVolume || 0;
+                return (
+                  <Badge key={item.id || idx} variant="secondary" className="font-mono text-xs font-bold border px-2.5 py-1 flex items-center gap-1.5">
+                    <span className="text-primary font-bold">{logNum}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">({Number(vol).toFixed(4)} m³)</span>
+                  </Badge>
+                );
+              })}
+              {(!data.items || data.items.length === 0) && (
+                <span className="text-xs text-muted-foreground italic">Belum ada data log sumber.</span>
+              )}
+            </div>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/30 hover:bg-muted/30">
-                      <TableHead className="h-10 text-xs">LOG ID / CODE</TableHead>
+                      <TableHead className="h-10 text-xs">NO. LOG / CODE</TableHead>
                       <TableHead className="h-10 text-xs text-right">PJG (m)</TableHead>
                       <TableHead className="h-10 text-xs text-right">RT (cm)</TableHead>
-                      <TableHead className="h-10 text-xs text-right text-emerald-600">VOL (m&sup3;)</TableHead>
+                      <TableHead className="h-10 text-xs text-right text-emerald-600 font-bold">VOL (m³)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -352,10 +370,10 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                       const vol = item.volume || 0
                       return (
                         <TableRow key={item.id} className="hover:bg-muted/30">
-                          <TableCell className="font-medium">{logNum}</TableCell>
+                          <TableCell className="font-semibold font-mono text-primary">{logNum}</TableCell>
                           <TableCell className="text-right">{pjg}</TableCell>
                           <TableCell className="text-right">{rt}</TableCell>
-                          <TableCell className="text-right font-semibold text-emerald-600 dark:text-emerald-400">{vol.toFixed(4)}</TableCell>
+                          <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">{vol.toFixed(4)}</TableCell>
                         </TableRow>
                       )
                     })}
@@ -369,9 +387,9 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
             <CardHeader className="p-4 md:p-5 border-b border-border/50 flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-[16px] font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Production History (Tallies)
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Hasil Tally Gergajian (P &times; L &times; T = m³)
                 </CardTitle>
-                <CardDescription>Catatan output per hari dari gergajian ini.</CardDescription>
+                <CardDescription>Catatan output harian dari pemotongan log ini.</CardDescription>
               </div>
               <Dialog open={tallyOpen} onOpenChange={setTallyOpen}>
                 <DialogTrigger>
@@ -472,43 +490,71 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                   <TableHeader>
                     <TableRow className="bg-muted/30 hover:bg-muted/30">
                       <TableHead className="h-10 text-xs">TANGGAL</TableHead>
-                      <TableHead className="h-10 text-xs">UKURAN (cm)</TableHead>
                       <TableHead className="h-10 text-xs">KATEGORI</TableHead>
-                      <TableHead className="h-10 text-xs text-right">PCS</TableHead>
-                      <TableHead className="h-10 text-xs text-right text-emerald-600">VOL (m&sup3;)</TableHead>
-                      <TableHead className="h-10 text-xs text-center w-[120px]">STATUS</TableHead>
+                      <TableHead className="h-10 text-xs font-bold">UKURAN: T &times; L &times; P (cm)</TableHead>
+                      <TableHead className="h-10 text-xs text-right font-bold">JUMLAH (PCS)</TableHead>
+                      <TableHead className="h-10 text-xs text-right font-bold text-emerald-600">HASIL (m&sup3;)</TableHead>
+                      <TableHead className="h-10 text-xs text-center w-[100px]">STATUS</TableHead>
+                      <TableHead className="h-10 text-xs text-center w-[80px]">AKSI</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(data.sawnOutputs || []).flatMap((o: any) => (o.items || []).map((item: any) => ({ ...item, parentDate: o.outputDate, status: o.status }))).map((i: any, idx: number) => {
+                    {(data.sawnOutputs || []).flatMap((o: any) => (o.items || []).map((item: any) => ({ ...item, parentDate: o.outputDate, status: o.status, parentOutput: o }))).map((i: any, idx: number) => {
+                      const tCm = i.thicknessMm ? (i.thicknessMm / 10) : 0;
+                      const lCm = i.widthMm ? (i.widthMm / 10) : 0;
+                      const pCm = i.lengthMm ? (i.lengthMm / 10) : 0;
                       return (
                         <TableRow key={i.id || idx} className="hover:bg-muted/30">
                           <TableCell className="font-medium text-sm">{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
-                          <TableCell className="text-sm">{i.thicknessMm / 10} &times; {i.widthMm / 10} &times; {i.lengthMm / 10}</TableCell>
                           <TableCell className="text-sm">
                             <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${
                               i.productType === 'RENG' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' :
                               i.productType === 'AFKIR_BS' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' :
                               i.productType === 'AIR_DRY' ? 'bg-cyan-500/10 text-cyan-600 border border-cyan-500/20' :
+                              i.productType === 'FJL' ? 'bg-purple-500/10 text-purple-600 border border-purple-500/20' :
                               'bg-blue-500/10 text-blue-600 border border-blue-500/20'
                             }`}>
                               {i.productType || 'BALOK'}
                             </span>
                           </TableCell>
-                          <TableCell className="text-right text-sm">{i.quantityPcs}</TableCell>
-                          <TableCell className="text-right font-semibold text-emerald-600 dark:text-emerald-400 text-sm">{i.volumeM3.toFixed(4)}</TableCell>
+                          <TableCell className="text-sm font-semibold font-mono text-foreground">
+                            {tCm} &times; {lCm} &times; {pCm} cm
+                          </TableCell>
+                          <TableCell className="text-right text-sm font-bold text-foreground">{i.quantityPcs} pcs</TableCell>
+                          <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400 text-sm font-mono">{Number(i.volumeM3 || 0).toFixed(4)} m³</TableCell>
                           <TableCell className="text-center">
-                            <Badge variant="outline" className={i.status === 'POSTED' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : ""}>{i.status}</Badge>
+                            <Badge variant="outline" className={i.status === 'POSTED' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[11px]" : "text-[11px]"}>{i.status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-rose-500 hover:text-rose-700 hover:bg-rose-50" 
+                              disabled={deletingId === i.parentOutput?.id}
+                              onClick={() => i.parentOutput && handleDeleteTally(i.parentOutput.id, i.status)}
+                              title="Hapus Tally"
+                            >
+                              <Trash className="w-3.5 h-3.5" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       )
                     })}
                     {(!data.sawnOutputs || data.sawnOutputs.length === 0) && (
-                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Belum ada history tally.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Belum ada history tally.</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
               </div>
+              {outItems.length > 0 && (
+                <div className="bg-muted/30 px-4 py-3 border-t flex flex-col sm:flex-row sm:items-center justify-between text-sm gap-2">
+                  <span className="font-semibold text-muted-foreground">Total Rekapitulasi Output:</span>
+                  <div className="flex items-center gap-6">
+                    <span>Jumlah: <strong className="text-foreground font-mono">{outItems.reduce((acc: number, cur: any) => acc + (cur.quantityPcs || 0), 0)} PCS</strong></span>
+                    <span>Volume: <strong className="text-emerald-600 dark:text-emerald-400 font-mono text-base">{totalOutputVol.toFixed(4)} m³</strong></span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
