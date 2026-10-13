@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2, Check, X, Loader2, Package, CheckSquare, Square, ChevronDown, ChevronRight, Calendar, Layers } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2, Check, X, Loader2, Package, CheckSquare, Square, ChevronDown, ChevronRight, Calendar, Layers, Search } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -98,6 +98,12 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [selectedTrimmedLogIds, setSelectedTrimmedLogIds] = useState<string[]>([]);
+  
+  // WIP Trimming Log Picker State
+  const [wipLogSearch, setWipLogSearch] = useState("");
+  const [wipLogStatusFilter, setWipLogStatusFilter] = useState<"ALL" | "UNTOUCHED" | "WORKED">("ALL");
+  const [wipLogPage, setWipLogPage] = useState(1);
+  const [wipLogPageSize, setWipLogPageSize] = useState(12);
   
   // Tally Modal State for Tab 4 WIP
   const [isTallyModalOpen, setIsTallyModalOpen] = useState(false);
@@ -1296,124 +1302,282 @@ export default function PartaiDetailPage({ params }: { params: any }) {
         <TabsContent value="input" className="space-y-6">
           {/* SECTION 1: PILIH LOG DARI TRIMMING & LANGSUNG INPUT TALLY */}
           <Card className="border-amber-500/30 bg-amber-50/20 dark:bg-amber-950/20 shadow-sm">
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
-              <div>
-                <CardTitle className="text-amber-800 dark:text-amber-400 text-lg flex items-center gap-2">
-                  <span className="text-xl">🪵</span> Log Siap Masuk Mesin & Input Hasil Tally
-                </CardTitle>
-                <CardDescription>
-                  Centang log hasil trimming di bawah ini, lalu klik tombol <strong>Input Tally Harian</strong> untuk langsung memasukkan hasil ukuran gergajian (P &times; L &times; T &times; PCS).
-                </CardDescription>
+            <CardHeader className="flex flex-col gap-4 border-b pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="text-amber-800 dark:text-amber-400 text-lg flex items-center gap-2">
+                    <span className="text-xl">🪵</span> Pilih Log Trimming & Input Tally Hasil Gergajian
+                  </CardTitle>
+                  <CardDescription>
+                    Pilih satu atau beberapa log di bawah ini (baik yang baru maupun lanjutan pengerjaan), lalu klik <strong>Input Tally Harian</strong>.
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    type="button"
+                    onClick={() => openTallyModalWithSelection()}
+                    disabled={selectedTrimmedLogIds.length === 0}
+                    className="h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Input Tally Harian ({selectedTrimmedLogIds.length} Log Terpilih)
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {(() => {
-                  const availableLogs = (partai.trimmedLogs || []).filter((t: any) => t.status === 'AVAILABLE');
-                  const isAllSelected = availableLogs.length > 0 && selectedTrimmedLogIds.length === availableLogs.length;
-                  return (
-                    <>
-                      {availableLogs.length > 0 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (isAllSelected) {
-                              setSelectedTrimmedLogIds([]);
-                            } else {
-                              setSelectedTrimmedLogIds(availableLogs.map((t: any) => t.id));
-                            }
-                          }}
-                          className="h-9 text-xs font-semibold"
-                        >
-                          {isAllSelected ? "Batal Pilih Semua" : "Pilih Semua Log"}
-                        </Button>
-                      )}
+
+              {/* SEARCH & STATUS FILTER CONTROLS */}
+              {(() => {
+                const allTrims = partai.trimmedLogs || [];
+                const touchedCount = allTrims.filter((t: any) => t.status === 'ASSIGNED_TO_INPUT' || t.status === 'CONSUMED' || !!t.inputLogId).length;
+                const untouchedCount = allTrims.length - touchedCount;
+
+                return (
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Cari No. Trim / No. Log..."
+                        value={wipLogSearch}
+                        onChange={(e) => {
+                          setWipLogSearch(e.target.value);
+                          setWipLogPage(1);
+                        }}
+                        className="pl-9 h-9 text-xs bg-background"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <Button
                         type="button"
-                        onClick={() => openTallyModalWithSelection()}
-                        disabled={selectedTrimmedLogIds.length === 0}
-                        className="h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm flex items-center gap-2"
+                        size="sm"
+                        variant={wipLogStatusFilter === "ALL" ? "default" : "outline"}
+                        onClick={() => {
+                          setWipLogStatusFilter("ALL");
+                          setWipLogPage(1);
+                        }}
+                        className="h-8 text-xs"
                       >
-                        <Plus className="w-4 h-4" />
-                        Input Tally Harian ({selectedTrimmedLogIds.length} Log Terpilih)
+                        Semua ({allTrims.length})
                       </Button>
-                    </>
-                  );
-                })()}
-              </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={wipLogStatusFilter === "UNTOUCHED" ? "default" : "outline"}
+                        onClick={() => {
+                          setWipLogStatusFilter("UNTOUCHED");
+                          setWipLogPage(1);
+                        }}
+                        className={`h-8 text-xs ${wipLogStatusFilter === "UNTOUCHED" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-emerald-700 dark:text-emerald-400 border-emerald-500/30"}`}
+                      >
+                        🟢 Belum Dikerjakan ({untouchedCount})
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={wipLogStatusFilter === "WORKED" ? "default" : "outline"}
+                        onClick={() => {
+                          setWipLogStatusFilter("WORKED");
+                          setWipLogPage(1);
+                        }}
+                        className={`h-8 text-xs ${wipLogStatusFilter === "WORKED" ? "bg-blue-600 hover:bg-blue-700 text-white" : "text-blue-700 dark:text-blue-400 border-blue-500/30"}`}
+                      >
+                        🔵 Sudah Pernah Dikerjakan ({touchedCount})
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
             </CardHeader>
             <CardContent className="pt-4">
               {(() => {
-                const availableLogs = (partai.trimmedLogs || []).filter((t: any) => t.status === 'AVAILABLE');
-                if (availableLogs.length === 0) {
+                const allTrims = partai.trimmedLogs || [];
+                if (allTrims.length === 0) {
                   return (
                     <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
-                      <p className="font-medium text-sm">Tidak ada log trimming yang berstatus SIAP POTONG saat ini.</p>
-                      <p className="text-xs mt-1">Lakukan trimming log terlebih dahulu pada tab <strong>3. Trimming</strong> untuk menghasilkan log siap potong.</p>
+                      <p className="font-medium text-sm">Belum ada log trimming untuk partai ini.</p>
+                      <p className="text-xs mt-1">Lakukan trimming log terlebih dahulu pada tab <strong>3. Trimming</strong>.</p>
                     </div>
                   );
                 }
 
+                // Filter by search & status
+                const filtered = allTrims.filter((t: any) => {
+                  const isWorked = t.status === 'ASSIGNED_TO_INPUT' || t.status === 'CONSUMED' || !!t.inputLogId;
+                  if (wipLogStatusFilter === "UNTOUCHED" && isWorked) return false;
+                  if (wipLogStatusFilter === "WORKED" && !isWorked) return false;
+
+                  if (wipLogSearch.trim()) {
+                    const q = wipLogSearch.toLowerCase().trim();
+                    const matchTrim = (t.trimNumber || "").toLowerCase().includes(q);
+                    const matchRaw = (t.rawLog?.logNumber || "").toLowerCase().includes(q);
+                    const matchSpecies = (t.species || "").toLowerCase().includes(q);
+                    if (!matchTrim && !matchRaw && !matchSpecies) return false;
+                  }
+                  return true;
+                });
+
+                const totalItems = filtered.length;
+                const totalPages = Math.ceil(totalItems / wipLogPageSize) || 1;
+                const safeCurrentPage = Math.min(wipLogPage, totalPages);
+                const startIndex = (safeCurrentPage - 1) * wipLogPageSize;
+                const paginatedLogs = filtered.slice(startIndex, startIndex + wipLogPageSize);
+
+                const isAllPageSelected = paginatedLogs.length > 0 && paginatedLogs.every((t: any) => selectedTrimmedLogIds.includes(t.id));
+
                 return (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {availableLogs.map((t: any) => {
-                        const isSelected = selectedTrimmedLogIds.includes(t.id);
-                        return (
-                          <div
-                            key={t.id}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                      <div className="flex items-center gap-2">
+                        <span>Menampilkan <strong>{filtered.length}</strong> log dari total {allTrims.length}</span>
+                        {selectedTrimmedLogIds.length > 0 && (
+                          <Badge variant="secondary" className="font-mono text-xs">
+                            {selectedTrimmedLogIds.length} log terpilih
+                          </Badge>
+                        )}
+                      </div>
+                      {paginatedLogs.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
                             onClick={() => {
-                              if (isSelected) {
-                                setSelectedTrimmedLogIds(selectedTrimmedLogIds.filter(x => x !== t.id));
+                              if (isAllPageSelected) {
+                                const pageIds = paginatedLogs.map((t: any) => t.id);
+                                setSelectedTrimmedLogIds(selectedTrimmedLogIds.filter(id => !pageIds.includes(id)));
                               } else {
-                                setSelectedTrimmedLogIds([...selectedTrimmedLogIds, t.id]);
+                                const newIds = Array.from(new Set([...selectedTrimmedLogIds, ...paginatedLogs.map((t: any) => t.id)]));
+                                setSelectedTrimmedLogIds(newIds);
                               }
                             }}
-                            className={`flex flex-col border rounded-lg p-3.5 bg-background shadow-sm cursor-pointer transition-all ${
-                              isSelected
-                                ? "border-blue-500 bg-blue-50/30 dark:bg-blue-950/30 ring-2 ring-blue-500/20"
-                                : "hover:border-amber-400"
-                            }`}
+                            className="h-7 text-xs font-semibold px-2"
                           >
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex items-center gap-2.5">
-                                <Checkbox
-                                  checked={isSelected}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setSelectedTrimmedLogIds([...selectedTrimmedLogIds, t.id]);
-                                    } else {
-                                      setSelectedTrimmedLogIds(selectedTrimmedLogIds.filter(x => x !== t.id));
-                                    }
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                                <span className="font-bold text-base text-foreground font-mono">{t.trimNumber}</span>
-                              </div>
-                              <Badge variant="outline" className="text-amber-600 border-amber-500 bg-amber-500/10 text-xs">
-                                SIAP POTONG
-                              </Badge>
-                            </div>
-                            <div className="text-xs text-muted-foreground space-y-1 mb-3 pl-6">
-                              <p>Spesies: <span className="font-semibold text-foreground">{t.species}</span></p>
-                              <p>Dimensi: <span className="font-medium text-foreground">{t.roundedDiameter} cm &times; {t.length} m</span></p>
-                              <p>Volume: <span className="font-bold text-foreground font-mono">{Number(t.netVolume || 0).toFixed(4)} m&sup3;</span></p>
-                            </div>
+                            {isAllPageSelected ? "Batal Pilih Halaman Ini" : "Pilih Semua di Halaman Ini"}
+                          </Button>
+                          {selectedTrimmedLogIds.length > 0 && (
                             <Button
                               type="button"
+                              variant="ghost"
                               size="sm"
-                              className="w-full mt-auto bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs h-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openTallyModalWithSelection([t.id]);
-                              }}
+                              onClick={() => setSelectedTrimmedLogIds([])}
+                              className="h-7 text-xs text-destructive hover:text-destructive px-2"
                             >
-                              <Plus className="w-3.5 h-3.5 mr-1" /> Langsung Input Tally Log Ini
+                              Reset Pilihan
                             </Button>
-                          </div>
-                        );
-                      })}
+                          )}
+                        </div>
+                      )}
                     </div>
+
+                    {filtered.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
+                        <p className="font-medium text-sm">Tidak ada log trimming yang cocok dengan pencarian / filter.</p>
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          onClick={() => {
+                            setWipLogSearch("");
+                            setWipLogStatusFilter("ALL");
+                            setWipLogPage(1);
+                          }}
+                          className="text-xs mt-1"
+                        >
+                          Reset Filter
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {paginatedLogs.map((t: any) => {
+                          const isSelected = selectedTrimmedLogIds.includes(t.id);
+                          const isWorked = t.status === 'ASSIGNED_TO_INPUT' || t.status === 'CONSUMED' || !!t.inputLogId;
+
+                          return (
+                            <div
+                              key={t.id}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setSelectedTrimmedLogIds(selectedTrimmedLogIds.filter(x => x !== t.id));
+                                } else {
+                                  setSelectedTrimmedLogIds([...selectedTrimmedLogIds, t.id]);
+                                }
+                              }}
+                              className={`flex flex-col border rounded-lg p-3.5 bg-background shadow-sm cursor-pointer transition-all ${
+                                isSelected
+                                  ? "border-blue-500 bg-blue-50/40 dark:bg-blue-950/40 ring-2 ring-blue-500/25"
+                                  : isWorked
+                                  ? "hover:border-blue-300 border-border/80"
+                                  : "hover:border-emerald-400 border-border/80"
+                              }`}
+                            >
+                              <div className="flex justify-between items-start mb-2 gap-2">
+                                <div className="flex items-center gap-2.5">
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedTrimmedLogIds([...selectedTrimmedLogIds, t.id]);
+                                      } else {
+                                        setSelectedTrimmedLogIds(selectedTrimmedLogIds.filter(x => x !== t.id));
+                                      }
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <span className="font-bold text-base text-foreground font-mono">{t.trimNumber}</span>
+                                </div>
+                                {isWorked ? (
+                                  <Badge variant="outline" className="text-blue-700 dark:text-blue-400 border-blue-500/40 bg-blue-500/10 text-[11px] font-semibold whitespace-nowrap">
+                                    Sudah Pernah Dikerjakan
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-emerald-700 dark:text-emerald-400 border-emerald-500/40 bg-emerald-500/10 text-[11px] font-semibold whitespace-nowrap">
+                                    Belum Dikerjakan
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground space-y-1 mb-3 pl-6">
+                                <p>Spesies: <span className="font-semibold text-foreground">{t.species || "-"}</span></p>
+                                <p>Dimensi: <span className="font-medium text-foreground">{t.roundedDiameter || t.averageDiameter || "-"} cm &times; {t.length || "-"} m</span></p>
+                                <p>Volume: <span className="font-bold text-foreground font-mono">{Number(t.netVolume || 0).toFixed(4)} m&sup3;</span></p>
+                                {t.rawLog?.logNumber && (
+                                  <p className="text-[11px] text-muted-foreground/80">Log Asal: <span className="font-mono">{t.rawLog.logNumber}</span></p>
+                                )}
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                className={`w-full mt-auto font-medium text-xs h-8 ${
+                                  isWorked 
+                                    ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openTallyModalWithSelection([t.id]);
+                                }}
+                              >
+                                <Plus className="w-3.5 h-3.5 mr-1" /> Langsung Input Tally Log Ini
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {filtered.length > 0 && (
+                      <TablePagination
+                        currentPage={safeCurrentPage}
+                        pageSize={wipLogPageSize}
+                        totalItems={filtered.length}
+                        onPageChange={setWipLogPage}
+                        onPageSizeChange={(newSize) => {
+                          setWipLogPageSize(newSize);
+                          setWipLogPage(1);
+                        }}
+                        itemLabel="log trimming"
+                      />
+                    )}
                   </div>
                 );
               })()}

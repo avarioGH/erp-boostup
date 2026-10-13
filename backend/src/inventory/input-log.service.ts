@@ -181,9 +181,9 @@ export class InputLogService {
       }
 
       for (const t of trimmedLogs) {
-        if (t.status !== 'AVAILABLE') {
+        if (t.status === 'CANCELLED') {
           throw new BadRequestException(
-            `Trimmed log ${t.trimNumber} is no longer available`,
+            `Trimmed log ${t.trimNumber} is cancelled and cannot be used`,
           );
         }
       }
