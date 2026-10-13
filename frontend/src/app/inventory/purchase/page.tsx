@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { PurchaseAPI } from "@/lib/api";
+import { PurchaseAPI, MasterDataAPI } from "@/lib/api";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Eye, PackageOpen, FileText, Edit, Trash2, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Plus, Eye, PackageOpen, FileText, Edit, Trash2, CheckCircle2, Clock, XCircle, Filter, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ReceiveLogModal } from "@/components/timber/receive-log-modal";
 
@@ -17,9 +19,20 @@ export default function PurchaseListPage() {
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
   const [selectedPurchaseForReceive, setSelectedPurchaseForReceive] = useState<any>(null);
 
+  // Filter States
+  const [speciesList, setSpeciesList] = useState<any[]>([]);
+  const [selectedSpecies, setSelectedSpecies] = useState<string>("ALL");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+
   useEffect(() => {
-    router.replace("/inventory/partai");
-  }, [router]);
+    MasterDataAPI.getSpecies()
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : (res?.data || []);
+        setSpeciesList(list);
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchPurchases = () => {
     setLoading(true);
@@ -37,6 +50,36 @@ export default function PurchaseListPage() {
   useEffect(() => {
     fetchPurchases();
   }, []);
+
+  const filteredPurchases = useMemo(() => {
+    return purchases.filter((p: any) => {
+      // 1. Filter Species
+      if (selectedSpecies && selectedSpecies !== "ALL") {
+        const searchSpec = selectedSpecies.trim().toUpperCase();
+        const hasMatchingLog = (p.logItems || []).some((li: any) => 
+          (li.species || "").trim().toUpperCase() === searchSpec ||
+          (li.species || "").trim().toUpperCase().includes(searchSpec)
+        );
+        const hasMatchingSawn = (p.items || []).some((it: any) => {
+          const itemSpecies = (it.timberVariant?.species || it.notes || it.species || "").trim().toUpperCase();
+          return itemSpecies === searchSpec || itemSpecies.includes(searchSpec);
+        });
+        if (!hasMatchingLog && !hasMatchingSawn) return false;
+      }
+
+      // 2. Filter Tanggal (berdasarkan purchaseDate atau createdAt)
+      const dateVal = p.purchaseDate || p.createdAt;
+      if (dateVal) {
+        const itemDateStr = new Date(dateVal).toISOString().split("T")[0];
+        if (startDate && itemDateStr < startDate) return false;
+        if (endDate && itemDateStr > endDate) return false;
+      } else {
+        if (startDate || endDate) return false;
+      }
+
+      return true;
+    });
+  }, [purchases, selectedSpecies, startDate, endDate]);
 
   const handleOpenReceive = (purchase: any) => {
     setSelectedPurchaseForReceive(purchase);
@@ -101,6 +144,72 @@ export default function PurchaseListPage() {
         </Link>
       </div>
 
+      {/* FILTER BAR */}
+      <div className="bg-card p-4 rounded-xl border border-border shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Filter className="w-4 h-4 text-primary" />
+            <span>Filter Pembelian</span>
+          </div>
+          {(selectedSpecies !== "ALL" || startDate || endDate) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelectedSpecies("ALL");
+                setStartDate("");
+                setEndDate("");
+              }}
+              className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="w-3.5 h-3.5 mr-1" />
+              Reset Filter
+            </Button>
+          )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Filter Species */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Jenis Kayu (Species)</label>
+            <Select value={selectedSpecies} onValueChange={(val: any) => setSelectedSpecies(val || "ALL")}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Semua Jenis Kayu" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">Semua Jenis Kayu</SelectItem>
+                {speciesList.map((s) => (
+                  <SelectItem key={s.id || s.code || s.name} value={s.name || s.code}>
+                    {s.name} {s.code && s.code !== s.name ? `(${s.code})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Filter Tanggal Mulai */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Dari Tanggal</label>
+            <Input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="h-9 text-xs"
+            />
+          </div>
+
+          {/* Filter Tanggal Sampai */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Sampai Tanggal</label>
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="h-9 text-xs"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* TABLE SECTION */}
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none">
@@ -127,23 +236,44 @@ export default function PurchaseListPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : purchases.length === 0 ? (
+              ) : filteredPurchases.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-48 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <FileText className="w-10 h-10 text-muted-foreground/30" />
                       <div className="space-y-1">
-                        <p className="text-base font-medium text-foreground">Belum ada data pembelian</p>
-                        <p className="text-sm">Tidak ada riwayat pembelian kayu yang ditemukan.</p>
+                        <p className="text-base font-medium text-foreground">
+                          {purchases.length === 0 ? "Belum ada data pembelian" : "Tidak ada pembelian yang sesuai filter"}
+                        </p>
+                        <p className="text-sm">
+                          {purchases.length === 0 
+                            ? "Tidak ada riwayat pembelian kayu yang ditemukan." 
+                            : "Coba ubah filter jenis kayu atau rentang tanggal."}
+                        </p>
                       </div>
-                      <Link href="/inventory/purchase/create" className="mt-2">
-                        <Button variant="outline" size="sm">Buat Pembelian Sekarang</Button>
-                      </Link>
+                      {purchases.length === 0 ? (
+                        <Link href="/inventory/purchase/create" className="mt-2">
+                          <Button variant="outline" size="sm">Buat Pembelian Sekarang</Button>
+                        </Link>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => {
+                            setSelectedSpecies("ALL");
+                            setStartDate("");
+                            setEndDate("");
+                          }}
+                          className="mt-2"
+                        >
+                          Reset Filter
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
-                purchases.map((p) => {
+                filteredPurchases.map((p) => {
                   const isDraft = !p.status || p.status === "DRAFT";
                   const totalPcs = p.totalPcs || (p.items || []).reduce((acc: number, it: any) => acc + (it.quantityPcs || 0), 0);
                   const totalVol = p.totalVolumeM3 || (p.items || []).reduce((acc: number, it: any) => acc + (it.volumeM3 || 0), 0);

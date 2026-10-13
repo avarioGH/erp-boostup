@@ -81,6 +81,12 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const [outputPage, setOutputPage] = useState(1);
   const [outputPageSize, setOutputPageSize] = useState(50);
   
+  // Purchase Filters
+  const [purchaseFilterSpecies, setPurchaseFilterSpecies] = useState<string>("ALL");
+  const [purchaseFilterStartDate, setPurchaseFilterStartDate] = useState<string>("");
+  const [purchaseFilterEndDate, setPurchaseFilterEndDate] = useState<string>("");
+  const [speciesList, setSpeciesList] = useState<any[]>([]);
+
   // DUKB selection & bulk trimming state
   const [selectedDukbLogIds, setSelectedDukbLogIds] = useState<string[]>([]);
   const [isBulkTrimming, setIsBulkTrimming] = useState(false);
@@ -110,6 +116,10 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   };
 
   useEffect(() => {
+    MasterDataAPI.getSpecies().then((res: any) => {
+      const list = Array.isArray(res) ? res : (res?.data || []);
+      setSpeciesList(list);
+    }).catch(() => {});
     MasterDataAPI.getGrades().then((res: any) => setGrades(res.data || res)).catch(() => {});
     InventoryAPI.getWarehouses().then((res: any) => {
       const list = Array.isArray(res) ? res : (res?.data || []);
@@ -529,11 +539,36 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     });
   }, [partai?.purchases]);
 
+  const filteredPurchases = React.useMemo(() => {
+    return flattenedPurchases.filter((p: any) => {
+      // 1. Filter Species
+      if (purchaseFilterSpecies && purchaseFilterSpecies !== "ALL") {
+        const searchSpec = purchaseFilterSpecies.trim().toUpperCase();
+        const itemSpecies = (p.species || "").trim().toUpperCase();
+        if (itemSpecies !== searchSpec && !itemSpecies.includes(searchSpec)) {
+          return false;
+        }
+      }
+
+      // 2. Filter Tanggal (berdasarkan purchaseDate atau createdAt)
+      const dateVal = p.purchaseDate || p.createdAt;
+      if (dateVal) {
+        const itemDateStr = new Date(dateVal).toISOString().split("T")[0];
+        if (purchaseFilterStartDate && itemDateStr < purchaseFilterStartDate) return false;
+        if (purchaseFilterEndDate && itemDateStr > purchaseFilterEndDate) return false;
+      } else {
+        if (purchaseFilterStartDate || purchaseFilterEndDate) return false;
+      }
+
+      return true;
+    });
+  }, [flattenedPurchases, purchaseFilterSpecies, purchaseFilterStartDate, purchaseFilterEndDate]);
+
   const paginatedPurchases = React.useMemo(() => {
-    if (purchasePageSize >= 9999) return flattenedPurchases;
+    if (purchasePageSize >= 9999) return filteredPurchases;
     const start = (purchasePage - 1) * purchasePageSize;
-    return flattenedPurchases.slice(start, start + purchasePageSize);
-  }, [flattenedPurchases, purchasePage, purchasePageSize]);
+    return filteredPurchases.slice(start, start + purchasePageSize);
+  }, [filteredPurchases, purchasePage, purchasePageSize]);
 
   // Trimming mapping: track which raw logs have already been trimmed
   const trimmedLogMap = React.useMemo(() => {
@@ -751,7 +786,78 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {/* FILTER BAR PURCHASE */}
+              <div className="bg-muted/30 p-3 rounded-lg border border-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <span>🔍</span> Filter Data Pembelian
+                  </span>
+                  {(purchaseFilterSpecies !== "ALL" || purchaseFilterStartDate || purchaseFilterEndDate) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setPurchaseFilterSpecies("ALL");
+                        setPurchaseFilterStartDate("");
+                        setPurchaseFilterEndDate("");
+                        setPurchasePage(1);
+                      }}
+                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Reset Filter
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">Jenis Kayu (Species)</label>
+                    <Select 
+                      value={purchaseFilterSpecies} 
+                      onValueChange={(val: any) => {
+                        setPurchaseFilterSpecies(val || "ALL");
+                        setPurchasePage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs bg-background">
+                        <SelectValue placeholder="Semua Jenis Kayu" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">Semua Jenis Kayu</SelectItem>
+                        {speciesList.map((s) => (
+                          <SelectItem key={s.id || s.code || s.name} value={s.name || s.code}>
+                            {s.name} {s.code && s.code !== s.name ? `(${s.code})` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">Dari Tanggal</label>
+                    <Input
+                      type="date"
+                      value={purchaseFilterStartDate}
+                      onChange={(e) => {
+                        setPurchaseFilterStartDate(e.target.value);
+                        setPurchasePage(1);
+                      }}
+                      className="h-8 text-xs bg-background"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">Sampai Tanggal</label>
+                    <Input
+                      type="date"
+                      value={purchaseFilterEndDate}
+                      onChange={(e) => {
+                        setPurchaseFilterEndDate(e.target.value);
+                        setPurchasePage(1);
+                      }}
+                      className="h-8 text-xs bg-background"
+                    />
+                  </div>
+                </div>
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -885,10 +991,12 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {flattenedPurchases.length === 0 && (
+                  {filteredPurchases.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
-                        Belum ada pembelian untuk partai ini.
+                        {flattenedPurchases.length === 0 
+                          ? "Belum ada pembelian untuk partai ini." 
+                          : "Tidak ada pembelian yang sesuai dengan filter jenis kayu / tanggal."}
                       </TableCell>
                     </TableRow>
                   )}
@@ -897,7 +1005,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               <TablePagination
                 currentPage={purchasePage}
                 pageSize={purchasePageSize}
-                totalItems={flattenedPurchases.length}
+                totalItems={filteredPurchases.length}
                 onPageChange={setPurchasePage}
                 onPageSizeChange={(newSize) => {
                   setPurchasePageSize(newSize);
