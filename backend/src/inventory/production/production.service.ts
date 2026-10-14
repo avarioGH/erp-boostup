@@ -118,8 +118,17 @@ export class ProductionService {
         vId = variant.id;
       }
 
+      resolvedOutputs.push({
+        warehouseId: output.warehouseId,
+        outputType: output.outputType,
+        variantId: vId,
+        quantityPCS: Number(output.quantityPCS || 0),
+        volumeM3: Number(output.volumeM3 || 0),
+      });
+    }
+
     // Process inputs: ensure each input has a valid variantId and timberStockId
-    const resolvedInputs = [];
+    const resolvedInputs: any[] = [];
     for (const input of inputs) {
       let vId = input.variantId;
       let sId = input.timberStockId;
