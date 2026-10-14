@@ -404,7 +404,13 @@ export default function CreateProcessingRunPage() {
             <Label className="text-xs font-semibold">Jenis Proses (Master Data) *</Label>
             <Select value={processType} onValueChange={(val) => setProcessType(val || "KD")}>
               <SelectTrigger className="h-9 font-bold text-primary">
-                <SelectValue placeholder="Pilih Jenis Proses" />
+                <SelectValue placeholder="Pilih Jenis Proses">
+                  {(() => {
+                    const pt = processingTypes.find((t) => t.code === processType || t.id === processType);
+                    if (pt) return `${pt.code} - ${pt.name}`;
+                    return processType || "Pilih Jenis Proses";
+                  })()}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {processingTypes.map((t) => (
@@ -452,12 +458,18 @@ export default function CreateProcessingRunPage() {
             <Label className="text-xs font-semibold">Gudang Alokasi Hasil</Label>
             <Select value={targetWarehouseId} onValueChange={(val) => setTargetWarehouseId(val || "")}>
               <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="Pilih Gudang" />
+                <SelectValue placeholder="Pilih Gudang">
+                  {(() => {
+                    const wh = warehouses.find((w: any) => w.id === targetWarehouseId);
+                    if (wh) return wh.name || wh.code || wh.id;
+                    return targetWarehouseId ? (warehouses.length === 0 ? "Memuat gudang..." : "Pilih Gudang") : "Pilih Gudang";
+                  })()}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {warehouses.map((wh: any) => (
                   <SelectItem key={wh.id} value={wh.id}>
-                    {wh.name || wh.code}
+                    {wh.name ? `${wh.name}${wh.code ? ` (${wh.code})` : ""}` : (wh.code || wh.id)}
                   </SelectItem>
                 ))}
               </SelectContent>
