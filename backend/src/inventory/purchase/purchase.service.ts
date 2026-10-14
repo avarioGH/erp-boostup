@@ -80,18 +80,26 @@ export class PurchaseService {
 
     const processedItems: any[] = [];
     for (const item of items || []) {
-      let variantId = item.timberVariantId;
       const tCm = Number(item.purchaseThickness ?? item.thickness ?? item.t ?? 0);
       const wCm = Number(item.purchaseWidth ?? item.width ?? item.l ?? 0);
       const pCm = Number(item.purchaseLength ?? item.length ?? item.p ?? 0);
+      const pcs = Number(item.quantityPcs ?? item.pcs ?? 0);
+      let vol = Number(item.volumeM3 ?? item.volume ?? 0);
+
+      // Silently ignore empty or zeroed rows from Excel-like input
+      if (pcs <= 0 && vol <= 0 && pCm <= 0 && tCm <= 0 && wCm <= 0) {
+        continue;
+      }
+      if (pcs <= 0) {
+        continue;
+      }
+
+      let variantId = item.timberVariantId;
 
       // Convert cm to mm for database TimberVariant
       const tMm = Math.round(tCm > 50 ? tCm : tCm * 10);
       const wMm = Math.round(wCm > 100 ? wCm : wCm * 10);
       const lMm = Math.round(pCm > 1000 ? pCm : (pCm >= 50 ? pCm * 10 : pCm * 1000));
-
-      const pcs = Number(item.quantityPcs ?? item.pcs ?? 0);
-      let vol = Number(item.volumeM3 ?? item.volume ?? 0);
       if ((!vol || vol === 0) && tCm > 0 && wCm > 0 && pCm > 0 && pcs > 0) {
         // (Panjang cm * Tebal cm * Lebar cm * PCS) / 1.000.000
         vol = Number(((pCm * tCm * wCm * pcs) / 1000000).toFixed(4));
@@ -185,7 +193,15 @@ export class PurchaseService {
       totalVolumeM3 += Number(it.volumeM3 || 0);
     }
 
-    for (const li of logItems || []) {
+    const validLogItems = (logItems || []).filter((li: any) => {
+      const p = Number(li.purchaseLength || 0);
+      const d1 = Number(li.purchaseDiameter1 || 0);
+      const d2 = Number(li.purchaseDiameter2 || 0);
+      const vol = Number(li.purchaseVolume || 0);
+      return p > 0 || d1 > 0 || d2 > 0 || vol > 0 || (li.logNumber && li.logNumber.trim() !== '');
+    });
+
+    for (const li of validLogItems) {
       totalPcs += 1;
       totalVolumeM3 += Number(li.purchaseVolume || 0);
     }
@@ -205,9 +221,9 @@ export class PurchaseService {
         create: processedItems,
       },
       logItems: {
-        create: (logItems || []).map((li: any) => ({
-          logNumber: li.logNumber,
-          species: li.species,
+        create: validLogItems.map((li: any, idx: number) => ({
+          logNumber: li.logNumber?.trim() || `LOG-${purchaseNumber}-${idx + 1}`,
+          species: li.species || 'UNKNOWN',
           speciesId: li.speciesId,
           purchaseLength: Number(li.purchaseLength || 0),
           purchaseDiameter1: Number(li.purchaseDiameter1 || 0),
@@ -995,11 +1011,20 @@ export class PurchaseService {
         let totalVolume = 0;
 
         for (const item of data.items) {
-          let variantId = item.timberVariantId || item.variantId;
           const tCm = Number(item.purchaseThickness ?? item.thickness ?? item.t ?? 0);
           const wCm = Number(item.purchaseWidth ?? item.width ?? item.l ?? 0);
           const pCm = Number(item.purchaseLength ?? item.length ?? item.p ?? 0);
+          const pcs = Number(item.quantityPcs || 0);
+          let vol = Number(item.volumeM3 || 0);
 
+          if (pcs <= 0 && vol <= 0 && pCm <= 0 && tCm <= 0 && wCm <= 0) {
+            continue;
+          }
+          if (pcs <= 0) {
+            continue;
+          }
+
+          let variantId = item.timberVariantId || item.variantId;
           const tMm = Math.round(tCm > 50 ? tCm : tCm * 10);
           const wMm = Math.round(wCm > 100 ? wCm : wCm * 10);
           const lMm = Math.round(pCm > 1000 ? pCm : (pCm >= 50 ? pCm * 10 : pCm * 1000));
@@ -1113,15 +1138,23 @@ export class PurchaseService {
         let logPcs = 0;
         let logVolume = 0;
 
-        for (const item of data.logItems) {
-          if (!item.logNumber) continue;
+        const validLogItems = data.logItems.filter((li: any) => {
+          const p = Number(li.purchaseLength || 0);
+          const d1 = Number(li.purchaseDiameter1 || 0);
+          const d2 = Number(li.purchaseDiameter2 || 0);
+          const vol = Number(li.purchaseVolume || 0);
+          return p > 0 || d1 > 0 || d2 > 0 || vol > 0 || (li.logNumber && li.logNumber.trim() !== '');
+        });
+
+        for (const item of validLogItems) {
+          const logNum = item.logNumber?.trim() || `LOG-${purchase.purchaseNumber || 'PUR'}-${logPcs + 1}`;
           logPcs += 1;
           logVolume += Number(item.purchaseVolume || 0);
 
           const li = await tx.timberPurchaseLogItem.create({
             data: {
               timberPurchaseId: actualId,
-              logNumber: item.logNumber,
+              logNumber: logNum,
               species: item.species || 'UNKNOWN',
               speciesId: item.speciesId,
               purchaseLength: Number(item.purchaseLength || 0),

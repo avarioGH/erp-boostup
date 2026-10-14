@@ -324,17 +324,137 @@ export default function CreatePurchasePage() {
     fetchData();
   }, []);
 
+  const addSawnRows = (count: number) => {
+    const last = form.items[form.items.length - 1];
+    const newRows = Array.from({ length: count }).map(() => ({
+      species: last?.species || "BKR",
+      grade: last?.grade || "A",
+      timberVariantId: "",
+      quantityPcs: 1,
+      volumeM3: 0,
+      purchaseThickness: last?.purchaseThickness || 0,
+      purchaseWidth: last?.purchaseWidth || 0,
+      purchaseLength: last?.purchaseLength || 400,
+      unitPrice: last?.unitPrice || 0,
+    }));
+    setForm(prev => ({
+      ...prev,
+      items: [...prev.items, ...newRows]
+    }));
+  };
+
+  const addLogRows = (count: number) => {
+    const last = form.logItems[form.logItems.length - 1];
+    const newRows = Array.from({ length: count }).map(() => ({
+      logNumber: "",
+      species: last?.species || (speciesList[0]?.name || ""),
+      purchaseLength: last?.purchaseLength || 400,
+      purchaseDiameter1: 0,
+      purchaseDiameter2: 0,
+      purchaseDiameterAvg: 0,
+      purchaseVolume: 0,
+    }));
+    setForm(prev => ({
+      ...prev,
+      logItems: [...prev.logItems, ...newRows]
+    }));
+  };
+
+  const handleCellKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    rowIndex: number,
+    field: string,
+    type: 'sawn' | 'log',
+    totalRows: number,
+    addRowsFn: (count: number) => void
+  ) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const nextRow = rowIndex + 1;
+      if (nextRow < totalRows) {
+        const nextEl = document.getElementById(`${type}-${field}-${nextRow}`);
+        if (nextEl) {
+          nextEl.focus();
+          (nextEl as HTMLInputElement).select?.();
+        }
+      } else {
+        addRowsFn(1);
+        setTimeout(() => {
+          const nextEl = document.getElementById(`${type}-${field}-${nextRow}`);
+          if (nextEl) {
+            nextEl.focus();
+            (nextEl as HTMLInputElement).select?.();
+          }
+        }, 50);
+      }
+    } else if (e.key === 'ArrowDown') {
+      const nextRow = rowIndex + 1;
+      if (nextRow < totalRows) {
+        e.preventDefault();
+        const nextEl = document.getElementById(`${type}-${field}-${nextRow}`);
+        if (nextEl) {
+          nextEl.focus();
+          (nextEl as HTMLInputElement).select?.();
+        }
+      }
+    } else if (e.key === 'ArrowUp') {
+      const prevRow = rowIndex - 1;
+      if (prevRow >= 0) {
+        e.preventDefault();
+        const prevEl = document.getElementById(`${type}-${field}-${prevRow}`);
+        if (prevEl) {
+          prevEl.focus();
+          (prevEl as HTMLInputElement).select?.();
+        }
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     if (!form.partaiId) {
-      setError("Silakan pilih Partai / Project terlebih dahulu agar pembelian tercatat di manajemen partai.")
-      setLoading(false)
-      return
+      setError("Silakan pilih Partai / Project terlebih dahulu agar pembelian tercatat di manajemen partai.");
+      setLoading(false);
+      return;
     }
-    
+
+    const isSawn = form.purchaseType === "sawn-timber";
+
+    // Silently filter out empty/blank rows so user doesn't have to delete them manually
+    const validSawnItems = form.items.filter((item: any) => {
+      const p = Number(item.purchaseLength || 0);
+      const t = Number(item.purchaseThickness || 0);
+      const l = Number(item.purchaseWidth || 0);
+      const pcs = Number(item.quantityPcs || 0);
+      const vol = Number(item.volumeM3 || 0);
+      return (p > 0 || t > 0 || l > 0 || vol > 0) && pcs > 0;
+    });
+
+    const validLogItems = form.logItems.filter((li: any) => {
+      const p = Number(li.purchaseLength || 0);
+      const d1 = Number(li.purchaseDiameter1 || 0);
+      const d2 = Number(li.purchaseDiameter2 || 0);
+      const avg = Number(li.purchaseDiameterAvg || 0);
+      const vol = Number(li.purchaseVolume || 0);
+      const num = (li.logNumber || "").trim();
+      return p > 0 || d1 > 0 || d2 > 0 || avg > 0 || vol > 0 || num.length > 0;
+    });
+
+    if (isSawn && validSawnItems.length === 0) {
+      setError("Silakan isi minimal 1 baris data sawn timber sebelum menyimpan.");
+      setLoading(false);
+      return;
+    }
+
+    if (!isSawn && validLogItems.length === 0) {
+      setError("Silakan isi minimal 1 baris data log bulat sebelum menyimpan.");
+      setLoading(false);
+      return;
+    }
+
     try {
       await api.post("/inventory/timber-purchase", {
         purchaseNumber: form.purchaseNumber,
@@ -345,8 +465,8 @@ export default function CreatePurchasePage() {
         partaiId: form.partaiId,
         status: form.status,
         isReceived: form.status === "RECEIVED",
-        items: form.purchaseType === "sawn-timber" ? form.items : [],
-        logItems: form.purchaseType === "raw-log" ? form.logItems.map((li, idx) => ({
+        items: isSawn ? validSawnItems : [],
+        logItems: !isSawn ? validLogItems.map((li, idx) => ({
           ...li,
           logNumber: li.logNumber?.trim() || `LOG-${form.purchaseNumber}-${idx + 1}`,
           species: li.species || 'UNKNOWN',
@@ -355,17 +475,18 @@ export default function CreatePurchasePage() {
           purchaseDiameter2: Number(li.purchaseDiameter2 || 0),
           purchaseDiameter3: Number((li as any).purchaseDiameter3 || 0),
           purchaseDiameter4: Number((li as any).purchaseDiameter4 || 0),
+          purchaseDiameterAvg: Number(li.purchaseDiameterAvg || 0),
           purchaseVolume: Number(li.purchaseVolume || 0)
         })) : []
-      })
+      });
       const targetTab = searchParams.get('tab') || (form.purchaseType === "raw-log" ? "rawlogs" : "purchase");
-      router.push(`/inventory/partai/${form.partaiId}?tab=${targetTab}`)
-      router.refresh()
+      router.push(`/inventory/partai/${form.partaiId}?tab=${targetTab}`);
+      router.refresh();
     } catch (err: any) {
-      setError((err.response?.data?.error?.message || err.response?.data?.message) || "Failed to create purchase")
-      setLoading(false)
+      setError((err.response?.data?.error?.message || err.response?.data?.message) || "Failed to create purchase");
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -534,74 +655,36 @@ export default function CreatePurchasePage() {
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b pb-3">
                   <div>
                     <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-                      <span>📋 Tally Sheet Pembelian Sawn Timber (Beli Masak)</span>
+                      <span>📋 Spreadsheet Pembelian Sawn Timber (Beli Masak)</span>
                     </h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Input langsung ukuran fisik surat jalan supplier (Panjang, Tebal, Lebar dlm cm). Volume m³ dihitung otomatis dengan rumus sawmill: (P × T × L × PCS) / 1.000.000.
+                      Input seperti Excel: tekan <strong>Enter</strong> untuk langsung turun ke baris berikutnya di kolom yang sama. Baris kosong akan otomatis diabaikan saat disimpan.
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        const last = form.items[form.items.length - 1];
-                        setForm(prev => ({
-                          ...prev,
-                          items: [
-                            ...prev.items,
-                            {
-                              species: last?.species || "BKR",
-                              grade: last?.grade || "A",
-                              timberVariantId: "",
-                              quantityPcs: 1,
-                              volumeM3: 0,
-                              purchaseThickness: last?.purchaseThickness || 0,
-                              purchaseWidth: last?.purchaseWidth || 0,
-                              purchaseLength: last?.purchaseLength || 400,
-                              unitPrice: last?.unitPrice || 0,
-                            }
-                          ]
-                        }));
-                      }}
-                    >
-                      <Plus className="w-3.5 h-3.5 mr-1" /> +1 Baris
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Button type="button" variant="outline" size="sm" onClick={() => addSawnRows(1)}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> +1
                     </Button>
-                    <Button 
-                      type="button" 
-                      variant="secondary" 
-                      size="sm"
-                      onClick={() => {
-                        const last = form.items[form.items.length - 1];
-                        const newRows = Array.from({ length: 5 }).map(() => ({
-                          species: last?.species || "BKR",
-                          grade: last?.grade || "A",
-                          timberVariantId: "",
-                          quantityPcs: 1,
-                          volumeM3: 0,
-                          purchaseThickness: last?.purchaseThickness || 0,
-                          purchaseWidth: last?.purchaseWidth || 0,
-                          purchaseLength: last?.purchaseLength || 400,
-                          unitPrice: last?.unitPrice || 0,
-                        }));
-                        setForm(prev => ({
-                          ...prev,
-                          items: [...prev.items, ...newRows]
-                        }));
-                      }}
-                    >
-                      <Plus className="w-3.5 h-3.5 mr-1" /> +5 Baris
+                    <Button type="button" variant="secondary" size="sm" onClick={() => addSawnRows(5)}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> +5
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" onClick={() => addSawnRows(10)}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> +10
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" onClick={() => addSawnRows(20)}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> +20 Baris
                     </Button>
                   </div>
                 </div>
 
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
-                  <span className="text-base">ℹ️</span>
-                  <div>
-                    <strong>Pencatatan Surat Jalan Supplier:</strong> Data pembelian sawn timber ini tersimpan sebagai draft pemesanan/surat jalan. 
-                    <strong> Stok fisik sawn timber belum bertambah</strong> sebelum barang tiba di pabrik dan dihitung ulang (tally kedatangan).
+                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-lg p-2.5 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">⚡</span>
+                    <span><strong>Mode Excel Aktif:</strong> Ketik angka, tekan <strong>Enter</strong> untuk turun ke bawah. Jika baris habis, baris baru otomatis bertambah. Baris kosong tidak perlu dihapus.</span>
                   </div>
+                  <span className="font-mono font-bold bg-background/80 px-2 py-0.5 rounded border text-[11px]">
+                    {form.items.filter((it: any) => (Number(it.purchaseLength || 0) > 0 || Number(it.purchaseThickness || 0) > 0 || Number(it.purchaseWidth || 0) > 0 || Number(it.volumeM3 || 0) > 0) && Number(it.quantityPcs || 0) > 0).length} / {form.items.length} Baris Terisi
+                  </span>
                 </div>
 
                 {/* TALLY SHEET GRID TABLE */}
@@ -639,7 +722,10 @@ export default function CreatePurchasePage() {
                             </td>
                             <td className="py-1 px-2">
                               <Input
+                                id={`sawn-species-${index}`}
                                 value={item.species || ""}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'species', 'sawn', form.items.length, () => addSawnRows(1))}
                                 onChange={(e) => {
                                   const newItems = [...form.items];
                                   newItems[index].species = e.target.value.toUpperCase();
@@ -651,9 +737,12 @@ export default function CreatePurchasePage() {
                             </td>
                             <td className="py-1 px-2">
                               <Input
+                                id={`sawn-purchaseLength-${index}`}
                                 type="number"
                                 step="any"
                                 value={item.purchaseLength || ""}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseLength', 'sawn', form.items.length, () => addSawnRows(1))}
                                 onChange={(e) => {
                                   const newItems = [...form.items];
                                   const val = parseFloat(e.target.value) || 0;
@@ -672,9 +761,12 @@ export default function CreatePurchasePage() {
                             </td>
                             <td className="py-1 px-2">
                               <Input
+                                id={`sawn-purchaseThickness-${index}`}
                                 type="number"
                                 step="any"
                                 value={item.purchaseThickness || ""}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseThickness', 'sawn', form.items.length, () => addSawnRows(1))}
                                 onChange={(e) => {
                                   const newItems = [...form.items];
                                   const val = parseFloat(e.target.value) || 0;
@@ -693,9 +785,12 @@ export default function CreatePurchasePage() {
                             </td>
                             <td className="py-1 px-2">
                               <Input
+                                id={`sawn-purchaseWidth-${index}`}
                                 type="number"
                                 step="any"
                                 value={item.purchaseWidth || ""}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseWidth', 'sawn', form.items.length, () => addSawnRows(1))}
                                 onChange={(e) => {
                                   const newItems = [...form.items];
                                   const val = parseFloat(e.target.value) || 0;
@@ -714,9 +809,12 @@ export default function CreatePurchasePage() {
                             </td>
                             <td className="py-1 px-2">
                               <Input
+                                id={`sawn-quantityPcs-${index}`}
                                 type="number"
                                 min="1"
                                 value={item.quantityPcs || ""}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'quantityPcs', 'sawn', form.items.length, () => addSawnRows(1))}
                                 onChange={(e) => {
                                   const newItems = [...form.items];
                                   const val = parseInt(e.target.value) || 0;
@@ -735,9 +833,12 @@ export default function CreatePurchasePage() {
                             </td>
                             <td className="py-1 px-2">
                               <Input
+                                id={`sawn-volumeM3-${index}`}
                                 type="number"
                                 step="0.0001"
                                 value={item.volumeM3 !== undefined ? item.volumeM3 : vol}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'volumeM3', 'sawn', form.items.length, () => addSawnRows(1))}
                                 onChange={(e) => {
                                   const newItems = [...form.items];
                                   newItems[index].volumeM3 = parseFloat(e.target.value) || 0;
@@ -749,9 +850,12 @@ export default function CreatePurchasePage() {
                             </td>
                             <td className="py-1 px-2">
                               <Input
+                                id={`sawn-unitPrice-${index}`}
                                 type="number"
                                 min="0"
                                 value={item.unitPrice || ""}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'unitPrice', 'sawn', form.items.length, () => addSawnRows(1))}
                                 onChange={(e) => {
                                   const newItems = [...form.items];
                                   newItems[index].unitPrice = parseFloat(e.target.value) || 0;
@@ -818,269 +922,267 @@ export default function CreatePurchasePage() {
                   </table>
                 </div>
 
-                <div className="flex gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={() => {
-                      const last = form.items[form.items.length - 1];
-                      setForm(prev => ({
-                        ...prev,
-                        items: [
-                          ...prev.items,
-                          {
-                            species: last?.species || "BKR",
-                            grade: last?.grade || "A",
-                            timberVariantId: "",
-                            quantityPcs: 1,
-                            volumeM3: 0,
-                            purchaseThickness: last?.purchaseThickness || 0,
-                            purchaseWidth: last?.purchaseWidth || 0,
-                            purchaseLength: last?.purchaseLength || 400,
-                            unitPrice: last?.unitPrice || 0,
-                          }
-                        ]
-                      }));
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" /> Tambah 1 Baris Tally
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => addSawnRows(1)}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> +1 Baris
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="secondary" 
-                    className="flex-1"
-                    onClick={() => {
-                      const last = form.items[form.items.length - 1];
-                      const newRows = Array.from({ length: 5 }).map(() => ({
-                        species: last?.species || "BKR",
-                        grade: last?.grade || "A",
-                        timberVariantId: "",
-                        quantityPcs: 1,
-                        volumeM3: 0,
-                        purchaseThickness: last?.purchaseThickness || 0,
-                        purchaseWidth: last?.purchaseWidth || 0,
-                        purchaseLength: last?.purchaseLength || 400,
-                        unitPrice: last?.unitPrice || 0,
-                      }));
-                      setForm(prev => ({
-                        ...prev,
-                        items: [...prev.items, ...newRows]
-                      }));
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-2" /> Tambah 5 Baris Tally
+                  <Button type="button" variant="secondary" size="sm" onClick={() => addSawnRows(5)}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> +5 Baris
+                  </Button>
+                  <Button type="button" variant="secondary" size="sm" onClick={() => addSawnRows(10)}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> +10 Baris
+                  </Button>
+                  <Button type="button" variant="secondary" size="sm" onClick={() => addSawnRows(20)}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> +20 Baris
                   </Button>
                 </div>
-
               </TabsContent>
 
               <TabsContent value="raw-log" className="space-y-4">
-                <div className="flex justify-between items-center border-b pb-2">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b pb-3">
                   <div>
-                    <h3 className="font-bold text-lg">Daftar Raw Logs (DUKB)</h3>
+                    <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                      <span>🪵 Spreadsheet Pembelian Raw Logs (DUKB)</span>
+                    </h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Input ukuran log bulat: Panjang, Ø Pangkal (D1), Ø Ujung (D2), dan Diameter Rata-rata <strong>(RT)</strong>. Rumus Volume m³: <strong>(0,7854 × Panjang × Pkl × Ujung × RT) / 1.000.000</strong>.
+                      Input tabel log bulat: Panjang, Ø Pangkal (D1), Ø Ujung (D2), dan RT otomatis. Tekan <strong>Enter</strong> untuk turun ke bawah. Baris kosong akan otomatis diabaikan.
                     </p>
                   </div>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      const last = form.logItems[form.logItems.length - 1];
-                      setForm({ 
-                        ...form, 
-                        logItems: [
-                          ...form.logItems, 
-                          { 
-                            logNumber: "", 
-                            species: last?.species || (speciesList[0]?.name || ""), 
-                            purchaseLength: last?.purchaseLength || 400, 
-                            purchaseDiameter1: 0, 
-                            purchaseDiameter2: 0, 
-                            purchaseDiameterAvg: 0,
-                            purchaseVolume: 0 
-                          }
-                        ] 
-                      });
-                    }}
-                  >
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Button type="button" variant="outline" size="sm" onClick={() => addLogRows(1)}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> +1
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" onClick={() => addLogRows(5)}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> +5
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" onClick={() => addLogRows(10)}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> +10
+                    </Button>
+                    <Button type="button" variant="secondary" size="sm" onClick={() => addLogRows(20)}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> +20 Log
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-lg p-2.5 text-xs text-blue-800 dark:text-blue-300 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">⚡</span>
+                    <span><strong>Mode Excel Aktif:</strong> Ketik nilai (misal: isi kolom P terus menerus lalu pindah ke D1/D2), tekan <strong>Enter</strong> untuk turun. Baris kosong tidak perlu dihapus.</span>
+                  </div>
+                  <span className="font-mono font-bold bg-background/80 px-2 py-0.5 rounded border text-[11px]">
+                    {form.logItems.filter((li: any) => Number(li.purchaseLength || 0) > 0 || Number(li.purchaseDiameter1 || 0) > 0 || Number(li.purchaseDiameter2 || 0) > 0 || Number(li.purchaseVolume || 0) > 0 || (li.logNumber && li.logNumber.trim() !== '')).length} / {form.logItems.length} Log Terisi
+                  </span>
+                </div>
+
+                {/* RAW LOG SPREADSHEET TABLE */}
+                <div className="overflow-x-auto border rounded-xl shadow-sm bg-card">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-muted/60 border-b text-muted-foreground font-semibold">
+                        <th className="py-2.5 px-2 text-center w-10">No</th>
+                        <th className="py-2.5 px-2 text-left w-28">No Log</th>
+                        <th className="py-2.5 px-2 text-left w-28">Spesies</th>
+                        <th className="py-2.5 px-2 text-center w-24">P (cm/m)</th>
+                        <th className="py-2.5 px-2 text-center w-24">&Oslash; Pkl D1 (cm)</th>
+                        <th className="py-2.5 px-2 text-center w-24">&Oslash; Ujg D2 (cm)</th>
+                        <th className="py-2.5 px-2 text-center w-24 text-blue-700 dark:text-blue-300 font-bold">RT (cm)</th>
+                        <th className="py-2.5 px-2 text-right w-28 text-emerald-700 dark:text-emerald-400 font-bold">Vol (m³)</th>
+                        <th className="py-2.5 px-2 text-center w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {form.logItems.map((item: any, index: number) => {
+                        const currentRt = item.purchaseDiameterAvg || ((item.purchaseDiameter1 > 0 && item.purchaseDiameter2 > 0) ? Math.round(((item.purchaseDiameter1 + item.purchaseDiameter2) / 2) * 10) / 10 : (item.purchaseDiameter1 || item.purchaseDiameter2 || 0));
+                        return (
+                          <tr key={index} className="hover:bg-muted/30 transition-colors">
+                            <td className="py-1 px-2 text-center font-mono text-muted-foreground font-medium">
+                              {index + 1}
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                id={`log-logNumber-${index}`}
+                                value={item.logNumber || ""}
+                                placeholder={`LOG-${index + 1}`}
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'logNumber', 'log', form.logItems.length, () => addLogRows(1))}
+                                onChange={(e) => {
+                                  const newLogItems = [...form.logItems];
+                                  newLogItems[index].logNumber = e.target.value;
+                                  setForm({ ...form, logItems: newLogItems });
+                                }}
+                                className="h-8 text-xs font-mono"
+                              />
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                id={`log-species-${index}`}
+                                value={item.species || ""}
+                                placeholder="Pilih / Ketik"
+                                list="species-datalist"
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'species', 'log', form.logItems.length, () => addLogRows(1))}
+                                onChange={(e) => {
+                                  const newLogItems = [...form.logItems];
+                                  newLogItems[index].species = e.target.value.toUpperCase();
+                                  setForm({ ...form, logItems: newLogItems });
+                                }}
+                                className="h-8 text-xs font-bold uppercase"
+                              />
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                id={`log-purchaseLength-${index}`}
+                                type="number"
+                                step="any"
+                                value={item.purchaseLength || ""}
+                                placeholder="cth: 400"
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseLength', 'log', form.logItems.length, () => addLogRows(1))}
+                                onChange={(e) => {
+                                  const newLogItems = [...form.logItems];
+                                  const len = parseFloat(e.target.value) || 0;
+                                  newLogItems[index].purchaseLength = len;
+                                  const d1 = newLogItems[index].purchaseDiameter1 || 0;
+                                  const d2 = newLogItems[index].purchaseDiameter2 || 0;
+                                  const rt = newLogItems[index].purchaseDiameterAvg || ((d1 > 0 && d2 > 0) ? (d1 + d2) / 2 : (d1 || d2 || 0));
+                                  newLogItems[index].purchaseVolume = calculateLogVolume(len, d1, d2, rt);
+                                  setForm({ ...form, logItems: newLogItems });
+                                }}
+                                className="h-8 text-xs text-center font-mono"
+                              />
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                id={`log-purchaseDiameter1-${index}`}
+                                type="number"
+                                step="any"
+                                value={item.purchaseDiameter1 || ""}
+                                placeholder="D1"
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseDiameter1', 'log', form.logItems.length, () => addLogRows(1))}
+                                onChange={(e) => {
+                                  const newLogItems = [...form.logItems];
+                                  const d1 = parseFloat(e.target.value) || 0;
+                                  newLogItems[index].purchaseDiameter1 = d1;
+                                  const d2 = newLogItems[index].purchaseDiameter2 || 0;
+                                  const calcRt = (d1 > 0 && d2 > 0) ? Math.round(((d1 + d2) / 2) * 10) / 10 : (d1 || d2 || 0);
+                                  newLogItems[index].purchaseDiameterAvg = calcRt;
+                                  newLogItems[index].purchaseVolume = calculateLogVolume(newLogItems[index].purchaseLength, d1, d2, calcRt);
+                                  setForm({ ...form, logItems: newLogItems });
+                                }}
+                                className="h-8 text-xs text-center font-mono"
+                              />
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                id={`log-purchaseDiameter2-${index}`}
+                                type="number"
+                                step="any"
+                                value={item.purchaseDiameter2 || ""}
+                                placeholder="D2"
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseDiameter2', 'log', form.logItems.length, () => addLogRows(1))}
+                                onChange={(e) => {
+                                  const newLogItems = [...form.logItems];
+                                  const d2 = parseFloat(e.target.value) || 0;
+                                  newLogItems[index].purchaseDiameter2 = d2;
+                                  const d1 = newLogItems[index].purchaseDiameter1 || 0;
+                                  const calcRt = (d1 > 0 && d2 > 0) ? Math.round(((d1 + d2) / 2) * 10) / 10 : (d1 || d2 || 0);
+                                  newLogItems[index].purchaseDiameterAvg = calcRt;
+                                  newLogItems[index].purchaseVolume = calculateLogVolume(newLogItems[index].purchaseLength, d1, d2, calcRt);
+                                  setForm({ ...form, logItems: newLogItems });
+                                }}
+                                className="h-8 text-xs text-center font-mono"
+                              />
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                id={`log-purchaseDiameterAvg-${index}`}
+                                type="number"
+                                step="any"
+                                value={item.purchaseDiameterAvg || (currentRt > 0 ? currentRt : "")}
+                                placeholder="RT"
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseDiameterAvg', 'log', form.logItems.length, () => addLogRows(1))}
+                                onChange={(e) => {
+                                  const newLogItems = [...form.logItems];
+                                  const customRt = parseFloat(e.target.value) || 0;
+                                  newLogItems[index].purchaseDiameterAvg = customRt;
+                                  newLogItems[index].purchaseVolume = calculateLogVolume(newLogItems[index].purchaseLength, newLogItems[index].purchaseDiameter1, newLogItems[index].purchaseDiameter2, customRt);
+                                  setForm({ ...form, logItems: newLogItems });
+                                }}
+                                className="h-8 text-xs text-center font-mono font-bold text-blue-700 dark:text-blue-300 bg-blue-50/20"
+                                title="Diameter Rata-rata (RT)"
+                              />
+                            </td>
+                            <td className="py-1 px-2">
+                              <Input
+                                id={`log-purchaseVolume-${index}`}
+                                type="number"
+                                step="0.0001"
+                                value={item.purchaseVolume || ""}
+                                placeholder="0.0000"
+                                onFocus={(e) => e.target.select()}
+                                onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseVolume', 'log', form.logItems.length, () => addLogRows(1))}
+                                onChange={(e) => {
+                                  const newLogItems = [...form.logItems];
+                                  newLogItems[index].purchaseVolume = parseFloat(e.target.value) || 0;
+                                  setForm({ ...form, logItems: newLogItems });
+                                }}
+                                className="h-8 text-xs text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/5"
+                              />
+                            </td>
+                            <td className="py-1 px-2 text-center">
+                              {form.logItems.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setForm({ ...form, logItems: form.logItems.filter((_, i) => i !== index) });
+                                  }}
+                                  className="text-muted-foreground hover:text-destructive p-1 rounded transition-colors"
+                                  title="Hapus Baris"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="bg-muted/40 font-bold border-t">
+                      <tr>
+                        <td colSpan={3} className="py-2.5 px-3 text-right">TOTAL KESELURUHAN:</td>
+                        <td colSpan={4} className="py-2.5 px-2 text-center font-bold text-foreground">
+                          {form.logItems.filter((li: any) => Number(li.purchaseLength || 0) > 0 || Number(li.purchaseDiameter1 || 0) > 0 || Number(li.purchaseDiameter2 || 0) > 0 || Number(li.purchaseVolume || 0) > 0 || (li.logNumber && li.logNumber.trim() !== '')).length} Batang Log Valid
+                        </td>
+                        <td className="py-2.5 px-2 text-right text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                          {form.logItems.reduce((sum: number, it: any) => sum + (Number(it.purchaseVolume) || 0), 0).toFixed(4)} m³
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                <datalist id="species-datalist">
+                  {speciesList.map((s: any) => (
+                    <option key={s.id} value={s.name} />
+                  ))}
+                </datalist>
+
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => addLogRows(1)}>
                     <Plus className="w-3.5 h-3.5 mr-1" /> +1 Log
                   </Button>
-                </div>
-                {form.logItems.map((item, index) => {
-                  const currentRt = item.purchaseDiameterAvg || ((item.purchaseDiameter1 > 0 && item.purchaseDiameter2 > 0) ? Math.round(((item.purchaseDiameter1 + item.purchaseDiameter2) / 2) * 10) / 10 : (item.purchaseDiameter1 || item.purchaseDiameter2 || 0));
-                  return (
-                    <div key={index} className="border border-border rounded-lg p-4 bg-muted/10 relative">
-                      <div className="absolute top-2 right-2">
-                        {form.logItems.length > 1 && (
-                          <Button type="button" variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => {
-                            setForm({ ...form, logItems: form.logItems.filter((_, i) => i !== index) });
-                          }}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mt-2 pr-6">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-semibold">No Log</Label>
-                          <Input 
-                            value={item.logNumber} 
-                            placeholder={`LOG-${index + 1}`}
-                            onChange={(e) => {
-                              const newLogItems = [...form.logItems];
-                              newLogItems[index].logNumber = e.target.value;
-                              setForm({ ...form, logItems: newLogItems });
-                            }} 
-                            className="h-9 text-xs font-mono"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-semibold">Spesies</Label>
-                          <Select value={item.species} onValueChange={(val: any) => {
-                            const newLogItems = [...form.logItems];
-                            newLogItems[index].species = val;
-                            setForm({ ...form, logItems: newLogItems });
-                          }}>
-                            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih Spesies" /></SelectTrigger>
-                            <SelectContent>
-                              {speciesList.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-semibold">Panjang (cm / m)</Label>
-                          <Input 
-                            type="number" 
-                            step="any" 
-                            value={item.purchaseLength || ""} 
-                            placeholder="cth: 400 cm / 4 m"
-                            onChange={(e) => {
-                              const newLogItems = [...form.logItems];
-                              const len = parseFloat(e.target.value) || 0;
-                              newLogItems[index].purchaseLength = len;
-                              const d1 = newLogItems[index].purchaseDiameter1 || 0;
-                              const d2 = newLogItems[index].purchaseDiameter2 || 0;
-                              const rt = newLogItems[index].purchaseDiameterAvg || ((d1 > 0 && d2 > 0) ? (d1 + d2) / 2 : (d1 || d2 || 0));
-                              newLogItems[index].purchaseVolume = calculateLogVolume(len, d1, d2, rt);
-                              setForm({ ...form, logItems: newLogItems });
-                            }} 
-                            className="h-9 text-xs font-mono"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-semibold">&Oslash; Pangkal D1 (cm)</Label>
-                          <Input 
-                            type="number" 
-                            step="any" 
-                            value={item.purchaseDiameter1 || ""} 
-                            placeholder="D1 cm"
-                            onChange={(e) => {
-                              const newLogItems = [...form.logItems];
-                              const d1 = parseFloat(e.target.value) || 0;
-                              newLogItems[index].purchaseDiameter1 = d1;
-                              const d2 = newLogItems[index].purchaseDiameter2 || 0;
-                              const calcRt = (d1 > 0 && d2 > 0) ? Math.round(((d1 + d2) / 2) * 10) / 10 : (d1 || d2 || 0);
-                              newLogItems[index].purchaseDiameterAvg = calcRt;
-                              newLogItems[index].purchaseVolume = calculateLogVolume(newLogItems[index].purchaseLength, d1, d2, calcRt);
-                              setForm({ ...form, logItems: newLogItems });
-                            }} 
-                            className="h-9 text-xs font-mono"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-semibold">&Oslash; Ujung D2 (cm)</Label>
-                          <Input 
-                            type="number" 
-                            step="any" 
-                            value={item.purchaseDiameter2 || ""} 
-                            placeholder="D2 cm"
-                            onChange={(e) => {
-                              const newLogItems = [...form.logItems];
-                              const d2 = parseFloat(e.target.value) || 0;
-                              newLogItems[index].purchaseDiameter2 = d2;
-                              const d1 = newLogItems[index].purchaseDiameter1 || 0;
-                              const calcRt = (d1 > 0 && d2 > 0) ? Math.round(((d1 + d2) / 2) * 10) / 10 : (d1 || d2 || 0);
-                              newLogItems[index].purchaseDiameterAvg = calcRt;
-                              newLogItems[index].purchaseVolume = calculateLogVolume(newLogItems[index].purchaseLength, d1, d2, calcRt);
-                              setForm({ ...form, logItems: newLogItems });
-                            }} 
-                            className="h-9 text-xs font-mono"
-                          />
-                        </div>
-                        <div className="space-y-1.5 bg-blue-50/50 dark:bg-blue-950/20 p-1 rounded-md border border-blue-200/50 dark:border-blue-800/40">
-                          <Label className="text-xs font-bold text-blue-700 dark:text-blue-300">RT (cm)</Label>
-                          <Input 
-                            type="number" 
-                            step="any" 
-                            value={item.purchaseDiameterAvg || (currentRt > 0 ? currentRt : "")} 
-                            placeholder="Rata2 cm"
-                            onChange={(e) => {
-                              const newLogItems = [...form.logItems];
-                              const customRt = parseFloat(e.target.value) || 0;
-                              newLogItems[index].purchaseDiameterAvg = customRt;
-                              newLogItems[index].purchaseVolume = calculateLogVolume(newLogItems[index].purchaseLength, newLogItems[index].purchaseDiameter1, newLogItems[index].purchaseDiameter2, customRt);
-                              setForm({ ...form, logItems: newLogItems });
-                            }} 
-                            className="h-9 text-xs font-mono font-bold text-blue-700 dark:text-blue-300 bg-background"
-                            title="Diameter Rata-rata (RT)"
-                          />
-                        </div>
-                        <div className="space-y-1.5 bg-emerald-50/50 dark:bg-emerald-950/20 p-1 rounded-md border border-emerald-200/50 dark:border-emerald-800/40">
-                          <Label className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Vol (m³)</Label>
-                          <Input 
-                            type="number" 
-                            step="0.0001" 
-                            value={item.purchaseVolume || ""} 
-                            placeholder="m³"
-                            onChange={(e) => {
-                              const newLogItems = [...form.logItems];
-                              newLogItems[index].purchaseVolume = parseFloat(e.target.value) || 0;
-                              setForm({ ...form, logItems: newLogItems });
-                            }} 
-                            className="h-9 text-xs font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-background"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" className="flex-1" onClick={() => {
-                    const last = form.logItems[form.logItems.length - 1];
-                    setForm({ 
-                      ...form, 
-                      logItems: [
-                        ...form.logItems, 
-                        { 
-                          logNumber: "", 
-                          species: last?.species || (speciesList[0]?.name || ""), 
-                          purchaseLength: last?.purchaseLength || 400, 
-                          purchaseDiameter1: 0, 
-                          purchaseDiameter2: 0, 
-                          purchaseDiameterAvg: 0,
-                          purchaseVolume: 0 
-                        }
-                      ] 
-                    });
-                  }}>
-                    <Plus className="w-4 h-4 mr-2" /> Tambah 1 Raw Log
+                  <Button type="button" variant="secondary" size="sm" onClick={() => addLogRows(5)}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> +5 Log
                   </Button>
-                  <Button type="button" variant="secondary" className="flex-1" onClick={() => {
-                    const last = form.logItems[form.logItems.length - 1];
-                    const newRows = Array.from({ length: 5 }).map(() => ({
-                      logNumber: "",
-                      species: last?.species || (speciesList[0]?.name || ""),
-                      purchaseLength: last?.purchaseLength || 400,
-                      purchaseDiameter1: 0,
-                      purchaseDiameter2: 0,
-                      purchaseDiameterAvg: 0,
-                      purchaseVolume: 0,
-                    }));
-                    setForm({ ...form, logItems: [...form.logItems, ...newRows] });
-                  }}>
-                    <Plus className="w-4 h-4 mr-2" /> Tambah 5 Raw Log
+                  <Button type="button" variant="secondary" size="sm" onClick={() => addLogRows(10)}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> +10 Log
+                  </Button>
+                  <Button type="button" variant="secondary" size="sm" onClick={() => addLogRows(20)}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> +20 Log
                   </Button>
                 </div>
               </TabsContent>
