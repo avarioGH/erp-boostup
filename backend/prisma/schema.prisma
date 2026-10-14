@@ -116,6 +116,7 @@ model Company {
   timberVariants          TimberVariant[]
 
   exportShipments     ExportShipment[]
+  timberPackings      TimberPacking[]
   StockTransformation StockTransformation[]
   Netting             Netting[]
   PurchaseReturn      PurchaseReturn[]
@@ -313,6 +314,7 @@ model Warehouse {
   timberShipments            TimberShipment[]
   timberStockOpnames         TimberStockOpname[]
   timberStockReservations    TimberStockReservation[]
+  timberPackings             TimberPacking[]
   fulfillmentSalesOrderItems TimberSalesOrderItem[]
   StockTransformationInput   StockTransformationInput[]
   StockTransformationOutput  StockTransformationOutput[]
@@ -3377,6 +3379,9 @@ model ProductionProcess {
   notes       String?
   createdBy   String?
 
+  partaiId String?       @db.ObjectId
+  partai   TimberPartai? @relation(fields: [partaiId], references: [id])
+
   inputVolumeM3   Float @default(0)
   outputVolumeM3  Float @default(0)
   wasteVolumeM3   Float @default(0)
@@ -3524,6 +3529,9 @@ model TimberShipment {
 
   salesOrderId String?           @db.ObjectId
   salesOrder   TimberSalesOrder? @relation(fields: [salesOrderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  partaiId String?       @db.ObjectId
+  partai   TimberPartai? @relation(fields: [partaiId], references: [id])
 
   status        String  @default("DRAFT") // DRAFT, CONFIRMED, CANCELLED
   totalPcs      Int     @default(0)
@@ -3695,11 +3703,76 @@ model TimberPartai {
   trimmedLogs TrimmedLog[]
   inputLogs   InputLog[]
   sawnOutputs SawnTimberOutput[]
+  productionProcesses ProductionProcess[]
+  shipments   TimberShipment[]
+  packings    TimberPacking[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([company_id, code])
+}
+
+// ==================================================
+// TIMBER PACKING LIST (DUAL RECORD: ASLI VS CUSTOMER)
+// Sesuai Sheet PACKING di Excel 6
+// ==================================================
+model TimberPacking {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  company_id String        @db.ObjectId
+  company    Company       @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  partaiId   String?       @db.ObjectId
+  partai     TimberPartai? @relation(fields: [partaiId], references: [id])
+
+  packingNumber String   @unique // Contoh: PKG-2026-001
+  packingDate   DateTime @default(now())
+  ownerName     String?  // Contoh: PT Daun Emas Multi Perkasa
+  species       String?  // Contoh: MERBAU
+  containerNo   String?  // No Kontainer jika ada
+  palletCount   Int      @default(0)
+
+  warehouseId String?    @db.ObjectId
+  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id])
+
+  status String @default("CONFIRMED") // DRAFT, CONFIRMED, CANCELLED
+  notes  String?
+
+  totalRealPcs     Int   @default(0)
+  totalRealVolume  Float @default(0)
+  totalCustPcs     Int   @default(0)
+  totalCustVolume  Float @default(0)
+
+  items TimberPackingItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TimberPackingItem {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  packingId String        @db.ObjectId
+  packing   TimberPacking @relation(fields: [packingId], references: [id], onDelete: Cascade)
+
+  palletNo String? // Contoh: "01", "02"
+
+  // 1. Data Ukuran Asli Pabrik
+  realT Float // cm
+  realL Float // cm
+  realP Float // cm
+  realPcs Int
+  realM3 Float
+
+  // 2. Data Ukuran Customer / Perjanjian Nominal
+  custT Float? // cm
+  custL Float? // cm
+  custP Float? // cm
+  custPcs Int?
+  custM3 Float?
+
+  notes String? // Keterangan
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model InventoryDisposal {

@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import { ShipmentService } from './shipment.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -42,9 +43,9 @@ export class ShipmentController {
 
   @Get()
   @Permissions('inventory.read')
-  findAll(@Request() req) {
+  findAll(@Request() req, @Query('partaiId') partaiId?: string) {
     const companyId = req.user?.company_id || req.user?.companyId;
-    return this.shipmentService.findAll(companyId);
+    return this.shipmentService.findAll(companyId, partaiId);
   }
 
   @Get(':id')

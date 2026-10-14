@@ -160,6 +160,7 @@ export class ShipmentService {
         destinationName,
         destinationAddress,
         notes,
+        partaiId: data.partaiId || undefined,
         status: 'DRAFT',
         totalPcs,
         totalVolumeM3: Number(totalVolumeM3.toFixed(4)),
@@ -392,10 +393,13 @@ export class ShipmentService {
     });
   }
 
-  async findAll(companyId?: string) {
+  async findAll(companyId?: string, partaiId?: string) {
     const where: any = {};
     if (companyId && /^[0-9a-fA-F]{24}$/.test(companyId)) {
       where.company_id = companyId;
+    }
+    if (partaiId) {
+      where.partaiId = partaiId;
     }
 
     return this.prisma.timberShipment.findMany({

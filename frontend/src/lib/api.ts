@@ -427,6 +427,13 @@ export const PartaiAPI: any = {
   deletePartai: async (id: string) => (await api.delete('/inventory/timber-partai/' + id)).data,
 };
 
+export const PackingAPI: any = {
+  getPackings: async (params?: any) => (await api.get('/inventory/timber-packing', { params })).data,
+  getPacking: async (id: string) => (await api.get('/inventory/timber-packing/' + id)).data,
+  createPacking: async (data: any) => (await api.post('/inventory/timber-packing', data)).data,
+  deletePacking: async (id: string) => (await api.delete('/inventory/timber-packing/' + id)).data,
+};
+
 
 
 

@@ -1029,8 +1029,6 @@ export class PurchaseService {
           const wMm = Math.round(wCm > 100 ? wCm : wCm * 10);
           const lMm = Math.round(pCm > 1000 ? pCm : (pCm >= 50 ? pCm * 10 : pCm * 1000));
 
-          const pcs = Number(item.quantityPcs || 0);
-          let vol = Number(item.volumeM3 || 0);
           if ((!vol || vol === 0) && tCm > 0 && wCm > 0 && pCm > 0 && pcs > 0) {
             vol = Number(((pCm * tCm * wCm * pcs) / 1000000).toFixed(4));
           }

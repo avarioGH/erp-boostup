@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { MasterDataAPI, InventoryAPI, ShipmentAPI, TimberAPI } from "@/lib/api";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +31,8 @@ interface TallyItem {
 
 export default function CreateShipmentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const partaiId = searchParams.get("partaiId") || "";
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [stocks, setStocks] = useState<any[]>([]);
   const [loadingStocks, setLoadingStocks] = useState(false);
@@ -264,6 +266,7 @@ export default function CreateShipmentPage() {
         destinationName: form.destinationName,
         destinationAddress: form.destinationAddress,
         notes: form.notes,
+        partaiId: partaiId || undefined,
         autoConfirm: autoConfirm,
         items: items.map(i => ({
           timberVariantId: i.timberVariantId || undefined,
@@ -281,7 +284,11 @@ export default function CreateShipmentPage() {
       if (autoConfirm) {
         alert("Surat muat berhasil disimpan dan stok gudang otomatis dipotong!");
       }
-      router.push(`/inventory/shipment/${res.id || ""}`);
+      if (partaiId) {
+        router.push(`/inventory/partai/${partaiId}?tab=shipment`);
+      } else {
+        router.push(`/inventory/shipment/${res.id || ""}`);
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message || err.message || "Gagal menyimpan surat muat fuso");
     } finally {

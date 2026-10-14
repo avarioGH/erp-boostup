@@ -203,6 +203,27 @@ export class PartaiService {
           },
         },
         sawnOutputs: { orderBy: { createdAt: 'desc' }, include: { items: { include: { timberVariant: true } } } },
+        productionProcesses: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            inputs: { include: { variant: true } },
+            outputs: { include: { variant: true, warehouse: true } },
+          },
+        },
+        shipments: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            items: { include: { timberVariant: true } },
+            warehouse: true,
+          },
+        },
+        packings: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            items: true,
+            warehouse: true,
+          },
+        },
       },
     });
 

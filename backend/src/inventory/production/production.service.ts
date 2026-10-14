@@ -241,6 +241,7 @@ export class ProductionService {
         status: data.status || 'DRAFT',
         notes,
         createdBy,
+        partaiId: data.partaiId || null,
         inputVolumeM3,
         outputVolumeM3,
         wasteVolumeM3,
@@ -443,15 +444,17 @@ export class ProductionService {
 
   async getProcesses(params: {
     companyId?: string;
+    partaiId?: string;
     processType?: string;
     search?: string;
     status?: string;
     skip?: number;
     take?: number;
   }) {
-    const { companyId, processType, search, status, skip = 0, take = 50 } = params;
+    const { companyId, partaiId, processType, search, status, skip = 0, take = 50 } = params;
     const where: any = {};
     if (companyId) where.company_id = companyId;
+    if (partaiId) where.partaiId = partaiId;
     if (processType) where.processType = processType;
     if (status) where.status = status;
     if (search) {

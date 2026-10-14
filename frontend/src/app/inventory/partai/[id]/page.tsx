@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { api, PartaiAPI, TimberAPI, PurchaseAPI, MasterDataAPI, InventoryAPI, ProductionAPI } from "@/lib/api";
+import { api, PartaiAPI, TimberAPI, PurchaseAPI, MasterDataAPI, InventoryAPI, ProductionAPI, ShipmentAPI, PackingAPI } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2, Check, X, Loader2, Package, CheckSquare, Square, ChevronDown, ChevronRight, Calendar, Layers, Search, Cog, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2, Check, X, Loader2, Package, CheckSquare, Square, ChevronDown, ChevronRight, Calendar, Layers, Search, Cog, Sparkles, Truck, FileSpreadsheet, Scale } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -88,6 +88,18 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const [processingPageSize, setProcessingPageSize] = useState(50);
   const [processingFilterType, setProcessingFilterType] = useState("ALL");
   const [processingTypes, setProcessingTypes] = useState<any[]>([]);
+
+  // Shipment (Muat Fuso / Truk Kalimantan -> Surabaya) States (Excel 3)
+  const [shipmentsList, setShipmentsList] = useState<any[]>([]);
+  const [shipmentLoading, setShipmentLoading] = useState(false);
+  const [shipmentPage, setShipmentPage] = useState(1);
+  const [shipmentPageSize, setShipmentPageSize] = useState(50);
+
+  // Packing (Dual Record: Asli vs Customer) States (Excel 6)
+  const [packingsList, setPackingsList] = useState<any[]>([]);
+  const [packingLoading, setPackingLoading] = useState(false);
+  const [packingPage, setPackingPage] = useState(1);
+  const [packingPageSize, setPackingPageSize] = useState(50);
 
   // Purchase Filters
   const [purchaseFilterSpecies, setPurchaseFilterSpecies] = useState<string>("ALL");
@@ -335,18 +347,26 @@ export default function PartaiDetailPage({ params }: { params: any }) {
 
   const fetchProcessingData = async () => {
     setProcessingLoading(true);
+    setShipmentLoading(true);
+    setPackingLoading(true);
     try {
-      const [res, typesRes] = await Promise.all([
-        ProductionAPI.getProcesses({ take: 100 }),
+      const [res, typesRes, shipRes, packRes] = await Promise.all([
+        ProductionAPI.getProcesses({ partaiId: id, take: 100 }).catch(() => []),
         MasterDataAPI.getProcessingTypes().catch(() => []),
+        ShipmentAPI.getShipments({ partaiId: id }).catch(() => []),
+        PackingAPI.getPackings({ partaiId: id }).catch(() => []),
       ]);
       const list = Array.isArray(res) ? res : res?.items || [];
       setProcessingList(list);
       setProcessingTypes(Array.isArray(typesRes) ? typesRes : typesRes?.data || []);
+      setShipmentsList(Array.isArray(shipRes) ? shipRes : shipRes?.items || []);
+      setPackingsList(Array.isArray(packRes) ? packRes : packRes?.items || []);
     } catch (e) {
-      console.error("Error loading processing data:", e);
+      console.error("Error loading processing, shipment or packing data:", e);
     } finally {
       setProcessingLoading(false);
+      setShipmentLoading(false);
+      setPackingLoading(false);
     }
   };
 
@@ -805,11 +825,21 @@ export default function PartaiDetailPage({ params }: { params: any }) {
             <TabsTrigger value="output" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
               5. Output (Sawn Timber)
             </TabsTrigger>
-            <TabsTrigger value="processing" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              6. Processing
+            <TabsTrigger value="shipment" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5">
+              <Truck className="w-3.5 h-3.5 text-amber-600" />
+              6. Muat / Kirim (Fuso)
             </TabsTrigger>
-            <TabsTrigger value="summary" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              7. Rekapan
+            <TabsTrigger value="processing" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5">
+              <Cog className="w-3.5 h-3.5 text-cyan-600" />
+              7. Processing (Surabaya)
+            </TabsTrigger>
+            <TabsTrigger value="packing" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5">
+              <Package className="w-3.5 h-3.5 text-purple-600" />
+              8. Packing List (Asli vs Cust)
+            </TabsTrigger>
+            <TabsTrigger value="summary" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              9. Rekapan Rendemen
             </TabsTrigger>
           </TabsList>
         </div>
@@ -2045,7 +2075,138 @@ export default function PartaiDetailPage({ params }: { params: any }) {
           </Card>
         </TabsContent>
 
-        {/* 6. PROCESSING (PENGOLAHAN LANJUTAN: KD, MOLDING, DLL) */}
+        {/* 6. MUAT / PENGIRIMAN ANTAR PULAU (FUSO / TRUK KALIMANTAN -> SURABAYA) - SESUAI EXCEL 3 */}
+        <TabsContent value="shipment">
+          <Card>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-amber-600" /> Surat Jalan & Muat Fuso (Kalimantan ➔ Surabaya)
+                </CardTitle>
+                <CardDescription>
+                  Pencatatan pengiriman kayu sawn timber per armada truk / fuso kontainer dari gudang asal ke gudang tujuan.
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => router.push(`/inventory/shipment/create?partaiId=${id}`)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> + Buat Muat / Surat Jalan Fuso
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {/* Statistik Rekap Muatan Fuso */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-muted/30 p-3.5 rounded-lg border text-xs">
+                <div>
+                  <span className="text-muted-foreground">Total Pengiriman: </span>
+                  <p className="text-lg font-bold font-mono text-foreground">{shipmentsList.length} Armada</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Total Batang (Pcs): </span>
+                  <p className="text-lg font-bold font-mono text-blue-600">
+                    {shipmentsList.reduce((acc, s) => acc + (s.totalPcs || 0), 0)} Pcs
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Total Kubikasi Muat: </span>
+                  <p className="text-lg font-bold font-mono text-amber-600">
+                    {shipmentsList.reduce((acc, s) => acc + (s.totalVolumeM3 || 0), 0).toFixed(4)} M³
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Status Muat: </span>
+                  <p className="text-sm font-semibold text-emerald-600 mt-1">
+                    {shipmentsList.filter(s => s.status === 'CONFIRMED').length} Terkirim / {shipmentsList.filter(s => s.status === 'DRAFT').length} Draft
+                  </p>
+                </div>
+              </div>
+
+              {/* Table Muatan Fuso */}
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow>
+                      <TableHead className="w-[120px]">Tgl Muat</TableHead>
+                      <TableHead>No. Surat Jalan</TableHead>
+                      <TableHead>Armada / Fuso</TableHead>
+                      <TableHead>No. Polisi / Supir</TableHead>
+                      <TableHead>Tujuan / Gudang</TableHead>
+                      <TableHead className="text-right">Total Pcs</TableHead>
+                      <TableHead className="text-right">Total Kubikasi (M³)</TableHead>
+                      <TableHead className="text-center w-[100px]">Status</TableHead>
+                      <TableHead className="text-right w-[90px]">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {shipmentsList.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-10 text-muted-foreground text-xs">
+                          Belum ada data pengiriman / muatan armada Fuso untuk partai ini. Klik tombol di atas untuk mencatat surat jalan muat.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      shipmentsList.map((item: any) => (
+                        <TableRow key={item.id} className="hover:bg-muted/30">
+                          <TableCell className="text-xs font-mono">
+                            {new Date(item.shipmentDate || item.createdAt).toLocaleDateString('id-ID')}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs font-bold text-amber-700 dark:text-amber-400">
+                            {item.shipmentNumber}
+                          </TableCell>
+                          <TableCell className="text-xs font-semibold">
+                            {item.fusoName || "FUSO"}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            <span className="font-mono font-bold">{item.policeNumber || "-"}</span>
+                            {item.driverName && <span className="text-muted-foreground ml-1.5">({item.driverName})</span>}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {item.destinationName || item.destinationAddress || (item.warehouse?.name || "Surabaya")}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-medium text-xs">
+                            {item.totalPcs || 0}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-bold text-xs text-amber-600 dark:text-amber-400">
+                            {Number(item.totalVolumeM3 || 0).toFixed(4)} M³
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {item.status === 'CONFIRMED' ? (
+                              <Badge className="bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold">
+                                TERKIRIM
+                              </Badge>
+                            ) : item.status === 'CANCELLED' ? (
+                              <Badge variant="destructive" className="text-xs">
+                                BATAL
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">
+                                DRAFT
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                              onClick={() => router.push(`/inventory/shipment/`)}
+                            >
+                              Detail <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 7. PROCESSING (PENGOLAHAN LANJUTAN: KD, MOLDING, DLL) */}
         <TabsContent value="processing">
           <Card>
             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
@@ -2246,8 +2407,131 @@ export default function PartaiDetailPage({ params }: { params: any }) {
           </Card>
         </TabsContent>
 
-          {/* 7. REKAPAN */}
-          <TabsContent value="summary">
+        {/* 8. PACKING LIST (DUAL RECORD: UKURAN ASLI PABRIK VS UKURAN CUSTOMER NOMINAL) - SESUAI EXCEL 6 */}
+        <TabsContent value="packing">
+          <Card>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Package className="w-5 h-5 text-purple-600" /> Packing List & Ekspor (Asli vs Customer)
+                </CardTitle>
+                <CardDescription>
+                  Pencatatan packing list dua sisi (Dual Measurement) sesuai Sheet PACKING Excel 6: Ukuran & M³ Riil Pabrik berdampingan dengan Ukuran & M³ Nominal Customer.
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => router.push(`/inventory/packing/create?partaiId=${id}`)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-sm"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> + Buat Packing List Baru
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {/* Statistik Rekap Packing List */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-muted/30 p-3.5 rounded-lg border text-xs">
+                <div>
+                  <span className="text-muted-foreground">Total Dokumen Packing: </span>
+                  <p className="text-lg font-bold font-mono text-foreground">{packingsList.length} Packing List</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Total Batang (Pcs): </span>
+                  <p className="text-lg font-bold font-mono text-purple-600">
+                    {packingsList.reduce((acc, p) => acc + (p.totalRealPcs || 0), 0)} Pcs
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Kubikasi Riil Pabrik: </span>
+                  <p className="text-lg font-bold font-mono text-blue-600">
+                    {packingsList.reduce((acc, p) => acc + (p.totalRealVolume || 0), 0).toFixed(4)} M³
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Kubikasi Customer (Nominal): </span>
+                  <p className="text-lg font-bold font-mono text-emerald-600">
+                    {packingsList.reduce((acc, p) => acc + (p.totalCustVolume || 0), 0).toFixed(4)} M³
+                  </p>
+                </div>
+              </div>
+
+              {/* Table Packing List */}
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow>
+                      <TableHead className="w-[110px]">Tgl Packing</TableHead>
+                      <TableHead>No. Packing / SPK</TableHead>
+                      <TableHead>Pemilik / Jenis Kayu</TableHead>
+                      <TableHead>No. Kontainer / Gudang</TableHead>
+                      <TableHead className="text-center">Jml Palet</TableHead>
+                      <TableHead className="text-right text-blue-700 dark:text-blue-400">Total Riil Pabrik (M³)</TableHead>
+                      <TableHead className="text-right text-emerald-700 dark:text-emerald-400">Total Customer (M³)</TableHead>
+                      <TableHead className="text-center w-[90px]">Status</TableHead>
+                      <TableHead className="text-right w-[90px]">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {packingsList.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-10 text-muted-foreground text-xs">
+                          Belum ada data Packing List untuk partai ini. Klik tombol di atas untuk membuat packing baru dengan format Excel (Ukuran Asli vs Ukuran Customer).
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      packingsList.map((item: any) => (
+                        <TableRow key={item.id} className="hover:bg-muted/30">
+                          <TableCell className="text-xs font-mono">
+                            {new Date(item.packingDate || item.createdAt).toLocaleDateString('id-ID')}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs font-bold text-purple-700 dark:text-purple-400">
+                            {item.packingNumber}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            <span className="font-semibold">{item.ownerName || "PT Daun Emas"}</span>
+                            <span className="text-muted-foreground ml-1.5">({item.species || "MERBAU"})</span>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {item.containerNo ? `Cont: ${item.containerNo}` : (item.warehouse?.name || "-")}
+                          </TableCell>
+                          <TableCell className="text-center font-mono font-semibold text-xs">
+                            {item.palletCount || 1} PLT
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-bold text-xs text-blue-600 dark:text-blue-400">
+                            {Number(item.totalRealVolume || 0).toFixed(4)} M³
+                            <span className="text-[10px] text-muted-foreground block font-normal">({item.totalRealPcs || 0} pcs)</span>
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                            {Number(item.totalCustVolume || 0).toFixed(4)} M³
+                            <span className="text-[10px] text-muted-foreground block font-normal">({item.totalCustPcs || 0} pcs)</span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge className="bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold">
+                              {item.status || "CONFIRMED"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                              onClick={() => router.push(`/inventory/packing/${item.id}`)}
+                            >
+                              Detail <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 9. REKAPAN */}
+        <TabsContent value="summary">
             {(() => {
               // 1. Pembelian (Purchase Log & Sawn Timber)
               const purchases = partai.purchases || [];
@@ -2473,11 +2757,27 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                               ) : '-'}
                             </TableCell>
                           </TableRow>
+                          {/* 6. MUAT FUSO (EXCEL 3) */}
+                          {shipmentsList.length > 0 && (
+                            <TableRow className="bg-amber-50/20 dark:bg-amber-900/10 border-t">
+                              <TableCell className="font-medium text-amber-700 dark:text-amber-400">
+                                6. Muat / Kirim (Fuso Ex Kalteng ➔ Sby)
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-muted-foreground">{shipmentsList.length} armada</TableCell>
+                              <TableCell className="text-right font-mono font-bold text-amber-600 dark:text-amber-400">
+                                {shipmentsList.reduce((acc, s) => acc + (s.totalVolumeM3 || 0), 0).toFixed(4)} m³
+                              </TableCell>
+                              <TableCell className="text-right text-muted-foreground">
+                                Terkirim: {shipmentsList.reduce((acc, s) => acc + (s.totalPcs || 0), 0)} pcs
+                              </TableCell>
+                            </TableRow>
+                          )}
+
                           {procInputVolM3 > 0 && (
                             <>
                               <TableRow className="bg-cyan-50/20 dark:bg-cyan-900/10 border-t">
                                 <TableCell className="font-medium text-cyan-700 dark:text-cyan-400">
-                                  6. Processing / Pengolahan (Bahan Dipotong)
+                                  7. Processing / Pengolahan (Bahan Dipotong)
                                 </TableCell>
                                 <TableCell className="text-right font-mono text-muted-foreground">{procBatches} batch</TableCell>
                                 <TableCell className="text-right font-mono font-semibold text-rose-600">
@@ -2501,6 +2801,23 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                               </TableRow>
                             </>
                           )}
+
+                          {/* 8. PACKING LIST (EXCEL 6) */}
+                          {packingsList.length > 0 && (
+                            <TableRow className="bg-purple-50/20 dark:bg-purple-900/10 border-t">
+                              <TableCell className="font-medium text-purple-700 dark:text-purple-400">
+                                8. Packing List (Dual Measurement)
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-muted-foreground">{packingsList.length} packing</TableCell>
+                              <TableCell className="text-right font-mono font-bold text-purple-600 dark:text-purple-400">
+                                {packingsList.reduce((acc, p) => acc + (p.totalRealVolume || 0), 0).toFixed(4)} m³ (Asli)
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-xs text-emerald-600 font-semibold">
+                                Nominal: {packingsList.reduce((acc, p) => acc + (p.totalCustVolume || 0), 0).toFixed(4)} m³
+                              </TableCell>
+                            </TableRow>
+                          )}
+
                           <TableRow className="bg-primary/10 border-t-2 font-bold">
                             <TableCell className="text-primary text-base">
                               TOTAL HASIL AKHIR (KAYU SIAP JUAL / STOK JADI)

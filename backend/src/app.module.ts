@@ -44,6 +44,8 @@ import { OpnameModule } from './inventory/opname/opname.module';
 import { DashboardModule } from './inventory/dashboard/dashboard.module';
 import { PartaiModule } from './inventory/partai/partai.module';
 
+import { PackingModule } from './inventory/packing/packing.module';
+
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { ReportsModule as InventoryReportsModule } from './inventory/reports/reports.module';
@@ -98,6 +100,7 @@ import { SalesReturnModule } from './sales/sales-return/sales-return.module';
     PurchaseModule,
     ShipmentModule,
     OpnameModule,
+    PackingModule,
   ],
   controllers: [AppController, FixController],
   providers: [AppService],
