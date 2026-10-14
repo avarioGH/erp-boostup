@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from "react"
 import { TimberAPI } from "@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -68,6 +68,7 @@ export default function TimberStockPage() {
                     <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Product / Variant</th>
                     <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Location</th>
                     <th className="p-4 px-6 text-center font-semibold text-muted-foreground h-11">Dimensions (mm)</th>
+                    <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Asal / Sumber Pergerakan</th>
                     <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Stock IN</th>
                     <th className="p-4 px-6 text-right font-semibold text-muted-foreground h-11">Stock OUT</th>
                     <th className="p-4 px-6 text-right font-semibold text-indigo-900 bg-indigo-50/50 dark:bg-indigo-950/40 h-11">Current PCS</th>
@@ -76,44 +77,75 @@ export default function TimberStockPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map(stock => (
-                    <tr key={stock.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-6">
-                        <div className="font-semibold text-foreground/90">{stock.timberVariant?.sku || "-"}</div>
-                        <div className="text-[13px] text-muted-foreground mt-0.5 flex items-center gap-2">
-                          <span>{stock.timberVariant?.species || "-"}</span>
-                          <span className="w-1 h-1 rounded-full bg-border"></span>
-                          <span className="font-medium text-primary">Grade {stock.timberVariant?.grade || "-"}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-6 font-medium text-muted-foreground">{stock.location?.name || "-"}</td>
-                      <td className="py-3 px-6 text-center font-medium text-muted-foreground text-[13px]">
-                        {stock.timberVariant?.thickness || 0} &times; {stock.timberVariant?.width || 0} &times; {stock.timberVariant?.length || 0}
-                      </td>
-                      <td className="py-3 px-6 text-right font-semibold text-emerald-600 dark:text-emerald-500">
-                        {stock.stockInPcs > 0 ? `+${stock.stockInPcs}` : stock.stockInPcs}
-                      </td>
-                      <td className="py-3 px-6 text-right font-semibold text-rose-600 dark:text-rose-500">
-                        {stock.stockOutPcs > 0 ? `-${stock.stockOutPcs}` : stock.stockOutPcs}
-                      </td>
-                      <td className="py-3 px-6 text-right font-bold bg-indigo-50/30 dark:bg-indigo-950/30 text-indigo-900 dark:text-primary text-[15px]">
-                        {stock.currentPcs}
-                      </td>
-                      <td className="py-3 px-6 text-right font-bold bg-indigo-50/30 dark:bg-indigo-950/30 text-primary dark:text-primary text-[15px]">
-                        {(stock.currentVolumeM3 || 0).toFixed(4)}
-                      </td>
-                      <td className="py-3 px-6 text-center">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => router.push(`/inventory/timber-stock/${stock.timberVariantId}/${stock.locationId}/card`)}
-                          className="h-8 px-2 text-[12px] font-semibold text-primary hover:text-primary hover:bg-primary/10"
-                        >
-                          Stock Card <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {filtered.map(stock => {
+                    const lastMov = stock.movements && stock.movements.length > 0 ? stock.movements[0] : null;
+                    const formatOrigin = (m: any) => {
+                      if (!m) return "-";
+                      switch (m.referenceType) {
+                        case 'TIMBER_PURCHASE':
+                          return 'Pembelian Sawn Timber';
+                        case 'PRODUCTION_OUTPUT':
+                          return 'Produksi Sawmill (Bongkaran)';
+                        case 'PRODUCTION_PROCESS_OUTPUT':
+                          return 'Hasil Chamber (Oven KD)';
+                        case 'TRANSFER_IN':
+                          return 'Transfer Masuk Gudang';
+                        case 'TRANSFER_OUT':
+                          return 'Transfer Keluar Gudang';
+                        case 'ADJUSTMENT_IN':
+                        case 'ADJUSTMENT_OUT':
+                          return 'Penyesuaian Stok';
+                        case 'OPENING_BALANCE':
+                          return 'Saldo Awal';
+                        default:
+                          return m.referenceType || 'Mutasi Stok';
+                      }
+                    };
+
+                    return (
+                      <tr key={stock.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-6">
+                          <div className="font-semibold text-foreground/90">{stock.timberVariant?.sku || "-"}</div>
+                          <div className="text-[13px] text-muted-foreground mt-0.5 flex items-center gap-2">
+                            <span>{stock.timberVariant?.species || "-"}</span>
+                            <span className="w-1 h-1 rounded-full bg-border"></span>
+                            <span className="font-medium text-primary">Grade {stock.timberVariant?.grade || "-"}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-6 font-medium text-muted-foreground">{stock.location?.name || "-"}</td>
+                        <td className="py-3 px-6 text-center font-medium text-muted-foreground text-[13px]">
+                          {stock.timberVariant?.thickness || 0} &times; {stock.timberVariant?.width || 0} &times; {stock.timberVariant?.length || 0}
+                        </td>
+                        <td className="py-3 px-6 text-left">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-foreground/80 border">
+                            {formatOrigin(lastMov)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-6 text-right font-semibold text-emerald-600 dark:text-emerald-500">
+                          {stock.stockInPcs > 0 ? `+${stock.stockInPcs}` : stock.stockInPcs}
+                        </td>
+                        <td className="py-3 px-6 text-right font-semibold text-rose-600 dark:text-rose-500">
+                          {stock.stockOutPcs > 0 ? `-${stock.stockOutPcs}` : stock.stockOutPcs}
+                        </td>
+                        <td className="py-3 px-6 text-right font-bold bg-indigo-50/30 dark:bg-indigo-950/30 text-indigo-900 dark:text-primary text-[15px]">
+                          {stock.currentPcs}
+                        </td>
+                        <td className="py-3 px-6 text-right font-bold bg-indigo-50/30 dark:bg-indigo-950/30 text-primary dark:text-primary text-[15px]">
+                          {(stock.currentVolumeM3 || 0).toFixed(4)}
+                        </td>
+                        <td className="py-3 px-6 text-center">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => router.push(`/inventory/timber-stock/${stock.timberVariantId}/${stock.locationId}/card`)}
+                            className="h-8 px-2 text-[12px] font-semibold text-primary hover:text-primary hover:bg-primary/10"
+                          >
+                            Stock Card <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

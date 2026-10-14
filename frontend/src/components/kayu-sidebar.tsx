@@ -67,7 +67,7 @@ const items: MenuItem[] = [
  id: "inventory",
  subItems: [
  { title: "Stok Kayu Jadi", url: "/inventory/timber-stock" },
- { title: "Pergerakan Stok", url: "/inventory/movements" },
+ { title: "Pergerakan Stok", url: "/inventory/reports/movements" },
  { title: "Penyesuaian Stok", url: "/inventory/adjustments" },
  { title: "Stock Opname & Audit", url: "/inventory/stock-opname" }
  ]

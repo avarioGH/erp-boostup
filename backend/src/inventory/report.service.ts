@@ -551,6 +551,43 @@ export class ReportService {
 
     let runningPcs = 0;
     let runningM3 = 0;
+
+    // Helper to format friendly source description
+    const getSourceDescription = (refType: string, refId: string) => {
+      switch (refType) {
+        case 'TIMBER_PURCHASE':
+          return 'Pembelian Sawn Timber (Beli Masak)';
+        case 'TIMBER_PURCHASE_REVERSAL':
+          return 'Pembatalan Pembelian Kayu';
+        case 'PRODUCTION_OUTPUT':
+          return 'Hasil Produksi Sawmill (Bongkaran Log)';
+        case 'PRODUCTION_PROCESS_OUTPUT':
+          return 'Hasil Pengeringan Oven (Chamber KD)';
+        case 'PRODUCTION_PROCESS_INPUT':
+          return 'Bahan Masuk Oven (Chamber KD)';
+        case 'PRODUCTION_PROCESS_REVERSAL':
+          return 'Pembatalan Batch KD (Reversal)';
+        case 'TIMBER_SHIPMENT':
+          return 'Pengiriman / Penjualan (Muat Fuso)';
+        case 'TIMBER_SHIPMENT_REVERSAL':
+          return 'Pembatalan Pengiriman (Reversal)';
+        case 'TRANSFER_IN':
+          return 'Mutasi Masuk Antar Gudang / Chamber';
+        case 'TRANSFER_OUT':
+          return 'Mutasi Keluar Antar Gudang / Chamber';
+        case 'ADJUSTMENT_IN':
+          return 'Penyesuaian Stok (Tambah)';
+        case 'ADJUSTMENT_OUT':
+          return 'Penyesuaian Stok (Kurang)';
+        case 'OPENING_BALANCE':
+          return 'Saldo Awal Stok Kayu';
+        case 'STOCK_OPNAME_ADJUSTMENT':
+          return 'Penyesuaian Stock Opname';
+        default:
+          return refType || 'Transaksi Stok';
+      }
+    };
+
     const card = movements.map((m) => {
       const isOut =
         m.type === 'OUT' ||
@@ -570,6 +607,7 @@ export class ReportService {
         date: m.date || m.createdAt,
         reference: m.referenceId || m.referenceType,
         type: m.referenceType || m.type,
+        source: getSourceDescription(m.referenceType, m.referenceId),
         in: inQty,
         out: outQty,
         balancePcs: runningPcs,

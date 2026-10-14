@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useEffect, useState } from 'react'
 import { TimberAPI } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -129,6 +129,7 @@ export default function StockCardPage() {
                     <tr>
                       <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Date</th>
                       <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Reference</th>
+                      <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Keterangan / Asal Transaksi</th>
                       <th className="p-4 px-6 text-left font-semibold text-muted-foreground h-11">Type</th>
                       <th className="p-4 px-6 text-right font-semibold text-emerald-700 h-11">IN (PCS)</th>
                       <th className="p-4 px-6 text-right font-semibold text-rose-700 h-11">OUT (PCS)</th>
@@ -143,6 +144,9 @@ export default function StockCardPage() {
                           {row.date ? new Date(row.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
                         </td>
                         <td className="py-3 px-6 font-mono text-[13px] font-semibold text-foreground/80">{row.reference || "-"}</td>
+                        <td className="py-3 px-6 text-[13px] font-medium text-foreground">
+                          {row.source || (row.reference === 'OPENING' ? 'Saldo Awal' : row.type)}
+                        </td>
                         <td className="py-3 px-6 text-[12px] font-medium text-muted-foreground uppercase tracking-wider">{row.type || "-"}</td>
                         <td className="py-3 px-6 text-right font-semibold text-emerald-600 dark:text-emerald-500">
                           {row.in > 0 ? `+${row.in}` : '-'}

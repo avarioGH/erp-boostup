@@ -406,7 +406,14 @@ export class SawnTimberService {
         skip: Number(skip),
         take: Number(take),
         where,
-        include: { location: true, timberVariant: true },
+        include: {
+          location: true,
+          timberVariant: true,
+          movements: {
+            take: 1,
+            orderBy: { date: 'desc' },
+          },
+        },
         orderBy: { timberVariant: { sku: 'asc' } },
       }),
       this.prisma.timberStock.count({ where }),
