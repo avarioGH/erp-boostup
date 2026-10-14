@@ -2233,7 +2233,28 @@ export default function PartaiDetailPage({ params }: { params: any }) {
           {/* 7. REKAPAN */}
           <TabsContent value="summary">
             {(() => {
-              // Raw Logs (DUKB)
+              // 1. Pembelian (Purchase Log & Sawn Timber)
+              const purchases = partai.purchases || [];
+              let purchaseLogVolM3 = 0;
+              let purchaseLogPcs = 0;
+              let purchaseSawnVolM3 = 0;
+              let purchaseSawnPcs = 0;
+
+              purchases.forEach((p: any) => {
+                (p.logItems || []).forEach((li: any) => {
+                  purchaseLogPcs += 1;
+                  purchaseLogVolM3 += Number(li.purchaseVolume || 0);
+                });
+                (p.items || []).forEach((it: any) => {
+                  purchaseSawnPcs += Number(it.quantityPcs || 0);
+                  purchaseSawnVolM3 += Number(it.volumeM3 || 0);
+                });
+              });
+
+              const totalPurchaseVolM3 = purchaseLogVolM3 + purchaseSawnVolM3;
+              const totalPurchasePcs = purchaseLogPcs + purchaseSawnPcs;
+
+              // 2. Raw Logs (DUKB)
               const rawLogs = partai.rawLogs || [];
               const totalRawLogPcs = rawLogs.length;
               const totalRawLogVolM3 = rawLogs.reduce((s: number, r: any) => {
@@ -2247,7 +2268,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 return s;
               }, 0);
 
-              // Trimming
+              // 3. Trimming
               const trimmedLogs = partai.trimmedLogs || [];
               const totalTrimmedPcs = trimmedLogs.length;
               const totalTrimmedVolM3 = trimmedLogs.reduce((s: number, t: any) => {
@@ -2261,12 +2282,12 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 return s;
               }, 0);
 
-              // Input WIP
+              // 4. Input WIP
               const inputLogs = partai.inputLogs || [];
               const totalInputPcs = inputLogs.length;
               const totalInputVolM3 = inputLogs.reduce((s: number, i: any) => s + (Number(i.totalVolume || 0)), 0);
 
-              // Output Sawn Timber
+              // 5. Output Sawn Timber
               const allOutputItems = (partai.sawnOutputs || []).flatMap((o: any) => o.items || []);
               const totalOutputPcs = allOutputItems.reduce((s: number, i: any) => s + (i.quantityPcs || 0), 0);
               const totalOutputM3 = allOutputItems.reduce((s: number, i: any) => s + (i.volumeM3 || 0), 0);
@@ -2274,9 +2295,26 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               const postedPcs = postedItems.reduce((s: number, i: any) => s + (i.quantityPcs || 0), 0);
               const postedM3 = postedItems.reduce((s: number, i: any) => s + (i.volumeM3 || 0), 0);
 
-              // Rendemen terhadap Log DUKB (atau fallback terhadap Log WIP jika DUKB kosong)
-              const baseLogVol = totalRawLogVolM3 > 0 ? totalRawLogVolM3 : (totalInputVolM3 > 0 ? totalInputVolM3 : totalTrimmedVolM3);
-              const rendemen = baseLogVol > 0 ? (totalOutputM3 / baseLogVol) * 100 : 0;
+              // 6. Processing (Pengolahan / KD / Gesek Potong Lanjutan)
+              const procInputVolM3 = processingList.reduce((acc, p) => acc + (p.inputVolumeM3 || 0), 0);
+              const procOutputVolM3 = processingList.reduce((acc, p) => acc + (p.outputVolumeM3 || 0), 0);
+              const procBatches = processingList.length;
+
+              // Rendemen Sawmill (Output Sawn Timber thdp Bahan Baku)
+              const baseLogVol = totalPurchaseVolM3 > 0 
+                ? totalPurchaseVolM3 
+                : (totalRawLogVolM3 > 0 ? totalRawLogVolM3 : (totalInputVolM3 > 0 ? totalInputVolM3 : totalTrimmedVolM3));
+              const rendemenSawmill = baseLogVol > 0 ? (totalOutputM3 / baseLogVol) * 100 : 0;
+
+              // Rendemen Processing (Hasil Olahan Baru thdp Bahan Input Processing)
+              const rendemenProcessing = procInputVolM3 > 0 ? (procOutputVolM3 / procInputVolM3) * 100 : 0;
+
+              // Total Kumulatif Akhir (Output Kayu Siap Jual / Hasil Olahan Akhir)
+              // Jika ada processing, hasil olahan akhir menggantikan kubikasi bahan yang dipotong
+              const totalFinalProducedM3 = (totalOutputM3 - procInputVolM3) + procOutputVolM3;
+              const rendemenEndToEnd = baseLogVol > 0 
+                ? ((procOutputVolM3 > 0 ? totalFinalProducedM3 : totalOutputM3) / baseLogVol) * 100 
+                : 0;
 
               // Product Category breakdown (Balok, Reng, BS, Air Dry, FJL)
               const CATEGORY_CONFIG: Record<string, { label: string; badgeClass: string }> = {
@@ -2306,33 +2344,57 @@ export default function PartaiDetailPage({ params }: { params: any }) {
 
               return (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* KARTU STATISTIK UTAMA (DARI PEMBELIAN S.D. HASIL AKHIR) */}
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
                     <Card className="border-blue-500/30 bg-blue-50/30 dark:bg-blue-900/10">
-                      <CardContent className="pt-5 pb-4">
-                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Total Raw Log</p>
-                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{totalRawLogPcs} pcs</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">{Number(totalRawLogVolM3.toFixed(3))} m³</p>
+                      <CardContent className="pt-4 pb-3.5 px-4">
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">1. Beli Bahan Baku</p>
+                        <p className="text-xl font-bold text-blue-600 dark:text-blue-400 font-mono">
+                          {totalPurchaseVolM3 > 0 ? totalPurchaseVolM3.toFixed(3) : totalRawLogVolM3.toFixed(3)} m³
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {totalPurchasePcs > 0 ? `${totalPurchasePcs} item beli` : `${totalRawLogPcs} log DUKB`}
+                        </p>
                       </CardContent>
                     </Card>
+
                     <Card className="border-amber-500/30 bg-amber-50/30 dark:bg-amber-900/10">
-                      <CardContent className="pt-5 pb-4">
-                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Input Mesin (WIP)</p>
-                        <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{totalInputPcs} pcs</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">dari {totalTrimmedPcs} log trimming</p>
+                      <CardContent className="pt-4 pb-3.5 px-4">
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">2. Input WIP Gergaji</p>
+                        <p className="text-xl font-bold text-amber-600 dark:text-amber-400 font-mono">
+                          {totalInputVolM3 > 0 ? totalInputVolM3.toFixed(3) : totalTrimmedVolM3.toFixed(3)} m³
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{totalInputPcs} batch pekerjaan</p>
                       </CardContent>
                     </Card>
+
                     <Card className="border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-900/10">
-                      <CardContent className="pt-5 pb-4">
-                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Output Kayu Gergajian</p>
-                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{totalOutputPcs} pcs</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">{Number(totalOutputM3.toFixed(4))} m³</p>
+                      <CardContent className="pt-4 pb-3.5 px-4">
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">3. Output Gergajian</p>
+                        <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                          {totalOutputM3.toFixed(4)} m³
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{totalOutputPcs} pcs sawn timber</p>
                       </CardContent>
                     </Card>
-                    <Card className={rendemen >= 50 ? "border-purple-500/30 bg-purple-50/30 dark:bg-purple-900/10" : "border-red-500/30 bg-red-50/30 dark:bg-red-900/10"}>
-                      <CardContent className="pt-5 pb-4">
-                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Rendemen</p>
-                        <p className={`text-2xl font-bold ${rendemen >= 50 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600'}`}>{rendemen.toFixed(1)}%</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">Output / Raw Log M³</p>
+
+                    <Card className="border-cyan-500/30 bg-cyan-50/30 dark:bg-cyan-900/10">
+                      <CardContent className="pt-4 pb-3.5 px-4">
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">4. Hasil Processing</p>
+                        <p className="text-xl font-bold text-cyan-600 dark:text-cyan-400 font-mono">
+                          {procOutputVolM3.toFixed(4)} m³
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">dari {procInputVolM3.toFixed(3)} m³ dipotong</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className={rendemenEndToEnd >= 50 ? "border-purple-500/30 bg-purple-50/30 dark:bg-purple-900/10" : "border-red-500/30 bg-red-50/30 dark:bg-red-900/10"}>
+                      <CardContent className="pt-4 pb-3.5 px-4">
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">Total Rendemen</p>
+                        <p className={`text-xl font-bold font-mono ${rendemenEndToEnd >= 50 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600'}`}>
+                          {rendemenEndToEnd.toFixed(1)}%
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Hasil Jadi / Beli M³</p>
                       </CardContent>
                     </Card>
                   </div>
@@ -2353,16 +2415,24 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
+                          <TableRow className="bg-blue-50/20 dark:bg-blue-900/10">
+                            <TableCell className="font-semibold text-blue-700 dark:text-blue-400">1. Pembelian Bahan Baku</TableCell>
+                            <TableCell className="text-right font-mono font-medium">{totalPurchasePcs > 0 ? totalPurchasePcs : totalRawLogPcs}</TableCell>
+                            <TableCell className="text-right font-mono font-bold text-blue-700 dark:text-blue-400">
+                              {(totalPurchaseVolM3 > 0 ? totalPurchaseVolM3 : totalRawLogVolM3).toFixed(3)} m³
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground">Bahan Baku Masuk</TableCell>
+                          </TableRow>
                           <TableRow>
-                            <TableCell className="font-medium">2. DUKB (Raw Log Diterima)</TableCell>
+                            <TableCell className="font-medium pl-6">↳ 2. DUKB (Raw Log Diterima)</TableCell>
                             <TableCell className="text-right">{totalRawLogPcs}</TableCell>
-                            <TableCell className="text-right">{Number(totalRawLogVolM3.toFixed(3))}</TableCell>
+                            <TableCell className="text-right">{Number(totalRawLogVolM3.toFixed(3))} m³</TableCell>
                             <TableCell className="text-right text-muted-foreground">-</TableCell>
                           </TableRow>
                           <TableRow>
-                            <TableCell className="font-medium">3. Trimming</TableCell>
+                            <TableCell className="font-medium pl-6">↳ 3. Trimming Log</TableCell>
                             <TableCell className="text-right">{totalTrimmedPcs}</TableCell>
-                            <TableCell className="text-right">{Number(totalTrimmedVolM3.toFixed(3))}</TableCell>
+                            <TableCell className="text-right">{Number(totalTrimmedVolM3.toFixed(3))} m³</TableCell>
                             <TableCell className="text-right">
                               {totalRawLogVolM3 > 0 && totalTrimmedVolM3 > 0 ? (
                                 <span className="text-amber-600 font-medium">-{Number((totalRawLogVolM3 - totalTrimmedVolM3).toFixed(3))} m³</span>
@@ -2370,28 +2440,66 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             </TableCell>
                           </TableRow>
                           <TableRow>
-                            <TableCell className="font-medium">4. Input Mesin (WIP)</TableCell>
+                            <TableCell className="font-medium">4. Input Mesin (WIP Gergaji)</TableCell>
                             <TableCell className="text-right">{totalInputPcs}</TableCell>
                             <TableCell className="text-right font-medium text-amber-600 dark:text-amber-400">
-                              {totalInputVolM3 > 0 ? Number(totalInputVolM3.toFixed(4)) : "-"}
+                              {totalInputVolM3 > 0 ? Number(totalInputVolM3.toFixed(4)) + " m³" : "-"}
                             </TableCell>
                             <TableCell className="text-right text-muted-foreground">-</TableCell>
                           </TableRow>
                           <TableRow className="bg-emerald-50/30 dark:bg-emerald-900/10">
-                            <TableCell className="font-bold text-emerald-700 dark:text-emerald-400">5. Output Kayu Gergajian (Total)</TableCell>
+                            <TableCell className="font-bold text-emerald-700 dark:text-emerald-400">5. Output Sawn Timber (Sawmill)</TableCell>
                             <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400">{totalOutputPcs}</TableCell>
-                            <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400">{Number(totalOutputM3.toFixed(4))}</TableCell>
+                            <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400 font-mono">{Number(totalOutputM3.toFixed(4))} m³</TableCell>
                             <TableCell className="text-right">
                               {baseLogVol > 0 ? (
-                                <span className={`font-bold ${rendemen >= 50 ? 'text-emerald-600' : 'text-red-600'}`}>Rendemen {rendemen.toFixed(1)}%</span>
+                                <span className={`font-bold ${rendemenSawmill >= 50 ? 'text-emerald-600' : 'text-amber-600'}`}>Rendemen Gergaji {rendemenSawmill.toFixed(1)}%</span>
                               ) : '-'}
                             </TableCell>
                           </TableRow>
-                          <TableRow className="bg-blue-50/30 dark:bg-blue-900/10">
-                            <TableCell className="font-medium text-blue-700 dark:text-blue-400 pl-8">↳ Sudah POSTED ke Stok</TableCell>
-                            <TableCell className="text-right text-blue-700 dark:text-blue-400">{postedPcs}</TableCell>
-                            <TableCell className="text-right text-blue-700 dark:text-blue-400">{Number(postedM3.toFixed(4))}</TableCell>
-                            <TableCell className="text-right text-muted-foreground">-</TableCell>
+                          {procInputVolM3 > 0 && (
+                            <>
+                              <TableRow className="bg-cyan-50/20 dark:bg-cyan-900/10 border-t">
+                                <TableCell className="font-medium text-cyan-700 dark:text-cyan-400">
+                                  6. Processing / Pengolahan (Bahan Dipotong)
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-muted-foreground">{procBatches} batch</TableCell>
+                                <TableCell className="text-right font-mono font-semibold text-rose-600">
+                                  -{procInputVolM3.toFixed(4)} m³
+                                </TableCell>
+                                <TableCell className="text-right text-muted-foreground">Dipakai ke Proses</TableCell>
+                              </TableRow>
+                              <TableRow className="bg-cyan-50/30 dark:bg-cyan-900/10">
+                                <TableCell className="font-bold text-cyan-700 dark:text-cyan-400 pl-6">
+                                  ↳ Hasil Olahan Baru ({processingList.map((p: any) => p.processType).filter((v, i, a) => a.indexOf(v) === i).join(", ") || "KD"})
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-cyan-700 font-medium">{procBatches} batch</TableCell>
+                                <TableCell className="text-right font-mono font-bold text-cyan-600">
+                                  +{procOutputVolM3.toFixed(4)} m³
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <span className="font-bold text-cyan-600">
+                                    Rendemen Olah {rendemenProcessing.toFixed(1)}%
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            </>
+                          )}
+                          <TableRow className="bg-primary/10 border-t-2 font-bold">
+                            <TableCell className="text-primary text-base">
+                              TOTAL HASIL AKHIR (KAYU SIAP JUAL / STOK JADI)
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-primary">
+                              {totalOutputPcs} PCS
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-primary text-base">
+                              {(procOutputVolM3 > 0 ? totalFinalProducedM3 : totalOutputM3).toFixed(4)} m³
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Badge className={rendemenEndToEnd >= 50 ? "bg-emerald-600 text-white font-bold" : "bg-purple-600 text-white font-bold"}>
+                                RENDEMEN TOTAL: {rendemenEndToEnd.toFixed(1)}%
+                              </Badge>
+                            </TableCell>
                           </TableRow>
                         </TableBody>
                       </Table>
@@ -2437,7 +2545,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                               <TableCell className="text-right">{totalOutputPcs}</TableCell>
                               <TableCell className="text-right text-emerald-600 dark:text-emerald-400">{Number(totalOutputM3.toFixed(4))}</TableCell>
                               <TableCell className="text-right">100%</TableCell>
-                              <TableCell className={`text-right ${rendemen >= 50 ? 'text-emerald-600' : 'text-red-600'}`}>{rendemen.toFixed(2)}%</TableCell>
+                              <TableCell className={`text-right ${rendemenSawmill >= 50 ? 'text-emerald-600' : 'text-red-600'}`}>{rendemenSawmill.toFixed(2)}%</TableCell>
                             </TableRow>
                           </TableBody>
                         </Table>
