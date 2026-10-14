@@ -98,13 +98,18 @@ export function ReceiveLogModal({
     // 2. Sawn Timber
     if (purchase.items && purchase.items.length > 0) {
       const rows = purchase.items.map((it: any) => {
-        const t = Number(it.purchaseThickness || it.timberVariant?.thickness || 0);
-        const w = Number(it.purchaseWidth || it.timberVariant?.width || 0);
-        const l = Number(it.purchaseLength || it.timberVariant?.length || 0);
+        let t = Number(it.purchaseThickness || it.timberVariant?.thickness || 0);
+        let w = Number(it.purchaseWidth || it.timberVariant?.width || 0);
+        let l = Number(it.purchaseLength || it.timberVariant?.length || 0);
+        // If stored in mm (> 50 for thickness, > 100 for width), convert to cm for consistent display in cm
+        const isMmFormat = t > 50 || w > 100 || l > 1000;
+        const tCm = isMmFormat ? t / 10 : t;
+        const wCm = isMmFormat ? w / 10 : w;
+        const lCm = isMmFormat ? (l > 1000 ? l / 10 : l) : l;
         const pcs = Number(it.quantityPcs || 0);
         let vol = Number(it.volumeM3 || 0);
-        if ((!vol || vol === 0) && t > 0 && w > 0 && l > 0 && pcs > 0) {
-          vol = Number((((t * w * l) / 1000000000) * pcs).toFixed(4));
+        if ((!vol || vol === 0) && tCm > 0 && wCm > 0 && lCm > 0 && pcs > 0) {
+          vol = Number(((tCm * wCm * lCm * pcs) / 1000000).toFixed(4));
         }
         return {
           id: it.id,
@@ -113,9 +118,9 @@ export function ReceiveLogModal({
           species: it.timberVariant?.species || it.timberVariant?.timberSpecies?.name || it.species || "Sawn Timber",
           grade: it.timberVariant?.grade || it.grade || "A",
           productType: it.productType || it.timberVariant?.productType || "BALOK",
-          thickness: t || "",
-          width: w || "",
-          length: l || "",
+          thickness: tCm || "",
+          width: wCm || "",
+          length: lCm || "",
           orderedPcs: pcs,
           receivedPcs: pcs || "",
           volumeM3: vol,
@@ -152,7 +157,14 @@ export function ReceiveLogModal({
         const l = parseFloat(row.length) || 0;
         const pcs = parseFloat(row.receivedPcs) || 0;
         if (t > 0 && w > 0 && l > 0 && pcs > 0) {
-          row.volumeM3 = Number((((t * w * l) / 1000000000) * pcs).toFixed(4));
+          // Both cm (divisor 1.000.000) or mm (divisor 1.000.000.000)
+          const isMm = t > 50 || w > 100 || l > 1000;
+          row.volumeM3 = Number(
+            (isMm
+              ? (((t * w * l) / 1000000000) * pcs)
+              : (((t * w * l) / 1000000) * pcs)
+            ).toFixed(4)
+          );
         } else {
           row.volumeM3 = 0;
         }
@@ -697,9 +709,9 @@ export function ReceiveLogModal({
                     <TableHead className="w-[100px]">Spesies</TableHead>
                     <TableHead className="w-[110px]">Tipe</TableHead>
                     <TableHead className="w-[80px]">Grade</TableHead>
-                    <TableHead className="w-[80px]">Tebal (mm)</TableHead>
-                    <TableHead className="w-[80px]">Lebar (mm)</TableHead>
-                    <TableHead className="w-[85px]">Panjang (mm)</TableHead>
+                    <TableHead className="w-[80px]">Tebal (cm)</TableHead>
+                    <TableHead className="w-[80px]">Lebar (cm)</TableHead>
+                    <TableHead className="w-[85px]">Panjang (cm)</TableHead>
                     <TableHead className="w-[75px] text-center">PO (Pcs)</TableHead>
                     <TableHead className="w-[85px] text-center">Fisik (Pcs)</TableHead>
                     <TableHead className="w-[95px] text-right text-emerald-600 dark:text-emerald-400 font-bold">

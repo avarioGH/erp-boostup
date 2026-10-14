@@ -487,7 +487,10 @@ export default function PartaiDetailPage({ params }: { params: any }) {
           const t = it.purchaseThickness || it.timberVariant?.thickness || 0;
           const w = it.purchaseWidth || it.timberVariant?.width || 0;
           const l = it.purchaseLength || it.timberVariant?.length || 0;
-          const dimStr = t && w && l ? `${t}×${w}×${l} mm` : "-";
+          const isCmFormat = l <= 1000 && t <= 100 && w <= 100;
+          const dimStr = t && w && l 
+            ? (isCmFormat ? `${l} × ${t} × ${w} cm` : `${t} × ${w} × ${l} mm`)
+            : "-";
           const sku = it.timberVariant?.sku || (dimStr !== "-" ? dimStr : `Item #${idx + 1}`);
           const sp = it.timberVariant?.species || it.timberVariant?.timberSpecies?.name || "Sawn Timber";
           const itemReceivingDate = p.receivingDate || (pStatus === 'RECEIVED' ? (p.receivingDate || it.updatedAt || p.updatedAt) : null);

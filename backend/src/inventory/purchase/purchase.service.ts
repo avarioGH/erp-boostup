@@ -295,9 +295,9 @@ export class PurchaseService {
                       grade: 'A',
                       productType: 'BALOK',
                       quantityPcs: item.quantityPcs,
-                      thicknessMm: Math.round(Number(item.purchaseThickness || 0)),
-                      widthMm: Math.round(Number(item.purchaseWidth || 0)),
-                      lengthMm: Math.round(Number(item.purchaseLength || 0)),
+                      thicknessMm: Math.round(Number(item.purchaseThickness || 0) > 50 ? Number(item.purchaseThickness || 0) : Number(item.purchaseThickness || 0) * 10),
+                      widthMm: Math.round(Number(item.purchaseWidth || 0) > 100 ? Number(item.purchaseWidth || 0) : Number(item.purchaseWidth || 0) * 10),
+                      lengthMm: Math.round(Number(item.purchaseLength || 0) > 1000 ? Number(item.purchaseLength || 0) : (Number(item.purchaseLength || 0) >= 50 ? Number(item.purchaseLength || 0) * 10 : Number(item.purchaseLength || 0) * 1000)),
                       volumeM3: Number(item.volumeM3 || 0),
                       notes: `Dari PO ${purchase.purchaseNumber}`,
                     },
@@ -548,9 +548,17 @@ export class PurchaseService {
 
         for (const item of sawnItemsToProcess) {
           const qty = Number(item.quantityPcs || item.receivedPcs || 0);
-          const tMm = Math.round(Number(item.thickness || item.purchaseThickness || item.thicknessMm || 0));
-          const wMm = Math.round(Number(item.width || item.purchaseWidth || item.widthMm || 0));
-          const lMm = Math.round(Number(item.length || item.purchaseLength || item.lengthMm || 0));
+          const rawT = Number(item.thickness || item.purchaseThickness || item.thicknessMm || 0);
+          const rawW = Number(item.width || item.purchaseWidth || item.widthMm || 0);
+          const rawL = Number(item.length || item.purchaseLength || item.lengthMm || 0);
+          
+          const tMm = Math.round(rawT > 50 ? rawT : rawT * 10);
+          const wMm = Math.round(rawW > 100 ? rawW : rawW * 10);
+          const lMm = Math.round(rawL > 1000 ? rawL : (rawL >= 50 ? rawL * 10 : rawL * 1000));
+          const tCm = rawT > 50 ? rawT / 10 : rawT;
+          const wCm = rawW > 100 ? rawW / 10 : rawW;
+          const pCm = rawL > 1000 ? rawL / 10 : (rawL >= 50 ? rawL : rawL * 100);
+
           let vol = Number(item.volumeM3 || 0);
           if ((!vol || vol === 0) && tMm > 0 && wMm > 0 && lMm > 0 && qty > 0) {
             vol = Number((((tMm * wMm * lMm) / 1000000000) * qty).toFixed(4));
@@ -566,9 +574,9 @@ export class PurchaseService {
                 data: {
                   quantityPcs: qty,
                   volumeM3: vol,
-                  purchaseThickness: tMm || undefined,
-                  purchaseWidth: wMm || undefined,
-                  purchaseLength: lMm || undefined,
+                  purchaseThickness: tCm || undefined,
+                  purchaseWidth: wCm || undefined,
+                  purchaseLength: pCm || undefined,
                 },
               });
             }
