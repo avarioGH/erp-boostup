@@ -12,6 +12,8 @@ import { TimberVariantController } from './controllers/timber-variant.controller
 import { VehicleService } from './services/vehicle.service';
 import { DriverController } from './controllers/driver.controller';
 import { DriverService } from './services/driver.service';
+import { ProcessingTypeController } from './controllers/processing-type.controller';
+import { ProcessingTypeService } from './services/processing-type.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
@@ -24,6 +26,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
     VehicleController,
     TimberVariantController,
     DriverController,
+    ProcessingTypeController,
   ],
   providers: [
     TimberSpeciesService,
@@ -32,6 +35,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
     LocationService,
     VehicleService,
     DriverService,
+    ProcessingTypeService,
   ],
 })
 export class MasterDataModule {}

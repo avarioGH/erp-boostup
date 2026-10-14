@@ -106,9 +106,10 @@ const items: MenuItem[] = [
  icon: Database,
  id: "master_data",
  subItems: [
- { title: "Katalog Kayu", url: "#", type: "label" },
+ { title: "Katalog Kayu & Proses", url: "#", type: "label" },
  { title: "Data Species", url: "/inventory/master-data/species" },
  { title: "Data Grade", url: "/inventory/master-data/grade" },
+ { title: "Master Proses (Processing)", url: "/inventory/master-data/processing" },
  
  { title: "Lokasi & Logistik", url: "#", type: "label" },
  { title: "Gudang & Lokasi", url: "/inventory/warehouses" },

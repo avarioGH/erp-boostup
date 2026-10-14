@@ -360,6 +360,11 @@ export const MasterDataAPI: any = {
   createDriver: async (data: any) => (await api.post('/inventory/master-data/driver', data)).data,
   updateDriver: async (id: string, data: any) => (await api.put('/inventory/master-data/driver/' + id, data)).data,
   deleteDriver: async (id: string) => (await api.delete('/inventory/master-data/driver/' + id)).data,
+
+  getProcessingTypes: async () => (await api.get('/inventory/master-data/processing-types')).data,
+  createProcessingType: async (data: any) => (await api.post('/inventory/master-data/processing-types', data)).data,
+  updateProcessingType: async (id: string, data: any) => (await api.put('/inventory/master-data/processing-types/' + id, data)).data,
+  deleteProcessingType: async (id: string) => (await api.delete('/inventory/master-data/processing-types/' + id)).data,
 };
 
 
