@@ -57,20 +57,20 @@ export default function CreateProcessingRunPage() {
   const [speciesList, setSpeciesList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // Bagian 1: Input Bahan (Bahan Baku / Produk Lama yang dipotong kubikasinya)
+  // Bagian 1: Input Sawn Timber yang dipotong (Pengurangan Kubikasi)
   const [inputRows, setInputRows] = useState<SizeRow[]>([
-    { bundleNo: "BDL-IN-01", species: "KENARI", t: "21", w: "21", l: "200", pcs: "48", volumeM3: 4.2336 },
-    { bundleNo: "BDL-IN-01", species: "KENARI", t: "10", w: "21", l: "200", pcs: "1", volumeM3: 0.042 },
-    { bundleNo: "BDL-IN-02", species: "KENARI", t: "16", w: "16", l: "200", pcs: "46", volumeM3: 2.3552 },
+    { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0 },
+    { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0 },
+    { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0 },
     { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0 },
     { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0 },
   ]);
 
-  // Bagian 2: Output Produk Baru (Produk Baru setelah diproses)
+  // Bagian 2: Output Sawn Timber Hasil Potong / Gesek (Penambahan Stok Baru)
   const [outputRows, setOutputRows] = useState<SizeRow[]>([
-    { bundleNo: "BDL-OUT-01", species: "KENARI", t: "3.5", w: "16.5", l: "200", pcs: "15", volumeM3: 0.1733 },
-    { bundleNo: "BDL-OUT-01", species: "KENARI", t: "4.7", w: "10.2", l: "200", pcs: "200", volumeM3: 1.9176 },
-    { bundleNo: "BDL-OUT-01", species: "KENARI", t: "4.7", w: "10.2", l: "270", pcs: "50", volumeM3: 0.6472 },
+    { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0 },
+    { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0 },
+    { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0 },
     { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0 },
     { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0 },
   ]);
@@ -472,12 +472,17 @@ export default function CreateProcessingRunPage() {
       {/* GRID 2 KOLOM SEJAJAR: INPUT (PENGURANGAN) & OUTPUT (PENAMBAHAN) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* KOLOM KIRI: INPUT BAHAN YANG DIPROSES (PENGURANGAN KUBIKASI) */}
+        {/* KOLOM KIRI: INPUT SAWN TIMBER YANG AKAN DIPOTONG / DIGESEK (PENGURANGAN KUBIKASI) */}
         <Card className="shadow-sm border-blue-200/70 dark:border-blue-900/40">
           <CardHeader className="bg-blue-50/60 dark:bg-blue-950/20 py-3.5 px-4 md:px-5 border-b flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2 text-blue-900 dark:text-blue-300 font-bold text-sm">
-              <ArrowDownCircle className="w-5 h-5 text-blue-600" />
-              <span>1. Bahan Input (Pengurangan Kubikasi M³)</span>
+            <div>
+              <div className="flex items-center gap-2 text-blue-900 dark:text-blue-300 font-bold text-sm">
+                <ArrowDownCircle className="w-5 h-5 text-blue-600" />
+                <span>1. Sawn Timber Input (Dipicu untuk Pemotongan / Gesek)</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Data sawn timber awal yang akan dipotong ukurannya (mengurangi kubikasi M³).
+              </p>
             </div>
             <Button
               type="button"
@@ -592,12 +597,17 @@ export default function CreateProcessingRunPage() {
           </CardContent>
         </Card>
 
-        {/* KOLOM KANAN: OUTPUT HASIL PROSES BARU (PENAMBAHAN KUBIKASI & PRODUK BARU) */}
+        {/* KOLOM KANAN: OUTPUT HASIL GESEK / POTONG (PENAMBAHAN STOK SAWN TIMBER BARU / KD) */}
         <Card className="shadow-sm border-emerald-200/70 dark:border-emerald-900/40">
           <CardHeader className="bg-emerald-50/60 dark:bg-emerald-950/20 py-3.5 px-4 md:px-5 border-b flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2 text-emerald-900 dark:text-emerald-300 font-bold text-sm">
-              <ArrowUpCircle className="w-5 h-5 text-emerald-600" />
-              <span>2. Hasil Produk Baru {currentProcessName} (Penambahan Stok)</span>
+            <div>
+              <div className="flex items-center gap-2 text-emerald-900 dark:text-emerald-300 font-bold text-sm">
+                <ArrowUpCircle className="w-5 h-5 text-emerald-600" />
+                <span>2. Sawn Timber Output (Hasil Gesek / Potong Baru)</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Hasil sawn timber setelah dipotong atau siap masuk ke KD / proses lanjutan (menambah stok M³).
+              </p>
             </div>
             <Button
               type="button"
