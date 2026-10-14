@@ -492,10 +492,10 @@ export default function CreateProcessingRunPage() {
         </div>
       </div>
 
-      {/* GRID 2 KOLOM SEJAJAR: INPUT (PENGURANGAN) & OUTPUT (PENAMBAHAN) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* SEKSI INPUT (PENGURANGAN) & OUTPUT (PENAMBAHAN) DISUSUN VERTIKAL KE BAWAH AGAR LEGA DAN TIDAK NABRAK */}
+      <div className="flex flex-col gap-6">
         
-        {/* KOLOM KIRI: INPUT SAWN TIMBER YANG AKAN DIPOTONG / DIGESEK (PENGURANGAN KUBIKASI) */}
+        {/* SEKSI 1: INPUT SAWN TIMBER YANG AKAN DIPOTONG / DIGESEK (PENGURANGAN KUBIKASI) */}
         <Card className="shadow-sm border-blue-200/70 dark:border-blue-900/40">
           <CardHeader className="bg-blue-50/60 dark:bg-blue-950/20 py-3.5 px-4 md:px-5 border-b flex flex-row items-center justify-between">
             <div>
@@ -519,16 +519,16 @@ export default function CreateProcessingRunPage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto max-h-[500px]">
-              <Table>
+              <Table className="min-w-[750px]">
                 <TableHeader className="bg-muted/60 sticky top-0 z-10 shadow-sm">
                   <TableRow>
-                    <TableHead className="w-[100px] text-xs">No. BDL / Tgl</TableHead>
-                    <TableHead className="w-[110px] text-xs">Species</TableHead>
-                    <TableHead className="w-[70px] text-xs text-center">T (cm)</TableHead>
-                    <TableHead className="w-[70px] text-xs text-center">L (cm)</TableHead>
-                    <TableHead className="w-[70px] text-xs text-center">P (cm)</TableHead>
-                    <TableHead className="w-[70px] text-xs text-center">Pcs</TableHead>
-                    <TableHead className="w-[90px] text-xs text-right">Vol (M³)</TableHead>
+                    <TableHead className="w-[140px] text-xs">No. BDL / Tgl</TableHead>
+                    <TableHead className="w-[150px] text-xs">Species / Jenis Kayu</TableHead>
+                    <TableHead className="w-[90px] text-xs text-center">T (cm)</TableHead>
+                    <TableHead className="w-[90px] text-xs text-center">L (cm)</TableHead>
+                    <TableHead className="w-[90px] text-xs text-center">P (cm)</TableHead>
+                    <TableHead className="w-[90px] text-xs text-center">Pcs</TableHead>
+                    <TableHead className="w-[110px] text-xs text-right">Vol (M³)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -620,7 +620,7 @@ export default function CreateProcessingRunPage() {
           </CardContent>
         </Card>
 
-        {/* KOLOM KANAN: OUTPUT HASIL GESEK / POTONG (PENAMBAHAN STOK SAWN TIMBER BARU / KD) */}
+        {/* SEKSI 2: OUTPUT HASIL GESEK / POTONG (PENAMBAHAN STOK SAWN TIMBER BARU / KD) */}
         <Card className="shadow-sm border-emerald-200/70 dark:border-emerald-900/40">
           <CardHeader className="bg-emerald-50/60 dark:bg-emerald-950/20 py-3.5 px-4 md:px-5 border-b flex flex-row items-center justify-between">
             <div>
@@ -644,16 +644,16 @@ export default function CreateProcessingRunPage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto max-h-[500px]">
-              <Table>
+              <Table className="min-w-[750px]">
                 <TableHeader className="bg-muted/60 sticky top-0 z-10 shadow-sm">
                   <TableRow>
-                    <TableHead className="w-[100px] text-xs">No. BDL / Tgl</TableHead>
-                    <TableHead className="w-[110px] text-xs">Species</TableHead>
-                    <TableHead className="w-[70px] text-xs text-center">T (cm)</TableHead>
-                    <TableHead className="w-[70px] text-xs text-center">L (cm)</TableHead>
-                    <TableHead className="w-[70px] text-xs text-center">P (cm)</TableHead>
-                    <TableHead className="w-[70px] text-xs text-center">Pcs</TableHead>
-                    <TableHead className="w-[90px] text-xs text-right">Vol (M³)</TableHead>
+                    <TableHead className="w-[140px] text-xs">No. BDL / Tgl</TableHead>
+                    <TableHead className="w-[150px] text-xs">Species / Jenis Kayu</TableHead>
+                    <TableHead className="w-[90px] text-xs text-center">T (cm)</TableHead>
+                    <TableHead className="w-[90px] text-xs text-center">L (cm)</TableHead>
+                    <TableHead className="w-[90px] text-xs text-center">P (cm)</TableHead>
+                    <TableHead className="w-[90px] text-xs text-center">Pcs</TableHead>
+                    <TableHead className="w-[110px] text-xs text-right">Vol (M³)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
