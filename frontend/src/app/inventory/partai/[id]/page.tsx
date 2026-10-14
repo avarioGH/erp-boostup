@@ -788,15 +788,31 @@ export default function PartaiDetailPage({ params }: { params: any }) {
       </div>
 
       <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-7 h-12 mb-6">
-          <TabsTrigger value="purchase">1. Purchase</TabsTrigger>
-          <TabsTrigger value="rawlogs">2. DUKB (Raw Logs)</TabsTrigger>
-          <TabsTrigger value="trimming">3. Trimming</TabsTrigger>
-          <TabsTrigger value="input">4. Input (WIP)</TabsTrigger>
-          <TabsTrigger value="output">5. Output (Sawn Timber)</TabsTrigger>
-          <TabsTrigger value="processing">6. Processing</TabsTrigger>
-          <TabsTrigger value="summary">7. Rekapan</TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto pb-1 mb-6">
+          <TabsList className="inline-flex w-max min-w-full h-11 p-1 bg-muted/60 border rounded-lg gap-1">
+            <TabsTrigger value="purchase" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              1. Purchase
+            </TabsTrigger>
+            <TabsTrigger value="rawlogs" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              2. DUKB (Raw Logs)
+            </TabsTrigger>
+            <TabsTrigger value="trimming" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              3. Trimming
+            </TabsTrigger>
+            <TabsTrigger value="input" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              4. Input (WIP)
+            </TabsTrigger>
+            <TabsTrigger value="output" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              5. Output (Sawn Timber)
+            </TabsTrigger>
+            <TabsTrigger value="processing" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              6. Processing
+            </TabsTrigger>
+            <TabsTrigger value="summary" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              7. Rekapan
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* 1. PURCHASE LOGS */}
         <TabsContent value="purchase">
