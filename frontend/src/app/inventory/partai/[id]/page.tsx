@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { api, PartaiAPI, TimberAPI, PurchaseAPI, MasterDataAPI, InventoryAPI } from "@/lib/api";
+import { api, PartaiAPI, TimberAPI, PurchaseAPI, MasterDataAPI, InventoryAPI, ProductionAPI } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2, Check, X, Loader2, Package, CheckSquare, Square, ChevronDown, ChevronRight, Calendar, Layers, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2, Check, X, Loader2, Package, CheckSquare, Square, ChevronDown, ChevronRight, Calendar, Layers, Search, Cog, Sparkles } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { TablePagination } from "@/components/ui/table-pagination";
@@ -81,6 +81,14 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const [outputPage, setOutputPage] = useState(1);
   const [outputPageSize, setOutputPageSize] = useState(50);
   
+  // Processing States
+  const [processingList, setProcessingList] = useState<any[]>([]);
+  const [processingLoading, setProcessingLoading] = useState(false);
+  const [processingPage, setProcessingPage] = useState(1);
+  const [processingPageSize, setProcessingPageSize] = useState(50);
+  const [processingFilterType, setProcessingFilterType] = useState("ALL");
+  const [processingTypes, setProcessingTypes] = useState<any[]>([]);
+
   // Purchase Filters
   const [purchaseFilterSpecies, setPurchaseFilterSpecies] = useState<string>("ALL");
   const [purchaseFilterStartDate, setPurchaseFilterStartDate] = useState<string>("");
@@ -325,8 +333,26 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     }
   };
 
+  const fetchProcessingData = async () => {
+    setProcessingLoading(true);
+    try {
+      const [res, typesRes] = await Promise.all([
+        ProductionAPI.getProcesses({ take: 100 }),
+        MasterDataAPI.getProcessingTypes().catch(() => []),
+      ]);
+      const list = Array.isArray(res) ? res : res?.items || [];
+      setProcessingList(list);
+      setProcessingTypes(Array.isArray(typesRes) ? typesRes : typesRes?.data || []);
+    } catch (e) {
+      console.error("Error loading processing data:", e);
+    } finally {
+      setProcessingLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchPartai();
+    fetchProcessingData();
   }, [id]);
 
   
@@ -762,13 +788,14 @@ export default function PartaiDetailPage({ params }: { params: any }) {
       </div>
 
       <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-6 h-12 mb-6">
+        <TabsList className="grid w-full grid-cols-7 h-12 mb-6">
           <TabsTrigger value="purchase">1. Purchase</TabsTrigger>
           <TabsTrigger value="rawlogs">2. DUKB (Raw Logs)</TabsTrigger>
           <TabsTrigger value="trimming">3. Trimming</TabsTrigger>
           <TabsTrigger value="input">4. Input (WIP)</TabsTrigger>
           <TabsTrigger value="output">5. Output (Sawn Timber)</TabsTrigger>
-          <TabsTrigger value="summary">6. Rekapan</TabsTrigger>
+          <TabsTrigger value="processing">6. Processing</TabsTrigger>
+          <TabsTrigger value="summary">7. Rekapan</TabsTrigger>
         </TabsList>
 
         {/* 1. PURCHASE LOGS */}
@@ -2002,7 +2029,208 @@ export default function PartaiDetailPage({ params }: { params: any }) {
           </Card>
         </TabsContent>
 
-          {/* 6. REKAPAN */}
+        {/* 6. PROCESSING (PENGOLAHAN LANJUTAN: KD, MOLDING, DLL) */}
+        <TabsContent value="processing">
+          <Card>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Cog className="w-5 h-5 text-primary" /> Pengolahan & Processing Kayu
+                </CardTitle>
+                <CardDescription>
+                  Pekerjaan pemindahan produk lama ke produk olahan baru (KD, Molding, Resaw, S4S, dll) berbasis konversi kubikasi M³.
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => router.push(`/production/processing/create?partaiId=${id}`)}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-sm"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> + Buat Proses ({processingFilterType !== 'ALL' ? processingFilterType : 'Baru'})
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {/* Filter and stats row */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-muted/30 p-3 rounded-lg border">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">Filter Jenis Proses:</span>
+                  <Select value={processingFilterType} onValueChange={(val) => {
+                    setProcessingFilterType(val || "ALL");
+                    setProcessingPage(1);
+                  }}>
+                    <SelectTrigger className="w-[180px] h-9 text-xs">
+                      <SelectValue placeholder="Semua Proses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">Semua Jenis Proses</SelectItem>
+                      {processingTypes.map((t: any) => (
+                        <SelectItem key={t.id || t.code} value={t.code}>
+                          {t.name || t.code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-4 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Total Batch: </span>
+                    <strong className="font-mono text-foreground">
+                      {processingList.filter((p: any) => processingFilterType === 'ALL' || p.processType === processingFilterType).length}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Input M³: </span>
+                    <strong className="font-mono text-blue-600">
+                      {processingList
+                        .filter((p: any) => processingFilterType === 'ALL' || p.processType === processingFilterType)
+                        .reduce((acc, p) => acc + (p.inputVolumeM3 || 0), 0)
+                        .toFixed(4)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Output M³: </span>
+                    <strong className="font-mono text-emerald-600">
+                      {processingList
+                        .filter((p: any) => processingFilterType === 'ALL' || p.processType === processingFilterType)
+                        .reduce((acc, p) => acc + (p.outputVolumeM3 || 0), 0)
+                        .toFixed(4)}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow>
+                      <TableHead className="w-[120px]">Tgl Proses</TableHead>
+                      <TableHead>No. Proses</TableHead>
+                      <TableHead>Jenis Proses</TableHead>
+                      <TableHead>Catatan / Operator</TableHead>
+                      <TableHead className="text-right">Bahan Masuk (M³)</TableHead>
+                      <TableHead className="text-right">Hasil Baru (M³)</TableHead>
+                      <TableHead className="text-center">Rendemen</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="w-[100px] text-right">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(() => {
+                      const filtered = processingList.filter((p: any) => 
+                        processingFilterType === 'ALL' || p.processType === processingFilterType
+                      );
+                      const start = (processingPage - 1) * processingPageSize;
+                      const paginated = filtered.slice(start, start + processingPageSize);
+
+                      if (paginated.length === 0) {
+                        return (
+                          <TableRow>
+                            <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
+                              Belum ada proses pengolahan ({processingFilterType !== 'ALL' ? processingFilterType : 'KD, Molding, dll'}) yang dicatat. Klik <strong>+ Buat Proses</strong> untuk mencatat proses baru.
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+
+                      return paginated.map((item: any) => {
+                        const rendemen = item.inputVolumeM3 > 0 
+                          ? ((item.outputVolumeM3 / item.inputVolumeM3) * 100).toFixed(1) 
+                          : "0.0";
+                        return (
+                          <TableRow 
+                            key={item.id} 
+                            className="hover:bg-muted/30 cursor-pointer transition-colors"
+                            onClick={() => router.push(`/production/processing/${item.id}`)}
+                          >
+                            <TableCell className="font-mono text-xs">
+                              {item.processDate ? new Date(item.processDate).toLocaleDateString("id-ID") : "-"}
+                            </TableCell>
+                            <TableCell className="font-bold text-primary font-mono text-xs">
+                              {item.processNo}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-bold uppercase text-[11px]">
+                                {item.processType}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                              {item.notes || "-"}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs text-blue-600 font-semibold">
+                              {Number(item.inputVolumeM3 || 0).toFixed(4)} M³
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs text-emerald-600 font-bold">
+                              {Number(item.outputVolumeM3 || 0).toFixed(4)} M³
+                            </TableCell>
+                            <TableCell className="text-center font-mono text-xs">
+                              <span className={`inline-flex px-1.5 py-0.5 rounded font-semibold ${
+                                Number(rendemen) >= 70 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40' :
+                                Number(rendemen) >= 40 ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40' :
+                                'bg-rose-50 text-rose-700 dark:bg-rose-950/40'
+                              }`}>
+                                {rendemen}%
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {item.status === 'CONFIRMED' ? (
+                                <Badge className="bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold">
+                                  POSTED
+                                </Badge>
+                              ) : item.status === 'CANCELLED' ? (
+                                <Badge variant="destructive" className="text-xs">
+                                  CANCELLED
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">
+                                  DRAFT
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                                onClick={() => router.push(`/production/processing/${item.id}`)}
+                              >
+                                Detail <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      });
+                    })()}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination */}
+              {(() => {
+                const filtered = processingList.filter((p: any) => 
+                  processingFilterType === 'ALL' || p.processType === processingFilterType
+                );
+                return (
+                  <TablePagination
+                    currentPage={processingPage}
+                    pageSize={processingPageSize}
+                    totalItems={filtered.length}
+                    onPageChange={setProcessingPage}
+                    onPageSizeChange={(newSize) => {
+                      setProcessingPageSize(newSize);
+                      setProcessingPage(1);
+                    }}
+                    itemLabel="batch proses"
+                  />
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+          {/* 7. REKAPAN */}
           <TabsContent value="summary">
             {(() => {
               // Raw Logs (DUKB)

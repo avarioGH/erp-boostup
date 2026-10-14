@@ -118,12 +118,108 @@ export class ProductionService {
         vId = variant.id;
       }
 
-      resolvedOutputs.push({
+    // Process inputs: ensure each input has a valid variantId and timberStockId
+    const resolvedInputs = [];
+    for (const input of inputs) {
+      let vId = input.variantId;
+      let sId = input.timberStockId;
+
+      if (!vId) {
+        // Resolve or create variant for input timber based on species and dimensions
+        const tMm = Math.round(Number(input.thickness || 0) * 10);
+        const wMm = Math.round(Number(input.width || 0) * 10);
+        const lMm = Math.round(Number(input.length || 0) * 10);
+        const spec = (input.species || 'KAYU').trim().toUpperCase();
+        const grd = (input.grade || 'STD').trim().toUpperCase();
+        const skuCode = `${spec}-${grd}-${tMm}X${wMm}X${lMm}`;
+
+        let genericProduct = await this.prisma.product.findFirst({
+          where: {
+            OR: [
+              { code: 'RAW-SAWN-TIMBER' },
+              { code: 'SAWN-TIMBER' },
+              { name: { contains: 'Sawn Timber', mode: 'insensitive' } },
+            ],
+          },
+        });
+        if (!genericProduct) {
+          let defaultUnit = await this.prisma.unit.findFirst({
+            where: { company_id },
+          });
+          if (!defaultUnit) defaultUnit = await this.prisma.unit.findFirst();
+          if (!defaultUnit) {
+            defaultUnit = await this.prisma.unit.create({
+              data: { company_id, name: 'Pieces' },
+            });
+          }
+          genericProduct = await this.prisma.product.create({
+            data: {
+              name: 'Kayu Sawn Timber Bahan',
+              code: 'RAW-SAWN-TIMBER',
+              company_id,
+              unit_id: defaultUnit.id,
+              purchase_price: 0,
+              selling_price: 0,
+              status: true,
+            },
+          });
+        }
+
+        let variant = await this.prisma.timberVariant.findFirst({
+          where: { sku: skuCode },
+        });
+        if (!variant) {
+          variant = await this.prisma.timberVariant.create({
+            data: {
+              company_id,
+              productId: genericProduct.id,
+              species: spec,
+              grade: grd,
+              thickness: tMm,
+              width: wMm,
+              length: lMm,
+              sku: skuCode,
+              barcode: `V-${skuCode}-${Date.now().toString().slice(-4)}`,
+              volumePerPiece: (tMm * wMm * lMm) / 1000000000,
+            },
+          });
+        }
+        vId = variant.id;
+      }
+
+      if (!sId) {
+        // Find existing timberStock or create one in the default warehouse
+        let targetWh = input.warehouseId || data.targetWarehouseId;
+        if (!targetWh) {
+          const firstWh = await this.prisma.warehouse.findFirst();
+          targetWh = firstWh?.id;
+        }
+
+        let stock = await this.prisma.timberStock.findFirst({
+          where: {
+            locationId: targetWh,
+            timberVariantId: vId,
+          },
+        });
+        if (!stock) {
+          stock = await this.prisma.timberStock.create({
+            data: {
+              locationId: targetWh,
+              timberVariantId: vId,
+              currentPcs: Number(input.quantityPCS || 0),
+              currentVolumeM3: Number(input.volumeM3 || 0),
+              batch: 'AUTO-INPUT',
+            },
+          });
+        }
+        sId = stock.id;
+      }
+
+      resolvedInputs.push({
+        timberStockId: sId,
         variantId: vId,
-        outputType: output.outputType || 'PRODUCT',
-        quantityPCS: Number(output.quantityPCS || 0),
-        volumeM3: Number(output.volumeM3 || 0),
-        warehouseId: output.warehouseId || null,
+        quantityPCS: Number(input.quantityPCS || 0),
+        volumeM3: Number(input.volumeM3 || 0),
       });
     }
 
@@ -141,12 +237,7 @@ export class ProductionService {
         wasteVolumeM3,
         yieldPercentage,
         inputs: {
-          create: inputs.map((input: any) => ({
-            timberStockId: input.timberStockId,
-            variantId: input.variantId,
-            quantityPCS: Number(input.quantityPCS || 0),
-            volumeM3: Number(input.volumeM3 || 0),
-          })),
+          create: resolvedInputs,
         },
         outputs: {
           create: resolvedOutputs,

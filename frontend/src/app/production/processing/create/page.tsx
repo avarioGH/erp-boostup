@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { InventoryAPI, ProductionAPI, MasterDataAPI } from "@/lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+import { InventoryAPI, ProductionAPI, MasterDataAPI, PartaiAPI } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import {
   Loader2, 
   Layers, 
   CheckCircle2, 
-  Cog,
+  Cog, 
   Sparkles,
   ArrowDownCircle,
   ArrowUpCircle,
@@ -39,7 +39,11 @@ interface SizeRow {
 
 export default function CreateProcessingRunPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+
+  const urlPartaiId = searchParams.get("partaiId") || "";
+  const [partaiInfo, setPartaiInfo] = useState<any>(null);
 
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [processNo, setProcessNo] = useState(`PRC-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`);
@@ -108,6 +112,26 @@ export default function CreateProcessingRunPage() {
 
       const species = Array.isArray(specRes) ? specRes : specRes?.data || [];
       setSpeciesList(species);
+
+      if (urlPartaiId) {
+        try {
+          const p = await PartaiAPI.getPartai(urlPartaiId);
+          if (p) {
+            setPartaiInfo(p);
+            // Default species from partai if available
+            const partaiSpecies = p.rawLogs?.[0]?.species || p.inputLogs?.[0]?.species || (species[0]?.name || "");
+            if (partaiSpecies) {
+              setInputRows(prev => prev.map(r => ({ ...r, species: r.species || partaiSpecies })));
+              setOutputRows(prev => prev.map(r => ({ ...r, species: r.species || partaiSpecies })));
+            }
+            if (p.warehouseId) {
+              setTargetWarehouseId(p.warehouseId);
+            }
+          }
+        } catch (e) {
+          console.error("Error fetching partai details:", e);
+        }
+      }
     } catch (err: any) {
       console.error(err);
     }
@@ -287,7 +311,11 @@ export default function CreateProcessingRunPage() {
         title: "Proses Berhasil Disimpan!", 
         description: `Proses ${processType} (${processNo}) dengan input ${totalInputM3.toFixed(4)} M³ dan output ${totalOutputM3.toFixed(4)} M³ berhasil disimpan ${status === "CONFIRMED" ? "dan saldo stok terupdate." : "sebagai DRAFT."}`
       });
-      router.push("/production/processing");
+      if (urlPartaiId) {
+        router.push(`/inventory/partai/${urlPartaiId}?tab=processing`);
+      } else {
+        router.push("/production/processing");
+      }
     } catch (err: any) {
       console.error(err);
       toast({ 
@@ -308,18 +336,24 @@ export default function CreateProcessingRunPage() {
           <Button 
             variant="outline" 
             size="icon" 
-            onClick={() => router.push("/production/processing")} 
+            onClick={() => urlPartaiId ? router.push(`/inventory/partai/${urlPartaiId}?tab=processing`) : router.push("/production/processing")} 
             className="h-9 w-9 rounded-lg"
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Cog className="w-6 h-6 text-primary" />
-              Catat Proses Pengolahan (Processing)
-            </h1>
-            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-              Input data ukuran & kubikasi bahan lama (dipotong) ke produk baru hasil proses <strong>{currentProcessName}</strong>.
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                <Cog className="w-6 h-6 text-primary" /> Input Batch Pengolahan (Processing)
+              </h1>
+              {partaiInfo && (
+                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                  Partai: {partaiInfo.code}
+                </Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground text-sm mt-0.5">
+              Input ukuran bahan baku & produk hasil baru secara vertikal ala Excel. Otomatis hitung kubikasi M³ & rendemen.
             </p>
           </div>
         </div>
