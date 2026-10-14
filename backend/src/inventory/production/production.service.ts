@@ -50,7 +50,7 @@ export class ProductionService {
     }
 
     // Process outputs: ensure each output has a valid variantId
-    const resolvedOutputs = [];
+    const resolvedOutputs: any[] = [];
     for (const output of outputs) {
       let vId = output.variantId;
       if (!vId && output.outputType !== 'WASTE') {
