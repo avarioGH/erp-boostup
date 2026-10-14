@@ -44,13 +44,13 @@ export default function ChamberOperationsPage() {
     setLoading(true);
     try {
       // 1. Fetch transfers involving chambers
-      const transfersRes = await InventoryAPI.getTransfers({ 
+      const transfersRes = await TimberAPI.getTransfers({ 
         search, 
         fromLocationCodePrefix: "CH-", 
         toLocationCodePrefix: "CH-",
         take: 100
-      });
-      const items = transfersRes.items || [];
+      }).catch(() => ({ items: [] }));
+      const items = transfersRes?.items || [];
       setData(items);
 
       // 2. Fetch KD Production Batches (Project KD)

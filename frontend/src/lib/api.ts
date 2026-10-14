@@ -58,6 +58,9 @@ export const InventoryAPI: any = {
   deleteStockInTally: async (id: string) => (await api.delete('/inventory/stock-in-tally/' + id)).data,
   createExpense: async (data: any) => (await api.post('/finance/cash-out', data)).data,
   getCategories: async () => (await api.get('/inventory/categories')).data,
+  getTransfers: async (params?: any) => (await api.get('/inventory/transfers', { params })).data,
+  createTransfer: async (data: any) => (await api.post('/inventory/transfers', data)).data,
+  getTransfer: async (id: string) => (await api.get('/inventory/transfers/' + id)).data,
   getProducts: async () => (await api.get('/inventory/products')).data,
   getWarehouses: async () => (await api.get('/inventory/warehouses')).data,
     getTimberVariants: async () => (await api.get('/inventory/master-data/timber-variant')).data,
@@ -299,7 +302,27 @@ export const ProductionAPI: any = {
   getProcesses: async (params?: any) => (await api.get('/inventory/production', { params })).data,
   getProcess: async (id: string) => (await api.get('/inventory/production/' + id)).data,
   createProcess: async (data: any) => (await api.post('/inventory/production', data)).data,
-  confirmProcess: async (id: string) => (await api.post('/inventory/production/' + id + '/confirm')).data,
+  confirmProcess: async (id: string) => {
+    try {
+      return (await api.put('/inventory/production/' + id + '/confirm')).data;
+    } catch (e: any) {
+      if (e.response?.status === 404 || e.response?.status === 405) {
+        return (await api.post('/inventory/production/' + id + '/confirm')).data;
+      }
+      throw e;
+    }
+  },
+  cancelProcess: async (id: string) => {
+    try {
+      return (await api.put('/inventory/production/' + id + '/cancel')).data;
+    } catch (e: any) {
+      if (e.response?.status === 404 || e.response?.status === 405) {
+        return (await api.post('/inventory/production/' + id + '/cancel')).data;
+      }
+      throw e;
+    }
+  },
+  deleteProcess: async (id: string) => (await api.delete('/inventory/production/' + id)).data,
 };
 
 export const MasterDataAPI: any = {
