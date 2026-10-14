@@ -271,14 +271,14 @@ export default function CreatePurchasePage() {
     purchaseType: initialPurchaseType,
     status: "DRAFT",
     items: [{ 
-      species: "BKR",
+      species: "",
       grade: "A",
       timberVariantId: "", 
       quantityPcs: 1, 
       volumeM3: 0, 
       purchaseThickness: 0, 
       purchaseWidth: 0, 
-      purchaseLength: 400, 
+      purchaseLength: 0, 
       unitPrice: 0 
     }],
     logItems: [{
@@ -325,17 +325,16 @@ export default function CreatePurchasePage() {
   }, []);
 
   const addSawnRows = (count: number) => {
-    const last = form.items[form.items.length - 1];
     const newRows = Array.from({ length: count }).map(() => ({
-      species: last?.species || "BKR",
-      grade: last?.grade || "A",
+      species: "",
+      grade: "A",
       timberVariantId: "",
       quantityPcs: 1,
       volumeM3: 0,
-      purchaseThickness: last?.purchaseThickness || 0,
-      purchaseWidth: last?.purchaseWidth || 0,
-      purchaseLength: last?.purchaseLength || 400,
-      unitPrice: last?.unitPrice || 0,
+      purchaseThickness: 0,
+      purchaseWidth: 0,
+      purchaseLength: 0,
+      unitPrice: 0,
     }));
     setForm(prev => ({
       ...prev,
@@ -344,11 +343,10 @@ export default function CreatePurchasePage() {
   };
 
   const addLogRows = (count: number) => {
-    const last = form.logItems[form.logItems.length - 1];
     const newRows = Array.from({ length: count }).map(() => ({
       logNumber: "",
-      species: last?.species || (speciesList[0]?.name || ""),
-      purchaseLength: last?.purchaseLength || 400,
+      species: "",
+      purchaseLength: 0,
       purchaseDiameter1: 0,
       purchaseDiameter2: 0,
       purchaseDiameterAvg: 0,
@@ -361,7 +359,7 @@ export default function CreatePurchasePage() {
   };
 
   const handleCellKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
+    e: React.KeyboardEvent<HTMLElement>,
     rowIndex: number,
     field: string,
     type: 'sawn' | 'log',
@@ -375,7 +373,9 @@ export default function CreatePurchasePage() {
         const nextEl = document.getElementById(`${type}-${field}-${nextRow}`);
         if (nextEl) {
           nextEl.focus();
-          (nextEl as HTMLInputElement).select?.();
+          if ('select' in nextEl && typeof (nextEl as any).select === 'function') {
+            (nextEl as any).select();
+          }
         }
       } else {
         addRowsFn(1);
@@ -383,7 +383,9 @@ export default function CreatePurchasePage() {
           const nextEl = document.getElementById(`${type}-${field}-${nextRow}`);
           if (nextEl) {
             nextEl.focus();
-            (nextEl as HTMLInputElement).select?.();
+            if ('select' in nextEl && typeof (nextEl as any).select === 'function') {
+              (nextEl as any).select();
+            }
           }
         }, 50);
       }
@@ -394,7 +396,9 @@ export default function CreatePurchasePage() {
         const nextEl = document.getElementById(`${type}-${field}-${nextRow}`);
         if (nextEl) {
           nextEl.focus();
-          (nextEl as HTMLInputElement).select?.();
+          if ('select' in nextEl && typeof (nextEl as any).select === 'function') {
+            (nextEl as any).select();
+          }
         }
       }
     } else if (e.key === 'ArrowUp') {
@@ -404,7 +408,9 @@ export default function CreatePurchasePage() {
         const prevEl = document.getElementById(`${type}-${field}-${prevRow}`);
         if (prevEl) {
           prevEl.focus();
-          (prevEl as HTMLInputElement).select?.();
+          if ('select' in prevEl && typeof (prevEl as any).select === 'function') {
+            (prevEl as any).select();
+          }
         }
       }
     }
@@ -693,14 +699,12 @@ export default function CreatePurchasePage() {
                     <thead>
                       <tr className="bg-muted/60 border-b text-muted-foreground font-semibold">
                         <th className="py-2.5 px-2 text-center w-10">No</th>
-                        <th className="py-2.5 px-2 text-left w-24">Jenis</th>
+                        <th className="py-2.5 px-2 text-left w-36">Spesies / Jenis Kayu</th>
                         <th className="py-2.5 px-2 text-center w-24">P (cm)</th>
                         <th className="py-2.5 px-2 text-center w-24">T (cm)</th>
                         <th className="py-2.5 px-2 text-center w-24">L (cm)</th>
                         <th className="py-2.5 px-2 text-center w-20">Pcs</th>
                         <th className="py-2.5 px-2 text-right w-28 text-emerald-700 dark:text-emerald-400 font-bold">Vol (m³)</th>
-                        <th className="py-2.5 px-2 text-right w-28">Harga / m³</th>
-                        <th className="py-2.5 px-2 text-right w-28">Subtotal</th>
                         <th className="py-2.5 px-2 text-center w-10"></th>
                       </tr>
                     </thead>
@@ -713,7 +717,6 @@ export default function CreatePurchasePage() {
                         const vol = (p > 0 && t > 0 && l > 0 && pcs > 0)
                           ? Number(((p * t * l * pcs) / 1000000).toFixed(4))
                           : Number(item.volumeM3 || 0);
-                        const subtotal = item.unitPrice ? Math.round(vol * Number(item.unitPrice)) : 0;
 
                         return (
                           <tr key={index} className="hover:bg-muted/30 transition-colors">
@@ -721,19 +724,24 @@ export default function CreatePurchasePage() {
                               {index + 1}
                             </td>
                             <td className="py-1 px-2">
-                              <Input
+                              <select
                                 id={`sawn-species-${index}`}
                                 value={item.species || ""}
-                                onFocus={(e) => e.target.select()}
                                 onKeyDown={(e) => handleCellKeyDown(e, index, 'species', 'sawn', form.items.length, () => addSawnRows(1))}
                                 onChange={(e) => {
                                   const newItems = [...form.items];
                                   newItems[index].species = e.target.value.toUpperCase();
                                   setForm({ ...form, items: newItems });
                                 }}
-                                placeholder="cth: BKR"
-                                className="h-8 text-xs font-bold uppercase"
-                              />
+                                className="h-8 text-xs font-semibold uppercase border border-input rounded px-2 w-full bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                              >
+                                <option value="">-- Pilih Spesies --</option>
+                                {speciesList.map((s: any) => (
+                                  <option key={s.id} value={s.name || s.code}>
+                                    {s.name} {s.code && s.code !== s.name ? `(${s.code})` : ''}
+                                  </option>
+                                ))}
+                              </select>
                             </td>
                             <td className="py-1 px-2">
                               <Input
@@ -848,26 +856,6 @@ export default function CreatePurchasePage() {
                                 className="h-8 text-xs text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/5"
                               />
                             </td>
-                            <td className="py-1 px-2">
-                              <Input
-                                id={`sawn-unitPrice-${index}`}
-                                type="number"
-                                min="0"
-                                value={item.unitPrice || ""}
-                                onFocus={(e) => e.target.select()}
-                                onKeyDown={(e) => handleCellKeyDown(e, index, 'unitPrice', 'sawn', form.items.length, () => addSawnRows(1))}
-                                onChange={(e) => {
-                                  const newItems = [...form.items];
-                                  newItems[index].unitPrice = parseFloat(e.target.value) || 0;
-                                  setForm({ ...form, items: newItems });
-                                }}
-                                placeholder="Rp / m³"
-                                className="h-8 text-xs text-right font-mono"
-                              />
-                            </td>
-                            <td className="py-1 px-2 text-right font-mono font-semibold text-foreground">
-                              {subtotal > 0 ? `Rp ${subtotal.toLocaleString("id-ID")}` : "-"}
-                            </td>
                             <td className="py-1 px-2 text-center">
                               {form.items.length > 1 && (
                                 <button
@@ -904,19 +892,7 @@ export default function CreatePurchasePage() {
                             return sum + v;
                           }, 0).toFixed(4)} m³
                         </td>
-                        <td colSpan={3} className="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400 font-mono">
-                          Rp {form.items.reduce((sum, it) => {
-                            const p = Number(it.purchaseLength || 0);
-                            const t = Number(it.purchaseThickness || 0);
-                            const l = Number(it.purchaseWidth || 0);
-                            const pcs = Number(it.quantityPcs || 0);
-                            const v = (it.volumeM3 !== undefined && it.volumeM3 > 0)
-                              ? Number(it.volumeM3)
-                              : ((p > 0 && t > 0 && l > 0 && pcs > 0) ? (p * t * l * pcs) / 1000000 : 0);
-                            const pr = Number(it.unitPrice || 0);
-                            return sum + Math.round(v * pr);
-                          }, 0).toLocaleString("id-ID")}
-                        </td>
+                        <td></td>
                       </tr>
                     </tfoot>
                   </table>
@@ -1014,20 +990,24 @@ export default function CreatePurchasePage() {
                               />
                             </td>
                             <td className="py-1 px-2">
-                              <Input
+                              <select
                                 id={`log-species-${index}`}
                                 value={item.species || ""}
-                                placeholder="Pilih / Ketik"
-                                list="species-datalist"
-                                onFocus={(e) => e.target.select()}
                                 onKeyDown={(e) => handleCellKeyDown(e, index, 'species', 'log', form.logItems.length, () => addLogRows(1))}
                                 onChange={(e) => {
                                   const newLogItems = [...form.logItems];
                                   newLogItems[index].species = e.target.value.toUpperCase();
                                   setForm({ ...form, logItems: newLogItems });
                                 }}
-                                className="h-8 text-xs font-bold uppercase"
-                              />
+                                className="h-8 text-xs font-semibold uppercase border border-input rounded px-2 w-full bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                              >
+                                <option value="">-- Pilih Spesies --</option>
+                                {speciesList.map((s: any) => (
+                                  <option key={s.id} value={s.name || s.code}>
+                                    {s.name} {s.code && s.code !== s.name ? `(${s.code})` : ''}
+                                  </option>
+                                ))}
+                              </select>
                             </td>
                             <td className="py-1 px-2">
                               <Input
