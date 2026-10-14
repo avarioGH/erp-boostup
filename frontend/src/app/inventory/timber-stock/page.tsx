@@ -12,9 +12,48 @@ export default function TimberStockPage() {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [activeWarehouse, setActiveWarehouse] = useState<any>(null)
+
+  const fetchStock = () => {
+    setLoading(true)
+    let locationId: string | undefined = undefined
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("active_warehouse")
+      if (stored && stored !== "null" && stored !== "undefined") {
+        try {
+          const parsed = JSON.parse(stored)
+          if (parsed && parsed.id) {
+            locationId = parsed.id
+            setActiveWarehouse(parsed)
+          } else {
+            setActiveWarehouse(null)
+          }
+        } catch (e) {
+          setActiveWarehouse(null)
+        }
+      } else {
+        setActiveWarehouse(null)
+      }
+    }
+
+    const params: any = {}
+    if (locationId) {
+      params.locationId = locationId
+    }
+
+    TimberAPI.getTimberStock(params)
+      .then((res: any) => setData(res.items || []))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }
 
   useEffect(() => {
-    TimberAPI.getTimberStock().then((res: any) => setData(res.items || [])).catch(console.error).finally(() => setLoading(false))
+    fetchStock()
+    const handleWarehouseChange = () => {
+      fetchStock()
+    }
+    window.addEventListener("warehouse_changed", handleWarehouseChange)
+    return () => window.removeEventListener("warehouse_changed", handleWarehouseChange)
   }, [])
 
   const filtered = (Array.isArray(data) ? data : []).filter(item => 
@@ -34,6 +73,10 @@ export default function TimberStockPage() {
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
             Real-time balances of sawn timber inventory across all warehouses and locations.
           </p>
+        </div>
+        <div className="flex items-center gap-2 bg-muted/60 px-3 py-1.5 rounded-lg border border-border text-xs font-medium">
+          <span className="text-muted-foreground">Lokasi Tampilan:</span>
+          <span className="font-semibold text-primary">{activeWarehouse?.name || "Semua Gudang (Pusat)"}</span>
         </div>
       </div>
 

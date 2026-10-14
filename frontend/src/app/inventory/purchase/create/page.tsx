@@ -312,11 +312,25 @@ export default function CreatePurchasePage() {
         const rawPartais = Array.isArray(partaisRes) ? partaisRes : partaisRes?.data || [];
 
         setSources(Array.isArray(rawSrc) ? rawSrc : []);
-        setWarehouses(Array.isArray(rawWh) ? rawWh : []);
+        const whList = Array.isArray(rawWh) ? rawWh : [];
+        setWarehouses(whList);
         setVariants(Array.isArray(rawVar) ? rawVar : []);
         setSpeciesList(Array.isArray(rawSpec) ? rawSpec : []);
         setGradeList(Array.isArray(rawGrade) ? rawGrade : []);
         setPartais(rawPartais);
+
+        // Auto select active warehouse if set in localStorage
+        if (typeof window !== "undefined") {
+          const storedWh = localStorage.getItem("active_warehouse");
+          if (storedWh) {
+            try {
+              const parsed = JSON.parse(storedWh);
+              if (parsed && parsed.id) {
+                setForm(prev => prev.warehouseId ? prev : ({ ...prev, warehouseId: parsed.id }));
+              }
+            } catch (e) {}
+          }
+        }
       } catch (err) {
         console.error(err);
       }

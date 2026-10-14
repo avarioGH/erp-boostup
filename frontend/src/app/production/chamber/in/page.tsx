@@ -22,7 +22,24 @@ export default function ChamberInPage() {
 
  useEffect(() => {
  InventoryAPI.getWarehouses()
- .then((res: any) => setWarehouses(Array.isArray(res) ? res : []))
+ .then((res: any) => {
+   const whs = Array.isArray(res) ? res : []
+   setWarehouses(whs)
+   if (typeof window !== "undefined") {
+     const stored = localStorage.getItem("active_warehouse")
+     if (stored) {
+       try {
+         const parsed = JSON.parse(stored)
+         if (parsed && parsed.id) {
+           const found = whs.find((w: any) => w.id === parsed.id)
+           if (found && !found.code?.startsWith("CH-")) {
+             setForm(prev => prev.fromLocationId ? prev : ({ ...prev, fromLocationId: parsed.id }))
+           }
+         }
+       } catch (e) {}
+     }
+   }
+ })
  .catch(console.error).finally(() => setLoading(false))
  }, [])
 

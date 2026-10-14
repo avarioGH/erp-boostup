@@ -22,6 +22,64 @@ export class FixController {
     return { trimmedLog: t, items, logs, message: "TrimmedLog 201A forcibly set to AVAILABLE." };
   }
   
+  @Get('reset-trial-data')
+  async resetTrialData() {
+    // 1. Delete Timber Purchases & their items
+    const deletedPurchaseItems = await this.prisma.timberPurchaseItem.deleteMany({});
+    const deletedPurchaseLogItems = await this.prisma.timberPurchaseLogItem.deleteMany({});
+    const deletedPurchases = await this.prisma.timberPurchase.deleteMany({});
+
+    // 2. Delete Stock Movements
+    const deletedMovements = await this.prisma.timberStockMovement.deleteMany({});
+
+    // 3. Reset TimberStock balances to 0
+    const resetStocks = await this.prisma.timberStock.updateMany({
+      data: {
+        currentPcs: 0,
+        currentVolumeM3: 0,
+        stockInPcs: 0,
+        stockOutPcs: 0,
+        adjustmentPcs: 0,
+      },
+    });
+
+    // 4. Delete Production Runs & Sawn Timber Outputs
+    const deletedSawnItems = await this.prisma.sawnTimberOutputItem.deleteMany({});
+    const deletedSawnOutputs = await this.prisma.sawnTimberOutput.deleteMany({});
+    const deletedProdOutputs = await this.prisma.productionProcessOutput.deleteMany({});
+    const deletedProdInputs = await this.prisma.productionProcessInput.deleteMany({});
+    const deletedProdProcesses = await this.prisma.productionProcess.deleteMany({});
+
+    // 5. Delete Stock Transfers
+    const deletedTransferItems = await this.prisma.stockTransferItem.deleteMany({});
+    const deletedTransfers = await this.prisma.stockTransfer.deleteMany({});
+
+    // 6. Delete Sawmill Inputs and Logs that were created for trial (keeping partais intact)
+    const deletedInputLogItems = await this.prisma.inputLogItem.deleteMany({});
+    const deletedInputLogs = await this.prisma.inputLog.deleteMany({});
+    const deletedTrimmedLogs = await this.prisma.trimmedLog.deleteMany({});
+    const deletedRawLogs = await this.prisma.rawLog.deleteMany({});
+
+    return {
+      success: true,
+      message: 'Semua data percobaan (pembelian, stok kayu, pergerakan stok, hasil produksi sawmill & chamber KD) berhasil dibersihkan. Master data & partai tetap aman.',
+      details: {
+        deletedPurchases: deletedPurchases.count,
+        deletedPurchaseItems: deletedPurchaseItems.count,
+        deletedPurchaseLogItems: deletedPurchaseLogItems.count,
+        deletedMovements: deletedMovements.count,
+        resetStocks: resetStocks.count,
+        deletedSawnOutputs: deletedSawnOutputs.count,
+        deletedSawnItems: deletedSawnItems.count,
+        deletedProdProcesses: deletedProdProcesses.count,
+        deletedTransfers: deletedTransfers.count,
+        deletedRawLogs: deletedRawLogs.count,
+        deletedTrimmedLogs: deletedTrimmedLogs.count,
+        deletedInputLogs: deletedInputLogs.count,
+      },
+    };
+  }
+
   constructor(private prisma: PrismaService) {}
 
   @Get('make-owner')
