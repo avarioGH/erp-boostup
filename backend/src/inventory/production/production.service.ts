@@ -54,10 +54,15 @@ export class ProductionService {
     for (const output of outputs) {
       let vId = output.variantId;
       if (!vId && output.outputType !== 'WASTE') {
-        // Resolve or create generic product
+        // Resolve or create generic product based on processType
+        const procCode = (processType || 'PROCESSING').trim().toUpperCase();
         let genericProduct = await this.prisma.product.findFirst({
           where: {
-            OR: [{ code: 'KD-TIMBER' }, { code: 'SAWN-TIMBER' }, { name: { contains: 'KD' } }],
+            OR: [
+              { code: `${procCode}-TIMBER` },
+              { code: procCode },
+              { name: { contains: procCode, mode: 'insensitive' } },
+            ],
           },
         });
         if (!genericProduct) {
@@ -72,8 +77,8 @@ export class ProductionService {
           }
           genericProduct = await this.prisma.product.create({
             data: {
-              name: 'Kayu KD (Kiln Dry)',
-              code: 'KD-TIMBER',
+              name: `Kayu Hasil ${procCode}`,
+              code: `${procCode}-TIMBER`,
               company_id,
               unit_id: defaultUnit.id,
               purchase_price: 0,
@@ -87,7 +92,7 @@ export class ProductionService {
         const wMm = Math.round(Number(output.width || 0) * 10);
         const lMm = Math.round(Number(output.length || 0) * 10);
         const spec = output.species || 'KAYU';
-        const grd = output.grade || 'KD';
+        const grd = output.grade || procCode;
         const skuCode = `${spec}-${grd}-${tMm}X${wMm}X${lMm}`;
 
         let variant = await this.prisma.timberVariant.findFirst({
