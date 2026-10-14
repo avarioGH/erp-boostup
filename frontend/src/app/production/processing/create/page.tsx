@@ -37,6 +37,16 @@ interface SizeRow {
   volumeM3: number;
 }
 
+const DEFAULT_PROCESSING_TYPES = [
+  { id: "KD", code: "KD", name: "Kiln Dry (Oven)" },
+  { id: "MOLDING", code: "MOLDING", name: "Molding / Profil" },
+  { id: "RESAW", code: "RESAW", name: "Re-Sawing / Belah" },
+  { id: "S4S", code: "S4S", name: "S4S (Serut 4 Sisi)" },
+  { id: "FJ", code: "FJ", name: "Finger Joint" },
+  { id: "SANDING", code: "SANDING", name: "Sanding / Amplas" },
+  { id: "TREATMENT", code: "TREATMENT", name: "Chemical Treatment / Pengawetan" },
+];
+
 export default function CreateProcessingRunPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -53,7 +63,7 @@ export default function CreateProcessingRunPage() {
   const [targetWarehouseId, setTargetWarehouseId] = useState("");
 
   const [warehouses, setWarehouses] = useState<any[]>([]);
-  const [processingTypes, setProcessingTypes] = useState<any[]>([]);
+  const [processingTypes, setProcessingTypes] = useState<any[]>(DEFAULT_PROCESSING_TYPES);
   const [speciesList, setSpeciesList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -104,10 +114,11 @@ export default function CreateProcessingRunPage() {
         setTargetWarehouseId(whList[0].id);
       }
 
-      const types = Array.isArray(typesRes) ? typesRes : typesRes?.data || [];
+      const rawTypes = Array.isArray(typesRes) ? typesRes : typesRes?.data || [];
+      const types = rawTypes.length > 0 ? rawTypes : DEFAULT_PROCESSING_TYPES;
       setProcessingTypes(types);
       if (types.length > 0) {
-        setProcessType(types[0].code || "KD");
+        setProcessType(prev => prev || types[0].code || "KD");
       }
 
       const species = Array.isArray(specRes) ? specRes : specRes?.data || [];

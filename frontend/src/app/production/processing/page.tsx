@@ -26,9 +26,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 
+const DEFAULT_PROCESSING_TYPES = [
+  { id: "KD", code: "KD", name: "Kiln Dry (Oven)" },
+  { id: "MOLDING", code: "MOLDING", name: "Molding / Profil" },
+  { id: "RESAW", code: "RESAW", name: "Re-Sawing / Belah" },
+  { id: "S4S", code: "S4S", name: "S4S (Serut 4 Sisi)" },
+  { id: "FJ", code: "FJ", name: "Finger Joint" },
+  { id: "SANDING", code: "SANDING", name: "Sanding / Amplas" },
+  { id: "TREATMENT", code: "TREATMENT", name: "Chemical Treatment / Pengawetan" },
+];
+
 export default function ProcessingListPage() {
   const [processes, setProcesses] = useState<any[]>([]);
-  const [processingTypes, setProcessingTypes] = useState<any[]>([]);
+  const [processingTypes, setProcessingTypes] = useState<any[]>(DEFAULT_PROCESSING_TYPES);
   const [selectedType, setSelectedType] = useState<string>("ALL");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -45,8 +55,9 @@ export default function ProcessingListPage() {
 
   const fetchInitialData = async () => {
     try {
-      const types = await MasterDataAPI.getProcessingTypes().catch(() => []);
-      setProcessingTypes(Array.isArray(types) ? types : types?.data || []);
+      const typesRes = await MasterDataAPI.getProcessingTypes().catch(() => []);
+      const rawTypes = Array.isArray(typesRes) ? typesRes : typesRes?.data || [];
+      setProcessingTypes(rawTypes.length > 0 ? rawTypes : DEFAULT_PROCESSING_TYPES);
     } catch (e) {
       console.error(e);
     }
