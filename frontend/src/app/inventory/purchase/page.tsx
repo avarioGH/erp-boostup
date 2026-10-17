@@ -19,6 +19,10 @@ export default function PurchaseListPage() {
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
   const [selectedPurchaseForReceive, setSelectedPurchaseForReceive] = useState<any>(null);
 
+  // Bulk Selection States
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkReceiving, setIsBulkReceiving] = useState(false);
+
   // Filter States
   const [speciesList, setSpeciesList] = useState<any[]>([]);
   const [selectedSpecies, setSelectedSpecies] = useState<string>("ALL");
@@ -45,6 +49,62 @@ export default function PurchaseListPage() {
         console.error(err);
         setLoading(false);
       });
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = (filteredList: any[]) => {
+    const selectable = filteredList.filter(p => !p.status || p.status === "DRAFT").map(p => p.id);
+    if (selectable.length === 0) return;
+    const allSelected = selectable.every(id => selectedIds.includes(id));
+    if (allSelected) {
+      setSelectedIds(prev => prev.filter(id => !selectable.includes(id)));
+    } else {
+      setSelectedIds(prev => Array.from(new Set([...prev, ...selectable])));
+    }
+  };
+
+  const handleBulkReceive = async () => {
+    const draftPurchases = purchases.filter(p => selectedIds.includes(p.id) && (!p.status || p.status === "DRAFT"));
+    if (draftPurchases.length === 0) {
+      alert("Pilih minimal satu data pembelian yang berstatus DRAFT / Belum Diterima.");
+      return;
+    }
+
+    if (!confirm(`Konfirmasi penerimaan otomatis untuk ${draftPurchases.length} pembelian yang dipilih?\nSemua item dan volume kayu akan otomatis dicatat masuk ke stok inventori.`)) {
+      return;
+    }
+
+    setIsBulkReceiving(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const p of draftPurchases) {
+      try {
+        await PurchaseAPI.receivePurchase(p.id, {
+          partaiId: p.partaiId || undefined,
+          receivingDate: new Date().toISOString(),
+        });
+        successCount++;
+      } catch (err) {
+        console.error(`Gagal menerima pembelian ${p.purchaseNumber || p.id}:`, err);
+        failCount++;
+      }
+    }
+
+    setIsBulkReceiving(false);
+    setSelectedIds([]);
+    fetchPurchases();
+
+    if (failCount === 0) {
+      alert(`Berhasil! ${successCount} pembelian telah resmi diterima dan masuk ke stok inventori.`);
+    } else {
+      alert(`Penerimaan selesai: ${successCount} berhasil, ${failCount} gagal diproses.`);
+    }
   };
 
   useEffect(() => {
@@ -210,12 +270,55 @@ export default function PurchaseListPage() {
         </div>
       </div>
 
+      {/* BULK ACTION BAR JIKA ADA DATA YANG DIPILIH */}
+      {selectedIds.length > 0 && (
+        <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 p-3.5 rounded-xl flex items-center justify-between gap-4 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse"></span>
+            <span className="text-xs sm:text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+              {selectedIds.length} pembelian kayu dipilih
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedIds([])}
+              className="h-8 text-xs text-muted-foreground hover:text-foreground"
+            >
+              Batalkan Pilihan
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleBulkReceive}
+              disabled={isBulkReceiving}
+              className="h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shadow-xs"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {isBulkReceiving ? "Memproses Penerimaan..." : `Terima Semua (${selectedIds.length}) & Masukkan Stok`}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* TABLE SECTION */}
       <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto w-full max-w-[100vw] sm:max-w-none">
-          <Table className="w-full min-w-[700px]">
+          <Table className="w-full min-w-[750px]">
             <TableHeader className="bg-muted/30 border-b border-border">
               <TableRow className="hover:bg-transparent">
+                <TableHead className="w-[45px] text-center">
+                  <input
+                    type="checkbox"
+                    aria-label="Pilih Semua Pembelian Draft"
+                    checked={
+                      filteredPurchases.filter(p => !p.status || p.status === "DRAFT").length > 0 &&
+                      filteredPurchases.filter(p => !p.status || p.status === "DRAFT").every(p => selectedIds.includes(p.id))
+                    }
+                    onChange={() => handleSelectAll(filteredPurchases)}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer align-middle"
+                  />
+                </TableHead>
                 <TableHead className="font-semibold text-foreground/80 h-11">No. Dokumen</TableHead>
                 <TableHead className="font-semibold text-foreground/80 h-11">Tgl Dibuat</TableHead>
                 <TableHead className="font-semibold text-foreground/80 h-11">Tgl Diterima</TableHead>
@@ -229,7 +332,7 @@ export default function PurchaseListPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                       <span className="text-sm">Memuat data pembelian...</span>
@@ -238,7 +341,7 @@ export default function PurchaseListPage() {
                 </TableRow>
               ) : filteredPurchases.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-48 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="h-48 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <FileText className="w-10 h-10 text-muted-foreground/30" />
                       <div className="space-y-1">
@@ -280,7 +383,17 @@ export default function PurchaseListPage() {
                   const docNum = p.code || p.purchaseNumber;
 
                   return (
-                    <TableRow key={p.id} className="group hover:bg-muted/40 transition-colors">
+                    <TableRow key={p.id} className={`group hover:bg-muted/40 transition-colors ${selectedIds.includes(p.id) ? "bg-primary/5" : ""}`}>
+                      <TableCell className="text-center w-10">
+                        <input
+                          type="checkbox"
+                          disabled={!isDraft}
+                          checked={selectedIds.includes(p.id)}
+                          onChange={() => handleToggleSelect(p.id)}
+                          title={isDraft ? "Pilih untuk proses massal" : "Sudah berstatus Diterima"}
+                          className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer align-middle disabled:opacity-30 disabled:cursor-not-allowed"
+                        />
+                      </TableCell>
                       <TableCell className="font-semibold text-foreground">
                         {docNum}
                       </TableCell>
