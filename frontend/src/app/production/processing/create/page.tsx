@@ -629,8 +629,8 @@ export default function CreateProcessingProjectPage() {
       </Card>
 
       {/* PIPELINE ROUTE BUILDER */}
-      <Card className="border shadow-sm border-primary/20 bg-primary/5">
-        <CardHeader className="py-4 px-5 border-b bg-primary/10">
+      <Card className="border shadow-sm border-primary/20 bg-primary/5 dark:bg-card">
+        <CardHeader className="py-4 px-5 border-b bg-primary/10 dark:bg-muted/20">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="text-sm font-bold flex items-center gap-2 text-foreground">
@@ -656,7 +656,7 @@ export default function CreateProcessingProjectPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button size="sm" onClick={handleAddStep} className="h-8 text-xs flex items-center gap-1">
+              <Button size="sm" onClick={handleAddStep} className="h-8 text-xs flex items-center gap-1 font-semibold">
                 <Plus className="w-3.5 h-3.5" /> Tambah Tahap
               </Button>
             </div>
@@ -665,8 +665,8 @@ export default function CreateProcessingProjectPage() {
         <CardContent className="p-5">
           {/* VISUAL PIPELINE */}
           <div className="flex items-center flex-wrap gap-2 pt-1 pb-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-blue-50 border-blue-200 text-blue-900 font-semibold text-xs shadow-xs">
-              <ArrowDownCircle className="w-3.5 h-3.5 text-blue-600" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border bg-blue-50/80 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60 text-blue-900 dark:text-blue-300 font-semibold text-xs shadow-xs">
+              <ArrowDownCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>Bahan Awal (Input)</span>
             </div>
 
@@ -675,7 +675,7 @@ export default function CreateProcessingProjectPage() {
                 <ArrowRight className="w-4 h-4 text-muted-foreground/60 shrink-0" />
                 <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs shadow-xs transition-all ${
                   idx === lastStepIndex 
-                    ? "bg-emerald-50 border-emerald-300 text-emerald-950 font-bold" 
+                    ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-950 dark:text-emerald-200 font-bold" 
                     : "bg-background border-border text-foreground font-medium"
                 }`}>
                   <span className="w-4 h-4 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold">
@@ -683,14 +683,14 @@ export default function CreateProcessingProjectPage() {
                   </span>
                   <span>{step.name}</span>
                   {idx === lastStepIndex && (
-                    <Badge variant="default" className="text-[9px] h-4 px-1.5 bg-emerald-600">
+                    <Badge variant="default" className="text-[9px] h-4 px-1.5 bg-emerald-600 hover:bg-emerald-600 text-white font-bold">
                       Hasil Akhir
                     </Badge>
                   )}
                   {steps.length > 1 && (
                     <button 
                       onClick={() => handleRemoveStep(idx)}
-                      className="text-muted-foreground hover:text-rose-600 ml-1"
+                      className="text-muted-foreground hover:text-rose-500 ml-1 font-bold text-sm leading-none"
                       title="Hapus tahap ini"
                     >
                       &times;
@@ -704,20 +704,20 @@ export default function CreateProcessingProjectPage() {
       </Card>
 
       {/* SECTION 1: BAHAN INPUT AWAL (STOCK DECREASE) */}
-      <Card className="border shadow-sm border-blue-200">
-        <CardHeader className="py-3 px-4 md:px-5 border-b bg-blue-50/50 flex flex-row items-center justify-between">
+      <Card className="border shadow-sm border-blue-200 dark:border-blue-900/40">
+        <CardHeader className="py-3 px-4 md:px-5 border-b bg-blue-50/50 dark:bg-blue-950/20 flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-900">
-              <ArrowDownCircle className="w-4 h-4 text-blue-600" />
+            <CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-900 dark:text-blue-300">
+              <ArrowDownCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               3. Data Bahan Baku Awal (Pengurangan Stok Gudang)
             </CardTitle>
-            <CardDescription className="text-xs text-blue-700/80">
-              Isi ukuran kayu awal yang diambil. Kubikasi: <span className="font-mono font-bold">(T cm × L cm × P cm × Pcs) / 1.000.000</span>. Tekan <kbd className="px-1 py-0.5 border rounded bg-white text-[10px]">Enter</kbd> untuk lompat ke baris bawah.
+            <CardDescription className="text-xs text-blue-700/80 dark:text-blue-400/80">
+              Isi ukuran kayu awal yang diambil. Kubikasi: <span className="font-mono font-bold">(T cm × L cm × P cm × Pcs) / 1.000.000</span>. Tekan <kbd className="px-1 py-0.5 border rounded bg-background text-[10px]">Enter</kbd> untuk lompat ke baris bawah.
             </CardDescription>
           </div>
           <div className="text-right">
-            <span className="text-xs font-semibold text-blue-900 block">Total Input:</span>
-            <span className="text-sm font-mono font-bold text-blue-700">{totalInputPcs} Pcs • {totalInputM3.toFixed(4)} M³</span>
+            <span className="text-xs font-semibold text-blue-900 dark:text-blue-300 block">Total Input:</span>
+            <span className="text-sm font-mono font-bold text-blue-700 dark:text-blue-400">{totalInputPcs} Pcs • {totalInputM3.toFixed(4)} M³</span>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -861,12 +861,12 @@ export default function CreateProcessingProjectPage() {
               key={step.id} 
               className={`border shadow-sm transition-all ${
                 isFinal 
-                  ? "border-emerald-300 ring-1 ring-emerald-500/20" 
+                  ? "border-emerald-300 dark:border-emerald-800 ring-1 ring-emerald-500/20" 
                   : "border-border"
               }`}
             >
               <CardHeader className={`py-3 px-4 md:px-5 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-                isFinal ? "bg-emerald-50/60" : "bg-muted/30"
+                isFinal ? "bg-emerald-50/60 dark:bg-emerald-950/20" : "bg-muted/30"
               }`}>
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
@@ -1103,24 +1103,24 @@ export default function CreateProcessingProjectPage() {
       </div>
 
       {/* SUMMARY DASHBOARD CARD */}
-      <Card className="border shadow-md bg-gradient-to-r from-blue-50/50 via-background to-emerald-50/50">
+      <Card className="border shadow-md bg-gradient-to-r from-blue-50/50 via-background to-emerald-50/50 dark:from-blue-950/20 dark:via-card dark:to-emerald-950/20">
         <CardContent className="p-5 sm:p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 items-center">
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-blue-900 flex items-center gap-1.5">
-                <ArrowDownCircle className="w-3.5 h-3.5 text-blue-600" /> Bahan Awal (Input)
+              <span className="text-xs font-semibold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+                <ArrowDownCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Bahan Awal (Input)
               </span>
-              <div className="text-2xl font-bold font-mono text-blue-700">
+              <div className="text-2xl font-bold font-mono text-blue-700 dark:text-blue-400">
                 {totalInputM3.toFixed(4)} <span className="text-sm font-normal">M³</span>
               </div>
               <p className="text-[11px] text-muted-foreground">{totalInputPcs} PCS kayu dipotong</p>
             </div>
 
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-emerald-900 flex items-center gap-1.5">
-                <ArrowUpCircle className="w-3.5 h-3.5 text-emerald-600" /> Hasil Akhir (Output)
+              <span className="text-xs font-semibold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
+                <ArrowUpCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Hasil Akhir (Output)
               </span>
-              <div className="text-2xl font-bold font-mono text-emerald-600">
+              <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
                 {totalFinalOutputM3.toFixed(4)} <span className="text-sm font-normal">M³</span>
               </div>
               <p className="text-[11px] text-muted-foreground">{totalFinalOutputPcs} PCS produk jadi masuk stok</p>
