@@ -165,11 +165,32 @@ export default function EditPurchasePage() {
           }
         }
 
+        const DEFAULT_SPECIES = [
+          { id: "sp-merbau", code: "MRB", name: "MERBAU" },
+          { id: "sp-meranti", code: "MRT", name: "MERANTI" },
+          { id: "sp-bengkirai", code: "BKR", name: "BENGKIRAI" },
+          { id: "sp-ulin", code: "ULN", name: "ULIN" },
+          { id: "sp-kenari", code: "KNR", name: "KENARI" },
+          { id: "sp-jati", code: "JTI", name: "JATI" },
+          { id: "sp-kampas", code: "KMP", name: "KAMPAS" },
+          { id: "sp-keruing", code: "KRW", name: "KERUING" },
+          { id: "sp-sonokeling", code: "SNK", name: "SONOKELING" },
+          { id: "sp-mahoni", code: "MHG", name: "MAHONI" },
+          { id: "sp-lokal", code: "LKL", name: "LOKAL" },
+        ];
+
+        const DEFAULT_GRADES = [
+          { id: "grd-a", code: "A", name: "Grade A" },
+          { id: "grd-b", code: "B", name: "Grade B" },
+          { id: "grd-c", code: "C", name: "Grade C" },
+          { id: "grd-afkir", code: "AFKIR", name: "Afkir" },
+        ];
+
         setSources(mergedSources);
         setWarehouses(mergedWarehouses);
         setVariants(mergedVariants);
-        setSpeciesList(Array.isArray(rawSpec) ? rawSpec : []);
-        setGradeList(Array.isArray(rawGrade) ? rawGrade : []);
+        setSpeciesList(Array.isArray(rawSpec) && rawSpec.length > 0 ? rawSpec : DEFAULT_SPECIES);
+        setGradeList(Array.isArray(rawGrade) && rawGrade.length > 0 ? rawGrade : DEFAULT_GRADES);
 
         const isRawLog = p.logItems && p.logItems.length > 0 && (!p.items || p.items.length === 0);
 
