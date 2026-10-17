@@ -1,6 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
+export interface CustomFieldDefinition {
+  key: string;
+  label: string;
+  type?: 'text' | 'number' | 'select';
+  options?: string[]; // for select type
+  placeholder?: string;
+  required?: boolean;
+}
+
 export interface ProcessingTypeItem {
   id: string;
   code: string;
@@ -9,6 +18,7 @@ export interface ProcessingTypeItem {
   description?: string;
   estimatedDurationHours?: number;
   costPerHour?: number;
+  customFields?: CustomFieldDefinition[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -48,6 +58,23 @@ export class ProcessingTypeService {
     const now = new Date().toISOString();
     return [
       {
+        id: 'proc-gesek',
+        code: 'GESEK',
+        name: 'Sawing / Pembelahan (Gesek)',
+        category: 'SAWING',
+        description: 'Proses pembelahan log atau balok menjadi papan / reng / balok',
+        estimatedDurationHours: 8,
+        costPerHour: 0,
+        customFields: [
+          { key: 'machineNo', label: 'No. Mesin Sawmill', placeholder: 'Mesin 1, Mesin 2' },
+          { key: 'logCode', label: 'Kode / No Log', placeholder: 'Contoh: 5357' },
+          { key: 'shift', label: 'Shift / Operator', placeholder: 'Shift 1 - Edy' },
+        ],
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
         id: 'proc-kd-oven',
         code: 'KD',
         name: 'Kiln Dry (Oven)',
@@ -55,18 +82,60 @@ export class ProcessingTypeService {
         description: 'Proses pengeringan kayu menggunakan chamber oven (Kiln Dry)',
         estimatedDurationHours: 168,
         costPerHour: 0,
+        customFields: [
+          { key: 'kdNumber', label: 'Nomor KD / Chamber', placeholder: 'MA 13 / Chamber 1' },
+          { key: 'mcInitial', label: 'MC Awal (%)', type: 'number', placeholder: '35%' },
+          { key: 'mcFinal', label: 'MC Target / Akhir (%)', type: 'number', placeholder: '12%' },
+        ],
         isActive: true,
         createdAt: now,
         updatedAt: now,
       },
       {
         id: 'proc-molding',
-        code: 'MOLDING',
+        code: 'MOULDING',
         name: 'Molding & Profiling',
         category: 'PLANING',
         description: 'Proses pembentukan profil, alur, serut 4 sisi (S4S / E4E / T&G)',
         estimatedDurationHours: 8,
         costPerHour: 0,
+        customFields: [
+          { key: 'palletNo', label: 'No. Palet (NO.PLT)', placeholder: 'Contoh: 6579' },
+          { key: 'containerNo', label: 'No. Container (CONT)', placeholder: 'Contoh: Cont 1' },
+          { key: 'profileType', label: 'Profil / Pisau Pisau', placeholder: 'E4E / Decking' },
+        ],
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 'proc-planing-s4s',
+        code: 'PLANNER',
+        name: 'Planing / Planner (Ketam Rata)',
+        category: 'PLANING',
+        description: 'Proses serut 4 sisi kayu halus presisi',
+        estimatedDurationHours: 4,
+        costPerHour: 0,
+        customFields: [
+          { key: 'palletNo', label: 'No. Palet (NO.PLT)', placeholder: 'Contoh: 6581' },
+          { key: 'containerNo', label: 'No. Container (CONT)', placeholder: 'Contoh: Cont 1' },
+        ],
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 'proc-crosscut',
+        code: 'CROSSCUT',
+        name: 'Crosscut / Trimming',
+        category: 'SAWING',
+        description: 'Pemotongan panjang dan perapian ujung kayu',
+        estimatedDurationHours: 4,
+        costPerHour: 0,
+        customFields: [
+          { key: 'palletNo', label: 'No. Palet (NO.PLT)', placeholder: 'Contoh: 6590' },
+          { key: 'containerNo', label: 'No. Container (CONT)', placeholder: 'Contoh: Cont 1' },
+        ],
         isActive: true,
         createdAt: now,
         updatedAt: now,
@@ -79,54 +148,40 @@ export class ProcessingTypeService {
         description: 'Proses pembelahan ulang balok / papan menjadi dimensi lebih tipis/kecil',
         estimatedDurationHours: 8,
         costPerHour: 0,
+        customFields: [
+          { key: 'machineNo', label: 'No. Mesin Resaw', placeholder: 'Resaw A' },
+        ],
         isActive: true,
         createdAt: now,
         updatedAt: now,
       },
       {
-        id: 'proc-planing-s4s',
-        code: 'S4S',
-        name: 'Planing S4S / Ketam Rata',
-        category: 'PLANING',
-        description: 'Proses serut 4 sisi kayu halus presisi',
+        id: 'proc-packing',
+        code: 'PACKING',
+        name: 'Packing & Bundling',
+        category: 'PACKING',
+        description: 'Pengikatan, strapping, dan telly sheet kemasan palet akhir',
         estimatedDurationHours: 4,
         costPerHour: 0,
+        customFields: [
+          { key: 'palletNo', label: 'No. Palet (NO.PLT)', placeholder: 'Contoh: 01' },
+          { key: 'containerNo', label: 'No. Container (CONT)', placeholder: 'Contoh: Cont 1' },
+        ],
         isActive: true,
         createdAt: now,
         updatedAt: now,
       },
       {
-        id: 'proc-fingerjoint',
-        code: 'FJ',
-        name: 'Finger Joint / Laminating',
-        category: 'ASSEMBLY',
-        description: 'Penyambungan kayu model finger joint dan laminasi papan',
-        estimatedDurationHours: 12,
+        id: 'proc-sipot',
+        code: 'SIPOT',
+        name: 'Sisa Potong (Sipot / Afkir)',
+        category: 'SAWING',
+        description: 'Pencatatan sisa potongan kayu atau afkir dari proses',
+        estimatedDurationHours: 2,
         costPerHour: 0,
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: 'proc-sanding',
-        code: 'SANDING',
-        name: 'Sanding (Amplas Halus)',
-        category: 'FINISHING',
-        description: 'Proses penghalusan permukaan kayu dengan mesin sander',
-        estimatedDurationHours: 4,
-        costPerHour: 0,
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: 'proc-treatment',
-        code: 'TREATMENT',
-        name: 'Anti-Termite Treatment (Vakum / Celup)',
-        category: 'PRESERVATION',
-        description: 'Pengawetan kayu anti rayap / bubuk sebelum atau sesudah oven',
-        estimatedDurationHours: 24,
-        costPerHour: 0,
+        customFields: [
+          { key: 'palletNo', label: 'No. Palet Asal', placeholder: 'Contoh: 6780' },
+        ],
         isActive: true,
         createdAt: now,
         updatedAt: now,
@@ -178,6 +233,7 @@ export class ProcessingTypeService {
       description: data.description?.trim() || '',
       estimatedDurationHours: Number(data.estimatedDurationHours || 0),
       costPerHour: Number(data.costPerHour || 0),
+      customFields: Array.isArray(data.customFields) ? data.customFields : [],
       isActive: data.isActive !== undefined ? Boolean(data.isActive) : true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -201,6 +257,7 @@ export class ProcessingTypeService {
       description: data.description !== undefined ? data.description.trim() : list[idx].description,
       estimatedDurationHours: data.estimatedDurationHours !== undefined ? Number(data.estimatedDurationHours) : list[idx].estimatedDurationHours,
       costPerHour: data.costPerHour !== undefined ? Number(data.costPerHour) : list[idx].costPerHour,
+      customFields: data.customFields !== undefined ? (Array.isArray(data.customFields) ? data.customFields : []) : list[idx].customFields,
       isActive: data.isActive !== undefined ? Boolean(data.isActive) : list[idx].isActive,
       updatedAt: new Date().toISOString(),
     };

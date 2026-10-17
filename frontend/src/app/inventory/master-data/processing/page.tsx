@@ -51,9 +51,13 @@ export default function ProcessingMasterPage() {
     description: "",
     estimatedDurationHours: 0,
     costPerHour: 0,
+    customFields: [] as { key: string; label: string; placeholder?: string; type?: string }[],
     isActive: true,
   })
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [newFieldKey, setNewFieldKey] = useState("")
+  const [newFieldLabel, setNewFieldLabel] = useState("")
+  const [newFieldPlaceholder, setNewFieldPlaceholder] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
@@ -105,8 +109,12 @@ export default function ProcessingMasterPage() {
       description: item.description || "",
       estimatedDurationHours: item.estimatedDurationHours || 0,
       costPerHour: item.costPerHour || 0,
+      customFields: Array.isArray(item.customFields) ? [...item.customFields] : [],
       isActive: item.isActive !== undefined ? item.isActive : true,
     })
+    setNewFieldKey("")
+    setNewFieldLabel("")
+    setNewFieldPlaceholder("")
     setEditingId(item.id)
     setModalOpen(true)
   }
@@ -131,10 +139,40 @@ export default function ProcessingMasterPage() {
       description: "",
       estimatedDurationHours: 8,
       costPerHour: 0,
+      customFields: [],
       isActive: true,
     })
+    setNewFieldKey("")
+    setNewFieldLabel("")
+    setNewFieldPlaceholder("")
     setEditingId(null)
     setModalOpen(true)
+  }
+
+  const handleAddCustomField = () => {
+    if (!newFieldLabel.trim()) return
+    const key = newFieldKey.trim() || newFieldLabel.trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, "_")
+    setFormData({
+      ...formData,
+      customFields: [
+        ...(formData.customFields || []),
+        {
+          key,
+          label: newFieldLabel.trim(),
+          placeholder: newFieldPlaceholder.trim() || `Masukkan ${newFieldLabel.trim()}...`,
+          type: "text",
+        },
+      ],
+    })
+    setNewFieldKey("")
+    setNewFieldLabel("")
+    setNewFieldPlaceholder("")
+  }
+
+  const handleRemoveCustomField = (index: number) => {
+    const updated = [...(formData.customFields || [])]
+    updated.splice(index, 1)
+    setFormData({ ...formData, customFields: updated })
   }
 
   const filteredData = (Array.isArray(data) ? data : []).filter((item) => {
@@ -287,8 +325,17 @@ export default function ProcessingMasterPage() {
                             {item.category || "PROCESSING"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground max-w-xs">
-                          {item.description || "-"}
+                        <TableCell className="text-xs text-muted-foreground max-w-xs space-y-1">
+                          <p>{item.description || "-"}</p>
+                          {item.customFields && item.customFields.length > 0 && (
+                            <div className="flex flex-wrap gap-1 pt-0.5">
+                              {item.customFields.map((cf: any, i: number) => (
+                                <Badge key={i} variant="secondary" className="text-[10px] py-0 px-1 font-normal bg-primary/10 text-primary border-primary/20">
+                                  + {cf.label}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="text-center text-xs font-medium">
                           {item.estimatedDurationHours ? `${item.estimatedDurationHours} Jam` : "-"}
@@ -457,8 +504,64 @@ export default function ProcessingMasterPage() {
                 placeholder="Tuliskan catatan proses atau standar kualitas..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
+                rows={2}
               />
+            </div>
+
+            {/* Custom Field Builder */}
+            <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/60">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-primary" /> Kolom Isian Tambahan Khusus
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    Tentukan kolom khusus per proses (contoh: No. KD, No. Palet, Mesin, Shift, dll). P x L x T & PCS sudah otomatis wajib ada.
+                  </p>
+                </div>
+              </div>
+
+              {formData.customFields && formData.customFields.length > 0 && (
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {formData.customFields.map((cf: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between text-xs bg-background p-2 rounded border border-border">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-foreground">{cf.label}</span>
+                        <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                          {cf.key}
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
+                        onClick={() => handleRemoveCustomField(idx)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 pt-1">
+                <Input
+                  placeholder="Nama Kolom (misal: No. KD / No. Palet)"
+                  value={newFieldLabel}
+                  onChange={(e) => setNewFieldLabel(e.target.value)}
+                  className="text-xs h-8 bg-background flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleAddCustomField}
+                  className="h-8 text-xs font-medium gap-1"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Tambah Kolom
+                </Button>
+              </div>
             </div>
 
             <div className="flex items-center gap-2 pt-1">

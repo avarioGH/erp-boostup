@@ -362,51 +362,69 @@ export default function ProcessingDetailPage({ params }: { params: Promise<{ id:
       </Card>
 
       {/* TABEL RINCIAN TAHAP WIP (JIKA ADA DARI METADATA PROJECT) */}
-      {projectMeta?.pipeline && projectMeta.pipeline.filter((s: any) => !s.isFinal).map((step: any, sIdx: number) => (
-        <Card key={sIdx} className="shadow-sm border-border">
-          <CardHeader className="py-3 px-4 md:px-6 border-b bg-muted/20 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-muted text-foreground flex items-center justify-center text-xs font-bold">
-                {step.stepIndex}
-              </span>
-              Tahap WIP: {step.name} ({step.code})
-            </CardTitle>
-            <div className="text-xs font-mono text-muted-foreground">
-              Total: <span className="font-bold text-foreground">{step.totalVolumeM3} M³</span> ({step.totalPcs} Pcs)
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-muted/40">
-                  <TableRow>
-                    <TableHead className="w-[60px] text-center">No</TableHead>
-                    <TableHead>Bundle / Seri</TableHead>
-                    <TableHead>Jenis Kayu</TableHead>
-                    <TableHead className="text-center">Dimensi (cm)</TableHead>
-                    <TableHead className="text-center">Kuantitas (PCS)</TableHead>
-                    <TableHead className="text-right pr-6">Kubikasi (M³)</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(step.rows || []).map((r: any, rIdx: number) => (
-                    <TableRow key={rIdx}>
-                      <TableCell className="text-center text-xs font-mono">{rIdx + 1}</TableCell>
-                      <TableCell className="text-xs font-mono">{r.bundleNo || "-"}</TableCell>
-                      <TableCell className="text-xs font-medium">{r.species || "-"}</TableCell>
-                      <TableCell className="text-center font-mono text-xs">
-                        {r.t} × {r.w} × {r.l} cm
-                      </TableCell>
-                      <TableCell className="text-center font-bold text-xs">{r.pcs}</TableCell>
-                      <TableCell className="text-right font-mono text-xs pr-6">{Number(r.volumeM3 || 0).toFixed(4)}</TableCell>
+      {projectMeta?.pipeline && projectMeta.pipeline.filter((s: any) => !s.isFinal).map((step: any, sIdx: number) => {
+        const stepCustomFields: any[] = step.customFields || [];
+        return (
+          <Card key={sIdx} className="shadow-sm border-border">
+            <CardHeader className="py-3 px-4 md:px-6 border-b bg-muted/20 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-muted text-foreground flex items-center justify-center text-xs font-bold">
+                  {step.stepIndex}
+                </span>
+                Tahap WIP: {step.name} ({step.code})
+                {step.operator && (
+                  <span className="text-xs font-normal text-muted-foreground ml-2">
+                    • Operator/Mesin: <span className="font-medium text-foreground">{step.operator}</span>
+                  </span>
+                )}
+              </CardTitle>
+              <div className="text-xs font-mono text-muted-foreground">
+                Total: <span className="font-bold text-foreground">{step.totalVolumeM3} M³</span> ({step.totalPcs} Pcs)
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow>
+                      <TableHead className="w-[50px] text-center">No</TableHead>
+                      <TableHead>Bundle / Seri</TableHead>
+                      {stepCustomFields.map((cf) => (
+                        <TableHead key={cf.key} className="text-primary font-semibold">
+                          {cf.label}
+                        </TableHead>
+                      ))}
+                      <TableHead>Jenis Kayu</TableHead>
+                      <TableHead className="text-center">Dimensi (cm)</TableHead>
+                      <TableHead className="text-center">Kuantitas (PCS)</TableHead>
+                      <TableHead className="text-right pr-6">Kubikasi (M³)</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+                  </TableHeader>
+                  <TableBody>
+                    {(step.rows || []).map((r: any, rIdx: number) => (
+                      <TableRow key={rIdx}>
+                        <TableCell className="text-center text-xs font-mono">{rIdx + 1}</TableCell>
+                        <TableCell className="text-xs font-mono">{r.bundleNo || "-"}</TableCell>
+                        {stepCustomFields.map((cf) => (
+                          <TableCell key={cf.key} className="text-xs font-medium text-foreground">
+                            {r.customData?.[cf.key] || "-"}
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-xs font-medium">{r.species || "-"}</TableCell>
+                        <TableCell className="text-center font-mono text-xs">
+                          {r.t} × {r.w} × {r.l} cm
+                        </TableCell>
+                        <TableCell className="text-center font-bold text-xs">{r.pcs}</TableCell>
+                        <TableCell className="text-right font-mono text-xs pr-6">{Number(r.volumeM3 || 0).toFixed(4)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
 
       {/* 2. TABEL HASIL PRODUK AKHIR */}
       <Card className="shadow-sm border-emerald-200/60 dark:border-emerald-900/30">
