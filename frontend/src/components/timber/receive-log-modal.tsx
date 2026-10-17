@@ -15,8 +15,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { TimberAPI, PurchaseAPI } from "@/lib/api";
-import { CheckCircle2, Ruler, PackageCheck } from "lucide-react";
+import { TimberAPI, PurchaseAPI, MasterDataAPI } from "@/lib/api";
+import { CheckCircle2, Ruler, PackageCheck, Plus, Trash2, TrendingUp, AlertCircle } from "lucide-react";
 
 interface ReceiveLogModalProps {
   isOpen: boolean;
@@ -40,6 +40,7 @@ export function ReceiveLogModal({
   );
   const [logRows, setLogRows] = useState<any[]>([]);
   const [sawnRows, setSawnRows] = useState<any[]>([]);
+  const [speciesList, setSpeciesList] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -47,6 +48,13 @@ export function ReceiveLogModal({
     if (saved === "m" || saved === "cm" || saved === "mm") {
       setLengthUnit(saved);
     }
+    // Fetch master species for quick select in sawn timber row
+    MasterDataAPI.getSpecies()
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.data || [];
+        setSpeciesList(list);
+      })
+      .catch((err: any) => console.warn("Failed to load species for receive modal:", err));
   }, []);
 
   const handleUnitChange = (unit: "m" | "cm" | "mm") => {
@@ -122,10 +130,12 @@ export function ReceiveLogModal({
           width: wCm || "",
           length: lCm || "",
           orderedPcs: pcs,
+          orderedVolM3: vol,
           receivedPcs: pcs || "",
           volumeM3: vol,
           selected: purchase.status !== "RECEIVED",
           isAlreadyReceived: purchase.status === "RECEIVED",
+          isCustomRow: false,
         };
       });
       setSawnRows(rows);
@@ -172,6 +182,33 @@ export function ReceiveLogModal({
       updated[index] = row;
       return updated;
     });
+  };
+
+  const handleAddSawnRow = () => {
+    const defaultSpecies = speciesList[0]?.name || "Meranti";
+    const newRow = {
+      id: undefined,
+      timberVariantId: undefined,
+      sku: "MANUAL-INPUT",
+      species: defaultSpecies,
+      grade: "A",
+      productType: "BALOK",
+      thickness: "",
+      width: "",
+      length: "",
+      orderedPcs: 0,
+      orderedVolM3: 0,
+      receivedPcs: "",
+      volumeM3: 0,
+      selected: true,
+      isAlreadyReceived: false,
+      isCustomRow: true,
+    };
+    setSawnRows((prev) => [...prev, newRow]);
+  };
+
+  const handleDeleteSawnRow = (index: number) => {
+    setSawnRows((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   const calculateRow = (row: any) => {
@@ -430,9 +467,23 @@ export function ReceiveLogModal({
     .filter((r) => r.selected && !r.isAlreadyReceived)
     .reduce((sum, r) => sum + (Number(r.receivedPcs) || 0), 0);
 
+  const totalOrderedSawnPcs = sawnRows
+    .filter((r) => r.selected && !r.isAlreadyReceived)
+    .reduce((sum, r) => sum + (Number(r.orderedPcs) || 0), 0);
+
   const totalSawnVol = sawnRows
     .filter((r) => r.selected && !r.isAlreadyReceived)
     .reduce((sum, r) => sum + (Number(r.volumeM3) || 0), 0);
+
+  const totalOrderedSawnVol = sawnRows
+    .filter((r) => r.selected && !r.isAlreadyReceived)
+    .reduce((sum, r) => sum + (Number(r.orderedVolM3) || 0), 0);
+
+  const sawnRendement = totalOrderedSawnVol > 0
+    ? (totalSawnVol / totalOrderedSawnVol) * 100
+    : 100;
+
+  const sawnVolDelta = totalSawnVol - totalOrderedSawnVol;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -664,27 +715,62 @@ export function ReceiveLogModal({
         {/* 2. SAWN TIMBER SECTION */}
         {hasSawnItems && (
           <div className="space-y-4 py-2 border-t pt-4">
-            <div className="flex items-center justify-between text-xs bg-muted/40 p-2.5 rounded-lg border">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/40 p-3 rounded-lg border">
+              <div className="flex items-center gap-2 flex-wrap">
                 <PackageCheck className="w-4 h-4 text-emerald-500" />
-                <span className="font-semibold text-foreground">Kayu Olahan (Sawn Timber)</span>
+                <span className="font-semibold text-foreground">Kayu Olahan (Sawn Timber) Fisik</span>
                 <Badge variant="outline" className="text-xs">
                   {sawnRows.filter((r) => r.selected && !r.isAlreadyReceived).length} dari {sawnRows.length} terpilih
                 </Badge>
+                {totalOrderedSawnVol > 0 && (
+                  <Badge
+                    variant="outline"
+                    className={`text-xs font-semibold ${
+                      sawnRendement >= 98
+                        ? "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40"
+                        : sawnRendement >= 90
+                        ? "border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/40"
+                        : "border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/40"
+                    }`}
+                  >
+                    <TrendingUp className="w-3 h-3 mr-1 inline" />
+                    Rendemen: {sawnRendement.toFixed(2)}%
+                  </Badge>
+                )}
               </div>
-              <div className="text-muted-foreground flex items-center gap-3">
+              <div className="flex items-center gap-4 text-xs flex-wrap">
                 <span>
-                  Total Fisik:{" "}
-                  <strong className="text-foreground">
-                    {totalSawnPcs} Pcs
+                  Vol PO:{" "}
+                  <strong className="text-muted-foreground font-mono">
+                    {totalOrderedSawnVol.toFixed(4)} m³
                   </strong>
                 </span>
                 <span>
-                  Volume Aktual:{" "}
-                  <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                  Vol Diterima:{" "}
+                  <strong className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
                     {totalSawnVol.toFixed(4)} m³
                   </strong>
                 </span>
+                <span>
+                  Selisih:{" "}
+                  <strong
+                    className={`font-mono font-semibold ${
+                      sawnVolDelta >= 0 ? "text-emerald-600" : "text-amber-600"
+                    }`}
+                  >
+                    {sawnVolDelta >= 0 ? `+${sawnVolDelta.toFixed(4)}` : sawnVolDelta.toFixed(4)} m³
+                  </strong>
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs bg-background hover:bg-emerald-50 hover:text-emerald-600 border-dashed"
+                  onClick={handleAddSawnRow}
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                  Tambah Baris Kayu
+                </Button>
               </div>
             </div>
 
@@ -692,7 +778,7 @@ export function ReceiveLogModal({
               <Table className="text-xs">
                 <TableHeader className="bg-muted/30">
                   <TableRow>
-                    <TableHead className="w-[40px] text-center">
+                    <TableHead className="w-[36px] text-center">
                       <Checkbox
                         checked={
                           sawnRows.length > 0 &&
@@ -705,126 +791,175 @@ export function ReceiveLogModal({
                         }}
                       />
                     </TableHead>
-                    <TableHead className="w-[140px]">SKU / Produk</TableHead>
-                    <TableHead className="w-[100px]">Spesies</TableHead>
-                    <TableHead className="w-[110px]">Tipe</TableHead>
-                    <TableHead className="w-[80px]">Grade</TableHead>
-                    <TableHead className="w-[80px]">Tebal (cm)</TableHead>
-                    <TableHead className="w-[80px]">Lebar (cm)</TableHead>
-                    <TableHead className="w-[85px]">Panjang (cm)</TableHead>
-                    <TableHead className="w-[75px] text-center">PO (Pcs)</TableHead>
-                    <TableHead className="w-[85px] text-center">Fisik (Pcs)</TableHead>
-                    <TableHead className="w-[95px] text-right text-emerald-600 dark:text-emerald-400 font-bold">
-                      Vol Aktual (m³)
+                    <TableHead className="w-[120px]">Spesies Kayu</TableHead>
+                    <TableHead className="w-[100px]">Tipe Produk</TableHead>
+                    <TableHead className="w-[75px]">Grade</TableHead>
+                    <TableHead className="w-[75px] text-center">T (cm)</TableHead>
+                    <TableHead className="w-[75px] text-center">L (cm)</TableHead>
+                    <TableHead className="w-[80px] text-center">P (cm)</TableHead>
+                    <TableHead className="w-[65px] text-center">PO Pcs</TableHead>
+                    <TableHead className="w-[75px] text-center">Fisik Pcs</TableHead>
+                    <TableHead className="w-[85px] text-right font-mono text-muted-foreground">Vol PO (m³)</TableHead>
+                    <TableHead className="w-[95px] text-right text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                      Vol Fisik (m³)
                     </TableHead>
-                    <TableHead className="w-[85px] text-center">Status</TableHead>
+                    <TableHead className="w-[80px] text-center">Rendemen</TableHead>
+                    <TableHead className="w-[70px] text-center">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sawnRows.map((r, idx) => (
-                    <TableRow
-                      key={idx}
-                      className={r.isAlreadyReceived ? "bg-muted/20 opacity-60" : "hover:bg-muted/30"}
-                    >
-                      <TableCell className="text-center p-2">
-                        <Checkbox
-                          checked={r.selected}
-                          disabled={r.isAlreadyReceived}
-                          onCheckedChange={(val) => handleSawnRowChange(idx, "selected", !!val)}
-                        />
-                      </TableCell>
-                      <TableCell className="p-2 font-medium text-primary">
-                        {r.sku}
-                      </TableCell>
-                      <TableCell className="p-2 font-medium">{r.species}</TableCell>
-                      <TableCell className="p-1">
-                        <select
-                          className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs font-medium focus:ring-1 focus:ring-ring outline-none"
-                          value={r.productType}
-                          disabled={r.isAlreadyReceived}
-                          onChange={(e) => handleSawnRowChange(idx, "productType", e.target.value)}
-                        >
-                          <option value="BALOK">BALOK</option>
-                          <option value="PAPAN">PAPAN</option>
-                          <option value="RENG">RENG</option>
-                          <option value="AFKIR_BS">AFKIR_BS</option>
-                          <option value="AIR_DRY">AIR_DRY</option>
-                          <option value="FJL">FJL</option>
-                          <option value="LAINNYA">LAINNYA</option>
-                        </select>
-                      </TableCell>
-                      <TableCell className="p-1">
-                        <Input
-                          className="h-8 text-xs font-semibold uppercase"
-                          value={r.grade}
-                          disabled={r.isAlreadyReceived}
-                          onChange={(e) => handleSawnRowChange(idx, "grade", e.target.value)}
-                          placeholder="Grade"
-                        />
-                      </TableCell>
-                      <TableCell className="p-1">
-                        <Input
-                          type="number"
-                          step="1"
-                          className="h-8 text-xs text-right"
-                          value={r.thickness}
-                          disabled={r.isAlreadyReceived}
-                          onChange={(e) => handleSawnRowChange(idx, "thickness", e.target.value)}
-                          placeholder="Tebal"
-                        />
-                      </TableCell>
-                      <TableCell className="p-1">
-                        <Input
-                          type="number"
-                          step="1"
-                          className="h-8 text-xs text-right"
-                          value={r.width}
-                          disabled={r.isAlreadyReceived}
-                          onChange={(e) => handleSawnRowChange(idx, "width", e.target.value)}
-                          placeholder="Lebar"
-                        />
-                      </TableCell>
-                      <TableCell className="p-1">
-                        <Input
-                          type="number"
-                          step="1"
-                          className="h-8 text-xs text-right"
-                          value={r.length}
-                          disabled={r.isAlreadyReceived}
-                          onChange={(e) => handleSawnRowChange(idx, "length", e.target.value)}
-                          placeholder="Panjang"
-                        />
-                      </TableCell>
-                      <TableCell className="text-center p-2 font-medium text-muted-foreground">
-                        {r.orderedPcs}
-                      </TableCell>
-                      <TableCell className="p-1">
-                        <Input
-                          type="number"
-                          step="1"
-                          className="h-8 text-xs text-center font-bold"
-                          value={r.receivedPcs}
-                          disabled={r.isAlreadyReceived}
-                          onChange={(e) => handleSawnRowChange(idx, "receivedPcs", e.target.value)}
-                          placeholder="Pcs"
-                        />
-                      </TableCell>
-                      <TableCell className="p-2 text-right bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
-                        {Number(r.volumeM3 || 0).toFixed(4)}
-                      </TableCell>
-                      <TableCell className="text-center p-2">
-                        {r.isAlreadyReceived ? (
-                          <Badge variant="outline" className="text-xs border-emerald-500 text-emerald-600">
-                            Diterima
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs text-amber-500 border-amber-500">
-                            Pending
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {sawnRows.map((r, idx) => {
+                    const rowOrderedVol = Number(r.orderedVolM3 || 0);
+                    const rowActualVol = Number(r.volumeM3 || 0);
+                    const rowRendemen = rowOrderedVol > 0 ? (rowActualVol / rowOrderedVol) * 100 : 100;
+
+                    return (
+                      <TableRow
+                        key={idx}
+                        className={r.isAlreadyReceived ? "bg-muted/20 opacity-60" : "hover:bg-muted/30"}
+                      >
+                        <TableCell className="text-center p-2">
+                          <Checkbox
+                            checked={r.selected}
+                            disabled={r.isAlreadyReceived}
+                            onCheckedChange={(val) => handleSawnRowChange(idx, "selected", !!val)}
+                          />
+                        </TableCell>
+                        <TableCell className="p-1">
+                          <input
+                            list={`species-list-${idx}`}
+                            className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs font-medium focus:ring-1 focus:ring-ring outline-none"
+                            value={r.species}
+                            disabled={r.isAlreadyReceived}
+                            onChange={(e) => handleSawnRowChange(idx, "species", e.target.value)}
+                            placeholder="Spesies kayu"
+                          />
+                          <datalist id={`species-list-${idx}`}>
+                            {speciesList.map((sp: any) => (
+                              <option key={sp.id || sp.name} value={sp.name} />
+                            ))}
+                          </datalist>
+                        </TableCell>
+                        <TableCell className="p-1">
+                          <select
+                            className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs font-medium focus:ring-1 focus:ring-ring outline-none"
+                            value={r.productType}
+                            disabled={r.isAlreadyReceived}
+                            onChange={(e) => handleSawnRowChange(idx, "productType", e.target.value)}
+                          >
+                            <option value="BALOK">BALOK</option>
+                            <option value="PAPAN">PAPAN</option>
+                            <option value="RENG">RENG</option>
+                            <option value="AFKIR_BS">AFKIR_BS</option>
+                            <option value="AIR_DRY">AIR_DRY</option>
+                            <option value="FJL">FJL</option>
+                            <option value="LAINNYA">LAINNYA</option>
+                          </select>
+                        </TableCell>
+                        <TableCell className="p-1">
+                          <Input
+                            className="h-8 text-xs font-semibold uppercase"
+                            value={r.grade}
+                            disabled={r.isAlreadyReceived}
+                            onChange={(e) => handleSawnRowChange(idx, "grade", e.target.value)}
+                            placeholder="Grade"
+                          />
+                        </TableCell>
+                        <TableCell className="p-1">
+                          <Input
+                            type="number"
+                            step="any"
+                            className="h-8 text-xs text-right"
+                            value={r.thickness}
+                            disabled={r.isAlreadyReceived}
+                            onChange={(e) => handleSawnRowChange(idx, "thickness", e.target.value)}
+                            placeholder="T"
+                          />
+                        </TableCell>
+                        <TableCell className="p-1">
+                          <Input
+                            type="number"
+                            step="any"
+                            className="h-8 text-xs text-right"
+                            value={r.width}
+                            disabled={r.isAlreadyReceived}
+                            onChange={(e) => handleSawnRowChange(idx, "width", e.target.value)}
+                            placeholder="L"
+                          />
+                        </TableCell>
+                        <TableCell className="p-1">
+                          <Input
+                            type="number"
+                            step="any"
+                            className="h-8 text-xs text-right"
+                            value={r.length}
+                            disabled={r.isAlreadyReceived}
+                            onChange={(e) => handleSawnRowChange(idx, "length", e.target.value)}
+                            placeholder="P"
+                          />
+                        </TableCell>
+                        <TableCell className="text-center p-2 font-medium text-muted-foreground font-mono">
+                          {r.orderedPcs || 0}
+                        </TableCell>
+                        <TableCell className="p-1">
+                          <Input
+                            type="number"
+                            step="1"
+                            className="h-8 text-xs text-center font-bold"
+                            value={r.receivedPcs}
+                            disabled={r.isAlreadyReceived}
+                            onChange={(e) => handleSawnRowChange(idx, "receivedPcs", e.target.value)}
+                            placeholder="Pcs"
+                          />
+                        </TableCell>
+                        <TableCell className="p-2 text-right text-muted-foreground font-mono">
+                          {rowOrderedVol > 0 ? rowOrderedVol.toFixed(4) : "-"}
+                        </TableCell>
+                        <TableCell className="p-2 text-right bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                          {rowActualVol > 0 ? rowActualVol.toFixed(4) : "-"}
+                        </TableCell>
+                        <TableCell className="text-center p-2 font-mono text-xs">
+                          {rowOrderedVol > 0 ? (
+                            <span
+                              className={`font-semibold ${
+                                rowRendemen >= 100
+                                  ? "text-emerald-600"
+                                  : rowRendemen >= 90
+                                  ? "text-blue-600"
+                                  : "text-amber-600"
+                              }`}
+                            >
+                              {rowRendemen.toFixed(1)}%
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center p-1">
+                          {r.isCustomRow ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteSawnRow(idx)}
+                              title="Hapus baris ini"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          ) : r.isAlreadyReceived ? (
+                            <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-600">
+                              Diterima
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] text-amber-500 border-amber-500">
+                              PO
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

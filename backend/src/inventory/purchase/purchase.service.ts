@@ -586,10 +586,74 @@ export class PurchaseService {
             vol = Number((((tMm * wMm * lMm) / 1000000000) * qty).toFixed(4));
           }
 
-          const variantId = item.timberVariantId || (item as any).variantId;
+          let variantId = item.timberVariantId || (item as any).variantId;
+
+          if (!variantId && tMm > 0 && wMm > 0 && lMm > 0) {
+            try {
+              const spec = (item.species || 'SAWN-TIMBER').trim().toUpperCase();
+              const grd = (item.grade || 'A').trim().toUpperCase();
+              const found = await tx.timberVariant.findFirst({
+                where: {
+                  species: { equals: spec, mode: 'insensitive' },
+                  thickness: tMm,
+                  width: wMm,
+                  length: lMm,
+                },
+              });
+              if (found) {
+                variantId = found.id;
+              } else {
+                let genericProduct = await tx.product.findFirst({
+                  where: {
+                    OR: [{ code: 'SAWN-TIMBER' }, { name: 'Sawn Timber' }],
+                  },
+                });
+                if (!genericProduct) {
+                  let defaultUnit = await tx.unit.findFirst({
+                    where: targetCompanyId ? { company_id: targetCompanyId as string } : {},
+                  });
+                  if (!defaultUnit) defaultUnit = await tx.unit.findFirst();
+                  if (!defaultUnit) {
+                    defaultUnit = await tx.unit.create({
+                      data: { company_id: targetCompanyId as string, name: 'Pieces' },
+                    });
+                  }
+                  genericProduct = await tx.product.create({
+                    data: {
+                      name: 'Kayu Olahan (Sawn Timber)',
+                      code: 'SAWN-TIMBER',
+                      company_id: targetCompanyId as string,
+                      unit_id: defaultUnit.id,
+                      purchase_price: 0,
+                      selling_price: 0,
+                      status: true,
+                    },
+                  });
+                }
+                const skuCode = `${spec}-${grd}-${tMm}X${wMm}X${lMm}`;
+                const newVar = await tx.timberVariant.create({
+                  data: {
+                    company_id: targetCompanyId as string,
+                    productId: genericProduct.id,
+                    species: spec,
+                    grade: grd,
+                    thickness: tMm,
+                    width: wMm,
+                    length: lMm,
+                    sku: skuCode,
+                    barcode: `V-${skuCode}-${Date.now().toString().slice(-4)}-${Math.floor(Math.random() * 1000)}`,
+                    volumePerPiece: (tMm * wMm * lMm) / 1000000000,
+                  },
+                });
+                variantId = newVar.id;
+              }
+            } catch (err) {
+              this.logger.warn(`Failed to resolve timberVariant in markAsReceived: ${err}`);
+            }
+          }
 
           if (qty > 0 && vol > 0 && variantId) {
-            // Update purchase line item if ID matches
+            // Update purchase line item if ID matches, or create if new
             if (item.id && /^[0-9a-fA-F]{24}$/.test(item.id)) {
               await tx.timberPurchaseItem.updateMany({
                 where: { id: item.id, timberPurchaseId: purchase.id },
@@ -599,6 +663,21 @@ export class PurchaseService {
                   purchaseThickness: tCm || undefined,
                   purchaseWidth: wCm || undefined,
                   purchaseLength: pCm || undefined,
+                },
+              });
+            } else {
+              await tx.timberPurchaseItem.create({
+                data: {
+                  timberPurchaseId: purchase.id,
+                  timberVariantId: variantId,
+                  quantityPcs: qty,
+                  volumeM3: vol,
+                  purchaseThickness: tCm || 0,
+                  purchaseWidth: wCm || 0,
+                  purchaseLength: pCm || 0,
+                  unitPrice: 0,
+                  notes: `Penerimaan Fisik Aktual Sawn Timber`,
+                  batch: item.batch || purchase.purchaseNumber || 'UNKNOWN',
                 },
               });
             }
@@ -786,6 +865,34 @@ export class PurchaseService {
           });
         }
       }
+
+      // Recalculate and update timberPurchase header totals (totalPcs & totalVolumeM3)
+      const allUpdatedItems = await tx.timberPurchaseItem.findMany({
+        where: { timberPurchaseId: purchase.id },
+      });
+      const allUpdatedLogs = await tx.timberPurchaseLogItem.findMany({
+        where: { timberPurchaseId: purchase.id },
+      });
+
+      let finalTotalPcs = 0;
+      let finalTotalVolumeM3 = 0;
+
+      for (const it of allUpdatedItems) {
+        finalTotalPcs += Number(it.quantityPcs || 0);
+        finalTotalVolumeM3 += Number(it.volumeM3 || 0);
+      }
+      for (const li of allUpdatedLogs) {
+        finalTotalPcs += 1;
+        finalTotalVolumeM3 += Number(li.purchaseVolume || 0);
+      }
+
+      await tx.timberPurchase.update({
+        where: { id: purchase.id },
+        data: {
+          totalPcs: finalTotalPcs,
+          totalVolumeM3: Number(finalTotalVolumeM3.toFixed(4)),
+        },
+      });
 
       return received;
     });
