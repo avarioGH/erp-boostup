@@ -147,10 +147,23 @@ export class RawLogService {
     }
     const rndDia = this.calcService.calculateRoundedDiameter(avgDia);
     const diaClass = this.calcService.classifyDiameter(rndDia);
-    const grossVol = this.calcService.calculateRawLogGrossVolume(
-      rndDia,
-      Number(data.originalLength),
-    );
+
+    let grossVol = 0;
+    if (data.purchaseVolume && Number(data.purchaseVolume) > 0) {
+      grossVol = Number(data.purchaseVolume);
+    } else if (Number(data.diameter1) > 0 || Number(data.diameter2) > 0) {
+      grossVol = this.calcService.calculateRevisedRawLogVolume(
+        Number(data.originalLength),
+        Number(data.diameter1),
+        Number(data.diameter2),
+        avgDia,
+      );
+    } else {
+      grossVol = this.calcService.calculateRawLogGrossVolume(
+        rndDia,
+        Number(data.originalLength),
+      );
+    }
 
     let gerowongVol = 0;
     if (data.gerowong > 0) {

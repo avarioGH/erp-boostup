@@ -1,4 +1,4 @@
-﻿import { InputLogService } from './input-log.service';
+import { InputLogService } from './input-log.service';
 import { BadRequestException } from '@nestjs/common';
 
 describe('InputLog Validation', () => {
@@ -38,7 +38,7 @@ describe('InputLog Validation', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('should process successfully with AVAILABLE trimmed logs', async () => {
+  it('should process successfully with AVAILABLE trimmed logs and inherit partaiId', async () => {
     prismaMock.trimmedLog.findMany.mockResolvedValue([
       {
         id: '1',
@@ -47,19 +47,45 @@ describe('InputLog Validation', () => {
         length: 4,
         grossVolume: 1,
         netVolume: 0.9,
+        partaiId: 'partai-123',
       },
     ]);
     prismaMock.inputLog.count.mockResolvedValue(0);
     prismaMock.inputLog.findUnique.mockResolvedValue(null);
-    prismaMock.inputLog.create.mockResolvedValue({
-      id: 'in1',
-      inputNumber: 'I-MSAW-1-25-10-001',
-    });
+    prismaMock.inputLog.create.mockImplementation(({ data }) => Promise.resolve({ id: 'in1', ...data }));
 
     const res = await service.createInputLog({ trimmedLogIds: ['1'] });
     expect(res).toBeDefined();
-    expect(prismaMock.inputLog.create).toHaveBeenCalled();
+    expect(prismaMock.inputLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          partaiId: 'partai-123',
+          status: 'AVAILABLE',
+        }),
+      }),
+    );
     expect(prismaMock.inputLogItem.create).toHaveBeenCalled();
     expect(prismaMock.trimmedLog.update).toHaveBeenCalled();
+  });
+
+  it('should reject mixing trimmed logs from different Partais', async () => {
+    prismaMock.trimmedLog.findMany.mockResolvedValue([
+      { id: '1', status: 'AVAILABLE', species: 'Ulin', partaiId: 'partai-1' },
+      { id: '2', status: 'AVAILABLE', species: 'Ulin', partaiId: 'partai-2' },
+    ]);
+
+    await expect(
+      service.createInputLog({ trimmedLogIds: ['1', '2'] }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should reject if explicit partaiId conflicts with source logs partaiId', async () => {
+    prismaMock.trimmedLog.findMany.mockResolvedValue([
+      { id: '1', status: 'AVAILABLE', species: 'Ulin', partaiId: 'partai-1' },
+    ]);
+
+    await expect(
+      service.createInputLog({ trimmedLogIds: ['1'], partaiId: 'partai-conflicting' }),
+    ).rejects.toThrow(BadRequestException);
   });
 });

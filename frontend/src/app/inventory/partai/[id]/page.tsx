@@ -807,6 +807,136 @@ export default function PartaiDetailPage({ params }: { params: any }) {
         </Badge>
       </div>
 
+      {/* REKAP POSISI STOK PER GUDANG (LOG & SAWN TIMBER) */}
+      <Card className="border shadow-xs bg-muted/15">
+        <CardHeader className="py-3 px-4 md:px-5 border-b bg-muted/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Layers className="w-4 h-4 text-primary" />
+              Posisi & Sebaran Stok Partai Berdasarkan Gudang
+            </CardTitle>
+            <span className="text-[11px] text-muted-foreground">
+              Menampilkan rincian posisi fisik Log Bulat (DUKB), Trimming, dan Sawn Timber di setiap gudang penyimpanan.
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 md:p-5">
+          {(() => {
+            // Aggregate inventory per warehouse for this partai
+            const whMap: Record<string, {
+              warehouseId: string;
+              warehouseName: string;
+              rawLogsPcs: number;
+              rawLogsM3: number;
+              trimmedLogsPcs: number;
+              trimmedLogsM3: number;
+              sawnTimberPcs: number;
+              sawnTimberM3: number;
+            }> = {};
+
+            const getOrCreateWh = (whId?: string, fallbackName?: string) => {
+              const id = whId || "UNASSIGNED";
+              if (!whMap[id]) {
+                const foundWh = warehouses.find(w => w.id === whId);
+                whMap[id] = {
+                  warehouseId: id,
+                  warehouseName: foundWh?.name || fallbackName || (whId === "UNASSIGNED" ? "Gudang Utama / Default" : `Gudang (${id.slice(-4)})`),
+                  rawLogsPcs: 0,
+                  rawLogsM3: 0,
+                  trimmedLogsPcs: 0,
+                  trimmedLogsM3: 0,
+                  sawnTimberPcs: 0,
+                  sawnTimberM3: 0,
+                };
+              }
+              return whMap[id];
+            };
+
+            // 1. Raw Logs (DUKB)
+            (partai?.rawLogs || []).forEach((r: any) => {
+              if (r.status !== 'CONSUMED' && r.status !== 'CANCELLED') {
+                const pWh = r.locationId || r.purchase?.warehouseId || partai?.warehouseId;
+                const rec = getOrCreateWh(pWh);
+                rec.rawLogsPcs += 1;
+                rec.rawLogsM3 += Number(r.netVolume || r.grossVolume || 0);
+              }
+            });
+
+            // 2. Trimmed Logs
+            (partai?.trimmedLogs || []).forEach((t: any) => {
+              if (t.status === 'AVAILABLE' || t.status === 'ASSIGNED_TO_INPUT') {
+                const tWh = t.locationId || t.rawLog?.locationId || partai?.warehouseId;
+                const rec = getOrCreateWh(tWh);
+                rec.trimmedLogsPcs += 1;
+                rec.trimmedLogsM3 += Number(t.netVolume || 0);
+              }
+            });
+
+            // 3. Sawn Timber Output
+            (partai?.sawnOutputs || []).forEach((o: any) => {
+              const oWh = o.locationId || partai?.warehouseId;
+              const rec = getOrCreateWh(oWh);
+              (o.items || []).forEach((it: any) => {
+                rec.sawnTimberPcs += Number(it.quantityPcs || 0);
+                rec.sawnTimberM3 += Number(it.volumeM3 || 0);
+              });
+            });
+
+            const whList = Object.values(whMap);
+
+            if (whList.length === 0) {
+              return (
+                <p className="text-xs text-muted-foreground text-center py-2">
+                  Belum ada catatan lokasi stok untuk partai ini.
+                </p>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {whList.map((wh) => {
+                  const totalWhM3 = wh.rawLogsM3 + wh.trimmedLogsM3 + wh.sawnTimberM3;
+                  return (
+                    <div 
+                      key={wh.warehouseId} 
+                      className="border rounded-lg p-3.5 bg-background shadow-2xs space-y-2.5 transition-all hover:border-primary/40"
+                    >
+                      <div className="flex items-center justify-between border-b pb-2">
+                        <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
+                          <Layers className="w-3.5 h-3.5 text-primary" />
+                          <span>{wh.warehouseName}</span>
+                        </div>
+                        <Badge variant="outline" className="font-mono text-[10px] bg-primary/5 text-primary border-primary/20">
+                          {totalWhM3.toFixed(3)} M³
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 text-[11px]">
+                        <div className="space-y-0.5 bg-blue-50/50 dark:bg-blue-950/20 p-2 rounded border border-blue-100 dark:border-blue-900/30">
+                          <span className="text-[10px] text-muted-foreground block font-medium">Log Mentah (DUKB)</span>
+                          <span className="font-bold text-blue-700 dark:text-blue-400 block font-mono">{wh.rawLogsPcs} Log</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">{wh.rawLogsM3.toFixed(3)} M³</span>
+                        </div>
+                        <div className="space-y-0.5 bg-amber-50/50 dark:bg-amber-950/20 p-2 rounded border border-amber-100 dark:border-amber-900/30">
+                          <span className="text-[10px] text-muted-foreground block font-medium">Log Trimming</span>
+                          <span className="font-bold text-amber-700 dark:text-amber-400 block font-mono">{wh.trimmedLogsPcs} Log</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">{wh.trimmedLogsM3.toFixed(3)} M³</span>
+                        </div>
+                        <div className="space-y-0.5 bg-emerald-50/50 dark:bg-emerald-950/20 p-2 rounded border border-emerald-100 dark:border-emerald-900/30">
+                          <span className="text-[10px] text-muted-foreground block font-medium">Sawn Timber</span>
+                          <span className="font-bold text-emerald-700 dark:text-emerald-400 block font-mono">{wh.sawnTimberPcs} Pcs</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">{wh.sawnTimberM3.toFixed(3)} M³</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
       <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
         <div className="w-full overflow-x-auto pb-1 mb-6">
           <TabsList className="inline-flex w-max min-w-full h-11 p-1 bg-muted/60 border rounded-lg gap-1">
@@ -827,11 +957,11 @@ export default function PartaiDetailPage({ params }: { params: any }) {
             </TabsTrigger>
             <TabsTrigger value="shipment" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5">
               <Truck className="w-3.5 h-3.5 text-amber-600" />
-              6. Muat / Kirim (Fuso)
+              6. Pindahan Stok / Kirim (Fuso)
             </TabsTrigger>
             <TabsTrigger value="processing" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5">
               <Cog className="w-3.5 h-3.5 text-cyan-600" />
-              7. Processing (Surabaya)
+              7. Processing
             </TabsTrigger>
             <TabsTrigger value="packing" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5">
               <Package className="w-3.5 h-3.5 text-purple-600" />
@@ -2081,10 +2211,10 @@ export default function PartaiDetailPage({ params }: { params: any }) {
             <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
               <div>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Truck className="w-5 h-5 text-amber-600" /> Surat Jalan & Muat Fuso (Kalimantan ➔ Surabaya)
+                  <Truck className="w-5 h-5 text-amber-600" /> Surat Jalan & Pindahan Stok / Kirim (Fuso)
                 </CardTitle>
                 <CardDescription>
-                  Pencatatan pengiriman kayu sawn timber per armada truk / fuso kontainer dari gudang asal ke gudang tujuan.
+                  Pencatatan perpindahan stok kayu antar-gudang (Gudang Asal ➔ Gudang Tujuan / Pembeli) menggunakan armada Truk / Fuso.
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
@@ -2563,7 +2693,8 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 const d = (r.averageDiameter || r.roundedDiameter || r.diameter || 0);
                 const l = r.originalLength || r.length || 0;
                 if (d > 0 && l > 0) {
-                  return s + (l * d * d) / 1000000;
+                  const lenCm = l <= 50 ? l * 100 : l;
+                  return s + (0.7854 * lenCm * d * d) / 1000000;
                 }
                 return s;
               }, 0);
@@ -2577,7 +2708,8 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 const d = (t.averageDiameter || t.roundedDiameter || t.diameter || 0);
                 const l = t.length || 0;
                 if (d > 0 && l > 0) {
-                  return s + (l * d * d) / 1000000;
+                  const lenCm = l <= 50 ? l * 100 : l;
+                  return s + (0.7854 * lenCm * d * d) / 1000000;
                 }
                 return s;
               }, 0);
@@ -2761,7 +2893,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                           {shipmentsList.length > 0 && (
                             <TableRow className="bg-amber-50/20 dark:bg-amber-900/10 border-t">
                               <TableCell className="font-medium text-amber-700 dark:text-amber-400">
-                                6. Muat / Kirim (Fuso Ex Kalteng ➔ Sby)
+                                6. Pindahan Stok / Kirim (Fuso)
                               </TableCell>
                               <TableCell className="text-right font-mono text-muted-foreground">{shipmentsList.length} armada</TableCell>
                               <TableCell className="text-right font-mono font-bold text-amber-600 dark:text-amber-400">

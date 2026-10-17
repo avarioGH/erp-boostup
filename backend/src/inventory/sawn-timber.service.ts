@@ -252,9 +252,20 @@ export class SawnTimberService {
       const seq = String(count + 1).padStart(3, '0');
       const bundleNumber = `O-MSAW-${machineStr}-${YY}-${MM}-${seq}`;
 
+      // Enforce authoritative Partai inheritance from inputLog
+      const resolvedPartaiId = inputLog.partaiId || partaiId || null;
+      if (partaiId && inputLog.partaiId && partaiId !== inputLog.partaiId) {
+        throw new BadRequestException(
+          `Provided partaiId (${partaiId}) does not match source InputLog's partaiId (${inputLog.partaiId})`,
+        );
+      }
+
+      // Propagate batch from inputLog if not explicitly overridden
+      const resolvedBatch = batch || inputLog.batch || (inputLog.partai?.code ? inputLog.partai.code : undefined);
+
       const output = await tx.sawnTimberOutput.create({
         data: {
-          partaiId: partaiId || inputLog.partaiId,
+          partaiId: resolvedPartaiId,
           bundleNumber,
           outputDate: dateObj,
           shift,
@@ -262,7 +273,7 @@ export class SawnTimberService {
           machine: machine || inputLog.machine,
           locationId: resolvedLocationId,
           inputLogId,
-          batch,
+          batch: resolvedBatch,
           notes,
           status: 'DRAFT',
         },

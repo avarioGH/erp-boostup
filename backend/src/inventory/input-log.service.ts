@@ -20,9 +20,13 @@ export class InputLogService {
     species?: string;
     locationId?: string;
     status?: string;
+    partaiId?: string;
   }) {
-    const { skip = 0, take = 50, search, species, locationId, status } = params;
-    const where: any = { partaiId: null };
+    const { skip = 0, take = 50, search, species, locationId, status, partaiId } = params;
+    const where: any = {};
+    if (partaiId !== undefined && partaiId !== '') {
+      where.partaiId = partaiId;
+    }
     if (search) {
       where.OR = [
         { inputNumber: { contains: search, mode: 'insensitive' } },
@@ -145,10 +149,14 @@ export class InputLogService {
     return log;
   }
 
-  async getAvailableTrimmedLogs() {
+  async getAvailableTrimmedLogs(partaiId?: string) {
+    const where: any = { status: 'AVAILABLE' };
+    if (partaiId && partaiId !== '') {
+      where.partaiId = partaiId;
+    }
     return this.prisma.trimmedLog.findMany({
-      where: { status: 'AVAILABLE' },
-      include: { rawLog: { select: { logNumber: true } }, location: true },
+      where,
+      include: { rawLog: { select: { logNumber: true } }, location: true, partai: true },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -180,13 +188,41 @@ export class InputLogService {
         throw new BadRequestException('Some trimmed logs were not found');
       }
 
+      // Check status and collect Partai IDs
+      const partaiIdSet = new Set<string>();
       for (const t of trimmedLogs) {
         if (t.status === 'CANCELLED') {
           throw new BadRequestException(
             `Trimmed log ${t.trimNumber} is cancelled and cannot be used`,
           );
         }
+        if (t.status !== 'AVAILABLE') {
+          throw new BadRequestException(
+            `Trimmed log ${t.trimNumber} is not available (status: ${t.status})`,
+          );
+        }
+        if (t.partaiId) {
+          partaiIdSet.add(t.partaiId);
+        }
       }
+
+      // Strict Partai boundary validation: cannot mix multiple partais in a single input log
+      if (partaiIdSet.size > 1) {
+        throw new BadRequestException(
+          `Cannot create InputLog from multiple different Partais: ${Array.from(partaiIdSet).join(', ')}`,
+        );
+      }
+
+      const inheritedPartaiId = partaiIdSet.size === 1 ? Array.from(partaiIdSet)[0] : null;
+
+      // If user supplied an explicit partaiId, ensure it matches inherited Partai if present
+      if (data.partaiId && inheritedPartaiId && data.partaiId !== inheritedPartaiId) {
+        throw new BadRequestException(
+          `Provided partaiId (${data.partaiId}) does not match source trimmed logs' partaiId (${inheritedPartaiId})`,
+        );
+      }
+
+      const finalPartaiId = data.partaiId || inheritedPartaiId;
 
       // Calculations
       const totalQty = trimmedLogs.length;
@@ -235,7 +271,7 @@ export class InputLogService {
         );
 
       let targetLocationId = locationId || trimmedLogs[0].locationId || (trimmedLogs[0] as any)?.rawLog?.locationId;
-      if (!targetLocationId) {
+      if (!targetLocationId && tx.warehouse?.findFirst) {
         const defaultWh = await tx.warehouse.findFirst();
         if (defaultWh) targetLocationId = defaultWh.id;
       }
@@ -248,7 +284,7 @@ export class InputLogService {
           operatorName,
           machine,
           locationId: targetLocationId || null,
-          partaiId: trimmedLogs[0].partaiId,
+          partaiId: finalPartaiId,
           batch,
           species,
           totalQty,

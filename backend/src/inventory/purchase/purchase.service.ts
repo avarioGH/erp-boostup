@@ -364,7 +364,13 @@ export class PurchaseService {
               const avgDia = diaCount > 0 ? diaSum / diaCount : (d1 || d2 || 0);
               const rndDia = Math.floor(avgDia);
               const len = Number(item.purchaseLength || 0);
-              const grossVol = item.purchaseVolume ? Number(item.purchaseVolume) : Number((((rndDia * rndDia * 0.7854) / 10000) * len).toFixed(4));
+              const lengthCm = len <= 50 ? len * 100 : len;
+              let grossVol = 0;
+              if (item.purchaseVolume && Number(item.purchaseVolume) > 0) {
+                grossVol = Number(item.purchaseVolume);
+              } else if (avgDia > 0) {
+                grossVol = Number(((0.7854 * lengthCm * avgDia * avgDia) / 1000000).toFixed(4));
+              }
 
               let logNum = (item.logNumber && item.logNumber.trim() !== '')
                 ? item.logNumber.trim()
@@ -681,7 +687,15 @@ export class PurchaseService {
           const avgDia = diaCount > 0 ? diaSum / diaCount : (incoming?.averageDiameter || d1 || d2 || 0);
           const rndDia = Math.floor(avgDia);
           const len = Number(incoming?.originalLength || incoming?.length || item.purchaseLength || 0);
-          const grossVol = incoming?.grossVolume ? Number(incoming.grossVolume) : (item.purchaseVolume ? Number(item.purchaseVolume) : Number((((rndDia * rndDia * 0.7854) / 10000) * len).toFixed(4)));
+          const lengthCm = len <= 50 ? len * 100 : len;
+          let grossVol = 0;
+          if (incoming?.grossVolume) {
+            grossVol = Number(incoming.grossVolume);
+          } else if (item.purchaseVolume && Number(item.purchaseVolume) > 0) {
+            grossVol = Number(item.purchaseVolume);
+          } else if (avgDia > 0) {
+            grossVol = Number(((0.7854 * lengthCm * avgDia * avgDia) / 1000000).toFixed(4));
+          }
           const netVol = incoming?.netVolume ? Number(incoming.netVolume) : grossVol;
 
           let logNum = (incoming?.logNumber && incoming.logNumber.trim() !== '')
@@ -1211,7 +1225,13 @@ export class PurchaseService {
             const avgDia = diaCount > 0 ? diaSum / diaCount : (d1 || d2 || 0);
             const rndDia = Math.floor(avgDia);
             const len = Number(item.purchaseLength || 0);
-            const grossVol = item.purchaseVolume ? Number(item.purchaseVolume) : Number((((rndDia * rndDia * 0.7854) / 10000) * len).toFixed(4));
+            const lengthCm = len <= 50 ? len * 100 : len;
+            let grossVol = 0;
+            if (item.purchaseVolume && Number(item.purchaseVolume) > 0) {
+              grossVol = Number(item.purchaseVolume);
+            } else if (avgDia > 0) {
+              grossVol = Number(((0.7854 * lengthCm * avgDia * avgDia) / 1000000).toFixed(4));
+            }
             const logNum = item.logNumber || `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}`;
             const uniqueBarcode = `LOG-${purchase.purchaseNumber || 'PUR'}-${i + 1}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
 

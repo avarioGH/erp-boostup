@@ -19,7 +19,7 @@ export default function CreateTransferPage() {
   const [submitting, setSubmitting] = useState(false)
 
   const [form, setForm] = useState({ date: "", fromLocationId: "", toLocationId: "", notes: "" })
-  const [items, setItems] = useState([{ timberVariantId: "", quantityPcs: "" }])
+  const [items, setItems] = useState([{ stockKey: "", timberVariantId: "", batch: "", quantityPcs: "" }])
 
   useEffect(() => {
     InventoryAPI.getWarehouses()
@@ -37,10 +37,10 @@ export default function CreateTransferPage() {
       setStocks([])
     }
     // Reset items when source changes
-    setItems([{ timberVariantId: "", quantityPcs: "" }])
+    setItems([{ stockKey: "", timberVariantId: "", batch: "", quantityPcs: "" }])
   }, [form.fromLocationId])
 
-  const getStock = (timberVariantId: string) => stocks.find(s => s.timberVariantId === timberVariantId)
+  const getStock = (stockKey: string) => stocks.find(s => `${s.timberVariantId}___${s.batch || 'UNKNOWN'}` === stockKey)
 
   const handleSubmit = async (e: any) => {
     e.preventDefault()
@@ -51,29 +51,35 @@ export default function CreateTransferPage() {
     }
     
     let valid = true
+    let errorMsg = ""
     const payloadItems = items.map(item => {
-      const selectedStock = getStock(item.timberVariantId)
+      const selectedStock = getStock(item.stockKey)
       const qty = parseInt(item.quantityPcs) || 0
       
-      if (!selectedStock || qty <= 0 || qty > selectedStock.currentPcs) {
+      if (!selectedStock) {
         valid = false
+        errorMsg = "Please select a valid timber SKU and batch."
+      } else if (qty <= 0 || qty > selectedStock.currentPcs) {
+        valid = false
+        errorMsg = `Requested quantity (${qty}) exceeds available stock (${selectedStock?.currentPcs || 0}) for batch "${selectedStock?.batch || 'UNKNOWN'}".`
       }
       
       let volumeM3 = 0
       if (selectedStock && selectedStock.currentPcs > 0) {
         const volRatio = qty / selectedStock.currentPcs
-        volumeM3 = selectedStock.currentVolumeM3 * volRatio
+        volumeM3 = Number((selectedStock.currentVolumeM3 * volRatio).toFixed(4))
       }
       
       return {
-        timberVariantId: item.timberVariantId,
+        timberVariantId: selectedStock?.timberVariantId || item.timberVariantId,
+        batch: selectedStock?.batch || item.batch || "UNKNOWN",
         quantityPcs: qty,
         volumeM3
       }
     })
 
     if (!valid) {
-      return toast({ title: "Error", description: "Invalid SKU or insufficient stock quantity on one of the items.", variant: "destructive" })
+      return toast({ title: "Error", description: errorMsg || "Invalid SKU or insufficient stock quantity on one of the items.", variant: "destructive" })
     }
     
     setSubmitting(true)
@@ -138,22 +144,25 @@ export default function CreateTransferPage() {
                 ) : (
                   <>
                     {items.map((item, index) => {
-                      const selectedStock = getStock(item.timberVariantId)
+                      const selectedStock = getStock(item.stockKey)
                       return (
                         <div key={index} className="flex flex-col sm:flex-row gap-4 items-start sm:items-end p-4 border border-border/60 bg-muted/5 rounded-lg relative group">
                           <div className="w-full sm:flex-1 space-y-2">
-                            <Label className="text-[12px] uppercase text-muted-foreground font-bold tracking-wider">Timber SKU</Label>
-                            <Select value={item.timberVariantId} onValueChange={(val: any) => {
+                            <Label className="text-[12px] uppercase text-muted-foreground font-bold tracking-wider">Timber SKU & Batch</Label>
+                            <Select value={item.stockKey} onValueChange={(val: any) => {
                               const newItems = [...items]
-                              newItems[index].timberVariantId = val || ""
+                              const st = stocks.find(s => `${s.timberVariantId}___${s.batch || 'UNKNOWN'}` === val)
+                              newItems[index].stockKey = val || ""
+                              newItems[index].timberVariantId = st?.timberVariantId || ""
+                              newItems[index].batch = st?.batch || "UNKNOWN"
                               setItems(newItems)
                             }}>
                               <SelectTrigger className="h-10 bg-background font-medium">
-                                <SelectValue placeholder="Select available SKU...">
+                                <SelectValue placeholder="Select available SKU & Batch...">
                                   {(() => {
-                                    const s = availableVariants.find(av => av.timberVariantId === item.timberVariantId);
-                                    if (s) return `${s.timberVariant?.sku || s.timberVariantId} (${s.currentPcs} PCS)`;
-                                    return item.timberVariantId ? "Memuat SKU..." : "Select available SKU...";
+                                    const s = availableVariants.find(av => `${av.timberVariantId}___${av.batch || 'UNKNOWN'}` === item.stockKey);
+                                    if (s) return `${s.timberVariant?.sku || s.timberVariantId} [Batch: ${s.batch && s.batch !== 'UNKNOWN' ? s.batch : 'REGULER'}] (${s.currentPcs} PCS, ${s.currentVolumeM3?.toFixed(3) || 0} M³)`;
+                                    return item.stockKey ? "Memuat SKU..." : "Select available SKU & Batch...";
                                   })()}
                                 </SelectValue>
                               </SelectTrigger>
@@ -161,11 +170,16 @@ export default function CreateTransferPage() {
                                 {availableVariants.length === 0 ? (
                                   <SelectItem value="none" disabled>No stock available at source</SelectItem>
                                 ) : (
-                                  availableVariants.map(s => (
-                                    <SelectItem key={s.timberVariantId} value={s.timberVariantId}>
-                                      {s.timberVariant?.sku || s.timberVariantId} <span className="text-muted-foreground ml-1">({s.currentPcs} PCS)</span>
-                                    </SelectItem>
-                                  ))
+                                  availableVariants.map(s => {
+                                    const sKey = `${s.timberVariantId}___${s.batch || 'UNKNOWN'}`;
+                                    return (
+                                      <SelectItem key={sKey} value={sKey}>
+                                        <span className="font-semibold">{s.timberVariant?.sku || s.timberVariantId}</span>
+                                        <span className="text-primary font-medium ml-2">[Batch: {s.batch && s.batch !== 'UNKNOWN' ? s.batch : 'REGULER'}]</span>
+                                        <span className="text-muted-foreground ml-2">({s.currentPcs} PCS / {s.currentVolumeM3?.toFixed(3) || 0} M³)</span>
+                                      </SelectItem>
+                                    );
+                                  })
                                 )}
                               </SelectContent>
                             </Select>
@@ -197,7 +211,7 @@ export default function CreateTransferPage() {
                               if (items.length > 1) {
                                 setItems((Array.isArray(items) ? items : []).filter((_, i) => i !== index))
                               } else {
-                                setItems([{ timberVariantId: "", quantityPcs: "" }])
+                                setItems([{ stockKey: "", timberVariantId: "", batch: "", quantityPcs: "" }])
                               }
                             }}
                           >
@@ -211,7 +225,7 @@ export default function CreateTransferPage() {
                       type="button" 
                       variant="outline" 
                       className="w-full border-dashed border-2 font-semibold h-11 text-muted-foreground hover:text-foreground"
-                      onClick={() => setItems([...items, { timberVariantId: "", quantityPcs: "" }])}
+                      onClick={() => setItems([...items, { stockKey: "", timberVariantId: "", batch: "", quantityPcs: "" }])}
                     >
                       <Plus className="w-4 h-4 mr-2" /> Add Timber Variant
                     </Button>

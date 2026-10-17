@@ -28,9 +28,7 @@ const calculateLogVolume = (length: number, d1: number, d2: number, rtManual?: n
 
   const lengthCm = length <= 50 ? length * 100 : length;
 
-  if (pkl > 0 && ujung > 0 && rt > 0) {
-    return Number(((0.7854 * lengthCm * pkl * ujung * rt) / 1000000).toFixed(4));
-  } else if (rt > 0) {
+  if (rt > 0) {
     return Number(((0.7854 * lengthCm * rt * rt) / 1000000).toFixed(4));
   }
   return 0;

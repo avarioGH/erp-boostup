@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Res } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Res, Req } from '@nestjs/common';
 import type { Response } from 'express';
 import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -158,5 +158,53 @@ export class ReportsController {
   ) {
     const wb = await this.reportsService.exportOpname(dateFrom, dateTo);
     return this.sendExcelResponse(res, wb, 'Opname');
+  }
+
+  @Get('traceability/audit')
+  async getTraceabilityAudit(
+    @Req() req: any,
+    @Query('partaiId') partaiId?: string,
+    @Query('batch') batch?: string,
+    @Query('warehouseId') warehouseId?: string,
+    @Query('timberVariantId') timberVariantId?: string,
+    @Query('classification') classification?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('referenceType') referenceType?: string,
+    @Query('referenceId') referenceId?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const companyId = req?.user?.company_id || req?.user?.companyId;
+    return this.reportsService.getTraceabilityAudit({
+      partaiId,
+      batch,
+      warehouseId,
+      timberVariantId,
+      classification,
+      dateFrom,
+      dateTo,
+      referenceType,
+      referenceId,
+      companyId,
+      page,
+      limit,
+    });
+  }
+
+  @Get('traceability/reconciliation-preview')
+  async getTraceabilityReconciliationPreview(
+    @Req() req: any,
+    @Query('warehouseId') warehouseId?: string,
+    @Query('timberVariantId') timberVariantId?: string,
+    @Query('partaiId') partaiId?: string,
+  ) {
+    const companyId = req?.user?.company_id || req?.user?.companyId;
+    return this.reportsService.getTraceabilityReconciliationPreview({
+      warehouseId,
+      timberVariantId,
+      partaiId,
+      companyId,
+    });
   }
 }

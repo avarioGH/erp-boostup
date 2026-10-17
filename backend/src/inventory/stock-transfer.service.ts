@@ -135,15 +135,102 @@ export class StockTransferService {
         },
       });
 
+      // Aggregate quantities per (variantId, batch) to validate aggregate source availability
+      const aggregatedRequests = new Map<string, { variantId: string; batch: string; totalQty: number; items: any[] }>();
+
       for (const item of items) {
-        await tx.stockTransferItem.create({
-          data: {
-            transferId: transfer.id,
-            timberVariantId: item.timberVariantId,
-            quantityPcs: item.quantityPcs,
-            volumeM3: item.volumeM3,
+        if (!item.timberVariantId) {
+          throw new BadRequestException('Timber variant ID is required for each transfer item');
+        }
+        if (!item.quantityPcs || Number(item.quantityPcs) <= 0) {
+          throw new BadRequestException('Quantity must be positive');
+        }
+
+        const requestedQty = Number(item.quantityPcs);
+        const itemBatch = item.batch ? String(item.batch).trim() : 'UNKNOWN';
+        const key = `${item.timberVariantId}___${itemBatch}`;
+
+        if (!aggregatedRequests.has(key)) {
+          aggregatedRequests.set(key, {
+            variantId: item.timberVariantId,
+            batch: itemBatch,
+            totalQty: 0,
+            items: [],
+          });
+        }
+        const entry = aggregatedRequests.get(key)!;
+        entry.totalQty += requestedQty;
+        entry.items.push(item);
+      }
+
+      // Validate each aggregated bucket against source stock
+      for (const [key, entry] of aggregatedRequests.entries()) {
+        const { variantId, batch: itemBatch, totalQty } = entry;
+
+        // Check if there is stock with a known non-UNKNOWN batch at this location for this variant
+        const knownBatchStocks = await tx.timberStock.findMany({
+          where: {
+            locationId: fromLocationId,
+            timberVariantId: variantId,
+            currentPcs: { gt: 0 },
+            batch: { not: 'UNKNOWN' },
           },
         });
+
+        if (knownBatchStocks.length > 0 && itemBatch === 'UNKNOWN') {
+          throw new BadRequestException(
+            `Source stock has known batches (${knownBatchStocks.map((s: any) => s.batch).join(', ')}). You must explicitly select a batch.`,
+          );
+        }
+
+        // Validate source stock availability for this exact batch
+        const sourceStock = await tx.timberStock.findUnique({
+          where: {
+            locationId_timberVariantId_batch: {
+              locationId: fromLocationId,
+              timberVariantId: variantId,
+              batch: itemBatch,
+            },
+          },
+        });
+
+        if (!sourceStock || sourceStock.currentPcs < totalQty) {
+          throw new BadRequestException(
+            `Insufficient stock for variant ${variantId} with batch "${itemBatch}" at source warehouse. Available: ${sourceStock?.currentPcs || 0} PCS, Total Requested: ${totalQty} PCS.`,
+          );
+        }
+
+        // Process individual items in this bucket with authoritative proportional volume
+        for (const item of entry.items) {
+          const qty = Number(item.quantityPcs);
+          // Authoritative volume derivation: if transferring entire remaining stock, take full volume; otherwise proportional
+          let volM3 = 0;
+          if (qty === sourceStock.currentPcs) {
+            volM3 = Number(sourceStock.currentVolumeM3.toFixed(4));
+          } else if (sourceStock.currentPcs > 0) {
+            volM3 = Number(((qty / sourceStock.currentPcs) * sourceStock.currentVolumeM3).toFixed(4));
+          }
+
+          // If client sent an explicit volume, ensure it doesn't deviate wildly (> 5%) from authoritative proportional volume
+          if (item.volumeM3 && Number(item.volumeM3) > 0) {
+            const clientVol = Number(item.volumeM3);
+            if (volM3 > 0 && Math.abs(clientVol - volM3) / volM3 > 0.05) {
+              throw new BadRequestException(
+                `Submitted volume (${clientVol} M³) deviates from authoritative proportional volume (${volM3} M³) for ${qty} PCS.`,
+              );
+            }
+          }
+
+          await tx.stockTransferItem.create({
+            data: {
+              transferId: transfer.id,
+              timberVariantId: variantId,
+              batch: itemBatch,
+              quantityPcs: qty,
+              volumeM3: volM3,
+            },
+          });
+        }
       }
 
       await tx.auditLog.create({
@@ -168,13 +255,42 @@ export class StockTransferService {
       if (transfer.status !== 'DRAFT')
         throw new BadRequestException('Only DRAFT transfers can be posted');
 
+      // Re-validate aggregate source stock availability inside transaction before mutating
+      const postAggregates = new Map<string, { variantId: string; batch: string; totalQty: number }>();
+      for (const item of transfer.items) {
+        const itemBatch = item.batch || 'UNKNOWN';
+        const key = `${item.timberVariantId}___${itemBatch}`;
+        if (!postAggregates.has(key)) {
+          postAggregates.set(key, { variantId: item.timberVariantId, batch: itemBatch, totalQty: 0 });
+        }
+        postAggregates.get(key)!.totalQty += item.quantityPcs;
+      }
+
+      for (const [key, agg] of postAggregates.entries()) {
+        const sourceStock = await tx.timberStock.findUnique({
+          where: {
+            locationId_timberVariantId_batch: {
+              locationId: transfer.fromLocationId,
+              timberVariantId: agg.variantId,
+              batch: agg.batch,
+            },
+          },
+        });
+
+        if (!sourceStock || sourceStock.currentPcs < agg.totalQty) {
+          throw new BadRequestException(
+            `Cannot post transfer. Insufficient stock for variant ${agg.variantId} with batch "${agg.batch}". Available: ${sourceStock?.currentPcs || 0} PCS, Total Required: ${agg.totalQty} PCS.`,
+          );
+        }
+      }
+
       await tx.stockTransfer.update({
         where: { id },
         data: { status: 'POSTED' },
       });
 
       for (const item of transfer.items) {
-        // 1. OUT from source
+        // 1. OUT from source (atomic concurrency guard in InventoryLedgerService)
         await this.ledgerService.createMovement(
           tx as any,
           transfer.fromLocationId,
@@ -184,7 +300,7 @@ export class StockTransferService {
           transfer.id,
           item.quantityPcs,
           item.volumeM3,
-          item.batch,
+          item.batch || 'UNKNOWN',
         );
         // 2. IN to destination
         await this.ledgerService.createMovement(
@@ -196,7 +312,7 @@ export class StockTransferService {
           transfer.id,
           item.quantityPcs,
           item.volumeM3,
-          item.batch,
+          item.batch || 'UNKNOWN',
         );
       }
 
@@ -235,6 +351,7 @@ export class StockTransferService {
             transfer.id,
             item.quantityPcs,
             item.volumeM3,
+            item.batch || 'UNKNOWN',
           );
           // Reverse OUT from source (IN)
           await this.ledgerService.createMovement(
@@ -246,6 +363,7 @@ export class StockTransferService {
             transfer.id,
             item.quantityPcs,
             item.volumeM3,
+            item.batch || 'UNKNOWN',
           );
         }
       }

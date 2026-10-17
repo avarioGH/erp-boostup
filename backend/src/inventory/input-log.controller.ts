@@ -36,8 +36,8 @@ export class InputLogController {
 
   @Get('available-trimmed-logs')
   @Permissions('read_inventory')
-  async getAvailableTrimmedLogs() {
-    return this.inputLogService.getAvailableTrimmedLogs();
+  async getAvailableTrimmedLogs(@Query('partaiId') partaiId?: string) {
+    return this.inputLogService.getAvailableTrimmedLogs(partaiId);
   }
 
   @Get(':id')

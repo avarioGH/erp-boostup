@@ -22,9 +22,13 @@ export class TrimmedLogService {
     species?: string;
     locationId?: string;
     status?: string;
+    partaiId?: string;
   }) {
-    const { skip = 0, take = 50, search, species, locationId, status } = params;
-    const where: any = { partaiId: null };
+    const { skip = 0, take = 50, search, species, locationId, status, partaiId } = params;
+    const where: any = {};
+    if (partaiId !== undefined && partaiId !== '') {
+      where.partaiId = partaiId;
+    }
     if (search) {
       where.OR = [
         { trimNumber: { contains: search, mode: 'insensitive' } },

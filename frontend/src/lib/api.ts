@@ -404,6 +404,8 @@ export const ReportsAPI: any = {
   getMovements: async (params?: any) => (await api.get('/inventory/reports/movements', { params })).data,
   getStockCard: async (params?: any) => (await api.get('/inventory/reports/stock-card', { params })).data,
   getTraceability: async (params?: any) => (await api.get('/inventory/reports/traceability', { params })).data,
+  getTraceabilityAudit: async (params?: any) => (await api.get('/inventory/reports/traceability/audit', { params })).data,
+  getTraceabilityReconciliationPreview: async (params?: any) => (await api.get('/inventory/reports/traceability/reconciliation-preview', { params })).data,
 };
 
 

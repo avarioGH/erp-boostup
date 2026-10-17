@@ -232,6 +232,33 @@ export class ProductionService {
       });
     }
 
+    // Inspect the actual input timberStocks to verify Partai / Batch lineage
+    const inputStockIds = resolvedInputs.map((i) => i.timberStockId).filter(Boolean);
+    const inputStocks = await this.prisma.timberStock.findMany({
+      where: { id: { in: inputStockIds } },
+    });
+
+    const inputBatches = Array.from(new Set(inputStocks.map((s) => s.batch).filter((b) => b && b !== 'UNKNOWN' && b !== 'AUTO-INPUT')));
+
+    // If input stocks come from multiple distinct real batches, check if partaiId was explicitly provided
+    let resolvedPartaiId = data.partaiId || null;
+    if (!resolvedPartaiId && inputBatches.length === 1) {
+      // Find matching Partai by code
+      const matchedPartai = await this.prisma.timberPartai.findFirst({
+        where: {
+          code: inputBatches[0],
+          ...(company_id ? { company_id } : {}),
+        },
+      });
+      if (matchedPartai) {
+        resolvedPartaiId = matchedPartai.id;
+      }
+    } else if (inputBatches.length > 1 && !data.partaiId) {
+      throw new BadRequestException(
+        `Multi-Partai input stocks detected (${inputBatches.join(', ')}). You must explicitly specify a Partai for this production process or process them in separate batches.`,
+      );
+    }
+
     return this.prisma.productionProcess.create({
       data: {
         company_id,
@@ -241,7 +268,7 @@ export class ProductionService {
         status: data.status || 'DRAFT',
         notes,
         createdBy,
-        partaiId: data.partaiId || null,
+        partaiId: resolvedPartaiId,
         inputVolumeM3,
         outputVolumeM3,
         wasteVolumeM3,
@@ -292,8 +319,15 @@ export class ProductionService {
           process.id,
           input.quantityPCS,
           input.volumeM3,
+          stock.batch || 'UNKNOWN',
         );
       }
+
+      // Determine batch tag for outputs
+      const processPartai = process.partaiId
+        ? await tx.timberPartai.findUnique({ where: { id: process.partaiId } })
+        : null;
+      const outputBatchTag = processPartai?.code || (process.processNo ? `BATCH-${process.processNo}` : 'UNKNOWN');
 
       // Process outputs
       for (const output of process.outputs) {
@@ -320,6 +354,7 @@ export class ProductionService {
             process.id,
             output.quantityPCS,
             output.volumeM3,
+            outputBatchTag,
           );
         }
       }
@@ -384,6 +419,12 @@ export class ProductionService {
         }
       }
 
+      // Determine batch tag for outputs
+      const processPartai = process.partaiId
+        ? await tx.timberPartai.findUnique({ where: { id: process.partaiId } })
+        : null;
+      const outputBatchTag = processPartai?.code || (process.processNo ? `BATCH-${process.processNo}` : 'UNKNOWN');
+
       // Reverse inputs
       for (const input of process.inputs) {
         const stock = await tx.timberStock.findUnique({
@@ -403,6 +444,7 @@ export class ProductionService {
           process.id,
           input.quantityPCS,
           input.volumeM3,
+          stock.batch || 'UNKNOWN',
         );
       }
 
@@ -431,6 +473,7 @@ export class ProductionService {
             process.id,
             output.quantityPCS,
             output.volumeM3,
+            outputBatchTag,
           );
         }
       }

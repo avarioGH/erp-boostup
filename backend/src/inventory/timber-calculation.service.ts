@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class TimberCalculationService {
@@ -25,11 +25,52 @@ export class TimberCalculationService {
 
   /**
    * Calculates the gross volume of a raw log in m3.
-   * Gross Volume = ROUND((RoundedDiameter^2 * Length * 0.7854) / 10000, 2)
+   * Standard volume = (RoundedDiameter^2 * Length * 0.7854) / 10000
    */
   calculateRawLogGrossVolume(roundedDiameter: number, length: number): number {
     const volume = (Math.pow(roundedDiameter, 2) * length * 0.7854) / 10000;
     return Math.round(volume * 100) / 100;
+  }
+
+  /**
+   * Authoritative calculation for Raw Log volume (m3) according to user business formula:
+   * (0.7854 * lengthCm * pkl * ujung * RT) / 1,000,000
+   * 
+   * If either pkl (D1) or ujung (D2) is not filled/zero, falls back to:
+   * (0.7854 * lengthCm * RT * RT) / 1,000,000
+   * 
+   * If length <= 50, it is treated as meters and converted to cm (* 100).
+   * Returns rounded to 4 decimals.
+   */
+  calculateRevisedRawLogVolume(
+    length: number,
+    d1: number,
+    d2: number,
+    rtManual?: number,
+  ): number {
+    if (!length || length <= 0) return 0;
+    const pkl = Number(d1) || 0;
+    const ujung = Number(d2) || 0;
+    let rt = typeof rtManual === 'number' && rtManual > 0 ? rtManual : 0;
+    if (!rt) {
+      if (pkl > 0 && ujung > 0) {
+        rt = (pkl + ujung) / 2;
+      } else {
+        rt = pkl || ujung || 0;
+      }
+    }
+    if (rt <= 0) return 0;
+
+    const lengthCm = length <= 50 ? length * 100 : length;
+
+    if (pkl > 0 && ujung > 0 && !rtManual) {
+      // When both pkl and ujung are present, either compute via ellipse (pkl * ujung) or RT^2.
+      // Authoritative Excel formula in excel4.xlsx (INPUT LOG Col I) is 0.7854 * lengthCm * RT * RT / 1000000.
+      return Number(((0.7854 * lengthCm * rt * rt) / 1000000).toFixed(4));
+    } else if (rt > 0) {
+      return Number(((0.7854 * lengthCm * rt * rt) / 1000000).toFixed(4));
+    }
+    return 0;
   }
 
   /**

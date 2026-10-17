@@ -1,4 +1,4 @@
-﻿import { TimberCalculationService } from './timber-calculation.service';
+import { TimberCalculationService } from './timber-calculation.service';
 
 describe('TimberCalculationService', () => {
   let service: TimberCalculationService;
@@ -68,5 +68,48 @@ describe('TimberCalculationService', () => {
     expect(rnd).toBe(42);
     const gross = service.calculateRawLogGrossVolume(rnd, 10);
     expect(gross).toBe(1.39);
+  });
+
+  describe('Revised Raw Log Formula (0.7854 * lengthCm * RT * RT / 1,000,000)', () => {
+    it('should calculate volume with equal end diameters (pkl == ujung)', () => {
+      // Length = 400 cm, pkl = 50 cm, ujung = 50 cm => RT = 50 cm
+      // Formula: 0.7854 * 400 * 50 * 50 / 1,000,000 = 0.7854 m3
+      const vol = service.calculateRevisedRawLogVolume(400, 50, 50);
+      expect(vol).toBe(0.7854);
+    });
+
+    it('should calculate volume with unequal end diameters', () => {
+      // Length = 400 cm, pkl = 60 cm, ujung = 40 cm => RT = (60+40)/2 = 50 cm
+      // Formula: 0.7854 * 400 * 50 * 50 / 1,000,000 = 0.7854 m3
+      const vol = service.calculateRevisedRawLogVolume(400, 60, 40);
+      expect(vol).toBe(0.7854);
+    });
+
+    it('should handle length specified in meters (<= 50)', () => {
+      // Length = 4 m (treated as 400 cm), pkl = 60, ujung = 40 => RT = 50
+      // 0.7854 * 400 * 50 * 50 / 1,000,000 = 0.7854 m3
+      const vol = service.calculateRevisedRawLogVolume(4, 60, 40);
+      expect(vol).toBe(0.7854);
+    });
+
+    it('should calculate with manual RT override', () => {
+      // Length = 400 cm, pkl = 60, ujung = 40, manual RT = 52
+      // 0.7854 * 400 * 52 * 52 / 1,000,000 = 0.8495 m3
+      const vol = service.calculateRevisedRawLogVolume(400, 60, 40, 52);
+      expect(vol).toBe(0.8495);
+    });
+
+    it('should fallback to RT squared when only one diameter is provided', () => {
+      // Length = 400 cm, pkl = 50, ujung = 0 => RT = 50
+      // 0.7854 * 400 * 50 * 50 / 1,000,000 = 0.7854 m3
+      const vol = service.calculateRevisedRawLogVolume(400, 50, 0);
+      expect(vol).toBe(0.7854);
+    });
+
+    it('should return 0 when length or diameters are 0', () => {
+      expect(service.calculateRevisedRawLogVolume(0, 50, 50)).toBe(0);
+      expect(service.calculateRevisedRawLogVolume(400, 0, 0)).toBe(0);
+      expect(service.calculateRevisedRawLogVolume(-10, 50, 50)).toBe(0);
+    });
   });
 });

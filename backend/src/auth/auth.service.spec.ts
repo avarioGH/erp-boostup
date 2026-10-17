@@ -6,8 +6,28 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [AuthService],
-    }).compile();
+      providers: [
+        AuthService,
+        {
+          provide: 'PrismaService',
+          useValue: {
+            user: {
+              findUnique: jest.fn(),
+            },
+          },
+        },
+        {
+          provide: 'JwtService',
+          useValue: {
+            sign: jest.fn(),
+          },
+        },
+      ],
+    })
+      .useMocker((token) => {
+        return {};
+      })
+      .compile();
 
     service = module.get<AuthService>(AuthService);
   });

@@ -34,11 +34,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
     // Length in cm (if <= 50, assumed in meters so convert to cm)
     const lengthCm = length <= 50 ? length * 100 : length;
 
-    // Rumus revisi user: 0.7854 * panjang * pkl * ujung * RT / 1000000
-    // Jika salah satu pkl atau ujung belum diisi, fallback ke (0.7854 * panjang * RT * RT) / 1000000 atau (panjang * RT * RT) / 1000000
-    if (pkl > 0 && ujung > 0 && rt > 0) {
-      return Number(((0.7854 * lengthCm * pkl * ujung * rt) / 1000000).toFixed(4));
-    } else if (rt > 0) {
+    // Rumus revisi user (konsisten dengan excel4.xlsx INPUT LOG): 0.7854 * panjang * RT * RT / 1000000
+    if (rt > 0) {
       return Number(((0.7854 * lengthCm * rt * rt) / 1000000).toFixed(4));
     }
     return 0;
