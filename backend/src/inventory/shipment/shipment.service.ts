@@ -24,6 +24,7 @@ export class ShipmentService {
       shipmentNumber,
       shipmentDate,
       warehouseId,
+      destinationWarehouseId,
       vehicleId,
       driverId,
       fusoName,
@@ -46,6 +47,16 @@ export class ShipmentService {
         where: targetCompanyId ? { company_id: targetCompanyId } : {},
       });
       if (defWh) warehouseId = defWh.id;
+    }
+
+    // Auto set destinationName if destinationWarehouseId is provided and destinationName is empty
+    if (destinationWarehouseId && !destinationName) {
+      const destWh = await this.prisma.warehouse.findUnique({
+        where: { id: destinationWarehouseId },
+      });
+      if (destWh) {
+        destinationName = destWh.name;
+      }
     }
 
     const existing = await this.prisma.timberShipment.findUnique({
@@ -119,16 +130,68 @@ export class ShipmentService {
 
       let variantId = item.timberVariantId;
       if (!variantId && item.thicknessMm && item.widthMm && item.lengthMm && item.species) {
+        const tMm = Math.round(Number(item.thicknessMm));
+        const wMm = Math.round(Number(item.widthMm));
+        const lMm = Math.round(Number(item.lengthMm));
+        const spec = String(item.species).trim().toUpperCase();
+        const grd = (item.grade || 'STANDARD').toUpperCase();
+
         const found = await this.prisma.timberVariant.findFirst({
           where: {
-            company_id: companyId,
-            species: { equals: item.species, mode: 'insensitive' },
-            thickness: Math.round(Number(item.thicknessMm)),
-            width: Math.round(Number(item.widthMm)),
-            length: Math.round(Number(item.lengthMm)),
+            company_id: targetCompanyId,
+            species: { equals: spec, mode: 'insensitive' },
+            thickness: tMm,
+            width: wMm,
+            length: lMm,
           },
         });
-        if (found) variantId = found.id;
+
+        if (found) {
+          variantId = found.id;
+        } else {
+          // Auto create variant for seamless inventory tracking
+          let genericProduct = await this.prisma.product.findFirst({
+            where: { company_id: targetCompanyId, code: spec },
+          });
+          if (!genericProduct) {
+            let unit = await this.prisma.unit.findFirst({
+              where: { company_id: targetCompanyId, name: 'M3' },
+            });
+            if (!unit) {
+              unit = await this.prisma.unit.create({
+                data: { company_id: targetCompanyId, name: 'M3' },
+              });
+            }
+            genericProduct = await this.prisma.product.create({
+              data: {
+                company_id: targetCompanyId,
+                name: `KAYU ${spec}`,
+                code: spec,
+                unit_id: unit.id,
+                purchase_price: 0,
+                selling_price: 0,
+                status: true,
+              },
+            });
+          }
+
+          const skuCode = `${spec}-${grd}-${tMm}X${wMm}X${lMm}`;
+          const newVar = await this.prisma.timberVariant.create({
+            data: {
+              company_id: targetCompanyId,
+              productId: genericProduct.id,
+              species: spec,
+              grade: grd,
+              thickness: tMm,
+              width: wMm,
+              length: lMm,
+              sku: skuCode,
+              barcode: `V-${skuCode}-${Date.now().toString().slice(-4)}`,
+              volumePerPiece: (tMm * wMm * lMm) / 1000000000,
+            },
+          });
+          variantId = newVar.id;
+        }
       }
 
       processedItems.push({
@@ -151,6 +214,7 @@ export class ShipmentService {
         shipmentNumber,
         shipmentDate: shipmentDate ? new Date(shipmentDate) : undefined,
         warehouseId,
+        destinationWarehouseId: destinationWarehouseId || undefined,
         vehicleId: vehicleId || undefined,
         driverId: driverId || undefined,
         fusoName,
@@ -170,6 +234,8 @@ export class ShipmentService {
         },
       } as any,
       include: {
+        warehouse: true,
+        destinationWarehouse: true,
         items: { include: { timberVariant: true } },
       },
     });
@@ -292,6 +358,21 @@ export class ShipmentService {
             item.volumeM3,
             item.batch,
           );
+
+          // If this shipment transfers stock to another warehouse, record TRANSFER_IN at destination
+          if (shipment.destinationWarehouseId) {
+            await this.inventoryLedgerService.createMovement(
+              tx,
+              shipment.destinationWarehouseId,
+              item.timberVariantId,
+              'IN',
+              'TRANSFER_IN',
+              shipment.id,
+              item.quantityPcs,
+              item.volumeM3,
+              item.batch,
+            );
+          }
         }
       }
 
@@ -338,6 +419,21 @@ export class ShipmentService {
             item.volumeM3,
             item.batch,
           );
+
+          // If this shipment transferred stock to another warehouse, reverse it at destination
+          if (shipment.destinationWarehouseId) {
+            await this.inventoryLedgerService.createMovement(
+              tx,
+              shipment.destinationWarehouseId,
+              item.timberVariantId,
+              'OUT',
+              'TRANSFER_OUT',
+              shipment.id,
+              item.quantityPcs,
+              item.volumeM3,
+              item.batch,
+            );
+          }
         }
 
         if (item.salesOrderItemId) {
@@ -406,6 +502,7 @@ export class ShipmentService {
       where,
       include: {
         warehouse: true,
+        destinationWarehouse: true,
         vehicle: true,
         driver: true,
         customer: true,
@@ -425,6 +522,7 @@ export class ShipmentService {
       where,
       include: {
         warehouse: true,
+        destinationWarehouse: true,
         vehicle: true,
         driver: true,
         customer: true,

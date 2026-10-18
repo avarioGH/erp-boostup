@@ -884,6 +884,28 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               });
             });
 
+            // 4. Shipment / Pindahan Stok Antar Gudang (Fuso)
+            // Kurangi stok di gudang asal muat dan tambahkan di gudang tujuan transfer
+            const activeShipments = (partai?.shipments || shipmentsList || []).filter((s: any) => s.status === 'CONFIRMED');
+            activeShipments.forEach((s: any) => {
+              const fromWh = s.warehouseId || partai?.warehouseId;
+              const toWh = s.destinationWarehouseId;
+              const shipPcs = Number(s.totalPcs || 0);
+              const shipM3 = Number(s.totalVolumeM3 || 0);
+
+              if (fromWh) {
+                const originRec = getOrCreateWh(fromWh);
+                originRec.sawnTimberPcs = Math.max(0, originRec.sawnTimberPcs - shipPcs);
+                originRec.sawnTimberM3 = Math.max(0, Number((originRec.sawnTimberM3 - shipM3).toFixed(4)));
+              }
+
+              if (toWh) {
+                const destRec = getOrCreateWh(toWh);
+                destRec.sawnTimberPcs += shipPcs;
+                destRec.sawnTimberM3 = Number((destRec.sawnTimberM3 + shipM3).toFixed(4));
+              }
+            });
+
             const whList = Object.values(whMap);
 
             if (whList.length === 0) {

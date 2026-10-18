@@ -290,8 +290,12 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
             <div className="h-px w-full bg-border/50"></div>
 
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tujuan / Pembeli</p>
-              <p className="font-semibold text-foreground/90">{shipment.destinationName || shipment.customer?.name || "-"}</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-emerald-600" /> Tujuan {shipment.destinationWarehouse ? "/ Gudang Tujuan" : ""}
+              </p>
+              <p className="font-semibold text-foreground/90">
+                {shipment.destinationWarehouse?.name ? `${shipment.destinationWarehouse.name} (Pindah Gudang)` : (shipment.destinationName || shipment.customer?.name || "-")}
+              </p>
               {shipment.destinationAddress && <p className="text-xs text-muted-foreground mt-0.5">{shipment.destinationAddress}</p>}
             </div>
 

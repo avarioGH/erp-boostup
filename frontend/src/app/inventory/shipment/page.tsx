@@ -252,7 +252,7 @@ export default function ShipmentListPage() {
                               <div className="text-[12px] text-muted-foreground">{driver}</div>
                             </td>
                             <td className="py-3 px-5 font-medium text-foreground/80">
-                              {dest}
+                              {s.destinationWarehouse?.name ? `${s.destinationWarehouse.name} (Pindah)` : dest}
                             </td>
                             <td className="py-3 px-5 text-right font-semibold text-foreground">
                               {pcs.toLocaleString("id-ID")}

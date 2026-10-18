@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { MasterDataAPI, InventoryAPI, ShipmentAPI, TimberAPI } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -10,32 +10,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
-  Loader2, ArrowLeft, Plus, Trash2, Truck, Box, Package2, Save, 
-  MapPin, UserSquare2, Layers, AlertTriangle, CheckCircle2, PackageCheck 
+  Loader2, ArrowLeft, Plus, Trash2, Truck, Save, 
+  MapPin, AlertTriangle, CheckCircle2, PackageCheck, ArrowDown,
+  Layers, Warehouse as WarehouseIcon
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface TallyItem {
-  timberVariantId?: string;
   species: string;
   productCategory: string;
-  thicknessCm: number;
-  widthCm: number;
-  lengthCm: number;
-  quantityPcs: number;
+  thicknessCm: number | string;
+  widthCm: number | string;
+  lengthCm: number | string;
+  quantityPcs: number | string;
   volumeM3: number;
-  availablePcs?: number;
-  availableM3?: number;
-  isManual?: boolean;
+  notes?: string;
 }
 
 export default function CreateShipmentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const partaiId = searchParams.get("partaiId") || "";
+
   const [warehouses, setWarehouses] = useState<any[]>([]);
-  const [stocks, setStocks] = useState<any[]>([]);
-  const [loadingStocks, setLoadingStocks] = useState(false);
+  const [speciesList, setSpeciesList] = useState<any[]>([]);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
@@ -45,15 +43,26 @@ export default function CreateShipmentPage() {
     policeNumber: "",
     driverName: "",
     shipmentDate: new Date().toISOString().slice(0, 10),
-    warehouseId: "",
-    destinationName: "",
+    warehouseId: "",             // Gudang Asal
+    destinationWarehouseId: "",  // Gudang Tujuan (Pindah Stok)
+    destinationName: "",         // Atau Nama Pembeli / Tujuan Eksternal
     destinationAddress: "",
+    notes: "",
+  });
+
+  const createEmptyRow = (defaultSpecies = "MERANTI", defaultCat = "BALOK"): TallyItem => ({
+    species: defaultSpecies,
+    productCategory: defaultCat,
+    thicknessCm: "",
+    widthCm: "",
+    lengthCm: "",
+    quantityPcs: "",
+    volumeM3: 0,
     notes: "",
   });
 
   const [items, setItems] = useState<TallyItem[]>([
     {
-      timberVariantId: "",
       species: "MERANTI",
       productCategory: "BALOK",
       thicknessCm: 15,
@@ -61,70 +70,45 @@ export default function CreateShipmentPage() {
       lengthCm: 400,
       quantityPcs: 10,
       volumeM3: 0.15,
-      availablePcs: undefined,
-      isManual: false,
     },
+    {
+      species: "MERANTI",
+      productCategory: "BALOK",
+      thicknessCm: 12,
+      widthCm: 20,
+      lengthCm: 400,
+      quantityPcs: 15,
+      volumeM3: 0.144,
+    },
+    createEmptyRow(),
+    createEmptyRow(),
+    createEmptyRow(),
   ]);
 
-  // Load Warehouses on mount
+  // Load Warehouses & Master Species
   useEffect(() => {
-    InventoryAPI.getWarehouses()
-      .then((res: any) => {
-        const whList = res?.data || res || [];
-        setWarehouses(whList);
-        if (whList.length > 0 && !form.warehouseId) {
-          const firstWh = whList[0].id;
-          setForm(f => ({ ...f, warehouseId: firstWh }));
-          loadStocksForWarehouse(firstWh);
-        }
-      })
-      .catch((err: any) => console.error("Gagal load gudang:", err));
+    Promise.all([
+      InventoryAPI.getWarehouses().catch(() => []),
+      MasterDataAPI.getSpecies().catch(() => []),
+    ]).then(([whRes, spRes]: any[]) => {
+      const whList = whRes?.data || whRes || [];
+      const spList = spRes?.data || (Array.isArray(spRes) ? spRes : []);
+      setWarehouses(whList);
+      setSpeciesList(spList);
+
+      if (whList.length > 0) {
+        setForm(f => ({
+          ...f,
+          warehouseId: f.warehouseId || whList[0]?.id || "",
+          destinationWarehouseId: f.destinationWarehouseId || (whList.length > 1 ? whList[1]?.id : ""),
+        }));
+      }
+    }).catch(console.error);
   }, []);
-
-  // Load stocks whenever warehouse changes
-  const loadStocksForWarehouse = async (whId: string) => {
-    if (!whId) return;
-    setLoadingStocks(true);
-    try {
-      const res = await TimberAPI.getTimberStock({ locationId: whId, take: 500 });
-      const rawItems = res?.items || res?.data?.items || res?.data || (Array.isArray(res) ? res : []);
-      // Normalize items
-      const normalized = rawItems.map((s: any) => {
-        const v = s.timberVariant || s.variant || {};
-        return {
-          id: s.id,
-          locationId: s.locationId || s.warehouseId,
-          timberVariantId: s.timberVariantId || s.variantId || v.id,
-          currentPcs: s.currentPcs !== undefined ? s.currentPcs : s.quantityPCS || 0,
-          currentVolumeM3: s.currentVolumeM3 !== undefined ? s.currentVolumeM3 : s.volumeM3 || 0,
-          variant: {
-            id: v.id || s.timberVariantId,
-            sku: v.sku || "VAR",
-            species: v.species || "MERANTI",
-            grade: v.grade || "STANDARD",
-            thickness: v.thickness || v.thicknessMm || 0,
-            width: v.width || v.widthMm || 0,
-            length: v.length || v.lengthMm || 0,
-          }
-        };
-      }).filter((s: any) => s.currentPcs > 0);
-
-      setStocks(normalized);
-    } catch (e) {
-      console.error("Gagal load data stok gudang:", e);
-    } finally {
-      setLoadingStocks(false);
-    }
-  };
-
-  const handleWarehouseChange = (whId: string) => {
-    setForm(f => ({ ...f, warehouseId: whId }));
-    loadStocksForWarehouse(whId);
-  };
 
   const calculateVolume = (t: number, l: number, p: number, qty: number) => {
     if (!t || !l || !p || !qty) return 0;
-    // T, L, P in cm -> vol in m3 = (T * L * P) / 1,000,000 * qty
+    // T (cm) * L (cm) * P (cm) * Qty / 1,000,000
     return Number(((t * l * p * qty) / 1000000).toFixed(4));
   };
 
@@ -132,108 +116,83 @@ export default function CreateShipmentPage() {
     const updated = [...items];
     (updated[index] as any)[field] = value;
 
-    if (field === 'thicknessCm' || field === 'widthCm' || field === 'lengthCm' || field === 'quantityPcs') {
-      const t = Number(updated[index].thicknessCm) || 0;
-      const l = Number(updated[index].widthCm) || 0;
-      const p = Number(updated[index].lengthCm) || 0;
-      const q = Number(updated[index].quantityPcs) || 0;
-      updated[index].volumeM3 = calculateVolume(t, l, p, q);
+    const t = parseFloat(String(updated[index].thicknessCm).replace(",", ".")) || 0;
+    const l = parseFloat(String(updated[index].widthCm).replace(",", ".")) || 0;
+    const p = parseFloat(String(updated[index].lengthCm).replace(",", ".")) || 0;
+    const q = parseInt(String(updated[index].quantityPcs)) || 0;
+
+    // Auto classify Balok vs Reng if default
+    if (field === 'thicknessCm' || field === 'widthCm') {
+      if (t >= 10 || l >= 15) {
+        updated[index].productCategory = "BALOK";
+      } else if (t > 0 && l > 0 && t < 10 && l < 15) {
+        updated[index].productCategory = "RENG";
+      }
     }
 
+    updated[index].volumeM3 = calculateVolume(t, l, p, q);
     setItems(updated);
   };
 
-  const handleSelectStockVariant = (index: number, variantId: string) => {
-    const updated = [...items];
+  const fillDown = (index: number, field: keyof TallyItem) => {
+    if (index === 0) return;
+    const prevValue = items[index - 1][field];
+    handleItemChange(index, field, prevValue);
+  };
 
-    if (variantId === "MANUAL") {
-      updated[index].timberVariantId = "";
-      updated[index].isManual = true;
-      updated[index].availablePcs = undefined;
-      updated[index].availableM3 = undefined;
-      setItems(updated);
-      return;
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, rowIdx: number, field: string) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      // If pressing enter on last row, add a new row
+      if (rowIdx === items.length - 1) {
+        addItemRow();
+      }
+      setTimeout(() => {
+        const nextInput = document.querySelector<HTMLInputElement>(`input[data-row="${rowIdx + 1}"][data-field="${field}"]`);
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.select();
+        }
+      }, 50);
     }
-
-    const selectedStock = stocks.find(s => s.timberVariantId === variantId);
-    if (selectedStock && selectedStock.variant) {
-      const v = selectedStock.variant;
-      const tCm = (v.thickness || 0) / 10;
-      const lCm = (v.width || 0) / 10;
-      const pCm = (v.length || 0) / 10;
-
-      // Auto detect Balok vs Reng
-      const autoCat = (tCm >= 10 || lCm >= 15) ? "BALOK" : "RENG";
-      const currentQty = updated[index].quantityPcs || 1;
-
-      updated[index].timberVariantId = variantId;
-      updated[index].isManual = false;
-      updated[index].species = v.species || "MERANTI";
-      updated[index].productCategory = autoCat;
-      updated[index].thicknessCm = tCm;
-      updated[index].widthCm = lCm;
-      updated[index].lengthCm = pCm;
-      updated[index].availablePcs = selectedStock.currentPcs;
-      updated[index].availableM3 = selectedStock.currentVolumeM3;
-      updated[index].volumeM3 = calculateVolume(tCm, lCm, pCm, currentQty);
-    }
-
-    setItems(updated);
   };
 
   const addItemRow = () => {
-    // If stocks are available, default to first available stock item
-    const firstStock = stocks[0];
-    if (firstStock && firstStock.variant) {
-      const v = firstStock.variant;
-      const tCm = (v.thickness || 0) / 10;
-      const lCm = (v.width || 0) / 10;
-      const pCm = (v.length || 0) / 10;
-      setItems([
-        ...items,
-        {
-          timberVariantId: firstStock.timberVariantId,
-          species: v.species || "MERANTI",
-          productCategory: (tCm >= 10 || lCm >= 15) ? "BALOK" : "RENG",
-          thicknessCm: tCm,
-          widthCm: lCm,
-          lengthCm: pCm,
-          quantityPcs: 1,
-          volumeM3: calculateVolume(tCm, lCm, pCm, 1),
-          availablePcs: firstStock.currentPcs,
-          availableM3: firstStock.currentVolumeM3,
-          isManual: false,
-        },
-      ]);
-    } else {
-      setItems([
-        ...items,
-        {
-          timberVariantId: "",
-          species: "MERANTI",
-          productCategory: "BALOK",
-          thicknessCm: 10,
-          widthCm: 20,
-          lengthCm: 400,
-          quantityPcs: 10,
-          volumeM3: 0.8,
-          availablePcs: undefined,
-          isManual: true,
-        },
-      ]);
-    }
+    const last = items[items.length - 1];
+    const newRow = createEmptyRow(last?.species || "MERANTI", last?.productCategory || "BALOK");
+    setItems([...items, newRow]);
+  };
+
+  const addMultipleRows = (count: number = 5) => {
+    const last = items[items.length - 1];
+    const newRows = Array.from({ length: count }, () => 
+      createEmptyRow(last?.species || "MERANTI", last?.productCategory || "BALOK")
+    );
+    setItems([...items, ...newRows]);
   };
 
   const removeItemRow = (index: number) => {
-    if (items.length <= 1) return;
+    if (items.length <= 1) {
+      setItems([createEmptyRow()]);
+      return;
+    }
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const totalPcs = items.reduce((sum, i) => sum + (Number(i.quantityPcs) || 0), 0);
-  const totalM3 = items.reduce((sum, i) => sum + (Number(i.volumeM3) || 0), 0);
+  // Valid rows have dimensions and qty > 0
+  const validItems = items.filter(i => {
+    const t = parseFloat(String(i.thicknessCm).replace(",", ".")) || 0;
+    const l = parseFloat(String(i.widthCm).replace(",", ".")) || 0;
+    const p = parseFloat(String(i.lengthCm).replace(",", ".")) || 0;
+    const q = parseInt(String(i.quantityPcs)) || 0;
+    return t > 0 && l > 0 && p > 0 && q > 0;
+  });
 
-  // Check if any row exceeds warehouse stock
-  const hasOverStock = items.some(i => i.availablePcs !== undefined && i.quantityPcs > i.availablePcs);
+  const totalPcs = validItems.reduce((sum, i) => sum + (parseInt(String(i.quantityPcs)) || 0), 0);
+  const totalM3 = validItems.reduce((sum, i) => sum + (Number(i.volumeM3) || 0), 0);
+
+  const selectedOriginWh = warehouses.find(w => w.id === form.warehouseId);
+  const selectedDestWh = warehouses.find(w => w.id === form.destinationWarehouseId);
 
   const handleSubmit = async (e: React.FormEvent, autoConfirm: boolean = false) => {
     e.preventDefault();
@@ -243,19 +202,23 @@ export default function CreateShipmentPage() {
       setError("Pilih gudang asal muat terlebih dahulu");
       return;
     }
-    if (items.length === 0 || totalPcs <= 0) {
-      setError("Tambahkan minimal satu baris muatan dengan jumlah > 0");
+
+    if (validItems.length === 0 || totalPcs <= 0) {
+      setError("Tambahkan minimal satu baris muatan kayu dengan ukuran dan jumlah Pcs > 0");
       return;
     }
 
-    if (autoConfirm && hasOverStock) {
-      if (!confirm("Beberapa item melebihi stok fisik gudang yang tercatat. Lanjutkan tetap potong stok?")) {
-        return;
-      }
+    if (form.warehouseId === form.destinationWarehouseId && form.destinationWarehouseId) {
+      setError("Gudang asal dan gudang tujuan tidak boleh sama");
+      return;
     }
 
     setLoading(true);
     try {
+      // Determine final destination name display
+      const destWhObj = warehouses.find(w => w.id === form.destinationWarehouseId);
+      const destName = form.destinationName || (destWhObj ? destWhObj.name : "Tujuan Pengiriman");
+
       const payload = {
         shipmentNumber: form.shipmentNumber,
         fusoName: form.fusoName || form.shipmentNumber,
@@ -263,26 +226,32 @@ export default function CreateShipmentPage() {
         driverName: form.driverName,
         shipmentDate: form.shipmentDate ? new Date(form.shipmentDate).toISOString() : new Date().toISOString(),
         warehouseId: form.warehouseId,
-        destinationName: form.destinationName,
-        destinationAddress: form.destinationAddress,
+        destinationWarehouseId: form.destinationWarehouseId || undefined,
+        destinationName: destName,
+        destinationAddress: form.destinationAddress || (destWhObj?.address || ""),
         notes: form.notes,
         partaiId: partaiId || undefined,
         autoConfirm: autoConfirm,
-        items: items.map(i => ({
-          timberVariantId: i.timberVariantId || undefined,
-          species: i.species,
-          productCategory: i.productCategory,
-          thicknessMm: (Number(i.thicknessCm) || 0) * 10,
-          widthMm: (Number(i.widthCm) || 0) * 10,
-          lengthMm: (Number(i.lengthCm) || 0) * 10,
-          quantityPcs: Number(i.quantityPcs) || 0,
-          volumeM3: Number(i.volumeM3) || 0,
-        })),
+        items: validItems.map(i => {
+          const t = parseFloat(String(i.thicknessCm).replace(",", ".")) || 0;
+          const l = parseFloat(String(i.widthCm).replace(",", ".")) || 0;
+          const p = parseFloat(String(i.lengthCm).replace(",", ".")) || 0;
+          const q = parseInt(String(i.quantityPcs)) || 0;
+          return {
+            species: (i.species || "MERANTI").trim().toUpperCase(),
+            productCategory: i.productCategory || "BALOK",
+            thicknessMm: t * 10,
+            widthMm: l * 10,
+            lengthMm: p * 10,
+            quantityPcs: q,
+            volumeM3: Number(((t * l * p * q) / 1000000).toFixed(4)),
+          };
+        }),
       };
 
       const res = await ShipmentAPI.createShipment(payload);
       if (autoConfirm) {
-        alert("Surat muat berhasil disimpan dan stok gudang otomatis dipotong!");
+        alert("Muatan Fuso berhasil disimpan dan stok volume M³ otomatis dipindahkan!");
       }
       if (partaiId) {
         router.push(`/inventory/partai/${partaiId}?tab=shipment`);
@@ -296,11 +265,22 @@ export default function CreateShipmentPage() {
     }
   };
 
-  const selectedWarehouse = warehouses.find(w => w.id === form.warehouseId);
-
   return (
     <div className="space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-20 px-4 md:px-6 box-border">
       
+      {/* Master Species Datalist */}
+      <datalist id="species-options">
+        {speciesList.map((s, idx) => (
+          <option key={s.id || idx} value={s.name || s.code} />
+        ))}
+        <option value="MERANTI" />
+        <option value="BENGKIRAI" />
+        <option value="KERUING" />
+        <option value="KAPUR" />
+        <option value="ULIN" />
+        <option value="CAMPURAN" />
+      </datalist>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
         <div className="flex items-center gap-4">
@@ -313,11 +293,11 @@ export default function CreateShipmentPage() {
                 <Truck className="w-5 h-5" />
               </span>
               <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-                Buat Surat Tally Muatan Fuso
+                Surat Jalan & Pindahan Stok Fuso
               </h1>
             </div>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Pilih kayu dari stok gudang, catat armada pengangkut, dan kurangi stok otomatis saat diberangkatkan.
+              Isi ukuran dimensi (T × L × P) dan Pcs untuk memindahkan kubikasi (M³) antar gudang atau kirim ke pembeli.
             </p>
           </div>
         </div>
@@ -331,17 +311,26 @@ export default function CreateShipmentPage() {
       )}
 
       <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
-        {/* Armada & Destinasi Form */}
+        
+        {/* Warehouse Transfer Header Card */}
         <Card className="bg-card rounded-xl border border-border shadow-sm">
           <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Truck className="w-4 h-4 text-amber-600" /> Informasi Armada & Tujuan Pengiriman
+            <CardTitle className="text-base font-bold flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Truck className="w-4 h-4 text-amber-600" /> Informasi Armada & Perpindahan Stok
+              </span>
+              {selectedOriginWh && selectedDestWh && (
+                <Badge variant="outline" className="font-mono text-xs bg-amber-50 text-amber-700 border-amber-300">
+                  {selectedOriginWh.name} ➔ {selectedDestWh.name}
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              
               <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-muted-foreground">No. Surat Muat</Label>
+                <Label className="text-xs uppercase font-bold text-muted-foreground">No. Surat Jalan / Muat</Label>
                 <Input 
                   value={form.shipmentNumber} 
                   onChange={e => setForm({ ...form, shipmentNumber: e.target.value })} 
@@ -351,11 +340,11 @@ export default function CreateShipmentPage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-muted-foreground">Nama Fuso / Truk</Label>
+                <Label className="text-xs uppercase font-bold text-muted-foreground">Nama Armada / Fuso</Label>
                 <Input 
                   value={form.fusoName} 
                   onChange={e => setForm({ ...form, fusoName: e.target.value })} 
-                  placeholder="e.g. FUSO 01 / TRUK 1" 
+                  placeholder="e.g. FUSO 01 / TRUK KALIMANTAN" 
                   required 
                 />
               </div>
@@ -381,7 +370,7 @@ export default function CreateShipmentPage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-muted-foreground">Tanggal Muat</Label>
+                <Label className="text-xs uppercase font-bold text-muted-foreground">Tanggal Muat / Berangkat</Label>
                 <Input 
                   type="date" 
                   value={form.shipmentDate} 
@@ -390,16 +379,18 @@ export default function CreateShipmentPage() {
                 />
               </div>
 
-              {/* Warehouse selector showing clean names */}
+              {/* GUDANG ASAL */}
               <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-muted-foreground flex items-center justify-between">
-                  <span>Gudang Asal Muat (Sumber Stok)</span>
-                  {loadingStocks && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+                <Label className="text-xs uppercase font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                  <WarehouseIcon className="w-3.5 h-3.5" /> Gudang Asal (Kayu Berkurang)
                 </Label>
-                <Select value={form.warehouseId} onValueChange={(v: string | null) => handleWarehouseChange(v || "")}>
-                  <SelectTrigger className="font-semibold">
-                    <SelectValue placeholder="Pilih gudang...">
-                      {selectedWarehouse ? (selectedWarehouse.name || selectedWarehouse.code || selectedWarehouse.id) : "Pilih gudang..."}
+                <Select 
+                  value={form.warehouseId} 
+                  onValueChange={(v: string | null) => setForm(f => ({ ...f, warehouseId: v || "" }))}
+                >
+                  <SelectTrigger className="font-semibold border-amber-300 dark:border-amber-700 bg-amber-50/20">
+                    <SelectValue placeholder="Pilih gudang asal...">
+                      {selectedOriginWh ? (selectedOriginWh.name || selectedOriginWh.code) : "Pilih gudang asal..."}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -410,135 +401,140 @@ export default function CreateShipmentPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                {stocks.length > 0 && (
-                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                    ✓ {stocks.length} varian kayu tersedia di gudang ini
-                  </p>
-                )}
-                {stocks.length === 0 && !loadingStocks && form.warehouseId && (
-                  <p className="text-[11px] text-amber-600 font-medium">
-                    ⚠️ Belum ada stok kayu jadi terdaftar di gudang ini.
-                  </p>
-                )}
+              </div>
+
+              {/* GUDANG TUJUAN */}
+              <div className="space-y-2">
+                <Label className="text-xs uppercase font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                  <WarehouseIcon className="w-3.5 h-3.5" /> Gudang Tujuan (Kayu Bertambah)
+                </Label>
+                <Select 
+                  value={form.destinationWarehouseId} 
+                  onValueChange={(v: string | null) => {
+                    const sel = warehouses.find(w => w.id === v);
+                    setForm(f => ({ 
+                      ...f, 
+                      destinationWarehouseId: v || "",
+                      destinationName: sel ? sel.name : f.destinationName 
+                    }));
+                  }}
+                >
+                  <SelectTrigger className="font-semibold border-emerald-300 dark:border-emerald-700 bg-emerald-50/20">
+                    <SelectValue placeholder="Pilih gudang tujuan transfer...">
+                      {selectedDestWh ? (selectedDestWh.name || selectedDestWh.code) : "Pilih gudang tujuan transfer..."}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {warehouses.map(w => (
+                      <SelectItem 
+                        key={w.id} 
+                        value={w.id} 
+                        disabled={w.id === form.warehouseId}
+                        className="font-medium"
+                      >
+                        {w.name || w.code || w.id} {w.id === form.warehouseId ? "(Gudang Asal)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-muted-foreground">Tujuan / Nama Pembeli</Label>
+                <Label className="text-xs uppercase font-bold text-muted-foreground">Keterangan / Tujuan Eksternal</Label>
                 <Input 
                   value={form.destinationName} 
                   onChange={e => setForm({ ...form, destinationName: e.target.value })} 
-                  placeholder="e.g. Pak Heri (Surabaya)" 
-                  required 
+                  placeholder="e.g. Gudang Surabaya / Pembeli" 
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-muted-foreground">Catatan / Keterangan</Label>
+              <div className="space-y-2 sm:col-span-2 md:col-span-4">
+                <Label className="text-xs uppercase font-bold text-muted-foreground">Catatan Tambahan</Label>
                 <Input 
                   value={form.notes} 
                   onChange={e => setForm({ ...form, notes: e.target.value })} 
-                  placeholder="e.g. Muatan ex Sampit / Kalteng" 
+                  placeholder="e.g. Muatan ex Sampit / Kalteng via Pelabuhan Kumai" 
                 />
               </div>
+
             </div>
           </CardContent>
         </Card>
 
-        {/* Tally Muat Table Connected to Stock */}
+        {/* Excel Spreadsheet Style Tally Input Table */}
         <Card className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-          <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10 flex flex-row items-center justify-between">
+          <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="text-base font-bold flex items-center gap-2">
-                <PackageCheck className="w-4 h-4 text-emerald-600" /> Rincian Tally Muatan (Terhubung ke Stok Gudang)
+                <PackageCheck className="w-4 h-4 text-emerald-600" /> Rincian Ukuran & Batang Kayu Dimuat
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
-                Pilih ukuran dari stok kayu yang tersedia di gudang asal. Volume M³ dan sisa stok akan dihitung otomatis.
+                Ketik ukuran Tebal (T), Lebar (L), Panjang (P), dan Jumlah Pcs. Volume M³ dihitung otomatis sesuai rumus industri kayu: (T × L × P × Pcs) / 1.000.000.
               </CardDescription>
             </div>
-            <Button type="button" onClick={addItemRow} size="sm" className="bg-amber-600 hover:bg-amber-700 text-white font-semibold">
-              <Plus className="w-4 h-4 mr-1.5" /> Tambah Baris
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button type="button" onClick={addItemRow} size="sm" variant="outline" className="font-semibold text-xs h-8">
+                <Plus className="w-3.5 h-3.5 mr-1" /> Tambah Baris
+              </Button>
+              <Button type="button" onClick={() => addMultipleRows(5)} size="sm" variant="secondary" className="font-semibold text-xs h-8">
+                +5 Baris
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto w-full">
-              <table className="min-w-[1000px] w-full text-xs sm:text-sm">
-                <thead className="bg-muted/40 border-b border-border">
+              <table className="min-w-[950px] w-full text-xs sm:text-sm">
+                <thead className="bg-muted/50 border-b border-border">
                   <tr>
-                    <th className="p-3 text-center w-12 font-semibold">No</th>
-                    <th className="p-3 text-left w-72 font-semibold">Ambil dari Stok Gudang</th>
-                    <th className="p-3 text-left w-32 font-semibold">Kategori</th>
-                    <th className="p-3 text-center w-36 font-semibold">Dimensi (T × L × P cm)</th>
-                    <th className="p-3 text-right w-24 font-semibold">Stok Ada</th>
-                    <th className="p-3 text-right w-28 font-semibold">Pcs Dimuat</th>
-                    <th className="p-3 text-right w-28 font-semibold">Volume (M³)</th>
-                    <th className="p-3 text-center w-16 font-semibold">Aksi</th>
+                    <th className="p-2.5 text-center w-12 font-semibold">No</th>
+                    <th className="p-2.5 text-left w-48 font-semibold">Jenis Kayu</th>
+                    <th className="p-2.5 text-left w-36 font-semibold">Kategori</th>
+                    <th className="p-2.5 text-center w-24 font-semibold">Tebal (cm)</th>
+                    <th className="p-2.5 text-center w-24 font-semibold">Lebar (cm)</th>
+                    <th className="p-2.5 text-center w-28 font-semibold">Panjang (cm)</th>
+                    <th className="p-2.5 text-center w-28 font-semibold">Pcs (Batang)</th>
+                    <th className="p-2.5 text-right w-36 font-semibold">Volume (M³)</th>
+                    <th className="p-2.5 text-center w-14 font-semibold">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item, idx) => {
-                    const isOver = item.availablePcs !== undefined && item.quantityPcs > item.availablePcs;
-                    const remainingStock = item.availablePcs !== undefined ? item.availablePcs - item.quantityPcs : null;
+                    const rowM3 = Number(item.volumeM3 || 0);
 
                     return (
-                      <tr key={idx} className={`border-b border-border/50 hover:bg-muted/20 ${isOver ? 'bg-red-50/20 dark:bg-red-950/10' : ''}`}>
-                        <td className="p-3 text-center text-muted-foreground font-semibold">
+                      <tr key={idx} className="border-b border-border/50 hover:bg-muted/20">
+                        <td className="p-2 text-center text-muted-foreground font-semibold">
                           {idx + 1}
                         </td>
 
-                        {/* Stok Selection Dropdown */}
-                        <td className="p-3">
-                          <Select 
-                            value={item.isManual ? "MANUAL" : (item.timberVariantId || "MANUAL")} 
-                            onValueChange={(val: string | null) => handleSelectStockVariant(idx, val || "MANUAL")}
-                          >
-                            <SelectTrigger className="h-9 font-medium text-xs">
-                              <SelectValue placeholder="Pilih stok gudang..." />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-72">
-                              {stocks.length > 0 && (
-                                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/50 rounded mb-1">
-                                  STOK TERSEDIA DI GUDANG INI
-                                </div>
-                              )}
-                              {stocks.map(s => {
-                                const v = s.variant;
-                                const t = (v.thickness || 0) / 10;
-                                const l = (v.width || 0) / 10;
-                                const p = (v.length || 0) / 10;
-                                return (
-                                  <SelectItem key={s.timberVariantId} value={s.timberVariantId} className="text-xs">
-                                    <span className="font-bold text-foreground">{v.species}</span> ({v.grade}) - {t}×{l}×{p} cm • <span className="font-bold text-emerald-600">Stok: {s.currentPcs} pcs</span> ({Number(s.currentVolumeM3.toFixed(3))} m³)
-                                  </SelectItem>
-                                );
-                              })}
-                              <div className="border-t my-1"></div>
-                              <SelectItem value="MANUAL" className="text-xs text-amber-700 dark:text-amber-400 font-semibold">
-                                ✎ Input Ukuran Manual (Non-Stok)
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-
-                          {/* Detail / Status Stok */}
-                          <div className="mt-1 flex items-center gap-2">
-                            {item.availablePcs !== undefined ? (
-                              <span className={`text-[11px] font-medium ${isOver ? 'text-red-600 font-bold' : 'text-emerald-600'}`}>
-                                Tersedia: <strong>{item.availablePcs} pcs</strong>
-                                {remainingStock !== null && (
-                                  <span className="text-muted-foreground ml-1">
-                                    (Sisa: {remainingStock} pcs)
-                                  </span>
-                                )}
-                              </span>
-                            ) : (
-                              <span className="text-[11px] text-muted-foreground italic">
-                                Input ukuran manual bebas
-                              </span>
+                        {/* Jenis Kayu (Species) */}
+                        <td className="p-2">
+                          <div className="flex items-center gap-1">
+                            <Input 
+                              list="species-options"
+                              data-row={idx}
+                              data-field="species"
+                              value={item.species} 
+                              onChange={e => handleItemChange(idx, 'species', e.target.value.toUpperCase())}
+                              onKeyDown={e => handleKeyDown(e, idx, 'species')}
+                              className="h-9 text-xs font-semibold uppercase" 
+                              placeholder="MERANTI"
+                            />
+                            {idx > 0 && (
+                              <button 
+                                type="button" 
+                                onClick={() => fillDown(idx, 'species')} 
+                                title="Samakan dengan baris atasnya (Fill Down)"
+                                className="h-7 w-6 text-muted-foreground hover:text-foreground text-[11px] p-0 shrink-0 border rounded flex items-center justify-center bg-muted/40"
+                              >
+                                ↓
+                              </button>
                             )}
                           </div>
                         </td>
 
-                        {/* Kategori */}
-                        <td className="p-3">
+                        {/* Kategori Kayu */}
+                        <td className="p-2">
                           <Select 
                             value={item.productCategory} 
                             onValueChange={(v: string | null) => handleItemChange(idx, 'productCategory', v || 'BALOK')}
@@ -547,92 +543,122 @@ export default function CreateShipmentPage() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="BALOK">Balok / Main Size</SelectItem>
+                              <SelectItem value="BALOK">Balok / Main</SelectItem>
                               <SelectItem value="RENG">Reng / Papan</SelectItem>
-                              <SelectItem value="AFKIR_BS">BS / Afkir</SelectItem>
+                              <SelectItem value="AFKIR_BS">Afkir / BS</SelectItem>
                               <SelectItem value="AIR_DRY">Air Dry (AD)</SelectItem>
                               <SelectItem value="FJL">FJL</SelectItem>
                             </SelectContent>
                           </Select>
                         </td>
 
-                        {/* Dimensi T x L x P */}
-                        <td className="p-3">
-                          {item.isManual ? (
-                            <div className="flex items-center gap-1">
-                              <Input 
-                                type="number" 
-                                step="0.1" 
-                                min="0.1" 
-                                placeholder="T"
-                                value={item.thicknessCm} 
-                                onChange={e => handleItemChange(idx, 'thicknessCm', parseFloat(e.target.value) || 0)}
-                                className="h-9 w-12 text-center text-xs font-mono p-1" 
-                                title="Tebal cm"
-                              />
-                              <span className="text-muted-foreground">×</span>
-                              <Input 
-                                type="number" 
-                                step="0.1" 
-                                min="0.1" 
-                                placeholder="L"
-                                value={item.widthCm} 
-                                onChange={e => handleItemChange(idx, 'widthCm', parseFloat(e.target.value) || 0)}
-                                className="h-9 w-12 text-center text-xs font-mono p-1" 
-                                title="Lebar cm"
-                              />
-                              <span className="text-muted-foreground">×</span>
-                              <Input 
-                                type="number" 
-                                step="1" 
-                                min="1" 
-                                placeholder="P"
-                                value={item.lengthCm} 
-                                onChange={e => handleItemChange(idx, 'lengthCm', parseFloat(e.target.value) || 0)}
-                                className="h-9 w-14 text-center text-xs font-mono p-1" 
-                                title="Panjang cm"
-                              />
-                            </div>
-                          ) : (
-                            <div className="text-center font-mono font-semibold text-xs py-1.5 px-2 bg-muted/40 rounded border border-border/50">
-                              {item.thicknessCm} × {item.widthCm} × {item.lengthCm} cm
-                            </div>
-                          )}
+                        {/* Tebal cm */}
+                        <td className="p-2">
+                          <div className="flex items-center gap-1">
+                            <Input 
+                              type="number" 
+                              step="0.1" 
+                              data-row={idx}
+                              data-field="thicknessCm"
+                              placeholder="T"
+                              value={item.thicknessCm} 
+                              onChange={e => handleItemChange(idx, 'thicknessCm', e.target.value)}
+                              onKeyDown={e => handleKeyDown(e, idx, 'thicknessCm')}
+                              className="h-9 text-center text-xs font-mono font-semibold" 
+                            />
+                            {idx > 0 && (
+                              <button 
+                                type="button" 
+                                onClick={() => fillDown(idx, 'thicknessCm')} 
+                                title="Copy dari atas"
+                                className="h-7 w-5 text-muted-foreground text-[10px] shrink-0 border rounded flex items-center justify-center bg-muted/40"
+                              >
+                                ↓
+                              </button>
+                            )}
+                          </div>
                         </td>
 
-                        {/* Stok Ada */}
-                        <td className="p-3 text-right font-medium text-muted-foreground">
-                          {item.availablePcs !== undefined ? `${item.availablePcs} pcs` : "-"}
+                        {/* Lebar cm */}
+                        <td className="p-2">
+                          <div className="flex items-center gap-1">
+                            <Input 
+                              type="number" 
+                              step="0.1" 
+                              data-row={idx}
+                              data-field="widthCm"
+                              placeholder="L"
+                              value={item.widthCm} 
+                              onChange={e => handleItemChange(idx, 'widthCm', e.target.value)}
+                              onKeyDown={e => handleKeyDown(e, idx, 'widthCm')}
+                              className="h-9 text-center text-xs font-mono font-semibold" 
+                            />
+                            {idx > 0 && (
+                              <button 
+                                type="button" 
+                                onClick={() => fillDown(idx, 'widthCm')} 
+                                title="Copy dari atas"
+                                className="h-7 w-5 text-muted-foreground text-[10px] shrink-0 border rounded flex items-center justify-center bg-muted/40"
+                              >
+                                ↓
+                              </button>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Panjang cm */}
+                        <td className="p-2">
+                          <div className="flex items-center gap-1">
+                            <Input 
+                              type="number" 
+                              step="1" 
+                              data-row={idx}
+                              data-field="lengthCm"
+                              placeholder="P"
+                              value={item.lengthCm} 
+                              onChange={e => handleItemChange(idx, 'lengthCm', e.target.value)}
+                              onKeyDown={e => handleKeyDown(e, idx, 'lengthCm')}
+                              className="h-9 text-center text-xs font-mono font-semibold" 
+                            />
+                            {idx > 0 && (
+                              <button 
+                                type="button" 
+                                onClick={() => fillDown(idx, 'lengthCm')} 
+                                title="Copy dari atas"
+                                className="h-7 w-5 text-muted-foreground text-[10px] shrink-0 border rounded flex items-center justify-center bg-muted/40"
+                              >
+                                ↓
+                              </button>
+                            )}
+                          </div>
                         </td>
 
                         {/* Pcs Dimuat */}
-                        <td className="p-3">
+                        <td className="p-2">
                           <Input 
                             type="number" 
                             min="1" 
+                            data-row={idx}
+                            data-field="quantityPcs"
+                            placeholder="Qty"
                             value={item.quantityPcs} 
-                            onChange={e => handleItemChange(idx, 'quantityPcs', parseInt(e.target.value) || 0)}
-                            className={`h-9 text-right font-bold ${isOver ? 'border-red-500 text-red-600 bg-red-50/30' : ''}`} 
+                            onChange={e => handleItemChange(idx, 'quantityPcs', e.target.value)}
+                            onKeyDown={e => handleKeyDown(e, idx, 'quantityPcs')}
+                            className="h-9 text-center font-bold text-xs" 
                           />
-                          {isOver && (
-                            <p className="text-[10px] text-red-600 font-bold mt-1 text-right">
-                              ⚠️ Melebihi stok!
-                            </p>
-                          )}
                         </td>
 
                         {/* Volume M3 */}
-                        <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">
-                          {Number(item.volumeM3.toFixed(4))}
+                        <td className="p-2 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                          {rowM3 > 0 ? rowM3.toFixed(4) : "-"}
                         </td>
 
                         {/* Aksi Hapus */}
-                        <td className="p-3 text-center">
+                        <td className="p-2 text-center">
                           <Button 
                             type="button" 
                             variant="ghost" 
                             size="sm" 
-                            disabled={items.length <= 1}
                             onClick={() => removeItemRow(idx)}
                             className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
@@ -645,14 +671,14 @@ export default function CreateShipmentPage() {
                 </tbody>
                 <tfoot className="bg-muted/40 font-bold border-t-2 border-border">
                   <tr>
-                    <td colSpan={5} className="p-3 text-right uppercase tracking-wider">
-                      TOTAL MUATAN FUSO:
+                    <td colSpan={6} className="p-3 text-right uppercase tracking-wider text-xs">
+                      TOTAL HASIL KUBIKASI MUATAN FUSO:
                     </td>
-                    <td className="p-3 text-right font-bold text-foreground text-sm">
-                      {totalPcs.toLocaleString("id-ID")} pcs
+                    <td className="p-3 text-center font-bold text-foreground text-sm">
+                      {totalPcs.toLocaleString("id-ID")} Pcs
                     </td>
-                    <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400 text-base">
-                      {Number(totalM3.toFixed(4))} m³
+                    <td className="p-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 text-base">
+                      {Number(totalM3.toFixed(4))} M³
                     </td>
                     <td></td>
                   </tr>
@@ -662,18 +688,19 @@ export default function CreateShipmentPage() {
           </CardContent>
         </Card>
 
-        {/* Capacity Indicator & Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-card rounded-xl border border-border shadow-sm">
+        {/* Summary Card & Submit Actions */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 md:p-5 bg-card rounded-xl border border-border shadow-sm">
           <div className="flex items-center gap-3">
-            <span className="p-2 bg-emerald-500/10 text-emerald-600 rounded-lg">
-              <Truck className="w-5 h-5" />
+            <span className="p-2.5 bg-emerald-500/10 text-emerald-600 rounded-lg">
+              <Truck className="w-6 h-6" />
             </span>
             <div>
               <p className="text-sm font-bold text-foreground">
-                Estimasi Muatan: {Number(totalM3.toFixed(3))} M³ ({totalPcs} Pcs)
+                Total Muatan: {Number(totalM3.toFixed(4))} M³ ({totalPcs} Batang Kayu)
               </p>
-              <p className="text-xs text-muted-foreground">
-                Kapasitas standar Fuso: ~30 - 35 M³. {totalM3 > 35 ? <span className="text-amber-600 font-bold">⚠️ Perhatian: Muatan melebihi 35 M³</span> : "Muatan dalam batas aman."}
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {selectedOriginWh ? selectedOriginWh.name : "Gudang Asal"} berkurang <strong className="text-amber-600">{Number(totalM3.toFixed(4))} M³</strong> 
+                {selectedDestWh ? ` ➔ ${selectedDestWh.name} bertambah ${Number(totalM3.toFixed(4))} M³` : ""}
               </p>
             </div>
           </div>
@@ -688,7 +715,7 @@ export default function CreateShipmentPage() {
               Batal
             </Button>
 
-            {/* Simpan Draft (Belum potong stok) */}
+            {/* Simpan Draft */}
             <Button 
               type="submit" 
               disabled={loading} 
@@ -696,10 +723,10 @@ export default function CreateShipmentPage() {
               className="font-semibold border shadow-sm"
             >
               {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-              Simpan Draft (Belum Potong Stok)
+              Simpan Draft
             </Button>
 
-            {/* Simpan & Potong Stok Sekarang */}
+            {/* Simpan & Pindahkan Stok Sekarang */}
             <Button 
               type="button" 
               disabled={loading} 
@@ -707,7 +734,7 @@ export default function CreateShipmentPage() {
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
             >
               {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-              Simpan & Potong Stok Sekarang
+              Simpan & Pindahkan Stok Sekarang
             </Button>
           </div>
         </div>
