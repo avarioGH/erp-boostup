@@ -744,14 +744,16 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     return sortedTrimmedLogs.slice(start, start + trimmingPageSize);
   }, [sortedTrimmedLogs, trimmingPage, trimmingPageSize]);
 
-  // 4. Input (WIP) sorted newest first
+  // 4. Input (WIP) sorted newest first (filter out direct purchase virtual jobs)
   const sortedInputLogs = React.useMemo(() => {
-    return [...(partai?.inputLogs || [])].sort((a: any, b: any) => {
-      const timeA = new Date(a.inputDate || a.createdAt || 0).getTime();
-      const timeB = new Date(b.inputDate || b.createdAt || 0).getTime();
-      if (timeB !== timeA) return timeB - timeA;
-      return (b.inputNumber || "").localeCompare(a.inputNumber || "");
-    });
+    return [...(partai?.inputLogs || [])]
+      .filter((a: any) => !a.inputNumber?.startsWith("DIRECT-PURCHASE"))
+      .sort((a: any, b: any) => {
+        const timeA = new Date(a.inputDate || a.createdAt || 0).getTime();
+        const timeB = new Date(b.inputDate || b.createdAt || 0).getTime();
+        if (timeB !== timeA) return timeB - timeA;
+        return (b.inputNumber || "").localeCompare(a.inputNumber || "");
+      });
   }, [partai?.inputLogs]);
 
   const paginatedInputLogs = React.useMemo(() => {
@@ -1866,7 +1868,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                         </div>
                       </div>
                       
-                      <div className="md:col-span-3 flex justify-end items-center gap-2">
+                      <div className="md:col-span-3 flex justify-end items-center gap-1.5">
                         <Button 
                           size="sm" 
                           className="h-8 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs shadow-sm"
@@ -1887,6 +1889,18 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                           }}
                         >
                           {isExpanded ? "Tutup" : "Buka Isi"}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" 
+                          title="Hapus Pekerjaan Input WIP"
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            handleDeleteInput(i.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                         <Button 
                           variant="secondary" 
@@ -2126,6 +2140,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                     <TableHead className="text-right">M&sup3;</TableHead>
                     <TableHead className="text-center">Grade</TableHead>
                     <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-center w-[90px]">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -2181,6 +2196,28 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                         </TableCell>
                         <TableCell className="text-center">
                           {i.parentStatus === 'POSTED' ? <Badge className="bg-emerald-500">POSTED</Badge> : <Badge variant="outline">DRAFT</Badge>}
+                        </TableCell>
+                        <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" 
+                              title="Lihat Bundle Output"
+                              onClick={() => router.push(`/inventory/sawn-timber/output/${i.parentOutputId}?partaiId=${id}&tab=output`)}
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" 
+                              title="Hapus / Batalkan Output"
+                              onClick={() => handleDeleteOutput(i.parentOutputId)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );

@@ -122,11 +122,25 @@ export class TrimmedLogService {
       if (avgDia === 0 && data.averageDiameter) {
         avgDia = Number(data.averageDiameter);
       }
+      if (avgDia === 0 && parent.averageDiameter) {
+        avgDia = Number(parent.averageDiameter);
+      }
       const rndDia = this.calcService.calculateRoundedDiameter(avgDia);
-      const grossVol = this.calcService.calculateRawLogGrossVolume(
-        rndDia,
-        reqLen,
-      );
+
+      let grossVol = 0;
+      if (Number(data.diameter1) > 0 || Number(data.diameter2) > 0 || avgDia > 0) {
+        grossVol = this.calcService.calculateRevisedRawLogVolume(
+          reqLen,
+          Number(data.diameter1) || Number(parent.diameter1) || 0,
+          Number(data.diameter2) || Number(parent.diameter2) || 0,
+          avgDia,
+        );
+      } else {
+        grossVol = this.calcService.calculateRawLogGrossVolume(
+          rndDia,
+          reqLen,
+        );
+      }
 
       let gerowongVol = 0;
       if (data.gerowong > 0) {

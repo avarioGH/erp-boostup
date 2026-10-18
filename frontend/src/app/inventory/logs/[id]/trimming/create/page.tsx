@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect, use } from"react"
 import { TimberAPI, InventoryAPI } from"@/lib/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
@@ -71,14 +71,16 @@ export default function CreateTrimmedLogPage({ params }: { params: Promise<{ id:
  else if (rnd < 90) diaClass ="80 - 89 Cm";
  else if (rnd < 100) diaClass ="90 - 99 Cm";
 
- const gross = (Math.pow(rnd, 2) * len * 0.7854) / 10000;
- const gVol = (Math.pow(gDia, 2) * (len - tLen) * 0.7854) / 10000;
- const tVol = (Math.pow(rnd, 2) * tLen * 0.7854) / 10000;
- const net = gross - gVol - tVol;
+ const lenCm = len <= 50 ? len * 100 : len;
+ const gross = rnd > 0 && lenCm > 0 ? (Math.pow(rnd, 2) * lenCm * 0.7854) / 1000000 : 0;
+ const tLenCm = tLen <= 50 ? tLen * 100 : tLen;
+ const gVol = gDia > 0 && lenCm > tLenCm ? (Math.pow(gDia, 2) * (lenCm - tLenCm) * 0.7854) / 1000000 : 0;
+ const tVol = rnd > 0 && tLenCm > 0 ? (Math.pow(rnd, 2) * tLenCm * 0.7854) / 1000000 : 0;
+ const net = Math.max(0, gross - gVol - tVol);
 
  setPreview({
  avg: Math.round(avg * 100) / 100, rnd, diaClass,
- gross: Math.round(gross * 100) / 100, net: Math.round(net * 1000000) / 1000000
+ gross: Math.round(gross * 10000) / 10000, net: Math.round(net * 10000) / 10000
  })
  }, [form])
 
