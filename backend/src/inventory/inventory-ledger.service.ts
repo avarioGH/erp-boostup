@@ -19,7 +19,9 @@ export type ReferenceType =
   | 'TIMBER_PURCHASE_REVERSAL'
   | 'TIMBER_SHIPMENT'
   | 'TIMBER_SHIPMENT_REVERSAL'
-  | 'STOCK_OPNAME_ADJUSTMENT';
+  | 'STOCK_OPNAME_ADJUSTMENT'
+  | 'BATCH_RECLASSIFICATION'
+  | 'BATCH_RECLASSIFICATION_REVERSAL';
 
 @Injectable()
 export class InventoryLedgerService {
@@ -128,12 +130,24 @@ export class InventoryLedgerService {
       if (type === 'OUT') updateData.stockOutPcs = { increment: quantityPcs };
       if (type === 'ADJ') updateData.adjustmentPcs = { decrement: quantityPcs }; // Net negative adjustment
       updateData.currentPcs = { decrement: quantityPcs };
-      updateData.currentVolumeM3 = { decrement: volumeM3 };
+      // Exact/Full deduction vs normal decrement:
+      // Always decrement volumeM3 so that delta saldo is exactly equal to movement volume.
+      // If stock.currentVolumeM3 === volumeM3 exactly, set to 0 to prevent IEEE-754 underflow (-0 or -1e-17).
+      // If there is any positive residual (stock.currentVolumeM3 > volumeM3), preserve it via decrement.
+      if (stock.currentVolumeM3 === volumeM3) {
+        updateData.currentVolumeM3 = { set: 0 };
+      } else {
+        updateData.currentVolumeM3 = { decrement: volumeM3 };
+      }
     }
 
     let whereCondition: any = { id: stock.id };
     if (isDecreasing) {
       whereCondition.currentPcs = { gte: quantityPcs };
+      // Dual-Dimension Guard: Strict ledger conservation.
+      // Do not allow overdraw: available volume must be strictly >= requested volume.
+      // Clamping to set: 0 (above) only applies when stock.currentVolumeM3 === volumeM3 (or within 1e-6 of full balance).
+      whereCondition.currentVolumeM3 = { gte: volumeM3 };
     }
 
     const updateResult = await tx.timberStock.updateMany({
@@ -144,7 +158,7 @@ export class InventoryLedgerService {
     if (updateResult.count === 0) {
       if (isDecreasing) {
         throw new BadRequestException(
-          `Insufficient stock or concurrent modification for variant ${timberVariantId}. Required: ${quantityPcs}`,
+          `Insufficient stock (PCS or Volume M3) or concurrent modification for variant ${timberVariantId}. Required: ${quantityPcs} pcs, ${volumeM3} m3`,
         );
       } else {
         throw new BadRequestException(

@@ -1,5 +1,4 @@
 import { TimberSalesModule } from './sales/timber-sales.module';
-import { FixController } from './fix.controller';
 import { MasterDataModule } from './inventory/master-data/master-data.module';
 import { ApprovalModule } from './approval/approval.module';
 import { EcommerceModule } from './ecommerce/ecommerce.module';
@@ -45,6 +44,7 @@ import { DashboardModule } from './inventory/dashboard/dashboard.module';
 import { PartaiModule } from './inventory/partai/partai.module';
 
 import { PackingModule } from './inventory/packing/packing.module';
+import { BatchReclassificationModule } from './inventory/reclassification/batch-reclassification.module';
 
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
@@ -101,8 +101,9 @@ import { SalesReturnModule } from './sales/sales-return/sales-return.module';
     ShipmentModule,
     OpnameModule,
     PackingModule,
+    BatchReclassificationModule,
   ],
-  controllers: [AppController, FixController],
+  controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}

@@ -121,6 +121,7 @@ model Company {
   Netting             Netting[]
   PurchaseReturn      PurchaseReturn[]
   SalesReturn         SalesReturn[]
+  batchReclassifications TimberBatchReclassification[]
 }
 
 model CompanySetting {
@@ -320,6 +321,7 @@ model Warehouse {
   StockTransformationOutput  StockTransformationOutput[]
   PurchaseReturn             PurchaseReturn[]
   SalesReturn                SalesReturn[]
+  batchReclassifications     TimberBatchReclassification[]
 
   @@unique([company_id, code])
 }
@@ -2883,6 +2885,7 @@ model TimberVariant {
   timberShipmentItems     TimberShipmentItem[]
   timberStockOpnameItems  TimberStockOpnameItem[]
   timberStockReservations TimberStockReservation[]
+  batchReclassifications  TimberBatchReclassification[]
 
   @@unique([company_id, sku])
 }
@@ -3614,6 +3617,52 @@ model TimberStockOpnameItem {
   varianceVolumeM3    Float
 
   notes String?
+}
+
+// ==================================================
+// PHASE 22: ZERO-DELTA TIMBER BATCH RECLASSIFICATION
+// ==================================================
+
+model TimberBatchReclassification {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  company_id      String   @db.ObjectId
+  company         Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  reclassNumber   String   @unique
+  idempotencyKey  String   // Wajib non-null untuk mencegah duplicate null collision di MongoDB
+  date            DateTime @default(now())
+
+  warehouseId     String   @db.ObjectId
+  warehouse       Warehouse @relation(fields: [warehouseId], references: [id])
+
+  timberVariantId String   @db.ObjectId
+  timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
+
+  sourceBatch     String   @default("UNKNOWN")
+  targetBatch     String   // Verified Partai code
+
+  quantityPcs     Int
+  volumeM3        Float
+
+  status          String   @default("POSTED") // POSTED, REVERSED
+  reason          String
+  evidenceType    String   // PHYSICAL_OPNAME_APPROVED, PHYSICAL_TALLY_AUDITED, DELIVERY_DOC
+  evidenceRef     String?
+
+  createdBy       String   @db.ObjectId
+  approvedBy      String?  @db.ObjectId
+
+  reversedAt      DateTime?
+  reversedBy      String?  @db.ObjectId
+  reversalReason  String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([company_id, idempotencyKey])
+  @@index([company_id, warehouseId, timberVariantId])
+  @@index([company_id, status])
+  @@index([company_id, targetBatch])
 }
 
 // ==================================================

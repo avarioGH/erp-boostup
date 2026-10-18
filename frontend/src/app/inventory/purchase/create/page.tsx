@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Plus, X, ArrowLeft } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { SawnTimberSpreadsheet, SawnTallyRow } from "@/components/timber/sawn-timber-spreadsheet"
 
 
   const calculateLogVolume = (length: number, d1: number, d2: number, rtManual?: number) => {
@@ -690,260 +691,36 @@ export default function CreatePurchasePage() {
               </TabsList>
               
               <TabsContent value="sawn-timber" className="space-y-4">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b pb-3">
-                  <div>
-                    <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-                      <span>📋 Spreadsheet Pembelian Sawn Timber (Beli Masak)</span>
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Input seperti Excel: tekan <strong>Enter</strong> untuk langsung turun ke baris berikutnya di kolom yang sama. Baris kosong akan otomatis diabaikan saat disimpan.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Button type="button" variant="outline" size="sm" onClick={() => addSawnRows(1)}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> +1
-                    </Button>
-                    <Button type="button" variant="secondary" size="sm" onClick={() => addSawnRows(5)}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> +5
-                    </Button>
-                    <Button type="button" variant="secondary" size="sm" onClick={() => addSawnRows(10)}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> +10
-                    </Button>
-                    <Button type="button" variant="secondary" size="sm" onClick={() => addSawnRows(20)}>
-                      <Plus className="w-3.5 h-3.5 mr-1" /> +20 Baris
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-lg p-2.5 text-xs text-emerald-800 dark:text-emerald-300 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">⚡</span>
-                    <span><strong>Mode Excel Aktif:</strong> Ketik angka, tekan <strong>Enter</strong> untuk turun ke bawah. Jika baris habis, baris baru otomatis bertambah. Baris kosong tidak perlu dihapus.</span>
-                  </div>
-                  <span className="font-mono font-bold bg-background/80 px-2 py-0.5 rounded border text-[11px]">
-                    {form.items.filter((it: any) => (Number(it.purchaseLength || 0) > 0 || Number(it.purchaseThickness || 0) > 0 || Number(it.purchaseWidth || 0) > 0 || Number(it.volumeM3 || 0) > 0) && Number(it.quantityPcs || 0) > 0).length} / {form.items.length} Baris Terisi
-                  </span>
-                </div>
-
-                {/* TALLY SHEET GRID TABLE */}
-                <div className="overflow-x-auto border rounded-xl shadow-sm bg-card">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-muted/60 border-b text-muted-foreground font-semibold">
-                        <th className="py-2.5 px-2 text-center w-10">No</th>
-                        <th className="py-2.5 px-2 text-left w-36">Spesies / Jenis Kayu</th>
-                        <th className="py-2.5 px-2 text-center w-24">P (cm)</th>
-                        <th className="py-2.5 px-2 text-center w-24">T (cm)</th>
-                        <th className="py-2.5 px-2 text-center w-24">L (cm)</th>
-                        <th className="py-2.5 px-2 text-center w-20">Pcs</th>
-                        <th className="py-2.5 px-2 text-right w-28 text-emerald-700 dark:text-emerald-400 font-bold">Vol (m³)</th>
-                        <th className="py-2.5 px-2 text-center w-10"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {form.items.map((item: any, index: number) => {
-                        const p = Number(item.purchaseLength || 0);
-                        const t = Number(item.purchaseThickness || 0);
-                        const l = Number(item.purchaseWidth || 0);
-                        const pcs = Number(item.quantityPcs || 0);
-                        const vol = (p > 0 && t > 0 && l > 0 && pcs > 0)
-                          ? Number(((p * t * l * pcs) / 1000000).toFixed(4))
-                          : Number(item.volumeM3 || 0);
-
-                        return (
-                          <tr key={index} className="hover:bg-muted/30 transition-colors">
-                            <td className="py-1 px-2 text-center font-mono text-muted-foreground font-medium">
-                              {index + 1}
-                            </td>
-                            <td className="py-1 px-2">
-                              <select
-                                id={`sawn-species-${index}`}
-                                value={item.species || ""}
-                                onKeyDown={(e) => handleCellKeyDown(e, index, 'species', 'sawn', form.items.length, () => addSawnRows(1))}
-                                onChange={(e) => {
-                                  const newItems = [...form.items];
-                                  newItems[index].species = e.target.value.toUpperCase();
-                                  setForm({ ...form, items: newItems });
-                                }}
-                                className="h-8 text-xs font-semibold uppercase border border-input rounded px-2 w-full bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                              >
-                                <option value="">-- Pilih Spesies --</option>
-                                {speciesList.map((s: any) => (
-                                  <option key={s.id} value={s.name || s.code}>
-                                    {s.name} {s.code && s.code !== s.name ? `(${s.code})` : ''}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="py-1 px-2">
-                              <Input
-                                id={`sawn-purchaseLength-${index}`}
-                                type="number"
-                                step="any"
-                                value={item.purchaseLength || ""}
-                                onFocus={(e) => e.target.select()}
-                                onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseLength', 'sawn', form.items.length, () => addSawnRows(1))}
-                                onChange={(e) => {
-                                  const newItems = [...form.items];
-                                  const val = parseFloat(e.target.value) || 0;
-                                  newItems[index].purchaseLength = val;
-                                  const thick = Number(newItems[index].purchaseThickness || 0);
-                                  const wid = Number(newItems[index].purchaseWidth || 0);
-                                  const count = Number(newItems[index].quantityPcs || 0);
-                                  if (val > 0 && thick > 0 && wid > 0 && count > 0) {
-                                    newItems[index].volumeM3 = Number(((val * thick * wid * count) / 1000000).toFixed(4));
-                                  }
-                                  setForm({ ...form, items: newItems });
-                                }}
-                                placeholder="cth: 400"
-                                className="h-8 text-xs text-center font-mono"
-                              />
-                            </td>
-                            <td className="py-1 px-2">
-                              <Input
-                                id={`sawn-purchaseThickness-${index}`}
-                                type="number"
-                                step="any"
-                                value={item.purchaseThickness || ""}
-                                onFocus={(e) => e.target.select()}
-                                onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseThickness', 'sawn', form.items.length, () => addSawnRows(1))}
-                                onChange={(e) => {
-                                  const newItems = [...form.items];
-                                  const val = parseFloat(e.target.value) || 0;
-                                  newItems[index].purchaseThickness = val;
-                                  const len = Number(newItems[index].purchaseLength || 0);
-                                  const wid = Number(newItems[index].purchaseWidth || 0);
-                                  const count = Number(newItems[index].quantityPcs || 0);
-                                  if (len > 0 && val > 0 && wid > 0 && count > 0) {
-                                    newItems[index].volumeM3 = Number(((len * val * wid * count) / 1000000).toFixed(4));
-                                  }
-                                  setForm({ ...form, items: newItems });
-                                }}
-                                placeholder="cth: 12"
-                                className="h-8 text-xs text-center font-mono"
-                              />
-                            </td>
-                            <td className="py-1 px-2">
-                              <Input
-                                id={`sawn-purchaseWidth-${index}`}
-                                type="number"
-                                step="any"
-                                value={item.purchaseWidth || ""}
-                                onFocus={(e) => e.target.select()}
-                                onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseWidth', 'sawn', form.items.length, () => addSawnRows(1))}
-                                onChange={(e) => {
-                                  const newItems = [...form.items];
-                                  const val = parseFloat(e.target.value) || 0;
-                                  newItems[index].purchaseWidth = val;
-                                  const len = Number(newItems[index].purchaseLength || 0);
-                                  const thick = Number(newItems[index].purchaseThickness || 0);
-                                  const count = Number(newItems[index].quantityPcs || 0);
-                                  if (len > 0 && thick > 0 && val > 0 && count > 0) {
-                                    newItems[index].volumeM3 = Number(((len * thick * val * count) / 1000000).toFixed(4));
-                                  }
-                                  setForm({ ...form, items: newItems });
-                                }}
-                                placeholder="cth: 25"
-                                className="h-8 text-xs text-center font-mono"
-                              />
-                            </td>
-                            <td className="py-1 px-2">
-                              <Input
-                                id={`sawn-quantityPcs-${index}`}
-                                type="number"
-                                min="1"
-                                value={item.quantityPcs || ""}
-                                onFocus={(e) => e.target.select()}
-                                onKeyDown={(e) => handleCellKeyDown(e, index, 'quantityPcs', 'sawn', form.items.length, () => addSawnRows(1))}
-                                onChange={(e) => {
-                                  const newItems = [...form.items];
-                                  const val = parseInt(e.target.value) || 0;
-                                  newItems[index].quantityPcs = val;
-                                  const len = Number(newItems[index].purchaseLength || 0);
-                                  const thick = Number(newItems[index].purchaseThickness || 0);
-                                  const wid = Number(newItems[index].purchaseWidth || 0);
-                                  if (len > 0 && thick > 0 && wid > 0 && val > 0) {
-                                    newItems[index].volumeM3 = Number(((len * thick * wid * val) / 1000000).toFixed(4));
-                                  }
-                                  setForm({ ...form, items: newItems });
-                                }}
-                                placeholder="Pcs"
-                                className="h-8 text-xs text-center font-bold"
-                              />
-                            </td>
-                            <td className="py-1 px-2">
-                              <Input
-                                id={`sawn-volumeM3-${index}`}
-                                type="number"
-                                step="0.0001"
-                                value={item.volumeM3 !== undefined ? item.volumeM3 : vol}
-                                onFocus={(e) => e.target.select()}
-                                onKeyDown={(e) => handleCellKeyDown(e, index, 'volumeM3', 'sawn', form.items.length, () => addSawnRows(1))}
-                                onChange={(e) => {
-                                  const newItems = [...form.items];
-                                  newItems[index].volumeM3 = parseFloat(e.target.value) || 0;
-                                  setForm({ ...form, items: newItems });
-                                }}
-                                placeholder="0.0000"
-                                className="h-8 text-xs text-right font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/5"
-                              />
-                            </td>
-                            <td className="py-1 px-2 text-center">
-                              {form.items.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setForm({ ...form, items: form.items.filter((_, i) => i !== index) });
-                                  }}
-                                  className="text-muted-foreground hover:text-destructive p-1 rounded transition-colors"
-                                  title="Hapus Baris"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot className="bg-muted/40 font-bold border-t">
-                      <tr>
-                        <td colSpan={5} className="py-2.5 px-3 text-right">TOTAL KESELURUHAN:</td>
-                        <td className="py-2.5 px-2 text-center font-bold text-foreground">
-                          {form.items.reduce((sum, it) => sum + (Number(it.quantityPcs) || 0), 0)} Pcs
-                        </td>
-                        <td className="py-2.5 px-2 text-right text-emerald-600 dark:text-emerald-400 font-bold font-mono">
-                          {form.items.reduce((sum, it) => {
-                            const p = Number(it.purchaseLength || 0);
-                            const t = Number(it.purchaseThickness || 0);
-                            const l = Number(it.purchaseWidth || 0);
-                            const pcs = Number(it.quantityPcs || 0);
-                            const v = (it.volumeM3 !== undefined && it.volumeM3 > 0)
-                              ? Number(it.volumeM3)
-                              : ((p > 0 && t > 0 && l > 0 && pcs > 0) ? (p * t * l * pcs) / 1000000 : 0);
-                            return sum + v;
-                          }, 0).toFixed(4)} m³
-                        </td>
-                        <td></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 pt-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => addSawnRows(1)}>
-                    <Plus className="w-3.5 h-3.5 mr-1" /> +1 Baris
-                  </Button>
-                  <Button type="button" variant="secondary" size="sm" onClick={() => addSawnRows(5)}>
-                    <Plus className="w-3.5 h-3.5 mr-1" /> +5 Baris
-                  </Button>
-                  <Button type="button" variant="secondary" size="sm" onClick={() => addSawnRows(10)}>
-                    <Plus className="w-3.5 h-3.5 mr-1" /> +10 Baris
-                  </Button>
-                  <Button type="button" variant="secondary" size="sm" onClick={() => addSawnRows(20)}>
-                    <Plus className="w-3.5 h-3.5 mr-1" /> +20 Baris
-                  </Button>
-                </div>
+                <SawnTimberSpreadsheet
+                  initialRows={form.items.map((it: any) => ({
+                    species: it.species || "MERBAU",
+                    grade: it.grade || "A",
+                    thickness: it.purchaseThickness || "",
+                    width: it.purchaseWidth || "",
+                    length: it.purchaseLength || "",
+                    pcs: it.quantityPcs || "",
+                    m3: it.volumeM3 || 0,
+                  }))}
+                  speciesList={speciesList}
+                  defaultSpecies="MERBAU"
+                  showSpecies={true}
+                  onChange={(updatedRows: SawnTallyRow[]) => {
+                    const mappedItems = updatedRows.map(r => ({
+                      species: r.species || "MERBAU",
+                      grade: r.grade || "A",
+                      purchaseThickness: parseFloat(String(r.thickness).replace(",", ".")) || 0,
+                      purchaseWidth: parseFloat(String(r.width).replace(",", ".")) || 0,
+                      purchaseLength: parseFloat(String(r.length).replace(",", ".")) || 0,
+                      quantityPcs: parseInt(String(r.pcs)) || 0,
+                      volumeM3: Number(r.m3) || 0,
+                      unitPrice: 0,
+                      timberVariantId: r.timberVariantId || "",
+                      batch: "UNKNOWN",
+                      notes: r.species || "SAWN-TIMBER",
+                    }));
+                    setForm(prev => ({ ...prev, items: mappedItems }));
+                  }}
+                />
               </TabsContent>
 
               <TabsContent value="raw-log" className="space-y-4">

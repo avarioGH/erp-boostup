@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { TimberAPI, PurchaseAPI, MasterDataAPI } from "@/lib/api";
 import { CheckCircle2, Ruler, PackageCheck, Plus, Trash2, TrendingUp, AlertCircle } from "lucide-react";
+import { SawnTimberSpreadsheet, SawnTallyRow } from "@/components/timber/sawn-timber-spreadsheet";
 
 interface ReceiveLogModalProps {
   isOpen: boolean;
@@ -774,195 +775,50 @@ export function ReceiveLogModal({
               </div>
             </div>
 
-            <div className="overflow-x-auto border rounded-lg">
-              <Table className="text-xs">
-                <TableHeader className="bg-muted/30">
-                  <TableRow>
-                    <TableHead className="w-[36px] text-center">
-                      <Checkbox
-                        checked={
-                          sawnRows.length > 0 &&
-                          sawnRows.filter((r) => !r.isAlreadyReceived).every((r) => r.selected)
-                        }
-                        onCheckedChange={(checked) => {
-                          setSawnRows((prev) =>
-                            prev.map((r) => (r.isAlreadyReceived ? r : { ...r, selected: !!checked }))
-                          );
-                        }}
-                      />
-                    </TableHead>
-                    <TableHead className="w-[120px]">Spesies Kayu</TableHead>
-                    <TableHead className="w-[100px]">Tipe Produk</TableHead>
-                    <TableHead className="w-[75px]">Grade</TableHead>
-                    <TableHead className="w-[75px] text-center">T (cm)</TableHead>
-                    <TableHead className="w-[75px] text-center">L (cm)</TableHead>
-                    <TableHead className="w-[80px] text-center">P (cm)</TableHead>
-                    <TableHead className="w-[65px] text-center">PO Pcs</TableHead>
-                    <TableHead className="w-[75px] text-center">Fisik Pcs</TableHead>
-                    <TableHead className="w-[85px] text-right font-mono text-muted-foreground">Vol PO (m³)</TableHead>
-                    <TableHead className="w-[95px] text-right text-emerald-600 dark:text-emerald-400 font-bold font-mono">
-                      Vol Fisik (m³)
-                    </TableHead>
-                    <TableHead className="w-[80px] text-center">Rendemen</TableHead>
-                    <TableHead className="w-[70px] text-center">Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sawnRows.map((r, idx) => {
-                    const rowOrderedVol = Number(r.orderedVolM3 || 0);
-                    const rowActualVol = Number(r.volumeM3 || 0);
-                    const rowRendemen = rowOrderedVol > 0 ? (rowActualVol / rowOrderedVol) * 100 : 100;
-
-                    return (
-                      <TableRow
-                        key={idx}
-                        className={r.isAlreadyReceived ? "bg-muted/20 opacity-60" : "hover:bg-muted/30"}
-                      >
-                        <TableCell className="text-center p-2">
-                          <Checkbox
-                            checked={r.selected}
-                            disabled={r.isAlreadyReceived}
-                            onCheckedChange={(val) => handleSawnRowChange(idx, "selected", !!val)}
-                          />
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <input
-                            list={`species-list-${idx}`}
-                            className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs font-medium focus:ring-1 focus:ring-ring outline-none"
-                            value={r.species}
-                            disabled={r.isAlreadyReceived}
-                            onChange={(e) => handleSawnRowChange(idx, "species", e.target.value)}
-                            placeholder="Spesies kayu"
-                          />
-                          <datalist id={`species-list-${idx}`}>
-                            {speciesList.map((sp: any) => (
-                              <option key={sp.id || sp.name} value={sp.name} />
-                            ))}
-                          </datalist>
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <select
-                            className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs font-medium focus:ring-1 focus:ring-ring outline-none"
-                            value={r.productType}
-                            disabled={r.isAlreadyReceived}
-                            onChange={(e) => handleSawnRowChange(idx, "productType", e.target.value)}
-                          >
-                            <option value="BALOK">BALOK</option>
-                            <option value="PAPAN">PAPAN</option>
-                            <option value="RENG">RENG</option>
-                            <option value="AFKIR_BS">AFKIR_BS</option>
-                            <option value="AIR_DRY">AIR_DRY</option>
-                            <option value="FJL">FJL</option>
-                            <option value="LAINNYA">LAINNYA</option>
-                          </select>
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Input
-                            className="h-8 text-xs font-semibold uppercase"
-                            value={r.grade}
-                            disabled={r.isAlreadyReceived}
-                            onChange={(e) => handleSawnRowChange(idx, "grade", e.target.value)}
-                            placeholder="Grade"
-                          />
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Input
-                            type="number"
-                            step="any"
-                            className="h-8 text-xs text-right"
-                            value={r.thickness}
-                            disabled={r.isAlreadyReceived}
-                            onChange={(e) => handleSawnRowChange(idx, "thickness", e.target.value)}
-                            placeholder="T"
-                          />
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Input
-                            type="number"
-                            step="any"
-                            className="h-8 text-xs text-right"
-                            value={r.width}
-                            disabled={r.isAlreadyReceived}
-                            onChange={(e) => handleSawnRowChange(idx, "width", e.target.value)}
-                            placeholder="L"
-                          />
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Input
-                            type="number"
-                            step="any"
-                            className="h-8 text-xs text-right"
-                            value={r.length}
-                            disabled={r.isAlreadyReceived}
-                            onChange={(e) => handleSawnRowChange(idx, "length", e.target.value)}
-                            placeholder="P"
-                          />
-                        </TableCell>
-                        <TableCell className="text-center p-2 font-medium text-muted-foreground font-mono">
-                          {r.orderedPcs || 0}
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Input
-                            type="number"
-                            step="1"
-                            className="h-8 text-xs text-center font-bold"
-                            value={r.receivedPcs}
-                            disabled={r.isAlreadyReceived}
-                            onChange={(e) => handleSawnRowChange(idx, "receivedPcs", e.target.value)}
-                            placeholder="Pcs"
-                          />
-                        </TableCell>
-                        <TableCell className="p-2 text-right text-muted-foreground font-mono">
-                          {rowOrderedVol > 0 ? rowOrderedVol.toFixed(4) : "-"}
-                        </TableCell>
-                        <TableCell className="p-2 text-right bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold font-mono">
-                          {rowActualVol > 0 ? rowActualVol.toFixed(4) : "-"}
-                        </TableCell>
-                        <TableCell className="text-center p-2 font-mono text-xs">
-                          {rowOrderedVol > 0 ? (
-                            <span
-                              className={`font-semibold ${
-                                rowRendemen >= 100
-                                  ? "text-emerald-600"
-                                  : rowRendemen >= 90
-                                  ? "text-blue-600"
-                                  : "text-amber-600"
-                              }`}
-                            >
-                              {rowRendemen.toFixed(1)}%
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center p-1">
-                          {r.isCustomRow ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                              onClick={() => handleDeleteSawnRow(idx)}
-                              title="Hapus baris ini"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          ) : r.isAlreadyReceived ? (
-                            <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-600">
-                              Diterima
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[10px] text-amber-500 border-amber-500">
-                              PO
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+            <SawnTimberSpreadsheet
+              initialRows={sawnRows.map((r: any) => ({
+                species: r.species || "MERBAU",
+                grade: r.grade || "A",
+                thickness: r.thickness ?? "",
+                width: r.width ?? "",
+                length: r.length ?? "",
+                pcs: r.receivedPcs !== undefined && r.receivedPcs !== "" ? r.receivedPcs : (r.orderedPcs || ""),
+                m3: r.volumeM3 || 0,
+                timberVariantId: r.timberVariantId,
+                id: r.id,
+              }))}
+              speciesList={speciesList}
+              defaultSpecies="MERBAU"
+              showSpecies={true}
+              showGrade={true}
+              onChange={(updatedRows: SawnTallyRow[]) => {
+                const mapped = updatedRows.map((r: any) => {
+                  const pcsNum = parseInt(String(r.pcs)) || 0;
+                  const tNum = parseFloat(String(r.thickness).replace(",", ".")) || 0;
+                  const wNum = parseFloat(String(r.width).replace(",", ".")) || 0;
+                  const lNum = parseFloat(String(r.length).replace(",", ".")) || 0;
+                  const m3Num = Number(r.m3) || 0;
+                  return {
+                    id: r.id,
+                    timberVariantId: r.timberVariantId,
+                    species: r.species || "MERBAU",
+                    grade: r.grade || "A",
+                    productType: r.productType || "BALOK",
+                    thickness: tNum,
+                    width: wNum,
+                    length: lNum,
+                    orderedPcs: r.orderedPcs || 0,
+                    orderedVolM3: r.orderedVolM3 || 0,
+                    receivedPcs: pcsNum,
+                    volumeM3: m3Num,
+                    selected: pcsNum > 0 && (tNum > 0 || wNum > 0 || lNum > 0),
+                    isAlreadyReceived: false,
+                    isCustomRow: !r.id,
+                  };
+                });
+                setSawnRows(mapped);
+              }}
+            />
           </div>
         )}
 

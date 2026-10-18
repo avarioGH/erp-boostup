@@ -13,11 +13,17 @@ export class OpnameService {
     private ledger: InventoryLedgerService,
   ) {}
 
-  async createDraft(warehouseId: string, userId?: string) {
-    const warehouse = await this.prisma.warehouse.findUnique({
-      where: { id: warehouseId },
+  async createDraft(warehouseId: string, companyId: string, userId?: string) {
+    if (!companyId) {
+      throw new BadRequestException('Authenticated company context is required');
+    }
+
+    const warehouse = await this.prisma.warehouse.findFirst({
+      where: { id: warehouseId, company_id: companyId },
     });
-    if (!warehouse) throw new NotFoundException('Warehouse not found');
+    if (!warehouse) {
+      throw new NotFoundException('Warehouse not found or access denied');
+    }
 
     const stocks = await this.prisma.timberStock.findMany({
       where: { locationId: warehouseId },
@@ -26,7 +32,7 @@ export class OpnameService {
 
     return this.prisma.timberStockOpname.create({
       data: {
-        company_id: warehouse.company_id,
+        company_id: companyId,
         opnameNumber: `OPN-${Date.now()}`,
         warehouseId,
         status: 'DRAFT',
@@ -50,17 +56,25 @@ export class OpnameService {
 
   async updateCounts(
     id: string,
+    companyId: string,
     items: {
       itemId: string;
       physicalQuantityPcs: number;
       physicalVolumeM3: number;
     }[],
   ) {
-    const opname = await this.prisma.timberStockOpname.findUnique({
-      where: { id },
+    if (!companyId) {
+      throw new BadRequestException('Authenticated company context is required');
+    }
+
+    const opname = await this.prisma.timberStockOpname.findFirst({
+      where: { id, company_id: companyId },
       include: { items: true },
     });
-    if (!opname || opname.status !== 'DRAFT') {
+    if (!opname) {
+      throw new NotFoundException('Opname not found or access denied');
+    }
+    if (opname.status !== 'DRAFT') {
       throw new BadRequestException('Only DRAFT opnames can be updated');
     }
 
@@ -71,7 +85,9 @@ export class OpnameService {
 
         const varianceQuantityPcs =
           input.physicalQuantityPcs - item.systemQuantityPcs;
-        const varianceVolumeM3 = input.physicalVolumeM3 - item.systemVolumeM3;
+        const varianceVolumeM3 = Number(
+          (input.physicalVolumeM3 - item.systemVolumeM3).toFixed(4),
+        );
 
         await tx.timberStockOpnameItem.update({
           where: { id: input.itemId },
@@ -90,60 +106,124 @@ export class OpnameService {
     });
   }
 
-  async confirmOpname(id: string, userId?: string) {
-    const opname = await this.prisma.timberStockOpname.findUnique({
-      where: { id },
+  async confirmOpname(id: string, companyId: string, userId?: string) {
+    if (!companyId) {
+      throw new BadRequestException('Authenticated company context is required');
+    }
+
+    const opname = await this.prisma.timberStockOpname.findFirst({
+      where: { id, company_id: companyId },
       include: { items: true },
     });
-    if (!opname) throw new NotFoundException('Opname not found');
-    if (opname.status !== 'DRAFT')
+    if (!opname) {
+      throw new NotFoundException('Opname not found or access denied');
+    }
+    if (opname.status !== 'DRAFT') {
       throw new BadRequestException('Can only confirm DRAFT opnames');
+    }
 
     return this.prisma.$transaction(async (tx) => {
-      for (const item of opname.items) {
-        if (item.varianceQuantityPcs === 0 && item.varianceVolumeM3 === 0)
-          continue;
-
-        const type =
-          item.varianceQuantityPcs > 0 || item.varianceVolumeM3 > 0
-            ? 'IN'
-            : 'OUT';
-
-        // Ledger service throws if <= 0
-        const q = Math.abs(item.varianceQuantityPcs);
-        const v = Math.abs(item.varianceVolumeM3);
-
-        if (q > 0 && v > 0) {
-          await this.ledger.createMovement(
-            tx,
-            opname.warehouseId,
-            item.timberVariantId,
-            type,
-            'STOCK_OPNAME_ADJUSTMENT',
-            opname.id,
-            q,
-            v,
-            item.batch,
-          );
-        }
-      }
-      return tx.timberStockOpname.update({
-        where: { id },
+      // 1. Optimistic status guard against duplicate / concurrent confirmation
+      const updateStatusResult = await tx.timberStockOpname.updateMany({
+        where: { id, status: 'DRAFT', company_id: companyId },
         data: {
           status: 'CONFIRMED',
           confirmedBy: userId,
           confirmedAt: new Date(),
         },
+      });
+
+      if (updateStatusResult.count === 0) {
+        throw new BadRequestException(
+          'Opname is no longer in DRAFT status or is already confirmed/cancelled',
+        );
+      }
+
+      // 2. Validate variance signs and stale snapshots for every item
+      for (const item of opname.items) {
+        const dPcs = item.varianceQuantityPcs;
+        const dM3 = item.varianceVolumeM3;
+
+        // Skip items with zero variance
+        if (dPcs === 0 && Math.abs(dM3) < 0.0001) {
+          continue;
+        }
+
+        // Fix 1: Invariant check - PCS and M3 variances must be in the exact same direction and non-zero
+        const pcsPositive = dPcs > 0;
+        const pcsNegative = dPcs < 0;
+        const m3Positive = dM3 > 0.00001;
+        const m3Negative = dM3 < -0.00001;
+
+        if (
+          (pcsPositive && m3Negative) ||
+          (pcsNegative && m3Positive) ||
+          (dPcs === 0 && Math.abs(dM3) >= 0.0001) ||
+          (dPcs !== 0 && Math.abs(dM3) < 0.0001)
+        ) {
+          throw new BadRequestException(
+            `Inconsistent variance detected for variant ${item.timberVariantId} (batch: ${item.batch}). Quantity PCS variance (${dPcs}) and Volume M3 variance (${dM3}) must have the same directional sign and both be non-zero for physical stock adjustments.`,
+          );
+        }
+
+        // Fix 2: Stale snapshot guard - verify current stock still matches opname base snapshot
+        const currentStock = await tx.timberStock.findUnique({
+          where: {
+            locationId_timberVariantId_batch: {
+              locationId: opname.warehouseId,
+              timberVariantId: item.timberVariantId,
+              batch: item.batch,
+            },
+          },
+        });
+
+        const actualCurrentPcs = currentStock ? currentStock.currentPcs : 0;
+        const actualCurrentM3 = currentStock ? currentStock.currentVolumeM3 : 0;
+
+        if (
+          actualCurrentPcs !== item.systemQuantityPcs ||
+          Math.abs(actualCurrentM3 - item.systemVolumeM3) > 0.0001
+        ) {
+          throw new BadRequestException(
+            `Stale stock snapshot detected for variant ${item.timberVariantId} (batch: ${item.batch}). System stock changed since opname draft was created (Recorded baseline: ${item.systemQuantityPcs} pcs, ${item.systemVolumeM3} m3 | Current stock: ${actualCurrentPcs} pcs, ${actualCurrentM3} m3). Confirmation rejected; please refresh and recount.`,
+          );
+        }
+
+        const type = pcsPositive ? 'IN' : 'OUT';
+        const q = Math.abs(dPcs);
+        const v = Math.abs(dM3);
+
+        await this.ledger.createMovement(
+          tx,
+          opname.warehouseId,
+          item.timberVariantId,
+          type,
+          'STOCK_OPNAME_ADJUSTMENT',
+          opname.id,
+          q,
+          v,
+          item.batch,
+        );
+      }
+
+      return tx.timberStockOpname.findUnique({
+        where: { id },
         include: { items: true },
       });
     });
   }
 
-  async cancelOpname(id: string) {
-    const opname = await this.prisma.timberStockOpname.findUnique({
-      where: { id },
+  async cancelOpname(id: string, companyId: string) {
+    if (!companyId) {
+      throw new BadRequestException('Authenticated company context is required');
+    }
+
+    const opname = await this.prisma.timberStockOpname.findFirst({
+      where: { id, company_id: companyId },
     });
-    if (!opname) throw new NotFoundException('Opname not found');
+    if (!opname) {
+      throw new NotFoundException('Opname not found or access denied');
+    }
 
     if (opname.status === 'CONFIRMED') {
       throw new BadRequestException(
@@ -151,14 +231,37 @@ export class OpnameService {
       );
     }
 
-    return this.prisma.timberStockOpname.update({
-      where: { id },
+    if (opname.status === 'CANCELLED') {
+      throw new BadRequestException('Opname is already cancelled');
+    }
+
+    const result = await this.prisma.timberStockOpname.updateMany({
+      where: { id, company_id: companyId, status: 'DRAFT' },
       data: { status: 'CANCELLED' },
+    });
+
+    if (result.count === 0) {
+      throw new BadRequestException('Only DRAFT opnames can be cancelled');
+    }
+
+    return this.prisma.timberStockOpname.findUnique({
+      where: { id },
     });
   }
 
-  async reconcile() {
-    const stocks = await this.prisma.timberStock.findMany();
+  async reconcile(companyId?: string) {
+    const where: any = {};
+    if (companyId) {
+      // Find warehouses belonging to company
+      const warehouses = await this.prisma.warehouse.findMany({
+        where: { company_id: companyId },
+        select: { id: true },
+      });
+      const warehouseIds = warehouses.map((w) => w.id);
+      where.locationId = { in: warehouseIds };
+    }
+
+    const stocks = await this.prisma.timberStock.findMany({ where });
     const discrepancies: any[] = [];
 
     for (const stock of stocks) {

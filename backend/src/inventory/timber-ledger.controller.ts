@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Get,
   Post,
@@ -6,6 +6,8 @@
   Param,
   Query,
   UseGuards,
+  Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { StockTransferService } from './stock-transfer.service';
 import { StockAdjustmentService } from './stock-adjustment.service';
@@ -23,11 +25,26 @@ export class TimberLedgerController {
     private readonly prisma: PrismaService,
   ) {}
 
+  private getCompanyId(req: any): string {
+    const companyId = req.user?.company_id || req.user?.companyId;
+    if (!companyId) {
+      throw new BadRequestException('Authenticated company context is required');
+    }
+    return companyId;
+  }
+
   @Get('timber-movements')
   @Permissions('read_inventory')
-  async listMovements(@Query() query: any) {
+  async listMovements(@Query() query: any, @Req() req: any) {
+    const companyId = this.getCompanyId(req);
     const { skip = 0, take = 50, search, type, referenceType } = query;
-    const where: any = {};
+    const where: any = {
+      timberStock: {
+        location: {
+          company_id: companyId,
+        },
+      },
+    };
     if (type) where.type = type;
     if (referenceType) where.referenceType = referenceType;
     if (search) {

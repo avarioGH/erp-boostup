@@ -1,0 +1,50 @@
+# DOCKER-COMPOSE TESTBED SPECIFICATION (NON-PRODUCTION ISOLATED ENVIRONMENT)
+# Verified for Phase 05.3
+version: '3.8'
+
+services:
+  # Isolated Non-Production MongoDB Replica Set for Prisma Multi-Document Transactions
+  mongo-testbed:
+    image: mongo:6.0
+    container_name: tatalora-mongo-testbed
+    # Must use --replSet with a named set and listen on all interfaces inside container
+    command: ["--replSet", "rsTest", "--bind_ip_all", "--port", "27017"]
+    ports:
+      # Host port 27018 forwards to container port 27017 (avoids collision with default 27017)
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=tatalora_integration_test
+    volumes:
+      - mongo_test_data:/data/db
+    healthcheck:
+      # Preflight healthcheck strictly verifies that a PRIMARY node is elected and ready
+      test: >
+        mongosh --port 27017 --quiet --eval "
+          try {
+            var hello = db.hello();
+            if (hello && hello.isWritablePrimary === true) {
+              quit(0);
+            }
+          } catch(e) {}
+          try {
+            var st = rs.status();
+            if (st.ok === 1 && st.myState === 1) {
+              quit(0);
+            }
+          } catch(e) {}
+          try {
+            rs.initiate({
+              _id: 'rsTest',
+              members: [{ _id: 0, host: '127.0.0.1:27017' }]
+            });
+          } catch(e) {}
+          quit(1);
+        "
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+volumes:
+  # Isolated volume ensures test state does not touch any operational or production data
+  mongo_test_data:
