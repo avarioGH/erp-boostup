@@ -159,12 +159,14 @@ export function SawnTimberSpreadsheet({
   };
 
   // Fill down column value from current cell to bottom
-  const handleFillDown = (colKey: "thickness" | "width" | "length" | "pcs" | "species" | "grade", fromRow: number) => {
+  const handleFillDown = (colKey: "thickness" | "width" | "length" | "pcs" | "species" | "grade", fromRow?: number) => {
     setRows(prev => {
-      if (fromRow < 0 || fromRow >= prev.length) return prev;
-      const sourceVal = prev[fromRow][colKey];
+      const targetRowIdx = typeof fromRow === "number" && fromRow >= 0 && fromRow < prev.length ? fromRow : 0;
+      const sourceVal = prev[targetRowIdx]?.[colKey];
+      if (sourceVal === undefined || sourceVal === null || sourceVal === "") return prev;
+
       const next = prev.map((r, i) => {
-        if (i <= fromRow) return r;
+        if (i < targetRowIdx) return r;
         const target = { ...r, [colKey]: sourceVal };
         const t = parseFlexibleNumber(target.thickness);
         const w = parseFlexibleNumber(target.width);
@@ -182,9 +184,16 @@ export function SawnTimberSpreadsheet({
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
     rowIndex: number,
-    colKey: "thickness" | "width" | "length" | "pcs"
+    colKey: "species" | "grade" | "thickness" | "width" | "length" | "pcs"
   ) => {
-    const colOrder: Array<"thickness" | "width" | "length" | "pcs"> = ["thickness", "width", "length", "pcs"];
+    const colOrder: Array<"species" | "grade" | "thickness" | "width" | "length" | "pcs"> = [
+      ...(showSpecies ? (["species"] as const) : []),
+      ...(showGrade ? (["grade"] as const) : []),
+      "thickness",
+      "width",
+      "length",
+      "pcs",
+    ];
     const currentColIdx = colOrder.indexOf(colKey);
 
     if (e.key === "Enter") {
@@ -491,19 +500,16 @@ export function SawnTimberSpreadsheet({
                   {showSpecies && (
                     <td className="py-0.5 px-1 border-r border-border/40">
                       <input
-                        list={`species-list-${idx}`}
+                        id={`tally-cell-${idx}-species`}
+                        list="sawn-spreadsheet-species-list"
                         disabled={readOnly}
                         className="h-8 w-full rounded border border-transparent hover:border-input focus:border-primary bg-transparent px-2 text-xs font-semibold focus:outline-none uppercase"
                         value={row.species || ""}
                         onFocus={() => setActiveCell({ row: idx, col: "species" })}
+                        onKeyDown={e => handleKeyDown(e, idx, "species")}
                         onChange={e => handleCellChange(idx, "species", e.target.value.toUpperCase())}
                         placeholder="MERBAU"
                       />
-                      <datalist id={`species-list-${idx}`}>
-                        {speciesList.map((s, sIdx) => (
-                          <option key={s.id || sIdx} value={s.name} />
-                        ))}
-                      </datalist>
                     </td>
                   )}
 
@@ -511,10 +517,12 @@ export function SawnTimberSpreadsheet({
                   {showGrade && (
                     <td className="py-0.5 px-1 border-r border-border/40">
                       <input
+                        id={`tally-cell-${idx}-grade`}
                         disabled={readOnly}
                         className="h-8 w-full rounded border border-transparent hover:border-input focus:border-primary bg-transparent px-1 text-xs text-center font-bold uppercase focus:outline-none"
                         value={row.grade || "A"}
                         onFocus={() => setActiveCell({ row: idx, col: "grade" })}
+                        onKeyDown={e => handleKeyDown(e, idx, "grade")}
                         onChange={e => handleCellChange(idx, "grade", e.target.value.toUpperCase())}
                       />
                     </td>
@@ -658,6 +666,12 @@ export function SawnTimberSpreadsheet({
           <span>di judul kolom untuk menyalin angka ke semua baris bawah.</span>
         </div>
       </div>
+
+      <datalist id="sawn-spreadsheet-species-list">
+        {speciesList.map((s, sIdx) => (
+          <option key={s.id || sIdx} value={s.name || s.code} />
+        ))}
+      </datalist>
     </div>
   );
 }

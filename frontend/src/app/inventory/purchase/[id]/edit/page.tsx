@@ -53,12 +53,26 @@ export default function EditPurchasePage() {
   };
   const purchaseId = typeof params?.id === "string" ? params.id : "";
 
+  const DEFAULT_SPECIES = [
+    { id: "sp-merbau", code: "MRB", name: "MERBAU" },
+    { id: "sp-meranti", code: "MRT", name: "MERANTI" },
+    { id: "sp-bengkirai", code: "BKR", name: "BENGKIRAI" },
+    { id: "sp-ulin", code: "ULN", name: "ULIN" },
+    { id: "sp-kenari", code: "KNR", name: "KENARI" },
+    { id: "sp-jati", code: "JTI", name: "JATI" },
+    { id: "sp-kampas", code: "KMP", name: "KAMPAS" },
+    { id: "sp-keruing", code: "KRW", name: "KERUING" },
+    { id: "sp-sonokeling", code: "SNK", name: "SONOKELING" },
+    { id: "sp-mahoni", code: "MHG", name: "MAHONI" },
+    { id: "sp-lokal", code: "LKL", name: "LOKAL" },
+  ];
+
   const [pageLoading, setPageLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   const [sources, setSources] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
-  const [speciesList, setSpeciesList] = useState<any[]>([]);
+  const [speciesList, setSpeciesList] = useState<any[]>(DEFAULT_SPECIES);
   const [gradeList, setGradeList] = useState<any[]>([]);
   const [error, setError] = useState("");
 
@@ -166,20 +180,6 @@ export default function EditPurchasePage() {
           }
         }
 
-        const DEFAULT_SPECIES = [
-          { id: "sp-merbau", code: "MRB", name: "MERBAU" },
-          { id: "sp-meranti", code: "MRT", name: "MERANTI" },
-          { id: "sp-bengkirai", code: "BKR", name: "BENGKIRAI" },
-          { id: "sp-ulin", code: "ULN", name: "ULIN" },
-          { id: "sp-kenari", code: "KNR", name: "KENARI" },
-          { id: "sp-jati", code: "JTI", name: "JATI" },
-          { id: "sp-kampas", code: "KMP", name: "KAMPAS" },
-          { id: "sp-keruing", code: "KRW", name: "KERUING" },
-          { id: "sp-sonokeling", code: "SNK", name: "SONOKELING" },
-          { id: "sp-mahoni", code: "MHG", name: "MAHONI" },
-          { id: "sp-lokal", code: "LKL", name: "LOKAL" },
-        ];
-
         const DEFAULT_GRADES = [
           { id: "grd-a", code: "A", name: "Grade A" },
           { id: "grd-b", code: "B", name: "Grade B" },
@@ -190,7 +190,20 @@ export default function EditPurchasePage() {
         setSources(mergedSources);
         setWarehouses(mergedWarehouses);
         setVariants(mergedVariants);
-        setSpeciesList(Array.isArray(rawSpec) && rawSpec.length > 0 ? rawSpec : DEFAULT_SPECIES);
+
+        // Combine default species with master data species from database
+        if (Array.isArray(rawSpec) && rawSpec.length > 0) {
+          const combined = [...rawSpec];
+          DEFAULT_SPECIES.forEach(def => {
+            if (!combined.some(s => (s.name || '').toUpperCase() === def.name.toUpperCase())) {
+              combined.push(def);
+            }
+          });
+          setSpeciesList(combined);
+        } else {
+          setSpeciesList(DEFAULT_SPECIES);
+        }
+
         setGradeList(Array.isArray(rawGrade) && rawGrade.length > 0 ? rawGrade : DEFAULT_GRADES);
 
         const isRawLog = p.logItems && p.logItems.length > 0 && (!p.items || p.items.length === 0);
