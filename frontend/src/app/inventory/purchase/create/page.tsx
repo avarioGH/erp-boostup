@@ -449,6 +449,26 @@ export default function CreatePurchasePage() {
     }
   };
 
+  const handleFillDownLog = (field: string, fromRowIdx: number = 0) => {
+    const sourceVal = (form.logItems[fromRowIdx] as any)?.[field];
+    if (sourceVal === undefined || sourceVal === null || sourceVal === "") return;
+    setForm(prev => ({
+      ...prev,
+      logItems: prev.logItems.map((item, idx) => {
+        if (idx < fromRowIdx) return item;
+        const updated = { ...item, [field]: sourceVal };
+        if (field === 'purchaseLength' || field === 'purchaseDiameter1' || field === 'purchaseDiameter2') {
+          const len = field === 'purchaseLength' ? Number(sourceVal) : Number(updated.purchaseLength || 0);
+          const d1 = field === 'purchaseDiameter1' ? Number(sourceVal) : Number(updated.purchaseDiameter1 || 0);
+          const d2 = field === 'purchaseDiameter2' ? Number(sourceVal) : Number(updated.purchaseDiameter2 || 0);
+          const rt = updated.purchaseDiameterAvg || ((d1 > 0 && d2 > 0) ? (d1 + d2) / 2 : (d1 || d2 || 0));
+          updated.purchaseVolume = calculateLogVolume(len, d1, d2, rt);
+        }
+        return updated;
+      })
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -766,8 +786,32 @@ export default function CreatePurchasePage() {
                       <tr className="bg-muted/60 border-b text-muted-foreground font-semibold">
                         <th className="py-2.5 px-2 text-center w-10">No</th>
                         <th className="py-2.5 px-2 text-left w-28">No Log</th>
-                        <th className="py-2.5 px-2 text-left w-28">Spesies</th>
-                        <th className="py-2.5 px-2 text-center w-24">P (cm/m)</th>
+                        <th className="py-2.5 px-2 text-left w-36">
+                          <div className="flex items-center justify-between">
+                            <span>Spesies</span>
+                            <button
+                              type="button"
+                              onClick={() => handleFillDownLog("species", 0)}
+                              title="Tarik Spesies ke semua baris di bawah"
+                              className="text-muted-foreground hover:text-primary p-0.5"
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        </th>
+                        <th className="py-2.5 px-2 text-center w-24">
+                          <div className="flex items-center justify-between">
+                            <span>P (cm/m)</span>
+                            <button
+                              type="button"
+                              onClick={() => handleFillDownLog("purchaseLength", 0)}
+                              title="Tarik Panjang ke semua baris di bawah"
+                              className="text-muted-foreground hover:text-primary p-0.5"
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        </th>
                         <th className="py-2.5 px-2 text-center w-24">&Oslash; Pkl D1 (cm)</th>
                         <th className="py-2.5 px-2 text-center w-24">&Oslash; Ujg D2 (cm)</th>
                         <th className="py-2.5 px-2 text-center w-24 text-blue-700 dark:text-blue-300 font-bold">RT (cm)</th>
@@ -799,24 +843,20 @@ export default function CreatePurchasePage() {
                               />
                             </td>
                             <td className="py-1 px-2">
-                              <select
+                              <Input
                                 id={`log-species-${index}`}
+                                list="species-datalist"
                                 value={item.species || ""}
+                                placeholder="MERBAU"
+                                onFocus={(e) => e.target.select()}
                                 onKeyDown={(e) => handleCellKeyDown(e, index, 'species', 'log', form.logItems.length, () => addLogRows(1))}
                                 onChange={(e) => {
                                   const newLogItems = [...form.logItems];
                                   newLogItems[index].species = e.target.value.toUpperCase();
                                   setForm({ ...form, logItems: newLogItems });
                                 }}
-                                className="h-8 text-xs font-semibold uppercase border border-input rounded px-2 w-full bg-background focus:outline-none focus:ring-1 focus:ring-ring"
-                              >
-                                <option value="">-- Pilih Spesies --</option>
-                                {speciesList.map((s: any) => (
-                                  <option key={s.id} value={s.name || s.code}>
-                                    {s.name} {s.code && s.code !== s.name ? `(${s.code})` : ''}
-                                  </option>
-                                ))}
-                              </select>
+                                className="h-8 text-xs font-semibold uppercase"
+                              />
                             </td>
                             <td className="py-1 px-2">
                               <Input
