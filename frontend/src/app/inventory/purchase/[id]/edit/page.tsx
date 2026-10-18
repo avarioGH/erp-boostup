@@ -1007,7 +1007,7 @@ export default function EditPurchasePage() {
                   </table>
                 </div>
 
-                <datalist id="species-datalist-edit">
+                <datalist id="species-datalist">
                   {speciesList.map((s: any) => (
                     <option key={s.id} value={s.name} />
                   ))}
