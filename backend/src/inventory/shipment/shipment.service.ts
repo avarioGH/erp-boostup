@@ -59,13 +59,11 @@ export class ShipmentService {
       }
     }
 
-    const existing = await this.prisma.timberShipment.findUnique({
+    let existing = await this.prisma.timberShipment.findUnique({
       where: { shipmentNumber },
     });
     if (existing) {
-      throw new BadRequestException(
-        'Shipment with number ' + shipmentNumber + ' already exists',
-      );
+      shipmentNumber = `${shipmentNumber}-${Math.floor(10 + Math.random() * 90)}`;
     }
 
     if (salesOrderId) {
@@ -136,13 +134,19 @@ export class ShipmentService {
         const spec = String(item.species).trim().toUpperCase();
         const grd = (item.grade || 'STANDARD').toUpperCase();
 
+        const skuCode = `${spec}-${grd}-${tMm}X${wMm}X${lMm}`;
         const found = await this.prisma.timberVariant.findFirst({
           where: {
-            company_id: targetCompanyId,
-            species: { equals: spec, mode: 'insensitive' },
-            thickness: tMm,
-            width: wMm,
-            length: lMm,
+            OR: [
+              {
+                company_id: targetCompanyId,
+                species: { equals: spec, mode: 'insensitive' },
+                thickness: tMm,
+                width: wMm,
+                length: lMm,
+              },
+              { sku: skuCode },
+            ],
           },
         });
 
@@ -175,7 +179,7 @@ export class ShipmentService {
             });
           }
 
-          const skuCode = `${spec}-${grd}-${tMm}X${wMm}X${lMm}`;
+          const uniqueBarcode = `V-${skuCode}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
           const newVar = await this.prisma.timberVariant.create({
             data: {
               company_id: targetCompanyId,
@@ -186,7 +190,7 @@ export class ShipmentService {
               width: wMm,
               length: lMm,
               sku: skuCode,
-              barcode: `V-${skuCode}-${Date.now().toString().slice(-4)}`,
+              barcode: uniqueBarcode,
               volumePerPiece: (tMm * wMm * lMm) / 1000000000,
             },
           });
@@ -286,13 +290,19 @@ export class ShipmentService {
         const spec = String(item.species).trim().toUpperCase();
         const grd = (item.grade || 'STANDARD').toUpperCase();
 
+        const skuCode = `${spec}-${grd}-${tMm}X${wMm}X${lMm}`;
         const found = await this.prisma.timberVariant.findFirst({
           where: {
-            company_id: targetCompanyId,
-            species: { equals: spec, mode: 'insensitive' },
-            thickness: tMm,
-            width: wMm,
-            length: lMm,
+            OR: [
+              {
+                company_id: targetCompanyId,
+                species: { equals: spec, mode: 'insensitive' },
+                thickness: tMm,
+                width: wMm,
+                length: lMm,
+              },
+              { sku: skuCode },
+            ],
           },
         });
 
@@ -324,7 +334,7 @@ export class ShipmentService {
             });
           }
 
-          const skuCode = `${spec}-${grd}-${tMm}X${wMm}X${lMm}`;
+          const uniqueBarcode = `V-${skuCode}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
           const newVar = await this.prisma.timberVariant.create({
             data: {
               company_id: targetCompanyId,
@@ -335,7 +345,7 @@ export class ShipmentService {
               width: wMm,
               length: lMm,
               sku: skuCode,
-              barcode: `V-${skuCode}-${Date.now().toString().slice(-4)}`,
+              barcode: uniqueBarcode,
               volumePerPiece: (tMm * wMm * lMm) / 1000000000,
             },
           });

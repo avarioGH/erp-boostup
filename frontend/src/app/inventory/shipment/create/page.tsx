@@ -38,8 +38,8 @@ export default function CreateShipmentPage() {
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
-    shipmentNumber: `FUSO-${new Date().toISOString().slice(2, 10).replace(/-/g, "")}-${Math.floor(10 + Math.random() * 90)}`,
-    fusoName: "FUSO 01",
+    shipmentNumber: `FUSO-${new Date().toISOString().slice(2, 10).replace(/-/g, "")}-${Date.now().toString().slice(-4)}`,
+    fusoName: "",
     policeNumber: "",
     driverName: "",
     shipmentDate: new Date().toISOString().slice(0, 10),
@@ -62,24 +62,8 @@ export default function CreateShipmentPage() {
   });
 
   const [items, setItems] = useState<TallyItem[]>([
-    {
-      species: "MERANTI",
-      productCategory: "BALOK",
-      thicknessCm: 15,
-      widthCm: 25,
-      lengthCm: 400,
-      quantityPcs: 10,
-      volumeM3: 0.15,
-    },
-    {
-      species: "MERANTI",
-      productCategory: "BALOK",
-      thicknessCm: 12,
-      widthCm: 20,
-      lengthCm: 400,
-      quantityPcs: 15,
-      volumeM3: 0.144,
-    },
+    createEmptyRow(),
+    createEmptyRow(),
     createEmptyRow(),
     createEmptyRow(),
     createEmptyRow(),
