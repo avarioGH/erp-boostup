@@ -96,7 +96,7 @@ export default function CreatePackingPage() {
         MasterDataAPI.getSpecies().catch(() => []),
       ]);
 
-      const whList = Array.isArray(whRes) ? whRes : whRes?.items || [];
+      const whList = Array.isArray(whRes) ? whRes : (whRes?.data || whRes?.items || []);
       setWarehouses(whList);
       if (whList.length > 0) {
         setTargetWarehouseId(whList[0].id);

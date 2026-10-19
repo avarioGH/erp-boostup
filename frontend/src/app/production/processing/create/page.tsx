@@ -188,7 +188,7 @@ export default function CreateProcessingProjectPage() {
         MasterDataAPI.getSpecies().catch(() => []),
       ]);
 
-      const whList = Array.isArray(whRes) ? whRes : whRes?.items || [];
+      const whList = Array.isArray(whRes) ? whRes : (whRes?.data || whRes?.items || []);
       setWarehouses(whList);
 
       if (typeof window !== "undefined") {
@@ -695,7 +695,16 @@ export default function CreateProcessingProjectPage() {
             <Label className="text-xs font-semibold">Gudang Penyimpanan</Label>
             <Select value={targetWarehouseId} onValueChange={(val) => setTargetWarehouseId(val || "")}>
               <SelectTrigger className="text-xs">
-                <SelectValue placeholder="Pilih Gudang" />
+                <SelectValue placeholder="Pilih Gudang">
+                  {(() => {
+                    const wh = warehouses.find((w: any) => w.id === targetWarehouseId);
+                    if (wh) return `${wh.name || wh.code}${wh.code && wh.name ? ` (${wh.code})` : ''}`;
+                    if (targetWarehouseId && partaiInfo?.warehouse?.name) {
+                      return partaiInfo.warehouse.name;
+                    }
+                    return targetWarehouseId || "Pilih Gudang";
+                  })()}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {warehouses.map(w => (
