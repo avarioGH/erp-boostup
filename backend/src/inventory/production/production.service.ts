@@ -117,20 +117,43 @@ export class ProductionService {
         });
 
         if (!variant) {
-          variant = await this.prisma.timberVariant.create({
-            data: {
-              company_id,
-              productId: genericProduct.id,
-              species: spec,
-              grade: grd,
-              thickness: tMm,
-              width: wMm,
-              length: lMm,
-              sku: skuCode,
-              barcode: `V-${skuCode}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-              volumePerPiece: (tMm * wMm * lMm) / 1000000000,
-            },
-          });
+          try {
+            variant = await this.prisma.timberVariant.create({
+              data: {
+                company_id,
+                productId: genericProduct.id,
+                species: spec,
+                grade: grd,
+                thickness: tMm,
+                width: wMm,
+                length: lMm,
+                sku: skuCode,
+                barcode: `V-${skuCode}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+                volumePerPiece: (tMm * wMm * lMm) / 1000000000,
+              },
+            });
+          } catch (err: any) {
+            variant = await this.prisma.timberVariant.findFirst({
+              where: { sku: skuCode },
+            });
+            if (!variant) {
+              const fallbackSku = `${skuCode}-${Date.now().toString().slice(-4)}`;
+              variant = await this.prisma.timberVariant.create({
+                data: {
+                  company_id,
+                  productId: genericProduct.id,
+                  species: spec,
+                  grade: grd,
+                  thickness: tMm,
+                  width: wMm,
+                  length: lMm,
+                  sku: fallbackSku,
+                  barcode: `V-${fallbackSku}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+                  volumePerPiece: (tMm * wMm * lMm) / 1000000000,
+                },
+              });
+            }
+          }
         }
         vId = variant.id;
       }
@@ -206,20 +229,43 @@ export class ProductionService {
           },
         });
         if (!variant) {
-          variant = await this.prisma.timberVariant.create({
-            data: {
-              company_id,
-              productId: genericProduct.id,
-              species: spec,
-              grade: grd,
-              thickness: tMm,
-              width: wMm,
-              length: lMm,
-              sku: skuCode,
-              barcode: `V-${skuCode}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
-              volumePerPiece: (tMm * wMm * lMm) / 1000000000,
-            },
-          });
+          try {
+            variant = await this.prisma.timberVariant.create({
+              data: {
+                company_id,
+                productId: genericProduct.id,
+                species: spec,
+                grade: grd,
+                thickness: tMm,
+                width: wMm,
+                length: lMm,
+                sku: skuCode,
+                barcode: `V-${skuCode}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+                volumePerPiece: (tMm * wMm * lMm) / 1000000000,
+              },
+            });
+          } catch (err: any) {
+            variant = await this.prisma.timberVariant.findFirst({
+              where: { sku: skuCode },
+            });
+            if (!variant) {
+              const fallbackSku = `${skuCode}-${Date.now().toString().slice(-4)}`;
+              variant = await this.prisma.timberVariant.create({
+                data: {
+                  company_id,
+                  productId: genericProduct.id,
+                  species: spec,
+                  grade: grd,
+                  thickness: tMm,
+                  width: wMm,
+                  length: lMm,
+                  sku: fallbackSku,
+                  barcode: `V-${fallbackSku}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+                  volumePerPiece: (tMm * wMm * lMm) / 1000000000,
+                },
+              });
+            }
+          }
         }
         vId = variant.id;
       }
@@ -239,15 +285,36 @@ export class ProductionService {
           },
         });
         if (!stock) {
-          stock = await this.prisma.timberStock.create({
-            data: {
-              locationId: targetWh,
-              timberVariantId: vId,
-              currentPcs: Number(input.quantityPCS || 0),
-              currentVolumeM3: Number(input.volumeM3 || 0),
-              batch: 'AUTO-INPUT',
-            },
-          });
+          try {
+            stock = await this.prisma.timberStock.create({
+              data: {
+                locationId: targetWh,
+                timberVariantId: vId,
+                currentPcs: Number(input.quantityPCS || 0),
+                currentVolumeM3: Number(input.volumeM3 || 0),
+                batch: 'AUTO-INPUT',
+              },
+            });
+          } catch (e: any) {
+            stock = await this.prisma.timberStock.findFirst({
+              where: {
+                locationId: targetWh,
+                timberVariantId: vId,
+              },
+            });
+            if (!stock) {
+              const uniqueBatch = `AUTO-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+              stock = await this.prisma.timberStock.create({
+                data: {
+                  locationId: targetWh,
+                  timberVariantId: vId,
+                  currentPcs: Number(input.quantityPCS || 0),
+                  currentVolumeM3: Number(input.volumeM3 || 0),
+                  batch: uniqueBatch,
+                },
+              });
+            }
+          }
         }
         sId = stock.id;
       }

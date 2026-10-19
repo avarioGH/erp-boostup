@@ -31,6 +31,13 @@ export class PackingService {
       packingNumber = `PKG-${new Date().getFullYear()}-${(count + 1).toString().padStart(4, '0')}`;
     }
 
+    const existingPkg = await this.prisma.timberPacking.findUnique({
+      where: { packingNumber },
+    });
+    if (existingPkg) {
+      packingNumber = `${packingNumber}-${Math.floor(10 + Math.random() * 90)}`;
+    }
+
     // Hitung total M3 Real dan Customer
     let totalRealPcs = 0;
     let totalRealVolume = 0;
