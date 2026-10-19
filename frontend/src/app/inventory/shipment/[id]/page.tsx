@@ -1,6 +1,5 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ShipmentAPI } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -13,9 +12,12 @@ import {
   Layers, BarChart2, ShieldCheck, Edit
 } from "lucide-react";
 
-export default function ShipmentDetailPage({ params }: { params: { id: string } }) {
+export default function ShipmentDetailPage({ params }: { params: any }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const unwrappedParams = typeof (params as any)?.then === 'function' ? (React.use(params as Promise<{ id: string }>) as { id: string }) : (params as { id: string });
+  const shipmentId = unwrappedParams.id;
+
   const [shipment, setShipment] = useState<any>(null);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -33,11 +35,11 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
 
   useEffect(() => {
     fetchData();
-  }, [params.id]);
+  }, [shipmentId]);
 
   const fetchData = () => {
     setLoading(true);
-    ShipmentAPI.getShipment(params.id)
+    ShipmentAPI.getShipment(shipmentId)
       .then((res: any) => {
         setShipment(res?.data || res);
         setLoading(false);
@@ -53,7 +55,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
     setError("");
     setActionLoading(true);
     try {
-      await ShipmentAPI.confirmShipment(params.id);
+      await ShipmentAPI.confirmShipment(shipmentId);
       fetchData();
     } catch (err: any) {
       setError(err?.response?.data?.message || err.message || "Konfirmasi pengiriman gagal");
@@ -67,7 +69,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
     setError("");
     setActionLoading(true);
     try {
-      await ShipmentAPI.cancelShipment(params.id);
+      await ShipmentAPI.cancelShipment(shipmentId);
       fetchData();
     } catch (err: any) {
       setError(err?.response?.data?.message || err.message || "Pembatalan gagal");
@@ -81,7 +83,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
     setError("");
     setActionLoading(true);
     try {
-      await ShipmentAPI.deleteShipment(params.id);
+      await ShipmentAPI.deleteShipment(shipmentId);
       router.push("/inventory/shipment");
     } catch (err: any) {
       setError(err?.response?.data?.message || err.message || "Gagal menghapus surat muat");
@@ -175,7 +177,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
         <div className="flex flex-wrap sm:flex-nowrap w-full sm:w-auto gap-2">
           <Button 
             variant="outline" 
-            onClick={() => window.open(`/inventory/shipment/${params.id}/print`, "_blank")} 
+            onClick={() => window.open(`/inventory/shipment/${shipmentId}/print`, "_blank")} 
             className="w-full sm:w-auto shadow-sm font-semibold h-10"
           >
             <Printer className="w-4 h-4 mr-2 text-slate-600" /> Cetak Surat Tally Muat
@@ -185,7 +187,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
             <>
               <Button 
                 variant="outline"
-                onClick={() => router.push(`/inventory/shipment/${params.id}/edit${linkedPartaiId ? `?partaiId=${linkedPartaiId}` : ''}`)}
+                onClick={() => router.push(`/inventory/shipment/${shipmentId}/edit${linkedPartaiId ? `?partaiId=${linkedPartaiId}` : ''}`)}
                 className="w-full sm:w-auto font-semibold h-10 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-700 dark:text-amber-400"
               >
                 <Edit className="w-4 h-4 mr-2" /> Edit Surat Muat

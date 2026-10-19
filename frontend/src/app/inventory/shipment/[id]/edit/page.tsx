@@ -1,6 +1,5 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MasterDataAPI, InventoryAPI, ShipmentAPI } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -27,9 +26,11 @@ interface TallyItem {
   notes?: string;
 }
 
-export default function EditShipmentPage({ params }: { params: { id: string } }) {
+export default function EditShipmentPage({ params }: { params: any }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const unwrappedParams = typeof (params as any)?.then === 'function' ? (React.use(params as Promise<{ id: string }>) as { id: string }) : (params as { id: string });
+  const shipmentId = unwrappedParams.id;
   const linkedPartaiId = searchParams.get("partaiId") || "";
 
   const [warehouses, setWarehouses] = useState<any[]>([]);
@@ -69,7 +70,7 @@ export default function EditShipmentPage({ params }: { params: { id: string } })
   useEffect(() => {
     setPageLoading(true);
     Promise.all([
-      ShipmentAPI.getShipment(params.id),
+      ShipmentAPI.getShipment(shipmentId),
       InventoryAPI.getWarehouses().catch(() => []),
       MasterDataAPI.getSpecies().catch(() => []),
     ]).then(([shipmentRes, whRes, spRes]: any[]) => {
@@ -299,14 +300,14 @@ export default function EditShipmentPage({ params }: { params: { id: string } })
         }),
       };
 
-      await ShipmentAPI.updateShipment(params.id, payload);
+      await ShipmentAPI.updateShipment(shipmentId, payload);
       if (autoConfirm) {
         alert("Perubahan muatan Fuso berhasil disimpan dan stok otomatis dipindahkan!");
       }
       if (targetPartai) {
         router.push(`/inventory/partai/${targetPartai}?tab=shipment`);
       } else {
-        router.push(`/inventory/shipment/${params.id}`);
+        router.push(`/inventory/shipment/${shipmentId}`);
       }
     } catch (err: any) {
       const errMsg = err?.response?.data?.message || err.message || "Gagal memperbarui surat muat fuso";
