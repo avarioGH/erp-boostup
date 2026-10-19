@@ -39,6 +39,12 @@ export class PackingController {
     return this.packingService.findOne(id);
   }
 
+  @Post(':id')
+  @Permissions('inventory.create')
+  update(@Param('id') id: string, @Body() data: any) {
+    return this.packingService.update(id, data);
+  }
+
   @Delete(':id')
   @Permissions('inventory.create')
   delete(@Param('id') id: string) {

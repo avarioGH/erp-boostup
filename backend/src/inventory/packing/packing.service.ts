@@ -143,6 +143,37 @@ export class PackingService {
     return packing;
   }
 
+  async update(id: string, data: any) {
+    const packing = await this.prisma.timberPacking.findUnique({ where: { id } });
+    if (!packing) throw new NotFoundException('Data Packing tidak ditemukan');
+
+    const {
+      status,
+      notes,
+      containerNo,
+      ownerName,
+      species,
+      warehouseId,
+    } = data;
+
+    return this.prisma.timberPacking.update({
+      where: { id },
+      data: {
+        ...(status ? { status } : {}),
+        ...(notes !== undefined ? { notes } : {}),
+        ...(containerNo !== undefined ? { containerNo } : {}),
+        ...(ownerName !== undefined ? { ownerName } : {}),
+        ...(species !== undefined ? { species } : {}),
+        ...(warehouseId !== undefined ? { warehouseId } : {}),
+      },
+      include: {
+        items: true,
+        warehouse: true,
+        partai: true,
+      },
+    });
+  }
+
   async delete(id: string) {
     const packing = await this.prisma.timberPacking.findUnique({ where: { id } });
     if (!packing) throw new NotFoundException('Data Packing tidak ditemukan');

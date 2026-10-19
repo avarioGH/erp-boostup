@@ -14,6 +14,85 @@ export class InvoiceService {
     private eventEmitter: EventEmitter2,
   ) {}
 
+  async create(companyId: string, data: any) {
+    let targetCompanyId = companyId;
+    if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
+      const firstCompany = await this.prisma.company.findFirst();
+      if (firstCompany) targetCompanyId = firstCompany.id;
+    }
+
+    const {
+      customerId,
+      invoiceNumber: customInvoiceNumber,
+      invoiceDate,
+      dueDate,
+      items = [],
+      tax = 0,
+      notes,
+    } = data;
+
+    let invoiceNumber = customInvoiceNumber;
+    if (!invoiceNumber) {
+      invoiceNumber = `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+    }
+    const existing = await this.prisma.invoice.findFirst({
+      where: { company_id: targetCompanyId, invoice_number: invoiceNumber },
+    });
+    if (existing) {
+      invoiceNumber = `${invoiceNumber}-${Math.floor(10 + Math.random() * 90)}`;
+    }
+
+    // Default product for invoice item if product_id not provided
+    let defaultProduct = await this.prisma.product.findFirst({
+      where: { company_id: targetCompanyId },
+    });
+    if (!defaultProduct) defaultProduct = await this.prisma.product.findFirst();
+
+    let subtotal = 0;
+    const itemsData = items.map((item: any) => {
+      const qty = Number(item.qty || item.quantity || 1);
+      const unit_price = Number(item.unit_price || item.unitPrice || 0);
+      const lineSubtotal = Number(item.subtotal || qty * unit_price);
+      subtotal += lineSubtotal;
+
+      return {
+        product_id: item.product_id || item.productId || defaultProduct?.id,
+        description: item.description || 'Kayu Sawn / Olahan',
+        qty,
+        unit_price,
+        discount: Number(item.discount || 0),
+        tax: Number(item.tax || 0),
+        subtotal: lineSubtotal,
+      };
+    });
+
+    const taxAmount = Number(tax || 0);
+    const total = subtotal + taxAmount;
+
+    return this.prisma.invoice.create({
+      data: {
+        company_id: targetCompanyId,
+        customer_id: customerId || undefined,
+        invoice_number: invoiceNumber,
+        invoice_date: invoiceDate ? new Date(invoiceDate) : new Date(),
+        due_date: dueDate ? new Date(dueDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        status: 'DRAFT',
+        subtotal,
+        tax: taxAmount,
+        total,
+        paid_amount: 0,
+        remaining_amount: total,
+        items: {
+          create: itemsData,
+        },
+      },
+      include: {
+        items: true,
+        customer: true,
+      },
+    });
+  }
+
   async createFromSO(companyId: string, salesOrderId: string) {
     return this.prisma.$transaction(async (tx) => {
       const so = await tx.salesOrder.findFirst({

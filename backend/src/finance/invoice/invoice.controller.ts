@@ -22,6 +22,13 @@ export class InvoiceController {
     private prisma: PrismaService,
   ) {}
   @Permissions('invoice.create')
+  @Post()
+  createDirect(@Request() req, @Body() data: any) {
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.service.create(companyId, data);
+  }
+
+  @Permissions('invoice.create')
   @Post('from-so')
   create(@Request() req, @Body() data: { salesOrderId: string }) {
     return this.service.createFromSO(req.user.company_id, data.salesOrderId);

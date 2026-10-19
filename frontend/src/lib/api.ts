@@ -211,6 +211,7 @@ export const PosAPI: any = {
 export const FinanceAPI: any = {
   getInvoices: async (params?: any) => (await api.get('/finance/invoices', { params })).data,
   getInvoice: async (id: string) => (await api.get('/finance/invoices/' + id)).data,
+  createInvoice: async (data: any) => (await api.post('/finance/invoices', data)).data,
   createInvoiceFromSO: async (data: any) => (await api.post('/finance/invoices/from-so', data)).data,
   postInvoice: async (id: string) => (await api.post('/finance/invoices/' + id + '/post')).data,
   getPayments: async (params?: any) => (await api.get('/finance/payments', { params })).data,
@@ -434,6 +435,7 @@ export const PackingAPI: any = {
   getPackings: async (params?: any) => (await api.get('/inventory/timber-packing', { params })).data,
   getPacking: async (id: string) => (await api.get('/inventory/timber-packing/' + id)).data,
   createPacking: async (data: any) => (await api.post('/inventory/timber-packing', data)).data,
+  updatePacking: async (id: string, data: any) => (await api.post('/inventory/timber-packing/' + id, data)).data,
   deletePacking: async (id: string) => (await api.delete('/inventory/timber-packing/' + id)).data,
 };
 

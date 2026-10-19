@@ -2829,14 +2829,23 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/10"
-                              onClick={() => router.push(`/inventory/packing/${item.id}`)}
-                            >
-                              Detail <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-2.5 shadow-sm"
+                                onClick={() => router.push(`/sales/invoices/create?packingId=${item.id}&partaiId=${id}`)}
+                              >
+                                Buat Invoice
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/10 px-2"
+                                onClick={() => router.push(`/inventory/packing/${item.id}`)}
+                              >
+                                Detail
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
