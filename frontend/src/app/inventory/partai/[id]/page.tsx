@@ -911,17 +911,19 @@ export default function PartaiDetailPage({ params }: { params: any }) {
             activeShipments.forEach((s: any) => {
               const fromWh = s.warehouseId || partai?.warehouseId;
               const toWh = s.destinationWarehouseId;
+              const toWhName = s.destinationWarehouse?.name || s.destinationName;
+              const fromWhName = s.warehouse?.name;
               const shipPcs = Number(s.totalPcs || 0);
               const shipM3 = Number(s.totalVolumeM3 || 0);
 
               if (fromWh) {
-                const originRec = getOrCreateWh(fromWh);
+                const originRec = getOrCreateWh(fromWh, fromWhName);
                 originRec.sawnTimberPcs = Math.max(0, originRec.sawnTimberPcs - shipPcs);
                 originRec.sawnTimberM3 = Math.max(0, Number((originRec.sawnTimberM3 - shipM3).toFixed(4)));
               }
 
               if (toWh) {
-                const destRec = getOrCreateWh(toWh);
+                const destRec = getOrCreateWh(toWh, toWhName);
                 destRec.sawnTimberPcs += shipPcs;
                 destRec.sawnTimberM3 = Number((destRec.sawnTimberM3 + shipM3).toFixed(4));
               }
@@ -2367,114 +2369,153 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 <Table>
                   <TableHeader className="bg-muted/40">
                     <TableRow>
-                      <TableHead className="w-[120px]">Tgl Muat</TableHead>
+                      <TableHead className="w-[110px]">Tgl Muat</TableHead>
                       <TableHead>No. Surat Jalan</TableHead>
                       <TableHead>Armada / Fuso</TableHead>
                       <TableHead>No. Polisi / Supir</TableHead>
-                      <TableHead>Tujuan / Gudang</TableHead>
+                      <TableHead>Dari (Gudang Asal)</TableHead>
+                      <TableHead>Ke (Gudang Tujuan)</TableHead>
                       <TableHead className="text-right">Total Pcs</TableHead>
                       <TableHead className="text-right">Total Kubikasi (M³)</TableHead>
                       <TableHead className="text-center w-[100px]">Status</TableHead>
-                      <TableHead className="text-right w-[90px]">Aksi</TableHead>
+                      <TableHead className="text-right w-[140px]">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {shipmentsList.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center py-10 text-muted-foreground text-xs">
+                        <TableCell colSpan={10} className="text-center py-10 text-muted-foreground text-xs">
                           Belum ada data pengiriman / muatan armada Fuso untuk partai ini. Klik tombol di atas untuk mencatat surat jalan muat.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      shipmentsList.map((item: any) => (
-                        <TableRow key={item.id} className="hover:bg-muted/30">
-                          <TableCell className="text-xs font-mono">
-                            {new Date(item.shipmentDate || item.createdAt).toLocaleDateString('id-ID')}
-                          </TableCell>
-                          <TableCell className="font-mono text-xs font-bold text-amber-700 dark:text-amber-400">
-                            {item.shipmentNumber}
-                          </TableCell>
-                          <TableCell className="text-xs font-semibold">
-                            {item.fusoName || "FUSO"}
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            <span className="font-mono font-bold">{item.policeNumber || "-"}</span>
-                            {item.driverName && <span className="text-muted-foreground ml-1.5">({item.driverName})</span>}
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {item.destinationName || item.destinationAddress || (item.warehouse?.name || "Surabaya")}
-                          </TableCell>
-                          <TableCell className="text-right font-mono font-medium text-xs">
-                            {item.totalPcs || 0}
-                          </TableCell>
-                          <TableCell className="text-right font-mono font-bold text-xs text-amber-600 dark:text-amber-400">
-                            {Number(item.totalVolumeM3 || 0).toFixed(4)} M³
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {item.status === 'CONFIRMED' ? (
-                              <Badge className="bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold">
-                                TERKIRIM
+                      shipmentsList.map((item: any) => {
+                        const originName = item.warehouse?.name || (warehouses.find(w => w.id === item.warehouseId)?.name) || partai?.warehouse?.name || "Kalteng";
+                        const destName = item.destinationWarehouse?.name || (warehouses.find(w => w.id === item.destinationWarehouseId)?.name) || item.destinationName || item.destinationAddress || "Surabaya";
+
+                        return (
+                          <TableRow key={item.id} className="hover:bg-muted/30">
+                            <TableCell className="text-xs font-mono">
+                              {new Date(item.shipmentDate || item.createdAt).toLocaleDateString('id-ID')}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs font-bold text-amber-700 dark:text-amber-400">
+                              {item.shipmentNumber}
+                            </TableCell>
+                            <TableCell className="text-xs font-semibold">
+                              {item.fusoName || "FUSO"}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <span className="font-mono font-bold">{item.policeNumber || "-"}</span>
+                              {item.driverName && <span className="text-muted-foreground ml-1.5">({item.driverName})</span>}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant="outline" className="text-xs font-medium border-blue-300 bg-blue-50/50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-300">
+                                {originName}
                               </Badge>
-                            ) : item.status === 'CANCELLED' ? (
-                              <Badge variant="destructive" className="text-xs">
-                                BATAL
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant="outline" className="text-xs font-medium border-emerald-300 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">
+                                {destName}
                               </Badge>
-                            ) : (
-                              <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">
-                                DRAFT
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/10 font-semibold"
-                                onClick={() => router.push(`/inventory/shipment/${item.id}?partaiId=${id}`)}
-                                title="Lihat Detail Tally"
-                              >
-                                Detail Tally <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                              </Button>
-                              {item.status !== 'CONFIRMED' && (
+                            </TableCell>
+                            <TableCell className="text-right font-mono font-medium text-xs">
+                              {item.totalPcs || 0}
+                            </TableCell>
+                            <TableCell className="text-right font-mono font-bold text-xs text-amber-600 dark:text-amber-400">
+                              {Number(item.totalVolumeM3 || 0).toFixed(4)} M³
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {item.status === 'CONFIRMED' ? (
+                                <Badge className="bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold">
+                                  TERKIRIM
+                                </Badge>
+                              ) : item.status === 'CANCELLED' ? (
+                                <Badge variant="destructive" className="text-xs">
+                                  BATAL
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">
+                                  DRAFT
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                {item.status !== 'CONFIRMED' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 px-2 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-300 font-bold"
+                                    onClick={async () => {
+                                      if (!confirm(`Konfirmasi keberangkatan armada ${item.fusoName || item.shipmentNumber}? Stok di ${originName} akan dipotong dan dimasukkan ke ${destName}.`)) return;
+                                      try {
+                                        await ShipmentAPI.confirmShipment(item.id);
+                                        toast({ title: "Berhasil Dipindahkan", description: `Stok dari ${originName} telah dipindahkan ke ${destName}` });
+                                        fetchPartai();
+                                        fetchProcessingData();
+                                      } catch (err: any) {
+                                        toast({ 
+                                          title: "Gagal Konfirmasi", 
+                                          description: err?.response?.data?.message || err.message || "Gagal konfirmasi pengiriman", 
+                                          variant: "destructive" 
+                                        });
+                                      }
+                                    }}
+                                    title="Konfirmasi & Pindahkan Stok Sekarang"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600" /> Kirim
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-8 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 font-semibold"
-                                  onClick={() => router.push(`/inventory/shipment/${item.id}/edit?partaiId=${id}`)}
-                                  title="Edit Surat Muat Fuso"
+                                  className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/10 font-semibold"
+                                  onClick={() => router.push(`/inventory/shipment/${item.id}?partaiId=${id}`)}
+                                  title="Lihat Detail Tally"
                                 >
-                                  <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                                  Detail <ArrowRight className="w-3.5 h-3.5 ml-1" />
                                 </Button>
-                              )}
-                              {item.status !== 'CONFIRMED' && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 font-semibold"
-                                  onClick={async () => {
-                                    if (!confirm(`Hapus draft muatan armada ${item.fusoName || item.shipmentNumber}?`)) return;
-                                    try {
-                                      await ShipmentAPI.deleteShipment(item.id);
-                                      toast({ title: "Berhasil", description: "Draft surat muat berhasil dihapus" });
-                                      fetchProcessingData();
-                                    } catch (err: any) {
-                                      toast({ 
-                                        title: "Gagal Hapus", 
-                                        description: err?.response?.data?.message || err.message || "Gagal menghapus draft surat muat", 
-                                        variant: "destructive" 
-                                      });
-                                    }
-                                  }}
-                                  title="Hapus Draft Surat Muat"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Hapus
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                                {item.status !== 'CONFIRMED' && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 font-semibold"
+                                    onClick={() => router.push(`/inventory/shipment/${item.id}/edit?partaiId=${id}`)}
+                                    title="Edit Surat Muat Fuso"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                                  </Button>
+                                )}
+                                {item.status !== 'CONFIRMED' && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 font-semibold"
+                                    onClick={async () => {
+                                      if (!confirm(`Hapus draft muatan armada ${item.fusoName || item.shipmentNumber}?`)) return;
+                                      try {
+                                        await ShipmentAPI.deleteShipment(item.id);
+                                        toast({ title: "Berhasil", description: "Draft surat muat berhasil dihapus" });
+                                        fetchPartai();
+                                        fetchProcessingData();
+                                      } catch (err: any) {
+                                        toast({ 
+                                          title: "Gagal Hapus", 
+                                          description: err?.response?.data?.message || err.message || "Gagal menghapus draft surat muat", 
+                                          variant: "destructive" 
+                                        });
+                                      }
+                                    }}
+                                    title="Hapus Draft Surat Muat"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Hapus
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>

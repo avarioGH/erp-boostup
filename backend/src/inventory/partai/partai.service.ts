@@ -215,6 +215,7 @@ export class PartaiService {
           include: {
             items: { include: { timberVariant: true } },
             warehouse: true,
+            destinationWarehouse: true,
           },
         },
         packings: {
