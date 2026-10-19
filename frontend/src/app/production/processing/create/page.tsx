@@ -134,7 +134,7 @@ export default function CreateProcessingProjectPage() {
   // Project Header Info
   const [projectName, setProjectName] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [processNo, setProcessNo] = useState(`PRJ-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`);
+  const [processNo, setProcessNo] = useState(`PRJ-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}${Math.floor(10 + Math.random() * 90)}`);
   const [targetWarehouseId, setTargetWarehouseId] = useState("");
   const [generalNotes, setGeneralNotes] = useState("");
 
@@ -159,7 +159,7 @@ export default function CreateProcessingProjectPage() {
     { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0, customData: {} },
   ]);
 
-  // Project Multi-Steps
+  // Project Multi-Steps - Default to 1 single step so user builds their own sequence
   const [steps, setSteps] = useState<ProcessingStep[]>([
     {
       id: "step-1",
@@ -170,30 +170,6 @@ export default function CreateProcessingProjectPage() {
       customFields: DEFAULT_PROCESSING_TYPES[0].customFields,
       rows: [
         { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0, customData: {} },
-        { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0, customData: {} },
-        { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0, customData: {} },
-      ],
-    },
-    {
-      id: "step-2",
-      code: "KD",
-      name: "Kiln Dry (Oven / Pengeringan)",
-      operator: "",
-      notes: "",
-      customFields: DEFAULT_PROCESSING_TYPES[1].customFields,
-      rows: [
-        { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0, customData: {} },
-        { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0, customData: {} },
-      ],
-    },
-    {
-      id: "step-3",
-      code: "MOULDING",
-      name: "Moulding / Profil",
-      operator: "",
-      notes: "",
-      customFields: DEFAULT_PROCESSING_TYPES[2].customFields,
-      rows: [
         { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0, customData: {} },
         { bundleNo: "", species: "", t: "", w: "", l: "", pcs: "", volumeM3: 0, customData: {} },
       ],

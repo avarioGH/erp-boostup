@@ -39,7 +39,7 @@ export class ProductionService {
     const yieldPercentage =
       inputVolumeM3 > 0 ? (outputVolumeM3 / inputVolumeM3) * 100 : 0;
 
-    // Generate processNo if not provided
+    // Generate processNo if not provided or ensure uniqueness
     let finalProcessNo = data.processNo;
     if (!finalProcessNo) {
       const dateStr = new Date().toISOString().slice(2, 4); // yy
@@ -47,6 +47,12 @@ export class ProductionService {
         where: { company_id },
       });
       finalProcessNo = `PRD-${dateStr}-${(count + 1).toString().padStart(3, '0')}`;
+    }
+    const existingProc = await this.prisma.productionProcess.findUnique({
+      where: { processNo: finalProcessNo },
+    });
+    if (existingProc) {
+      finalProcessNo = `${finalProcessNo}-${Date.now().toString().slice(-4)}`;
     }
 
     // Process outputs: ensure each output has a valid variantId
@@ -96,7 +102,18 @@ export class ProductionService {
         const skuCode = `${spec}-${grd}-${tMm}X${wMm}X${lMm}`;
 
         let variant = await this.prisma.timberVariant.findFirst({
-          where: { sku: skuCode },
+          where: {
+            OR: [
+              {
+                company_id,
+                species: { equals: spec, mode: 'insensitive' },
+                thickness: tMm,
+                width: wMm,
+                length: lMm,
+              },
+              { sku: skuCode },
+            ],
+          },
         });
 
         if (!variant) {
@@ -175,7 +192,18 @@ export class ProductionService {
         }
 
         let variant = await this.prisma.timberVariant.findFirst({
-          where: { sku: skuCode },
+          where: {
+            OR: [
+              {
+                company_id,
+                species: { equals: spec, mode: 'insensitive' },
+                thickness: tMm,
+                width: wMm,
+                length: lMm,
+              },
+              { sku: skuCode },
+            ],
+          },
         });
         if (!variant) {
           variant = await this.prisma.timberVariant.create({
