@@ -146,15 +146,18 @@ export default function ShipmentDetailPage({ params }: { params: any }) {
     <div className="space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-16 px-4 md:px-6 box-border">
       
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
+        <div className="flex items-center gap-3.5 min-w-0">
           <Button variant="outline" size="icon" onClick={handleBack} className="shrink-0 h-10 w-10">
             <ArrowLeft className="w-4 h-4 text-muted-foreground" />
           </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                <Truck className="w-6 h-6 text-amber-600" /> {fusoTitle}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="p-1.5 bg-amber-500/10 text-amber-600 rounded-lg shrink-0">
+                <Truck className="w-5 h-5" />
+              </span>
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground whitespace-nowrap">
+                {fusoTitle}
               </h1>
               <Badge 
                 variant={isConfirmed ? 'default' : shipment.status === 'CANCELLED' ? 'destructive' : 'secondary'} 
@@ -163,24 +166,24 @@ export default function ShipmentDetailPage({ params }: { params: any }) {
                 {shipment.status || 'DRAFT'}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-3">
-              <span className="font-medium text-foreground/80">No: {sNum}</span>
-              <span>•</span>
-              <span className="flex items-center gap-1.5">
-                <CalendarClock className="w-3.5 h-3.5" /> 
+            <div className="text-xs md:text-sm text-muted-foreground mt-1.5 flex items-center gap-2 flex-wrap">
+              <span className="font-mono font-medium text-foreground/80">{sNum}</span>
+              <span className="text-muted-foreground/60">•</span>
+              <span className="flex items-center gap-1.5 whitespace-nowrap">
+                <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" /> 
                 {shipment.shipmentDate ? new Date(shipment.shipmentDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : shipment.createdAt ? new Date(shipment.createdAt).toLocaleDateString('id-ID') : '-'}
               </span>
-            </p>
+            </div>
           </div>
         </div>
         
-        <div className="flex flex-wrap sm:flex-nowrap w-full sm:w-auto gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-start lg:justify-end shrink-0">
           <Button 
             variant="outline" 
             onClick={() => window.open(`/inventory/shipment/${shipmentId}/print`, "_blank")} 
-            className="w-full sm:w-auto shadow-sm font-semibold h-10"
+            className="shadow-sm font-semibold h-9 text-xs"
           >
-            <Printer className="w-4 h-4 mr-2 text-slate-600" /> Cetak Surat Tally Muat
+            <Printer className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" /> Cetak Surat Tally
           </Button>
 
           {isDraft && (
@@ -188,25 +191,25 @@ export default function ShipmentDetailPage({ params }: { params: any }) {
               <Button 
                 variant="outline"
                 onClick={() => router.push(`/inventory/shipment/${shipmentId}/edit${linkedPartaiId ? `?partaiId=${linkedPartaiId}` : ''}`)}
-                className="w-full sm:w-auto font-semibold h-10 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-700 dark:text-amber-400"
+                className="font-semibold h-9 text-xs border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-700 dark:text-amber-400"
               >
-                <Edit className="w-4 h-4 mr-2" /> Edit Surat Muat
+                <Edit className="w-3.5 h-3.5 mr-1.5" /> Edit
               </Button>
               <Button 
                 onClick={handleConfirm} 
                 disabled={actionLoading}
-                className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-10"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-9 text-xs shadow-sm"
               >
-                {actionLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />} 
+                {actionLoading ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />} 
                 Konfirmasi Berangkat
               </Button>
               <Button 
                 onClick={handleDelete} 
                 disabled={actionLoading}
                 variant="destructive" 
-                className="w-full sm:w-auto font-semibold h-10"
+                className="font-semibold h-9 text-xs"
               >
-                <Trash2 className="w-4 h-4 mr-2" /> Hapus Draft
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Hapus Draft
               </Button>
             </>
           )}
@@ -216,9 +219,9 @@ export default function ShipmentDetailPage({ params }: { params: any }) {
               onClick={handleCancel} 
               disabled={actionLoading}
               variant="outline" 
-              className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50 font-semibold h-10"
+              className="text-red-600 border-red-200 hover:bg-red-50 dark:hover:bg-red-950/30 font-semibold h-9 text-xs"
             >
-              <XCircle className="w-4 h-4 mr-2" /> Batalkan Muatan
+              <XCircle className="w-3.5 h-3.5 mr-1.5" /> Batalkan Muatan
             </Button>
           )}
         </div>
