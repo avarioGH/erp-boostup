@@ -61,4 +61,11 @@ export class ShipmentController {
     const companyId = req.user?.company_id || req.user?.companyId;
     return this.shipmentService.delete(id, companyId);
   }
+
+  @Put(':id')
+  @Permissions('inventory.create')
+  update(@Param('id') id: string, @Body() data: any, @Request() req) {
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.shipmentService.update(id, companyId, data);
+  }
 }

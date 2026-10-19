@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Plus, Trash2, Package, Layers, FileSpreadsheet, Scale, Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, Save, Plus, Trash2, Package, Layers, FileSpreadsheet, Scale, Info, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface PackingRow {
@@ -30,6 +31,20 @@ interface PackingRow {
   notes: string;
 }
 
+const DEFAULT_SPECIES = [
+  { id: "sp-merbau", code: "MRB", name: "MERBAU" },
+  { id: "sp-meranti", code: "MRT", name: "MERANTI" },
+  { id: "sp-bengkirai", code: "BKR", name: "BENGKIRAI" },
+  { id: "sp-ulin", code: "ULN", name: "ULIN" },
+  { id: "sp-kenari", code: "KNR", name: "KENARI" },
+  { id: "sp-jati", code: "JTI", name: "JATI" },
+  { id: "sp-kampas", code: "KMP", name: "KAMPAS" },
+  { id: "sp-keruing", code: "KRW", name: "KERUING" },
+  { id: "sp-sonokeling", code: "SNK", name: "SONOKELING" },
+  { id: "sp-mahoni", code: "MHG", name: "MAHONI" },
+  { id: "sp-lokal", code: "LKL", name: "LOKAL" },
+];
+
 export default function CreatePackingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -43,13 +58,14 @@ export default function CreatePackingPage() {
   );
   const [packingDate, setPackingDate] = useState(new Date().toISOString().split("T")[0]);
   const [ownerName, setOwnerName] = useState("PT Daun Emas Multi Perkasa");
-  const [species, setSpecies] = useState("MERBAU");
+  const [species, setSpecies] = useState("");
   const [containerNo, setContainerNo] = useState("");
   const [targetWarehouseId, setTargetWarehouseId] = useState("");
   const [notes, setNotes] = useState("");
   const [warehouses, setWarehouses] = useState<any[]>([]);
-  const [speciesList, setSpeciesList] = useState<any[]>([]);
+  const [speciesList, setSpeciesList] = useState<any[]>(DEFAULT_SPECIES);
   const [submitting, setSubmitting] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   // Rows generator
   const [rows, setRows] = useState<PackingRow[]>(
@@ -86,7 +102,11 @@ export default function CreatePackingPage() {
         setTargetWarehouseId(whList[0].id);
       }
 
-      const spList = Array.isArray(specRes) ? specRes : specRes?.data || [];
+      const spList = (Array.isArray(specRes) && specRes.length > 0) 
+        ? specRes 
+        : (Array.isArray(specRes?.data) && specRes.data.length > 0)
+          ? specRes.data 
+          : DEFAULT_SPECIES;
       setSpeciesList(spList);
 
       if (urlPartaiId) {
@@ -94,16 +114,51 @@ export default function CreatePackingPage() {
           const p = await PartaiAPI.getPartai(urlPartaiId);
           if (p) {
             setPartaiInfo(p);
-            const firstSpecies = p.rawLogs?.[0]?.species || p.inputLogs?.[0]?.species || "MERBAU";
-            setSpecies(firstSpecies);
+            // Search for species in order of relevance: rawLogs -> inputLogs -> sawnOutputs -> purchases -> partai code
+            const foundSpecies = 
+              p.rawLogs?.[0]?.species || 
+              p.inputLogs?.[0]?.species || 
+              p.sawnOutputs?.[0]?.species || 
+              p.purchases?.[0]?.species || 
+              "";
+
+            // If found in partai records, match with speciesList or use directly
+            if (foundSpecies) {
+              const matched = spList.find((s: any) => 
+                (s.name || "").toUpperCase() === foundSpecies.toUpperCase() ||
+                (s.code || "").toUpperCase() === foundSpecies.toUpperCase()
+              );
+              setSpecies(matched ? (matched.name || matched.code) : foundSpecies.toUpperCase());
+            } else if (p.code) {
+              // Try matching code parts e.g. "A/01/L09/ULIN/D" contains "ULIN"
+              const codeUpper = p.code.toUpperCase();
+              const matchedByCode = spList.find((s: any) => 
+                (s.name && codeUpper.includes(s.name.toUpperCase())) ||
+                (s.code && codeUpper.includes(s.code.toUpperCase()))
+              );
+              if (matchedByCode) {
+                setSpecies(matchedByCode.name || matchedByCode.code);
+              } else {
+                setSpecies(spList[0]?.name || "MERBAU");
+              }
+            } else {
+              setSpecies(spList[0]?.name || "MERBAU");
+            }
+
             if (p.warehouseId) {
               setTargetWarehouseId(p.warehouseId);
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error(e);
+        }
+      } else {
+        setSpecies(spList[0]?.name || "MERBAU");
       }
     } catch (e) {
       console.error(e);
+      setSpeciesList(DEFAULT_SPECIES);
+      setSpecies(DEFAULT_SPECIES[0].name);
     }
   };
 
@@ -210,6 +265,7 @@ export default function CreatePackingPage() {
     }
 
     setSubmitting(true);
+    setPageError(null);
     try {
       const payload = {
         packingNumber,
@@ -240,16 +296,20 @@ export default function CreatePackingPage() {
         description: `Dokumen ${packingNumber} berhasil dicatat dengan ${validRows.length} ukuran (Total Asli: ${totalRealM3.toFixed(4)} M³, Cust: ${totalCustM3.toFixed(4)} M³).`,
       });
 
-      if (urlPartaiId) {
-        router.push(`/inventory/partai/${urlPartaiId}?tab=packing`);
-      } else {
-        router.push(`/inventory/partai`);
-      }
+      setTimeout(() => {
+        if (urlPartaiId) {
+          router.push(`/inventory/partai/${urlPartaiId}?tab=packing`);
+        } else {
+          router.push(`/inventory/partai`);
+        }
+      }, 700);
     } catch (err: any) {
       console.error(err);
+      const errMsg = err?.response?.data?.message || err?.response?.data?.error?.message || err.message || "Gagal menyimpan packing list";
+      setPageError(errMsg);
       toast({
         title: "Gagal Menyimpan Packing List",
-        description: err?.response?.data?.message || err.message,
+        description: errMsg,
         variant: "destructive",
       });
     } finally {
@@ -316,6 +376,23 @@ export default function CreatePackingPage() {
         </div>
       </div>
 
+      {pageError && (
+        <Alert variant="destructive" className="border-rose-500/50 bg-rose-50/50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300">
+          <AlertCircle className="h-4 w-4 text-rose-600" />
+          <AlertDescription className="font-semibold text-xs flex items-center justify-between">
+            <span>{pageError}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPageError(null)}
+              className="h-6 px-2 text-xs text-rose-600 hover:text-rose-800"
+            >
+              Tutup
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* HEADER INFORMASI PACKING */}
       <Card className="shadow-sm border-purple-200/80 dark:border-purple-900/40">
         <CardHeader className="bg-purple-50/50 dark:bg-purple-950/20 py-3 px-4 md:px-6 border-b">
@@ -355,12 +432,26 @@ export default function CreatePackingPage() {
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">Jenis Kayu / Species</Label>
-            <Input
-              value={species}
-              onChange={(e) => setSpecies(e.target.value.toUpperCase())}
-              placeholder="MERBAU"
-              className="h-9 text-xs font-bold uppercase text-primary"
-            />
+            <Select
+              value={species || (speciesList[0]?.name || "MERBAU")}
+              onValueChange={(val) => setSpecies(val)}
+            >
+              <SelectTrigger className="h-9 text-xs font-bold uppercase text-primary bg-background">
+                <SelectValue placeholder="Pilih Jenis Kayu">
+                  {species || (speciesList[0]?.name || "MERBAU")}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent searchable={true} className="min-w-[200px]">
+                {speciesList.map((s: any) => {
+                  const val = (s.name || s.code || "").toUpperCase();
+                  return (
+                    <SelectItem key={s.id || s.code || val} value={val}>
+                      {s.name || s.code}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-1.5">

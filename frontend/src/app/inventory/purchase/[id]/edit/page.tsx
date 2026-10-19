@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Plus, X, ArrowLeft } from "lucide-react"
+import { Loader2, Plus, X, ArrowLeft, Sparkles } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SawnTimberSpreadsheet, SawnTallyRow } from "@/components/timber/sawn-timber-spreadsheet"
+import { AiTallyImportModal } from "@/components/timber/ai-tally-import-modal"
+
 
 const calculateLogVolume = (length: number, d1: number, d2: number, rtManual?: number) => {
   if (!length) return 0;
@@ -80,6 +82,8 @@ export default function EditPurchasePage() {
   const [activeVariantRowIndex, setActiveVariantRowIndex] = useState<number>(0);
   const [newVariant, setNewVariant] = useState({ species: "", speciesId: "", grade: "", gradeId: "", thickness: "", width: "", length: "" });
   const [creatingVariant, setCreatingVariant] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
 
   const [form, setForm] = useState({
     partaiId: "",
@@ -438,6 +442,63 @@ export default function EditPurchasePage() {
     }));
   };
 
+  const handleAiDataParsed = (parsedRows: any[]) => {
+    if (!parsedRows || parsedRows.length === 0) return;
+
+    if (form.purchaseType === 'raw-log') {
+      const formatted = parsedRows.map((r, i) => {
+        const length = Number(r.length) || 0;
+        const d1 = Number(r.d1) || 0;
+        const d2 = Number(r.d2) || d1;
+        const rt = Number(r.rt) || ((d1 > 0 && d2 > 0) ? Math.round(((d1 + d2) / 2) * 10) / 10 : (d1 || d2 || 0));
+        const vol = calculateLogVolume(length, d1, d2, rt);
+
+        return {
+          logNumber: r.logNumber || `LOG-${i + 1}`,
+          species: r.species ? r.species.toUpperCase() : "MERBAU",
+          purchaseLength: length,
+          purchaseDiameter1: d1,
+          purchaseDiameter2: d2,
+          purchaseDiameterAvg: rt,
+          purchaseVolume: vol,
+        };
+      });
+
+      setForm(prev => ({
+        ...prev,
+        logItems: formatted,
+      }));
+    } else {
+      const formatted = parsedRows.map((r, i) => {
+        const t = Number(r.thickness) || 0;
+        const w = Number(r.width) || 0;
+        const l = Number(r.length) || 0;
+        const pcs = Number(r.pcs) || 1;
+        const vol = (t > 0 && w > 0 && l > 0 && pcs > 0) ? Number(((t * w * l * pcs) / 1000000).toFixed(4)) : 0;
+
+        return {
+          species: r.species ? r.species.toUpperCase() : "MERBAU",
+          grade: r.grade || "A",
+          purchaseThickness: t,
+          purchaseWidth: w,
+          purchaseLength: l,
+          quantityPcs: pcs,
+          volumeM3: vol,
+          unitPrice: Number(r.unitPrice) || 0,
+          timberVariantId: "",
+          batch: "UNKNOWN",
+          notes: "",
+        };
+      });
+
+      setForm(prev => ({
+        ...prev,
+        items: formatted,
+      }));
+    }
+  };
+
+
   const handleCellKeyDown = (
     e: React.KeyboardEvent<HTMLElement>,
     rowIndex: number,
@@ -756,6 +817,59 @@ export default function EditPurchasePage() {
                 />
               </TabsContent>
 
+              <TabsContent value="sawn-timber" className="space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b pb-3">
+                  <div>
+                    <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                      <span>🌲 Spreadsheet Pembelian Kayu Olahan (Sawn Timber)</span>
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Input tabel dimensi kayu: Tebal (T), Lebar (L), Panjang (P), dan Batang (Pcs). Otomatis hitung M³.
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={() => setIsAiModalOpen(true)}
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold shadow-sm flex items-center gap-1.5 shrink-0"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>✨ AI Auto-Input (Foto / WA)</span>
+                  </Button>
+                </div>
+                <SawnTimberSpreadsheet
+                  initialRows={form.items.map((it: any) => ({
+                    species: it.species || "MERBAU",
+                    grade: it.grade || "A",
+                    thickness: it.purchaseThickness || "",
+                    width: it.purchaseWidth || "",
+                    length: it.purchaseLength || "",
+                    pcs: it.quantityPcs || "",
+                    m3: it.volumeM3 || 0,
+                  }))}
+                  speciesList={speciesList}
+                  defaultSpecies="MERBAU"
+                  showSpecies={true}
+                  onChange={(updatedRows: SawnTallyRow[]) => {
+                    const mappedItems = updatedRows.map(r => ({
+                      species: r.species || "MERBAU",
+                      grade: r.grade || "A",
+                      purchaseThickness: parseFloat(String(r.thickness).replace(",", ".")) || 0,
+                      purchaseWidth: parseFloat(String(r.width).replace(",", ".")) || 0,
+                      purchaseLength: parseFloat(String(r.length).replace(",", ".")) || 0,
+                      quantityPcs: parseInt(String(r.pcs)) || 0,
+                      volumeM3: Number(r.m3) || 0,
+                      unitPrice: 0,
+                      timberVariantId: r.timberVariantId || "",
+                      batch: "UNKNOWN",
+                      notes: r.species || "SAWN-TIMBER",
+                    }));
+                    setForm(prev => ({ ...prev, items: mappedItems }));
+                  }}
+                />
+              </TabsContent>
+
               <TabsContent value="raw-log" className="space-y-4">
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b pb-3">
                   <div>
@@ -767,6 +881,16 @@ export default function EditPurchasePage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={() => setIsAiModalOpen(true)}
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-sm flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>✨ AI Auto-Input (Foto / WA)</span>
+                    </Button>
                     <Button type="button" variant="outline" size="sm" onClick={() => addLogRows(1)}>
                       <Plus className="w-3.5 h-3.5 mr-1" /> +1
                     </Button>
@@ -781,6 +905,7 @@ export default function EditPurchasePage() {
                     </Button>
                   </div>
                 </div>
+
 
                 <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-lg p-2.5 text-xs text-blue-800 dark:text-blue-300 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -856,21 +981,36 @@ export default function EditPurchasePage() {
                               />
                             </td>
                             <td className="py-1 px-2">
-                              <Input
-                                id={`log-species-${index}`}
-                                list="species-datalist"
-                                value={item.species || ""}
-                                placeholder="MERBAU"
-                                onFocus={(e) => e.target.select()}
-                                onKeyDown={(e) => handleCellKeyDown(e, index, 'species', 'log', form.logItems.length, () => addLogRows(1))}
-                                onChange={(e) => {
+                              <Select
+                                value={item.species || "MERBAU"}
+                                onValueChange={(val) => {
                                   const newLogItems = [...form.logItems];
-                                  newLogItems[index].species = e.target.value.toUpperCase();
+                                  newLogItems[index].species = val;
                                   setForm({ ...form, logItems: newLogItems });
                                 }}
-                                className="h-8 text-xs font-semibold uppercase"
-                              />
+                              >
+                                <SelectTrigger
+                                  id={`log-species-${index}`}
+                                  className="h-8 text-xs font-semibold uppercase justify-between bg-transparent border-input"
+                                  onKeyDown={(e) => handleCellKeyDown(e as any, index, 'species', 'log', form.logItems.length, () => addLogRows(1))}
+                                >
+                                  <SelectValue placeholder="Pilih Spesies">
+                                    {item.species || "MERBAU"}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent searchable={true} className="min-w-[180px]">
+                                  {speciesList.map((s: any) => {
+                                    const val = (s.name || s.code || "").toUpperCase();
+                                    return (
+                                      <SelectItem key={s.id || s.code || val} value={val}>
+                                        {s.name || s.code}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
                             </td>
+
                             <td className="py-1 px-2">
                               <Input
                                 id={`log-purchaseLength-${index}`}
@@ -1037,6 +1177,15 @@ export default function EditPurchasePage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* AI TALLY IMPORT MODAL */}
+      <AiTallyImportModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        workflowType={form.purchaseType === 'raw-log' ? 'RAW_LOG' : 'SAWN_TIMBER'}
+        onDataParsed={handleAiDataParsed}
+      />
     </div>
   );
 }
+

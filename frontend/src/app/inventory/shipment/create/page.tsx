@@ -198,18 +198,39 @@ export default function CreateShipmentPage() {
     e.preventDefault();
     setError("");
 
+    if (!form.shipmentNumber?.trim()) {
+      setError("Nomor surat muat / armada wajib diisi");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (!form.policeNumber?.trim()) {
+      setError("No. Polisi Kendaraan wajib diisi (contoh: L 8355 NA / KH 8916 GO)");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (!form.driverName?.trim()) {
+      setError("Nama supir / pengemudi wajib diisi");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     if (!form.warehouseId) {
       setError("Pilih gudang asal muat terlebih dahulu");
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
     if (validItems.length === 0 || totalPcs <= 0) {
-      setError("Tambahkan minimal satu baris muatan kayu dengan ukuran dan jumlah Pcs > 0");
+      setError("Tambahkan minimal satu baris muatan kayu dengan ukuran (T × L × P) dan jumlah Pcs > 0");
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
     if (form.warehouseId === form.destinationWarehouseId && form.destinationWarehouseId) {
       setError("Gudang asal dan gudang tujuan tidak boleh sama");
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -259,7 +280,9 @@ export default function CreateShipmentPage() {
         router.push(`/inventory/shipment/${res.id || ""}`);
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || err.message || "Gagal menyimpan surat muat fuso");
+      const errMsg = err?.response?.data?.message || err.message || "Gagal menyimpan surat muat fuso";
+      setError(errMsg);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setLoading(false);
     }

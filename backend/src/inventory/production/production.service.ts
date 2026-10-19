@@ -110,7 +110,7 @@ export class ProductionService {
               width: wMm,
               length: lMm,
               sku: skuCode,
-              barcode: `V-${skuCode}-${Date.now().toString().slice(-4)}`,
+              barcode: `V-${skuCode}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
               volumePerPiece: (tMm * wMm * lMm) / 1000000000,
             },
           });
@@ -188,7 +188,7 @@ export class ProductionService {
               width: wMm,
               length: lMm,
               sku: skuCode,
-              barcode: `V-${skuCode}-${Date.now().toString().slice(-4)}`,
+              barcode: `V-${skuCode}-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
               volumePerPiece: (tMm * wMm * lMm) / 1000000000,
             },
           });

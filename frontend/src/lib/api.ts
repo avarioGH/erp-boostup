@@ -387,6 +387,7 @@ export const ShipmentAPI: any = {
   createShipment: async (data: any) => (await api.post('/inventory/timber-shipment', data)).data,
   confirmShipment: async (id: string) => (await api.post('/inventory/timber-shipment/' + id + '/confirm')).data,
   cancelShipment: async (id: string) => (await api.post('/inventory/timber-shipment/' + id + '/cancel')).data,
+  updateShipment: async (id: string, data: any) => (await api.put('/inventory/timber-shipment/' + id, data)).data,
   deleteShipment: async (id: string) => (await api.delete('/inventory/timber-shipment/' + id)).data,
 };
 
@@ -454,3 +455,24 @@ export const SalesReturnAPI: any = {
   approve: async (id: string) => (await api.post('/sales/returns/' + id + '/approve')).data,
   reverse: async (id: string) => (await api.post('/sales/returns/' + id + '/reverse')).data
 };
+
+export const AiAPI: any = {
+  parseTallyDocument: async (fileOrBase64: File | string, workflowType: 'RAW_LOG' | 'SAWN_TIMBER' = 'RAW_LOG') => {
+    if (typeof fileOrBase64 === 'string') {
+      const res = await api.post('/api/ai/parse-tally', {
+        imageBase64: fileOrBase64,
+        workflowType,
+      });
+      return res.data;
+    } else {
+      const formData = new FormData();
+      formData.append('file', fileOrBase64);
+      formData.append('workflowType', workflowType);
+      const res = await api.post('/api/ai/parse-tally', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return res.data;
+    }
+  },
+};
+

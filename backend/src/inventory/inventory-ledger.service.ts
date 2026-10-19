@@ -41,6 +41,7 @@ export class InventoryLedgerService {
     quantityPcs: number,
     volumeM3: number,
     batch: string = 'UNKNOWN',
+    allowNegativeOrTransfer: boolean = false,
   ) {
     if (quantityPcs <= 0 || volumeM3 <= 0) {
       throw new BadRequestException('Quantity and volume must be positive');
@@ -53,7 +54,7 @@ export class InventoryLedgerService {
         (referenceType === 'ADJUSTMENT_OUT' || referenceType === 'REVERSAL'));
 
     // RESERVATION GUARD (Centralized)
-    if (isDecreasing) {
+    if (isDecreasing && !allowNegativeOrTransfer) {
       const stocks = await tx.timberStock.findMany({
         where: { locationId, timberVariantId },
       });
@@ -90,7 +91,7 @@ export class InventoryLedgerService {
     });
 
     if (!stock) {
-      if (isDecreasing) {
+      if (isDecreasing && !allowNegativeOrTransfer) {
         throw new BadRequestException(
           'Insufficient stock (No stock record exists)',
         );
@@ -142,7 +143,7 @@ export class InventoryLedgerService {
     }
 
     let whereCondition: any = { id: stock.id };
-    if (isDecreasing) {
+    if (isDecreasing && !allowNegativeOrTransfer) {
       whereCondition.currentPcs = { gte: quantityPcs };
       // Dual-Dimension Guard: Strict ledger conservation.
       // Do not allow overdraw: available volume must be strictly >= requested volume.
@@ -156,7 +157,7 @@ export class InventoryLedgerService {
     });
 
     if (updateResult.count === 0) {
-      if (isDecreasing) {
+      if (isDecreasing && !allowNegativeOrTransfer) {
         throw new BadRequestException(
           `Insufficient stock (PCS or Volume M3) or concurrent modification for variant ${timberVariantId}. Required: ${quantityPcs} pcs, ${volumeM3} m3`,
         );

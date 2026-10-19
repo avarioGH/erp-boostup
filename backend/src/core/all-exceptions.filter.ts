@@ -46,8 +46,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     ) {
       status = HttpStatus.BAD_REQUEST;
       code = 'DUPLICATE_ENTRY';
-      message =
-        'Data dengan kode atau entitas tersebut sudah terdaftar di sistem (duplikat).';
+      const target = prismaError?.meta?.target;
+      const targetStr = Array.isArray(target) ? target.join(', ') : (target ? String(target) : '');
+      message = targetStr
+        ? `Data dengan ${targetStr} tersebut sudah terdaftar di sistem (duplikat).`
+        : 'Data dengan kode atau entitas tersebut sudah terdaftar di sistem (duplikat).';
     } else if (
       prismaError?.code === 'P2025' ||
       (typeof prismaError?.message === 'string' &&

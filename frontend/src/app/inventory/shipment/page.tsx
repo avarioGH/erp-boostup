@@ -7,12 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Plus, Truck, ArrowRight, Search, FileBox, Printer, Trash2, CheckCircle2, MapPin, Calendar, UserSquare2, Layers, BarChart2 } from "lucide-react";
+import { Loader2, Plus, Truck, ArrowRight, ArrowLeft, Search, FileBox, Printer, Trash2, CheckCircle2, MapPin, Calendar, UserSquare2, Layers, BarChart2, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function ShipmentListPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const partaiId = searchParams.get("partaiId") || "";
+
   const [shipments, setShipments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -20,7 +23,9 @@ export default function ShipmentListPage() {
 
   const fetchShipments = () => {
     setLoading(true);
-    ShipmentAPI.getShipments()
+    const params: any = {};
+    if (partaiId) params.partaiId = partaiId;
+    ShipmentAPI.getShipments(params)
       .then((res: any) => {
         setShipments(res?.data || res || []);
       })
@@ -30,7 +35,7 @@ export default function ShipmentListPage() {
 
   useEffect(() => {
     fetchShipments();
-  }, []);
+  }, [partaiId]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -89,22 +94,53 @@ export default function ShipmentListPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
         <div>
           <div className="flex items-center gap-2">
+            {partaiId && (
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => router.push(`/inventory/partai/${partaiId}?tab=shipment`)} 
+                className="shrink-0 h-9 w-9 mr-1"
+                title="Kembali ke Partai"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            )}
             <span className="p-2 bg-amber-500/10 text-amber-600 rounded-lg">
               <Truck className="w-6 h-6" />
             </span>
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-              Data Muat & Rekap Fuso (Ekspedisi)
-            </h1>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
+                  Data Muat & Rekap Fuso (Ekspedisi)
+                </h1>
+                {partaiId && (
+                  <Badge variant="outline" className="border-amber-500 text-amber-600 bg-amber-50/50 dark:bg-amber-950/20 text-xs">
+                    Khusus Partai Ini
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+                {partaiId 
+                  ? "Menampilkan tally muatan dan rekap armada Fuso khusus untuk partai terpilih (tidak tercampur partai lain)." 
+                  : "Tally muatan armada truk/fuso ex-Kalteng, pencatatan ukuran T/L/P, dan rekapitulasi volume armada muat."}
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Tally muatan armada truk/fuso ex-Kalteng, pencatatan ukuran T/L/P, dan rekapitulasi volume armada muat.
-          </p>
         </div>
-        <Link href="/inventory/shipment/create" className="w-full sm:w-auto">
-          <Button className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-semibold h-10 shadow-sm">
-            <Plus className="w-4 h-4 mr-2" /> Buat Tally Muat Fuso
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          {partaiId && (
+            <Link href="/inventory/shipment" className="w-full sm:w-auto">
+              <Button variant="outline" className="w-full sm:w-auto text-xs h-10">
+                Lihat Semua Partai
+              </Button>
+            </Link>
+          )}
+          <Link href={partaiId ? `/inventory/shipment/create?partaiId=${partaiId}` : "/inventory/shipment/create"} className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-semibold h-10 shadow-sm">
+              <Plus className="w-4 h-4 mr-2" /> Buat Tally Muat Fuso
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -237,7 +273,7 @@ export default function ShipmentListPage() {
                         return (
                           <tr 
                             key={s.id} 
-                            onClick={() => router.push(`/inventory/shipment/${s.id}`)}
+                            onClick={() => router.push(`/inventory/shipment/${s.id}${partaiId ? `?partaiId=${partaiId}` : ''}`)}
                             className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors cursor-pointer group"
                           >
                             <td className="py-3 px-5">
@@ -273,12 +309,23 @@ export default function ShipmentListPage() {
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  onClick={() => router.push(`/inventory/shipment/${s.id}`)}
+                                  onClick={() => router.push(`/inventory/shipment/${s.id}${partaiId ? `?partaiId=${partaiId}` : ''}`)}
                                   className="h-8 px-2 text-primary hover:bg-primary/10"
                                   title="Lihat Detail"
                                 >
                                   <ArrowRight className="w-4 h-4" />
                                 </Button>
+                                {isDraft && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    onClick={() => router.push(`/inventory/shipment/${s.id}/edit${partaiId ? `?partaiId=${partaiId}` : ''}`)}
+                                    className="h-8 px-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                                    title="Edit Surat Muat"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                )}
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 

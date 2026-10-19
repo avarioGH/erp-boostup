@@ -12,6 +12,7 @@ import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { SawnTimberSpreadsheet, SawnTallyRow } from "@/components/timber/sawn-timber-spreadsheet"
 
 export default function InputLogDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -58,7 +59,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
   
   // Tally Modal State
   const [tallyOpen, setTallyOpen] = useState(false)
-  const [tallyLines, setTallyLines] = useState([{ t: "", l: "", p: "", pcs: "", productType: "BALOK" }])
+  const [tallyLines, setTallyLines] = useState<SawnTallyRow[]>([{ thickness: "", width: "", length: "", pcs: "", productType: "BALOK" }])
   const [tallyDate, setTallyDate] = useState(new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0])
   const [savingTally, setSavingTally] = useState(false)
 
@@ -170,7 +171,13 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
   const handleSaveTally = async () => {
     try {
       // Validate
-      const validLines = tallyLines.filter(line => Number(line.t) > 0 && Number(line.l) > 0 && Number(line.p) > 0 && Number(line.pcs) > 0)
+      const validLines = tallyLines.filter(line => {
+        const t = parseFloat(String(line.thickness).replace(",", "."));
+        const w = parseFloat(String(line.width).replace(",", "."));
+        const p = parseFloat(String(line.length).replace(",", "."));
+        const pcs = parseInt(String(line.pcs));
+        return t > 0 && w > 0 && p > 0 && pcs > 0;
+      });
       if (validLines.length === 0) {
         toast({ title: "Input Tidak Valid", description: "Mohon isi setidaknya satu baris dimensi dengan benar.", variant: "destructive" })
         return
@@ -207,14 +214,20 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
         partaiId: data?.partaiId,
         outputDate: tallyDate,
         locationId: whId,
-        items: validLines.map(line => ({
-          thickness: parseFloat(line.t) * 10,
-          width: parseFloat(line.l) * 10,
-          length: parseFloat(line.p) * 10,
-          quantityPcs: parseInt(line.pcs),
-          grade: "PENDING",
-          productType: line.productType || "BALOK"
-        }))
+        items: validLines.map(line => {
+          const t = parseFloat(String(line.thickness).replace(",", "."));
+          const w = parseFloat(String(line.width).replace(",", "."));
+          const p = parseFloat(String(line.length).replace(",", "."));
+          const pcs = parseInt(String(line.pcs));
+          return {
+            thickness: t * 10,
+            width: w * 10,
+            length: p * 10,
+            quantityPcs: pcs,
+            grade: "PENDING",
+            productType: line.productType || "BALOK"
+          };
+        })
       }
 
       const res = await api.post('/inventory/sawn-timber/output', payload)
@@ -223,7 +236,7 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
       
       toast({ title: "Berhasil", description: "Tally harian berhasil disimpan dan di-posting." })
       setTallyOpen(false)
-      setTallyLines([{ t: "", l: "", p: "", pcs: "", productType: "BALOK" }])
+      setTallyLines([{ thickness: "", width: "", length: "", pcs: "", productType: "BALOK" }])
       loadData()
     } catch (err: any) {
       toast({ title: "Gagal Menyimpan Tally", description: err?.response?.data?.error?.message || err?.response?.data?.message || err.message, variant: "destructive" });
@@ -422,57 +435,15 @@ export default function InputLogDetailPage({ params }: { params: Promise<{ id: s
                       </div>
                     </div>
                     
-                    <div className="border rounded-md overflow-hidden shadow-sm">
-                      <Table>
-                        <TableHeader className="bg-muted/80">
-                          <TableRow>
-                            <TableHead className="w-[110px]">T (cm)</TableHead>
-                            <TableHead className="w-[110px]">L (cm)</TableHead>
-                            <TableHead className="w-[120px]">P (cm)</TableHead>
-                            <TableHead className="w-[110px]">PCS</TableHead>
-                            <TableHead className="min-w-[150px]">Kategori</TableHead>
-                            <TableHead className="w-[130px] text-right">M&sup3; (Auto)</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {tallyLines.map((line, idx) => {
-                            const vol = (Number(line.t || 0) * Number(line.l || 0) * Number(line.p || 0) * Number(line.pcs || 0)) / 1000000
-                            return (
-                              <TableRow key={idx}>
-                                <TableCell className="p-2"><Input type="number" placeholder="5" value={line.t} onChange={e => { const n = [...tallyLines]; n[idx].t = e.target.value; setTallyLines(n) }} /></TableCell>
-                                <TableCell className="p-2"><Input type="number" placeholder="10" value={line.l} onChange={e => { const n = [...tallyLines]; n[idx].l = e.target.value; setTallyLines(n) }} /></TableCell>
-                                <TableCell className="p-2"><Input type="number" placeholder="400" value={line.p} onChange={e => { const n = [...tallyLines]; n[idx].p = e.target.value; setTallyLines(n) }} /></TableCell>
-                                <TableCell className="p-2"><Input type="number" placeholder="15" value={line.pcs} onChange={e => { const n = [...tallyLines]; n[idx].pcs = e.target.value; setTallyLines(n) }} /></TableCell>
-                                <TableCell className="p-2">
-                                  <select 
-                                    className="h-9 w-full rounded-md border border-input bg-background px-2 py-1 text-xs font-semibold focus:outline-none"
-                                    value={line.productType || "BALOK"} 
-                                    onChange={e => { const n = [...tallyLines]; n[idx].productType = e.target.value; setTallyLines(n); }}
-                                  >
-                                    <option value="BALOK">Balok (Main)</option>
-                                    <option value="RENG">Reng / Papan</option>
-                                    <option value="AFKIR_BS">BS / Afkir</option>
-                                    <option value="AIR_DRY">Air Dry</option>
-                                    <option value="FJL">FJL / Jasa</option>
-                                  </select>
-                                </TableCell>
-                                <TableCell className="p-2 font-mono font-semibold text-emerald-600">{vol.toFixed(4)}</TableCell>
-                                <TableCell className="p-2">
-                                  <Button variant="ghost" size="icon" onClick={() => setTallyLines(tallyLines.filter((_, i) => i !== idx))} disabled={tallyLines.length === 1}>
-                                    <X className="w-4 h-4 text-rose-500" />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            )
-                          })}
-                        </TableBody>
-                      </Table>
-                      <div className="p-2 bg-muted/30 border-t">
-                        <Button variant="ghost" size="sm" onClick={() => setTallyLines([...tallyLines, { t: "", l: "", p: "", pcs: "", productType: "BALOK" }])} className="w-full border border-dashed">
-                          <Plus className="w-4 h-4 mr-2" /> Tambah Ukuran Lain
-                        </Button>
-                      </div>
+                    <div className="border rounded-md overflow-hidden shadow-sm p-1 bg-background">
+                      <SawnTimberSpreadsheet
+                        initialRows={tallyLines}
+                        showSpecies={false}
+                        showGrade={false}
+                        showProductType={true}
+                        defaultProductType="BALOK"
+                        onChange={(updatedRows) => setTallyLines(updatedRows)}
+                      />
                     </div>
                   </div>
                   <DialogFooter>

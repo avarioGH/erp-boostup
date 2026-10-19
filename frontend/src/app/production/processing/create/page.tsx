@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   ArrowLeft, 
   Plus, 
@@ -29,7 +30,8 @@ import {
   ChevronRight,
   Boxes,
   HelpCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  AlertCircle
 } from "lucide-react";
 
 export interface SizeRow {
@@ -143,6 +145,7 @@ export default function CreateProcessingProjectPage() {
   const [masterProcessingTypes, setMasterProcessingTypes] = useState<any[]>(DEFAULT_PROCESSING_TYPES);
   const [speciesList, setSpeciesList] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
 
   // Selected Step to add
   const [selectedTypeToAdd, setSelectedTypeToAdd] = useState<string>("");
@@ -259,11 +262,17 @@ export default function CreateProcessingProjectPage() {
   };
 
   // Kalkulasi Volume Ukuran: (T cm * W cm * L cm * Pcs) / 1.000.000
-  const calcVolume = (t: string, w: string, l: string, pcs: string): number => {
-    const tNum = parseFloat(t) || 0;
-    const wNum = parseFloat(w) || 0;
-    const lNum = parseFloat(l) || 0;
-    const pcsNum = parseInt(pcs) || 0;
+  const calcVolume = (t: string | number, w: string | number, l: string | number, pcs: string | number): number => {
+    const tStr = String(t ?? "").replace(",", ".");
+    const wStr = String(w ?? "").replace(",", ".");
+    const lStr = String(l ?? "").replace(",", ".");
+    const pcsStr = String(pcs ?? "").replace(",", ".");
+
+    const tNum = parseFloat(tStr) || 0;
+    const wNum = parseFloat(wStr) || 0;
+    const lNum = parseFloat(lStr) || 0;
+    const pcsNum = parseFloat(pcsStr) || 0;
+
     if (tNum <= 0 || wNum <= 0 || lNum <= 0 || pcsNum <= 0) return 0;
     const vol = (tNum * wNum * lNum * pcsNum) / 1000000;
     return isNaN(vol) ? 0 : Number(vol.toFixed(4));
@@ -512,6 +521,7 @@ export default function CreateProcessingProjectPage() {
     }
 
     setSubmitting(true);
+    setPageError(null);
     try {
       // Siapkan Structured Multi-Step Metadata untuk disimpan di field `notes`
       const projectMetadata = {
@@ -585,16 +595,20 @@ export default function CreateProcessingProjectPage() {
         description: `Project ${processNo} (${pipelineCode}) berhasil disimpan ${status === "CONFIRMED" ? "dan mutasi stok fisik dieksekusi." : "sebagai DRAFT."}`
       });
 
-      if (urlPartaiId) {
-        router.push(`/inventory/partai/${urlPartaiId}?tab=processing`);
-      } else {
-        router.push("/production/processing");
-      }
+      setTimeout(() => {
+        if (urlPartaiId) {
+          router.push(`/inventory/partai/${urlPartaiId}?tab=processing`);
+        } else {
+          router.push("/production/processing");
+        }
+      }, 700);
     } catch (err: any) {
       console.error(err);
+      const errMsg = err?.response?.data?.message || err?.response?.data?.error?.message || err.message || "Terjadi kesalahan sistem saat menyimpan project";
+      setPageError(errMsg);
       toast({ 
         title: "Gagal Menyimpan Project", 
-        description: err?.response?.data?.message || err.message || "Terjadi kesalahan sistem", 
+        description: errMsg, 
         variant: "destructive" 
       });
     } finally {
@@ -642,6 +656,23 @@ export default function CreateProcessingProjectPage() {
           </Button>
         </div>
       </div>
+
+      {pageError && (
+        <Alert variant="destructive" className="border-rose-500/50 bg-rose-50/50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300">
+          <AlertCircle className="h-4 w-4 text-rose-600" />
+          <AlertDescription className="font-semibold text-xs flex items-center justify-between">
+            <span>{pageError}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPageError(null)}
+              className="h-6 px-2 text-xs text-rose-600 hover:text-rose-800"
+            >
+              Tutup
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* PROJECT CONFIGURATION CARD */}
       <Card className="border shadow-sm">
@@ -878,15 +909,15 @@ export default function CreateProcessingProjectPage() {
               <Table>
                 <TableHeader className="bg-muted/40">
                   <TableRow className="text-xs">
-                    <TableHead className="w-[50px] text-center">No</TableHead>
-                    <TableHead className="w-[150px]">Bundle / No Seri</TableHead>
-                    <TableHead className="w-[160px]">Jenis Kayu</TableHead>
-                    <TableHead className="w-[100px] text-center">Tebal (cm)</TableHead>
-                    <TableHead className="w-[100px] text-center">Lebar (cm)</TableHead>
-                    <TableHead className="w-[100px] text-center">Panjang (cm)</TableHead>
-                    <TableHead className="w-[100px] text-center">Pcs</TableHead>
-                    <TableHead className="w-[120px] text-right font-bold pr-4">Kubikasi (M³)</TableHead>
-                    <TableHead className="w-[50px] text-center"></TableHead>
+                    <TableHead className="w-[45px] text-center">No</TableHead>
+                    <TableHead className="w-[140px]">Bundle / No Seri</TableHead>
+                    <TableHead className="w-[150px]">Jenis Kayu</TableHead>
+                    <TableHead className="w-[85px] text-center">T (cm)</TableHead>
+                    <TableHead className="w-[85px] text-center">L (cm)</TableHead>
+                    <TableHead className="w-[85px] text-center">P (cm)</TableHead>
+                    <TableHead className="w-[85px] text-center">Pcs</TableHead>
+                    <TableHead className="w-[110px] text-right font-bold pr-4">Kubikasi (M³)</TableHead>
+                    <TableHead className="w-[45px] text-center"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -904,64 +935,80 @@ export default function CreateProcessingProjectPage() {
                         />
                       </TableCell>
                       <TableCell>
-                        <Input
-                          id={`input-species-${idx}`}
-                          placeholder="Merbau / Jati"
-                          value={row.species}
-                          onChange={e => handleInputChange(idx, "species", e.target.value)}
-                          onKeyDown={e => handleKeyDown(e, "input", idx, "species")}
-                          className="h-8 text-xs"
-                        />
+                        <Select
+                          value={row.species || (speciesList[0]?.name || "MERBAU")}
+                          onValueChange={(val) => handleInputChange(idx, "species", val)}
+                        >
+                          <SelectTrigger
+                            id={`input-species-${idx}`}
+                            className="h-8 text-xs font-semibold uppercase justify-between bg-transparent border-input"
+                          >
+                            <SelectValue placeholder="Pilih Spesies">
+                              {row.species || (speciesList[0]?.name || "MERBAU")}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent searchable={true} className="min-w-[180px]">
+                            {speciesList.map((s: any) => {
+                              const val = (s.name || s.code || "").toUpperCase();
+                              return (
+                                <SelectItem key={s.id || s.code || val} value={val}>
+                                  {s.name || s.code}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-1.5">
                         <Input
                           id={`input-t-${idx}`}
-                          type="number"
-                          step="any"
-                          placeholder="T cm"
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="T"
                           value={row.t}
                           onChange={e => handleInputChange(idx, "t", e.target.value)}
                           onKeyDown={e => handleKeyDown(e, "input", idx, "t")}
-                          className="h-8 text-xs font-mono text-center"
+                          className="h-8 text-xs font-mono text-center px-1"
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-1.5">
                         <Input
                           id={`input-w-${idx}`}
-                          type="number"
-                          step="any"
-                          placeholder="L cm"
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="L"
                           value={row.w}
                           onChange={e => handleInputChange(idx, "w", e.target.value)}
                           onKeyDown={e => handleKeyDown(e, "input", idx, "w")}
-                          className="h-8 text-xs font-mono text-center"
+                          className="h-8 text-xs font-mono text-center px-1"
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-1.5">
                         <Input
                           id={`input-l-${idx}`}
-                          type="number"
-                          step="any"
-                          placeholder="P cm"
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="P"
                           value={row.l}
                           onChange={e => handleInputChange(idx, "l", e.target.value)}
                           onKeyDown={e => handleKeyDown(e, "input", idx, "l")}
-                          className="h-8 text-xs font-mono text-center"
+                          className="h-8 text-xs font-mono text-center px-1"
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="px-1.5">
                         <Input
                           id={`input-pcs-${idx}`}
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
                           placeholder="Pcs"
                           value={row.pcs}
                           onChange={e => handleInputChange(idx, "pcs", e.target.value)}
                           onKeyDown={e => handleKeyDown(e, "input", idx, "pcs")}
-                          className="h-8 text-xs font-mono text-center font-bold"
+                          className="h-8 text-xs font-mono text-center font-bold px-1"
                         />
                       </TableCell>
                       <TableCell className="text-right font-mono font-bold text-xs text-blue-600 dark:text-blue-400 pr-4">
-                        {row.volumeM3 > 0 ? row.volumeM3.toFixed(4) : "-"}
+                        {row.volumeM3 > 0 ? Number(row.volumeM3.toFixed(4)) : "-"}
                       </TableCell>
                       <TableCell className="text-center">
                         <Button
@@ -1159,10 +1206,10 @@ export default function CreateProcessingProjectPage() {
                       ))}
 
                       <TableHead className="w-[140px]">Jenis Kayu</TableHead>
-                      <TableHead className="w-[90px] text-center">T (cm)</TableHead>
-                      <TableHead className="w-[90px] text-center">L (cm)</TableHead>
-                      <TableHead className="w-[90px] text-center">P (cm)</TableHead>
-                      <TableHead className="w-[90px] text-center">Pcs</TableHead>
+                      <TableHead className="w-[85px] text-center">T (cm)</TableHead>
+                      <TableHead className="w-[85px] text-center">L (cm)</TableHead>
+                      <TableHead className="w-[85px] text-center">P (cm)</TableHead>
+                      <TableHead className="w-[85px] text-center">Pcs</TableHead>
                       <TableHead className={`w-[110px] text-right font-bold pr-4 ${isFinal ? "text-emerald-700 dark:text-emerald-400" : ""}`}>
                         Kubikasi (M³)
                       </TableHead>
@@ -1197,64 +1244,80 @@ export default function CreateProcessingProjectPage() {
                         ))}
 
                         <TableCell>
-                          <Input
-                            id={`step-${sIdx}-species-${rIdx}`}
-                            placeholder="Merbau / Jati"
-                            value={row.species}
-                            onChange={e => handleStepRowChange(sIdx, rIdx, "species", e.target.value)}
-                            onKeyDown={e => handleKeyDown(e, `step-${sIdx}`, rIdx, "species", sIdx)}
-                            className="h-8 text-xs"
-                          />
+                          <Select
+                            value={row.species || (speciesList[0]?.name || "MERBAU")}
+                            onValueChange={(val) => handleStepRowChange(sIdx, rIdx, "species", val)}
+                          >
+                            <SelectTrigger
+                              id={`step-${sIdx}-species-${rIdx}`}
+                              className="h-8 text-xs font-semibold uppercase justify-between bg-transparent border-input"
+                            >
+                              <SelectValue placeholder="Pilih Spesies">
+                                {row.species || (speciesList[0]?.name || "MERBAU")}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent searchable={true} className="min-w-[180px]">
+                              {speciesList.map((s: any) => {
+                                const val = (s.name || s.code || "").toUpperCase();
+                                return (
+                                  <SelectItem key={s.id || s.code || val} value={val}>
+                                    {s.name || s.code}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-1.5">
                           <Input
                             id={`step-${sIdx}-t-${rIdx}`}
-                            type="number"
-                            step="any"
-                            placeholder="T cm"
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="T"
                             value={row.t}
                             onChange={e => handleStepRowChange(sIdx, rIdx, "t", e.target.value)}
                             onKeyDown={e => handleKeyDown(e, `step-${sIdx}`, rIdx, "t", sIdx)}
-                            className="h-8 text-xs font-mono text-center"
+                            className="h-8 text-xs font-mono text-center px-1"
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-1.5">
                           <Input
                             id={`step-${sIdx}-w-${rIdx}`}
-                            type="number"
-                            step="any"
-                            placeholder="L cm"
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="L"
                             value={row.w}
                             onChange={e => handleStepRowChange(sIdx, rIdx, "w", e.target.value)}
                             onKeyDown={e => handleKeyDown(e, `step-${sIdx}`, rIdx, "w", sIdx)}
-                            className="h-8 text-xs font-mono text-center"
+                            className="h-8 text-xs font-mono text-center px-1"
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-1.5">
                           <Input
                             id={`step-${sIdx}-l-${rIdx}`}
-                            type="number"
-                            step="any"
-                            placeholder="P cm"
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="P"
                             value={row.l}
                             onChange={e => handleStepRowChange(sIdx, rIdx, "l", e.target.value)}
                             onKeyDown={e => handleKeyDown(e, `step-${sIdx}`, rIdx, "l", sIdx)}
-                            className="h-8 text-xs font-mono text-center"
+                            className="h-8 text-xs font-mono text-center px-1"
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-1.5">
                           <Input
                             id={`step-${sIdx}-pcs-${rIdx}`}
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
                             placeholder="Pcs"
                             value={row.pcs}
                             onChange={e => handleStepRowChange(sIdx, rIdx, "pcs", e.target.value)}
                             onKeyDown={e => handleKeyDown(e, `step-${sIdx}`, rIdx, "pcs", sIdx)}
-                            className="h-8 text-xs font-mono text-center font-bold"
+                            className="h-8 text-xs font-mono text-center font-bold px-1"
                           />
                         </TableCell>
                         <TableCell className={`text-right font-mono font-bold text-xs pr-4 ${isFinal ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"}`}>
-                          {row.volumeM3 > 0 ? row.volumeM3.toFixed(4) : "-"}
+                          {row.volumeM3 > 0 ? Number(row.volumeM3.toFixed(4)) : "-"}
                         </TableCell>
                         <TableCell className="text-center">
                           <Button

@@ -247,6 +247,161 @@ export class ShipmentService {
     return shipment;
   }
 
+  async update(id: string, companyId?: string, data?: any) {
+    const where: any = { id };
+    if (companyId && /^[0-9a-fA-F]{24}$/.test(companyId)) {
+      where.company_id = companyId;
+    }
+
+    const existing = await this.prisma.timberShipment.findFirst({
+      where,
+      include: { items: true },
+    });
+
+    if (!existing) throw new NotFoundException('Timber shipment not found');
+    if (existing.status !== 'DRAFT') {
+      throw new BadRequestException('Hanya pengiriman status DRAFT yang dapat diedit.');
+    }
+
+    const targetCompanyId = existing.company_id;
+    const items = data.items || [];
+
+    let totalPcs = 0;
+    let totalVolumeM3 = 0;
+    const processedItems: any[] = [];
+
+    for (const item of items) {
+      let vol = Number(item.volumeM3) || 0;
+      if (!vol && item.thicknessMm && item.widthMm && item.lengthMm && item.quantityPcs) {
+        vol = (Number(item.quantityPcs) * Number(item.thicknessMm) * Number(item.widthMm) * Number(item.lengthMm)) / 1000000000;
+      }
+      totalPcs += Number(item.quantityPcs) || 0;
+      totalVolumeM3 += vol;
+
+      let variantId = item.timberVariantId;
+      if (!variantId && item.thicknessMm && item.widthMm && item.lengthMm && item.species) {
+        const tMm = Math.round(Number(item.thicknessMm));
+        const wMm = Math.round(Number(item.widthMm));
+        const lMm = Math.round(Number(item.lengthMm));
+        const spec = String(item.species).trim().toUpperCase();
+        const grd = (item.grade || 'STANDARD').toUpperCase();
+
+        const found = await this.prisma.timberVariant.findFirst({
+          where: {
+            company_id: targetCompanyId,
+            species: { equals: spec, mode: 'insensitive' },
+            thickness: tMm,
+            width: wMm,
+            length: lMm,
+          },
+        });
+
+        if (found) {
+          variantId = found.id;
+        } else {
+          let genericProduct = await this.prisma.product.findFirst({
+            where: { company_id: targetCompanyId, code: spec },
+          });
+          if (!genericProduct) {
+            let unit = await this.prisma.unit.findFirst({
+              where: { company_id: targetCompanyId, name: 'M3' },
+            });
+            if (!unit) {
+              unit = await this.prisma.unit.create({
+                data: { company_id: targetCompanyId, name: 'M3' },
+              });
+            }
+            genericProduct = await this.prisma.product.create({
+              data: {
+                company_id: targetCompanyId,
+                name: `KAYU ${spec}`,
+                code: spec,
+                unit_id: unit.id,
+                purchase_price: 0,
+                selling_price: 0,
+                status: true,
+              },
+            });
+          }
+
+          const skuCode = `${spec}-${grd}-${tMm}X${wMm}X${lMm}`;
+          const newVar = await this.prisma.timberVariant.create({
+            data: {
+              company_id: targetCompanyId,
+              productId: genericProduct.id,
+              species: spec,
+              grade: grd,
+              thickness: tMm,
+              width: wMm,
+              length: lMm,
+              sku: skuCode,
+              barcode: `V-${skuCode}-${Date.now().toString().slice(-4)}`,
+              volumePerPiece: (tMm * wMm * lMm) / 1000000000,
+            },
+          });
+          variantId = newVar.id;
+        }
+      }
+
+      processedItems.push({
+        timberVariantId: variantId || undefined,
+        batch: item.batch || 'UNKNOWN',
+        species: item.species || null,
+        productCategory: item.productCategory || 'BALOK',
+        thicknessMm: item.thicknessMm ? Number(item.thicknessMm) : null,
+        widthMm: item.widthMm ? Number(item.widthMm) : null,
+        lengthMm: item.lengthMm ? Number(item.lengthMm) : null,
+        quantityPcs: Number(item.quantityPcs) || 0,
+        volumeM3: Number(vol.toFixed(4)),
+        salesOrderItemId: item.salesOrderItemId || undefined,
+      });
+    }
+
+    return this.prisma.$transaction(async (tx: any) => {
+      // Delete old items
+      await tx.timberShipmentItem.deleteMany({
+        where: { timberShipmentId: id },
+      });
+
+      // Update header and create new items
+      const updated = await tx.timberShipment.update({
+        where: { id },
+        data: {
+          shipmentNumber: data.shipmentNumber || existing.shipmentNumber,
+          shipmentDate: data.shipmentDate ? new Date(data.shipmentDate) : existing.shipmentDate,
+          warehouseId: data.warehouseId || existing.warehouseId,
+          destinationWarehouseId: data.destinationWarehouseId !== undefined ? (data.destinationWarehouseId || null) : existing.destinationWarehouseId,
+          vehicleId: data.vehicleId !== undefined ? (data.vehicleId || null) : existing.vehicleId,
+          driverId: data.driverId !== undefined ? (data.driverId || null) : existing.driverId,
+          fusoName: data.fusoName !== undefined ? data.fusoName : existing.fusoName,
+          policeNumber: data.policeNumber !== undefined ? data.policeNumber : existing.policeNumber,
+          driverName: data.driverName !== undefined ? data.driverName : existing.driverName,
+          customerId: data.customerId !== undefined ? (data.customerId || null) : existing.customerId,
+          destinationName: data.destinationName !== undefined ? data.destinationName : existing.destinationName,
+          destinationAddress: data.destinationAddress !== undefined ? data.destinationAddress : existing.destinationAddress,
+          notes: data.notes !== undefined ? data.notes : existing.notes,
+          partaiId: data.partaiId !== undefined ? (data.partaiId || null) : existing.partaiId,
+          totalPcs,
+          totalVolumeM3: Number(totalVolumeM3.toFixed(4)),
+          items: {
+            create: processedItems,
+          },
+        },
+        include: {
+          warehouse: true,
+          destinationWarehouse: true,
+          items: { include: { timberVariant: true } },
+        },
+      });
+
+      if (data.autoConfirm) {
+        return this.confirm(updated.id, targetCompanyId);
+      }
+
+      return updated;
+    });
+  }
+
   private async updateSalesOrderStatus(tx: any, salesOrderId: string) {
     const updatedItems = await tx.timberSalesOrderItem.findMany({
       where: { salesOrderId },
@@ -347,6 +502,7 @@ export class ShipmentService {
         }
 
         if (item.timberVariantId) {
+          const isTransferOrDirect = !!shipment.destinationWarehouseId || !shipment.salesOrderId;
           await this.inventoryLedgerService.createMovement(
             tx,
             shipment.warehouseId,
@@ -357,6 +513,7 @@ export class ShipmentService {
             item.quantityPcs,
             item.volumeM3,
             item.batch,
+            isTransferOrDirect,
           );
 
           // If this shipment transfers stock to another warehouse, record TRANSFER_IN at destination
@@ -371,6 +528,7 @@ export class ShipmentService {
               item.quantityPcs,
               item.volumeM3,
               item.batch,
+              true,
             );
           }
         }
@@ -408,6 +566,7 @@ export class ShipmentService {
 
       for (const item of shipment.items) {
         if (item.timberVariantId) {
+          const isTransferOrDirect = !!shipment.destinationWarehouseId || !shipment.salesOrderId;
           await this.inventoryLedgerService.createMovement(
             tx,
             shipment.warehouseId,
@@ -418,6 +577,7 @@ export class ShipmentService {
             item.quantityPcs,
             item.volumeM3,
             item.batch,
+            true,
           );
 
           // If this shipment transferred stock to another warehouse, reverse it at destination
@@ -432,6 +592,7 @@ export class ShipmentService {
               item.quantityPcs,
               item.volumeM3,
               item.batch,
+              isTransferOrDirect,
             );
           }
         }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ShipmentAPI } from "@/lib/api";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,15 +10,26 @@ import { Badge } from "@/components/ui/badge";
 import { 
   AlertCircle, ArrowLeft, Loader2, CheckCircle2, XCircle, Truck, 
   MapPin, UserSquare2, Package2, CalendarClock, Printer, Trash2, 
-  Layers, BarChart2, ShieldCheck 
+  Layers, BarChart2, ShieldCheck, Edit
 } from "lucide-react";
 
 export default function ShipmentDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [shipment, setShipment] = useState<any>(null);
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+
+  const linkedPartaiId = searchParams.get("partaiId") || shipment?.partaiId || "";
+
+  const handleBack = () => {
+    if (linkedPartaiId) {
+      router.push(`/inventory/partai/${linkedPartaiId}?tab=shipment`);
+    } else {
+      router.push('/inventory/shipment');
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -92,7 +103,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
         <Truck className="w-12 h-12 text-muted-foreground opacity-30 mb-4" />
         <h2 className="text-xl font-bold text-foreground mb-2">Data Muatan Tidak Ditemukan</h2>
         <p className="text-muted-foreground max-w-md mb-6 text-[15px]">Data pengiriman tidak ditemukan atau terjadi kesalahan server.</p>
-        <Button onClick={() => router.push('/inventory/shipment')} variant="outline" className="h-10 px-6 font-semibold">
+        <Button onClick={handleBack} variant="outline" className="h-10 px-6 font-semibold">
           <ArrowLeft className="w-4 h-4 mr-2" /> Kembali ke Data Muat
         </Button>
       </div>
@@ -135,7 +146,7 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-4 md:p-6 rounded-xl border border-border shadow-sm">
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" onClick={() => router.push('/inventory/shipment')} className="shrink-0 h-10 w-10">
+          <Button variant="outline" size="icon" onClick={handleBack} className="shrink-0 h-10 w-10">
             <ArrowLeft className="w-4 h-4 text-muted-foreground" />
           </Button>
           <div>
@@ -172,6 +183,13 @@ export default function ShipmentDetailPage({ params }: { params: { id: string } 
 
           {isDraft && (
             <>
+              <Button 
+                variant="outline"
+                onClick={() => router.push(`/inventory/shipment/${params.id}/edit${linkedPartaiId ? `?partaiId=${linkedPartaiId}` : ''}`)}
+                className="w-full sm:w-auto font-semibold h-10 border-amber-300 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-amber-700 dark:text-amber-400"
+              >
+                <Edit className="w-4 h-4 mr-2" /> Edit Surat Muat
+              </Button>
               <Button 
                 onClick={handleConfirm} 
                 disabled={actionLoading}

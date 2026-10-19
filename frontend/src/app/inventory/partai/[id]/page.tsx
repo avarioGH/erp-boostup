@@ -18,6 +18,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useToast } from "@/hooks/use-toast";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { ReceiveLogModal } from "@/components/timber/receive-log-modal";
+import { SawnTimberSpreadsheet, SawnTallyRow } from "@/components/timber/sawn-timber-spreadsheet";
 
 export default function PartaiDetailPage({ params }: { params: any }) {
   const router = useRouter();
@@ -102,10 +103,12 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const [packingPageSize, setPackingPageSize] = useState(50);
 
   // Purchase Filters
+  const [purchaseFilterType, setPurchaseFilterType] = useState<string>("ALL"); // ALL, RAW_LOG, SAWN_TIMBER
   const [purchaseFilterSpecies, setPurchaseFilterSpecies] = useState<string>("ALL");
   const [purchaseFilterStartDate, setPurchaseFilterStartDate] = useState<string>("");
   const [purchaseFilterEndDate, setPurchaseFilterEndDate] = useState<string>("");
   const [speciesList, setSpeciesList] = useState<any[]>([]);
+
 
   // DUKB selection & bulk trimming state
   const [selectedDukbLogIds, setSelectedDukbLogIds] = useState<string[]>([]);
@@ -130,8 +133,8 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const [targetInputLogForTally, setTargetInputLogForTally] = useState<any>(null);
   const [tallyDate, setTallyDate] = useState(new Date().toISOString().split('T')[0]);
   const [tallyWarehouseId, setTallyWarehouseId] = useState("");
-  const [tallyLines, setTallyLines] = useState<any[]>([
-    { t: "", l: "", p: "", pcs: "", productType: "BALOK" }
+  const [tallyLines, setTallyLines] = useState<SawnTallyRow[]>([
+    { thickness: "", width: "", length: "", pcs: "", productType: "BALOK" }
   ]);
   const [isSavingTally, setIsSavingTally] = useState(false);
   const [expandedInputLogIds, setExpandedInputLogIds] = useState<string[]>([]);
@@ -172,14 +175,18 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     if (!tallyWarehouseId && warehouses.length > 0) {
       setTallyWarehouseId(warehouses[0].id);
     }
-    setTallyLines([{ t: "", l: "", p: "", pcs: "", productType: "BALOK" }]);
+    setTallyLines([{ thickness: "", width: "", length: "", pcs: "", productType: "BALOK" }]);
     setIsTallyModalOpen(true);
   };
 
   const handleSaveWipTally = async () => {
-    const validLines = tallyLines.filter(l => 
-      parseFloat(l.t) > 0 && parseFloat(l.l) > 0 && parseFloat(l.p) > 0 && parseInt(l.pcs) > 0
-    );
+    const validLines = tallyLines.filter(l => {
+      const t = parseFloat(String(l.thickness).replace(",", "."));
+      const w = parseFloat(String(l.width).replace(",", "."));
+      const p = parseFloat(String(l.length).replace(",", "."));
+      const pcs = parseInt(String(l.pcs));
+      return t > 0 && w > 0 && p > 0 && pcs > 0;
+    });
 
     if (validLines.length === 0) {
       toast({ 
@@ -221,14 +228,20 @@ export default function PartaiDetailPage({ params }: { params: any }) {
         partaiId: id,
         outputDate: tallyDate,
         locationId: whId,
-        items: validLines.map(line => ({
-          thickness: parseFloat(line.t) * 10, // cm to mm
-          width: parseFloat(line.l) * 10,     // cm to mm
-          length: parseFloat(line.p) * 10,    // cm to mm
-          quantityPcs: parseInt(line.pcs),
-          grade: "PENDING",
-          productType: line.productType || "BALOK"
-        }))
+        items: validLines.map(line => {
+          const t = parseFloat(String(line.thickness).replace(",", "."));
+          const w = parseFloat(String(line.width).replace(",", "."));
+          const p = parseFloat(String(line.length).replace(",", "."));
+          const pcs = parseInt(String(line.pcs));
+          return {
+            thickness: t * 10, // cm to mm
+            width: w * 10,     // cm to mm
+            length: p * 10,    // cm to mm
+            quantityPcs: pcs,
+            grade: "PENDING",
+            productType: line.productType || "BALOK"
+          };
+        })
       };
 
       const res = await api.post('/inventory/sawn-timber/output', payload);
@@ -242,7 +255,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
       setIsTallyModalOpen(false);
       setSelectedTrimmedLogIds([]);
       setTargetInputLogForTally(null);
-      setTallyLines([{ t: "", l: "", p: "", pcs: "", productType: "BALOK" }]);
+      setTallyLines([{ thickness: "", width: "", length: "", pcs: "", productType: "BALOK" }]);
       fetchPartai();
     } catch (err: any) {
       console.error(err);
@@ -596,7 +609,14 @@ export default function PartaiDetailPage({ params }: { params: any }) {
 
   const filteredPurchases = React.useMemo(() => {
     return flattenedPurchases.filter((p: any) => {
-      // 1. Filter Species
+      // 1. Filter Tipe Pembelian (Beli Log Bulat / Beli Masak Sawn Timber)
+      if (purchaseFilterType && purchaseFilterType !== "ALL") {
+        if (p.itemType !== purchaseFilterType) {
+          return false;
+        }
+      }
+
+      // 2. Filter Species
       if (purchaseFilterSpecies && purchaseFilterSpecies !== "ALL") {
         const searchSpec = purchaseFilterSpecies.trim().toUpperCase();
         const itemSpecies = (p.species || "").trim().toUpperCase();
@@ -605,7 +625,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
         }
       }
 
-      // 2. Filter Tanggal (berdasarkan purchaseDate atau createdAt)
+      // 3. Filter Tanggal (berdasarkan purchaseDate atau createdAt)
       const dateVal = p.purchaseDate || p.createdAt;
       if (dateVal) {
         const itemDateStr = new Date(dateVal).toISOString().split("T")[0];
@@ -617,7 +637,8 @@ export default function PartaiDetailPage({ params }: { params: any }) {
 
       return true;
     });
-  }, [flattenedPurchases, purchaseFilterSpecies, purchaseFilterStartDate, purchaseFilterEndDate]);
+  }, [flattenedPurchases, purchaseFilterType, purchaseFilterSpecies, purchaseFilterStartDate, purchaseFilterEndDate]);
+
 
   const paginatedPurchases = React.useMemo(() => {
     if (purchasePageSize >= 9999) return filteredPurchases;
@@ -1029,11 +1050,12 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                   <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                     <span>🔍</span> Filter Data Pembelian
                   </span>
-                  {(purchaseFilterSpecies !== "ALL" || purchaseFilterStartDate || purchaseFilterEndDate) && (
+                  {(purchaseFilterType !== "ALL" || purchaseFilterSpecies !== "ALL" || purchaseFilterStartDate || purchaseFilterEndDate) && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => {
+                        setPurchaseFilterType("ALL");
                         setPurchaseFilterSpecies("ALL");
                         setPurchaseFilterStartDate("");
                         setPurchaseFilterEndDate("");
@@ -1045,7 +1067,34 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                     </Button>
                   )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">Tipe Pembelian</label>
+                    <Select 
+                      value={purchaseFilterType} 
+                      onValueChange={(val: any) => {
+                        setPurchaseFilterType(val || "ALL");
+                        setPurchasePage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs bg-background font-medium">
+                        <SelectValue placeholder="Semua Tipe" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">Semua Pembelian</SelectItem>
+                        <SelectItem value="RAW_LOG">
+                          <span className="flex items-center gap-1.5">
+                            <span>🪵</span> Beli Log Bulat (Raw Log)
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="SAWN_TIMBER">
+                          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                            <span>🌲</span> Beli Masak (Sawn Timber)
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-1">
                     <label className="text-[11px] font-medium text-muted-foreground">Jenis Kayu (Species)</label>
                     <Select 
@@ -1094,6 +1143,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                   </div>
                 </div>
               </div>
+
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -2036,11 +2086,11 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                                       </TableCell>
                                       <TableCell className="py-2 text-xs">
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                          item.productType === 'RENG' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' :
-                                          item.productType === 'AFKIR_BS' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' :
-                                          item.productType === 'AIR_DRY' ? 'bg-cyan-500/10 text-cyan-600 border border-cyan-500/20' :
-                                          item.productType === 'FJL' ? 'bg-purple-500/10 text-purple-600 border border-purple-500/20' :
-                                          'bg-blue-500/10 text-blue-600 border border-blue-500/20'
+                                          item.productType === 'RENG' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' :
+                                          item.productType === 'AFKIR_BS' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20' :
+                                          item.productType === 'AIR_DRY' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20' :
+                                          item.productType === 'FJL' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' :
+                                          'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
                                         }`}>
                                           {item.productType || 'BALOK'}
                                         </span>
@@ -2376,14 +2426,52 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/10"
-                              onClick={() => router.push(`/inventory/shipment/`)}
-                            >
-                              Detail <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/10 font-semibold"
+                                onClick={() => router.push(`/inventory/shipment/${item.id}?partaiId=${id}`)}
+                                title="Lihat Detail Tally"
+                              >
+                                Detail Tally <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                              </Button>
+                              {item.status !== 'CONFIRMED' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 font-semibold"
+                                  onClick={() => router.push(`/inventory/shipment/${item.id}/edit?partaiId=${id}`)}
+                                  title="Edit Surat Muat Fuso"
+                                >
+                                  <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                                </Button>
+                              )}
+                              {item.status !== 'CONFIRMED' && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 font-semibold"
+                                  onClick={async () => {
+                                    if (!confirm(`Hapus draft muatan armada ${item.fusoName || item.shipmentNumber}?`)) return;
+                                    try {
+                                      await ShipmentAPI.deleteShipment(item.id);
+                                      toast({ title: "Berhasil", description: "Draft surat muat berhasil dihapus" });
+                                      fetchProcessingData();
+                                    } catch (err: any) {
+                                      toast({ 
+                                        title: "Gagal Hapus", 
+                                        description: err?.response?.data?.message || err.message || "Gagal menghapus draft surat muat", 
+                                        variant: "destructive" 
+                                      });
+                                    }
+                                  }}
+                                  title="Hapus Draft Surat Muat"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 mr-1" /> Hapus
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -2809,11 +2897,11 @@ export default function PartaiDetailPage({ params }: { params: any }) {
 
               // Product Category breakdown (Balok, Reng, BS, Air Dry, FJL)
               const CATEGORY_CONFIG: Record<string, { label: string; badgeClass: string }> = {
-                BALOK: { label: 'Balok / Main Size', badgeClass: 'border-emerald-500 text-emerald-600 bg-emerald-50/50' },
-                RENG: { label: 'Reng / Papan', badgeClass: 'border-amber-500 text-amber-600 bg-amber-50/50' },
-                AFKIR_BS: { label: 'BS / Afkir', badgeClass: 'border-red-500 text-red-600 bg-red-50/50' },
-                AIR_DRY: { label: 'Air Dry', badgeClass: 'border-sky-500 text-sky-600 bg-sky-50/50' },
-                FJL: { label: 'FJL', badgeClass: 'border-purple-500 text-purple-600 bg-purple-50/50' },
+                BALOK: { label: 'Balok / Main Size', badgeClass: 'border-emerald-500/50 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/20' },
+                RENG: { label: 'Reng / Papan', badgeClass: 'border-amber-500/50 text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/20' },
+                AFKIR_BS: { label: 'BS / Afkir', badgeClass: 'border-red-500/50 text-red-600 dark:text-red-400 bg-red-500/10 dark:bg-red-500/20' },
+                AIR_DRY: { label: 'Air Dry', badgeClass: 'border-sky-500/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 dark:bg-sky-500/20' },
+                FJL: { label: 'FJL', badgeClass: 'border-purple-500/50 text-purple-600 dark:text-purple-400 bg-purple-500/10 dark:bg-purple-500/20' },
               };
               const categoryBreakdown: Record<string, { pcs: number; m3: number }> = {};
               allOutputItems.forEach((i: any) => {
@@ -3049,7 +3137,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                           </TableHeader>
                           <TableBody>
                             {Object.entries(categoryBreakdown).map(([catKey, val]) => {
-                              const conf = CATEGORY_CONFIG[catKey] || { label: catKey, badgeClass: 'border-slate-500 text-slate-600 bg-slate-50/50' };
+                              const conf = CATEGORY_CONFIG[catKey] || { label: catKey, badgeClass: 'border-slate-500/50 text-slate-600 dark:text-slate-400 bg-slate-500/10 dark:bg-slate-500/20' };
                               const pctOutput = totalOutputM3 > 0 ? (val.m3 / totalOutputM3) * 100 : 0;
                               const partialRendemen = baseLogVol > 0 ? (val.m3 / baseLogVol) * 100 : 0;
                               return (
@@ -3196,138 +3284,15 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               </div>
             )}
             
-            <div className="border rounded-md overflow-hidden shadow-sm">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader className="bg-muted/80">
-                    <TableRow>
-                      <TableHead className="w-[120px]">P (cm)</TableHead>
-                      <TableHead className="w-[110px]">L (cm)</TableHead>
-                      <TableHead className="w-[110px]">T (cm)</TableHead>
-                      <TableHead className="w-[110px]">PCS</TableHead>
-                      <TableHead className="min-w-[150px]">Kategori</TableHead>
-                      <TableHead className="w-[130px] text-right">M&sup3; (Auto)</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tallyLines.map((line, idx) => {
-                      const vol = (Number(line.t || 0) * Number(line.l || 0) * Number(line.p || 0) * Number(line.pcs || 0)) / 1000000;
-                      return (
-                        <TableRow key={idx}>
-                          <TableCell className="p-2">
-                            <Input 
-                              type="number" 
-                              step="any"
-                              placeholder="400" 
-                              value={line.p} 
-                              onChange={e => { 
-                                const n = [...tallyLines]; 
-                                n[idx].p = e.target.value; 
-                                setTallyLines(n); 
-                              }} 
-                              className="h-8 text-sm"
-                            />
-                          </TableCell>
-                          <TableCell className="p-2">
-                            <Input 
-                              type="number" 
-                              step="any"
-                              placeholder="10" 
-                              value={line.l} 
-                              onChange={e => { 
-                                const n = [...tallyLines]; 
-                                n[idx].l = e.target.value; 
-                                setTallyLines(n); 
-                              }} 
-                              className="h-8 text-sm"
-                            />
-                          </TableCell>
-                          <TableCell className="p-2">
-                            <Input 
-                              type="number" 
-                              step="any"
-                              placeholder="5" 
-                              value={line.t} 
-                              onChange={e => { 
-                                const n = [...tallyLines]; 
-                                n[idx].t = e.target.value; 
-                                setTallyLines(n); 
-                              }} 
-                              className="h-8 text-sm"
-                            />
-                          </TableCell>
-                          <TableCell className="p-2">
-                            <Input 
-                              type="number" 
-                              placeholder="15" 
-                              value={line.pcs} 
-                              onChange={e => { 
-                                const n = [...tallyLines]; 
-                                n[idx].pcs = e.target.value; 
-                                setTallyLines(n); 
-                              }} 
-                              className="h-8 text-sm"
-                            />
-                          </TableCell>
-                          <TableCell className="p-2">
-                            <select 
-                              className="h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-xs font-semibold focus:outline-none"
-                              value={line.productType || "BALOK"} 
-                              onChange={e => { 
-                                const n = [...tallyLines]; 
-                                n[idx].productType = e.target.value; 
-                                setTallyLines(n); 
-                              }}
-                            >
-                              <option value="BALOK">Balok (Main)</option>
-                              <option value="RENG">Reng / Papan</option>
-                              <option value="AFKIR_BS">BS / Afkir</option>
-                              <option value="AIR_DRY">Air Dry</option>
-                              <option value="FJL">FJL / Jasa</option>
-                            </select>
-                          </TableCell>
-                          <TableCell className="p-2 font-mono font-bold text-right text-emerald-600 text-sm">
-                            {vol > 0 ? vol.toFixed(4) : "0.0000"}
-                          </TableCell>
-                          <TableCell className="p-2 text-center">
-                            <Button 
-                              type="button"
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-7 w-7 text-rose-500 hover:text-rose-600 hover:bg-rose-50"
-                              onClick={() => setTallyLines(tallyLines.filter((_, i) => i !== idx))} 
-                              disabled={tallyLines.length === 1}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="p-2.5 bg-muted/30 border-t flex items-center justify-between">
-                <Button 
-                  type="button"
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setTallyLines([...tallyLines, { t: "", l: "", p: "", pcs: "", productType: "BALOK" }])} 
-                  className="border border-dashed text-xs h-8"
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1.5" /> Tambah Ukuran Lain
-                </Button>
-                <div className="text-xs font-medium text-muted-foreground mr-2">
-                  Total Estimasi:{" "}
-                  <span className="font-bold text-emerald-600 font-mono text-sm ml-1">
-                    {tallyLines.reduce((sum, line) => {
-                      const v = (Number(line.t || 0) * Number(line.l || 0) * Number(line.p || 0) * Number(line.pcs || 0)) / 1000000;
-                      return sum + (isNaN(v) ? 0 : v);
-                    }, 0).toFixed(4)} m³
-                  </span>
-                </div>
-              </div>
+            <div className="border rounded-md overflow-hidden shadow-sm p-1 bg-background">
+              <SawnTimberSpreadsheet
+                initialRows={tallyLines}
+                showSpecies={false}
+                showGrade={false}
+                showProductType={true}
+                defaultProductType="BALOK"
+                onChange={(updatedRows) => setTallyLines(updatedRows)}
+              />
             </div>
           </div>
 

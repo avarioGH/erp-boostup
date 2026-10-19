@@ -8,19 +8,17 @@ import OpenAI from 'openai';
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private openai: OpenAI;
-  // Fallback models from Juan Router based on user request
+  // Fallback models from Juan Router based on user request (prioritize working ones)
   private readonly fallbackModels = [
-    'agnes-2.5-flash',
-    'agnes-3.0-flash',
-    'diffusiongemma-26b-a4b-it',
-    'dots-3-note-preview',
     'gemma-4-31b-it',
-    'gpt-oss:120b',
     'laguna-s-2.1',
     'laguna-xs-2.1',
-    'mistral-large',
+    'gpt-oss:120b',
+    'agnes-2.5-flash',
+    'agnes-3.0-flash',
     'muse-glimmer',
     'nemotron-3.5-lightning',
+    'mistral-large',
     'qwen3-8b',
   ];
 
@@ -600,4 +598,185 @@ HANYA jawab sesuai dengan pertanyaan yang diajukan. Jangan menawarkan hal lain. 
       take: 50,
     });
   }
+
+  /**
+   * Parse Timber Tally Document/Photo using OCR (Tesseract.js) + LLM (Juan Router/Gemma/Laguna)
+   */
+  async parseTallyDocument(
+    companyId: string,
+    fileBuffer: Buffer,
+    mimeType: string,
+    workflowType: 'RAW_LOG' | 'SAWN_TIMBER' = 'RAW_LOG',
+  ) {
+    let extractedText = '';
+
+    // 1. If image, perform OCR with Tesseract
+    if (mimeType.startsWith('image/')) {
+      try {
+        const Tesseract = require('tesseract.js');
+        const { data: { text } } = await Tesseract.recognize(fileBuffer, 'ind+eng', {
+          logger: () => {},
+        });
+        extractedText = text;
+      } catch (ocrErr: any) {
+        this.logger.error('OCR Recognition failed:', ocrErr.message);
+        throw new Error('Gagal membaca gambar dengan OCR: ' + ocrErr.message);
+      }
+    } else if (mimeType.includes('text') || mimeType.includes('csv')) {
+      extractedText = fileBuffer.toString('utf-8');
+    } else {
+      // Fallback decode
+      extractedText = fileBuffer.toString('utf-8');
+    }
+
+    if (!extractedText || extractedText.trim().length < 5) {
+      throw new Error(
+        'Gambar atau dokumen tidak memiliki teks atau tabel kayu yang terbaca. Pastikan foto jelas dan beresolusi cukup.',
+      );
+    }
+
+    // 2. Fetch active species and grades from DB for contextual matching
+    const [speciesList, gradeList] = await Promise.all([
+      this.prisma.timberSpecies.findMany({ select: { code: true, name: true } }).catch(() => []),
+      this.prisma.timberGrade.findMany({ select: { code: true, name: true } }).catch(() => []),
+    ]);
+
+    const knownSpecies = speciesList.map(s => s.name).join(', ') || 'MERBAU, MERANTI, BENGKIRAI, ULIN, JATI, SONOKELING, MAHONI';
+    const knownGrades = gradeList.map(g => g.name).join(', ') || 'A, B, C, EXPORT, STANDARD, AFKIR';
+
+    // 3. Construct LLM Prompt based on workflow
+    let prompt = '';
+    if (workflowType === 'RAW_LOG') {
+      prompt = `Kamu adalah asisten ahli ekstraksi data kayu log bulat (Raw Logs / DUKB).
+Tugasmu adalah membaca teks hasil OCR tabel kayu dan mengubahnya menjadi JSON array murni.
+
+Daftar Spesies Kayu umum: [${knownSpecies}]. Jika tidak ada spesies, default "MERBAU".
+
+Format yang DIHARUSKAN (JSON array of objects):
+[
+  {
+    "logNumber": "string (contoh: LOG-001, atau no log dari tabel/foto)",
+    "species": "string (huruf kapital, misal: MERBAU, MERANTI)",
+    "length": number (Panjang dalam meter atau cm, misal: 4 atau 400. Jangan isi string atau unit),
+    "d1": number (Diameter pangkal d1 dalam cm, misal: 45),
+    "d2": number (Diameter ujung d2 dalam cm, misal: 48),
+    "rt": number (opsional, jika ada rata-rata diameter),
+    "notes": "string opsional"
+  }
+]
+
+ATURAN KETAT:
+- Balas HANYA JSON array valid tanpa penjelasan pembuka/penutup.
+- Angka harus berupa number murni (misal: 4.5 atau 450, BUKAN "4,5m").
+- Abaikan baris header tabel seperti "No, Panjang, Diameter, Total".
+- Jika suatu baris tidak memiliki dimensi angka yang jelas, abaikan baris tersebut.
+
+Teks Hasil OCR:
+"""
+${extractedText.slice(0, 4000)}
+"""`;
+    } else {
+      prompt = `Kamu adalah asisten ahli ekstraksi data kayu olahan (Sawn Timber Tally).
+Tugasmu adalah membaca teks hasil OCR tabel kayu dan mengubahnya menjadi JSON array murni.
+
+Daftar Spesies: [${knownSpecies}]. Default: "MERBAU".
+Daftar Grade: [${knownGrades}]. Default: "A".
+
+Format yang DIHARUSKAN (JSON array of objects):
+[
+  {
+    "species": "string",
+    "grade": "string",
+    "thickness": number (Tebal T dalam cm, misal: 2.5),
+    "width": number (Lebar L dalam cm, misal: 15),
+    "length": number (Panjang P dalam cm, misal: 400),
+    "pcs": number (Jumlah batang/PCS, misal: 50),
+    "notes": "string opsional"
+  }
+]
+
+ATURAN KETAT:
+- Balas HANYA JSON array valid tanpa penjelasan pembuka/penutup.
+- Angka harus berupa number murni.
+- Abaikan header tabel.
+
+Teks Hasil OCR:
+"""
+${extractedText.slice(0, 4000)}
+"""`;
+    }
+
+    // 4. Call LLM to extract JSON
+    let parsedItems: any[] = [];
+    try {
+      const response = await this.executeWithFallback(
+        [{ role: 'user', content: prompt }],
+        false,
+      );
+
+      const content = response?.content || response?.reasoning_content || '';
+      // Find JSON block
+      const jsonMatch = content.match(/\[\s*\{[\s\S]*\}\s*\]/);
+      if (jsonMatch) {
+        parsedItems = JSON.parse(jsonMatch[0]);
+      } else {
+        // Try direct parse
+        parsedItems = JSON.parse(content);
+      }
+    } catch (llmErr: any) {
+      this.logger.warn('LLM parsing failed, attempting regex fallback: ' + llmErr.message);
+      // Fallback basic line regex if LLM fails
+      parsedItems = this.fallbackRegexParser(extractedText, workflowType);
+    }
+
+    if (!Array.isArray(parsedItems) || parsedItems.length === 0) {
+      throw new Error(
+        'AI tidak dapat menemukan baris data kayu yang valid pada dokumen/foto tersebut. Teks terbaca:\n' +
+          extractedText.slice(0, 300) + '...',
+      );
+    }
+
+    return {
+      success: true,
+      workflowType,
+      rawOcrText: extractedText,
+      count: parsedItems.length,
+      items: parsedItems,
+    };
+  }
+
+  private fallbackRegexParser(text: string, workflowType: string): any[] {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const results: any[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      // Search for rows with 3+ numbers (length, d1, d2 or T, L, P, pcs)
+      const numbers = line.match(/\d+([.,]\d+)?/g);
+      if (numbers && numbers.length >= 3) {
+        const nums = numbers.map(n => parseFloat(n.replace(',', '.')));
+        if (workflowType === 'RAW_LOG') {
+          results.push({
+            logNumber: `LOG-${results.length + 1}`,
+            species: 'MERBAU',
+            length: nums[0],
+            d1: nums[1],
+            d2: nums[2] || nums[1],
+            rt: nums[2] ? (nums[1] + nums[2]) / 2 : nums[1],
+          });
+        } else {
+          results.push({
+            species: 'MERBAU',
+            grade: 'A',
+            thickness: nums[0],
+            width: nums[1],
+            length: nums[2],
+            pcs: nums[3] || 1,
+          });
+        }
+      }
+    }
+    return results;
+  }
 }
+
