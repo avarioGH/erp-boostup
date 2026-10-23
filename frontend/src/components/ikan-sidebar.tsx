@@ -317,10 +317,16 @@ export function IkanSidebar() {
       
       
       const role = (user?.role || '').toLowerCase();
-      if (!item.id || role === 'owner' || role === 'admin') return true;
+      if (role === 'owner') return true;
 
-
-      const idMap: any = { ikan_master_data: 'inventory', ikan_inventory: 'inventory', ikan_reports: 'reports', ikan_sales: 'pos' };
+      const idMap: any = { 
+        ikan_master_data: 'inventory', 
+        ikan_inventory: 'inventory', 
+        ikan_reports: 'reports', 
+        ikan_sales: 'pos',
+        generic_dashboard: 'dashboard'
+      };
+      if (item.id === 'generic-dashboard') return true;
       const reqId = idMap[item.id] || item.id;
       if (!user?.accessible_modules) return false;
       return user.accessible_modules.includes(reqId);
@@ -395,18 +401,10 @@ export function IkanSidebar() {
  const isKayu = false;
  const isIkan = true;
  
-      const ur = (user?.role || '').toLowerCase();
-      if (ur !== 'owner' && ur !== 'admin') return false;
- // Settings only for owner in this simplified RBAC
-
- 
-      
       const role = (user?.role || '').toLowerCase();
-      if (!item.id || role === 'owner' || role === 'admin') return true;
-
-
- return user?.accessible_modules?.includes(item.id);
- }).map((item) => {
+      if (role !== 'owner') return false;
+      return true;
+    }).map((item) => {
  const active = isActive(item.url)
  return (
  <SidebarMenuItem key={item.title}>

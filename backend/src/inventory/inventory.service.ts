@@ -134,7 +134,7 @@ export class InventoryService {
 
   async getWarehouses(companyId?: string) {
     let targetCompanyId = companyId;
-    if (!targetCompanyId || !/^[0-9a-fA-F]{24}$/.test(targetCompanyId)) {
+    if (!targetCompanyId) {
       const firstCompany = await this.prisma.company.findFirst();
       if (firstCompany) targetCompanyId = firstCompany.id;
     }
@@ -143,6 +143,7 @@ export class InventoryService {
       orderBy: { created_at: 'desc' },
     });
   }
+
 
   async updateWarehouse(companyId: string, id: string, data: any) {
     const existing = await this.prisma.warehouse.findFirst({
