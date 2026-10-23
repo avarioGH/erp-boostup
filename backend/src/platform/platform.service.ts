@@ -489,42 +489,47 @@ Aturan Menjawab:
    * List all SaaS Client Tenants (Wood & Fish clients) with their subscriptions and usage
    */
   async listClients() {
-    return this.cache.getOrSet('saas_clients_list', 30, async () => {
+    return this.cache.getOrSet('saas_clients_list', 10, async () => {
       const companies = await this.prisma.company.findMany({
-
-      include: {
-        tenant: {
-          include: {
-            subscription: {
-              include: { plan: true },
+        where: {
+          deleted_at: null,
+          tenant: {
+            status: { notIn: ['DELETED'] },
+          },
+        },
+        include: {
+          tenant: {
+            include: {
+              subscription: {
+                include: { plan: true },
+              },
+            },
+          },
+          users: {
+            select: {
+              id: true,
+              username: true,
+              name: true,
+              email: true,
+              status: true,
+              role: { select: { name: true } },
+            },
+          },
+          warehouses: {
+            select: { id: true, name: true, code: true },
+          },
+          _count: {
+            select: {
+              users: true,
+              warehouses: true,
+              products: true,
+              transactions: true,
+              ai_chats: true,
             },
           },
         },
-        users: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            email: true,
-            status: true,
-            role: { select: { name: true } },
-          },
-        },
-        warehouses: {
-          select: { id: true, name: true, code: true },
-        },
-        _count: {
-          select: {
-            users: true,
-            warehouses: true,
-            products: true,
-            transactions: true,
-            ai_chats: true,
-          },
-        },
-      },
-      orderBy: { created_at: 'desc' },
-    });
+        orderBy: { created_at: 'desc' },
+      });
 
     return companies.map((c) => {
       const sub = c.tenant?.subscription;
@@ -805,7 +810,7 @@ Aturan Menjawab:
   }
 
   /**
-   * Delete SaaS Client (Cascade delete or deactivate)
+   * Delete SaaS Client (Cascade delete or soft-delete deactivate)
    */
   async deleteClientTenant(companyId: string) {
     const company = await this.prisma.company.findUnique({
@@ -818,50 +823,57 @@ Aturan Menjawab:
     }
 
     const tenantId = company.tenant_id;
+    this.cache.invalidate('saas_clients_list');
 
-    // Soft delete / Clean up Company & Tenant
-    // To protect transactional data safely, we set Tenant status to SUSPENDED or delete if safe
     try {
-      // Invalidate cache first
-      this.cache.invalidate('saas_clients_list');
-
-      // Attempt deletion inside transaction or cascading clean
+      // First attempt: clean up all child relations and hard delete
       await this.prisma.$transaction(async (tx) => {
-        // Delete users, roles, settings associated
+        // Clean related records
+        await tx.aiChatHistory.deleteMany({ where: { company_id: companyId } });
         await tx.companySetting.deleteMany({ where: { company_id: companyId } });
+        await tx.warehouseStock.deleteMany({ where: { company_id: companyId } });
+        await tx.warehouse.deleteMany({ where: { company_id: companyId } });
         await tx.user.deleteMany({ where: { company_id: companyId } });
         await tx.rolePermission.deleteMany({
           where: { role: { company_id: companyId } },
         });
         await tx.role.deleteMany({ where: { company_id: companyId } });
-        await tx.warehouseStock.deleteMany({ where: { company_id: companyId } });
-        await tx.warehouse.deleteMany({ where: { company_id: companyId } });
         
         // Delete company
         await tx.company.delete({ where: { id: companyId } });
 
-        // Delete tenant if exists
+        // Delete tenant and subscription if exists
         if (tenantId) {
           await tx.tenantSubscription.deleteMany({ where: { tenant_id: tenantId } });
           await tx.tenant.delete({ where: { id: tenantId } });
         }
       });
 
+      this.cache.invalidate('saas_clients_list');
+
       return {
         success: true,
         message: `Klien SaaS ${company.name} berhasil dihapus permanen.`,
       };
     } catch (err: any) {
-      // Fallback: If foreign key constraints on invoices/transactions prevent hard delete, suspend the tenant!
+      // Fallback: If foreign keys prevent hard delete, perform full Soft Delete & mark tenant as DELETED
+      await this.prisma.company.update({
+        where: { id: companyId },
+        data: { deleted_at: new Date() },
+      });
+
       if (tenantId) {
         await this.prisma.tenant.update({
           where: { id: tenantId },
-          data: { status: 'SUSPENDED' },
+          data: { status: 'DELETED' },
         });
       }
+
+      this.cache.invalidate('saas_clients_list');
+
       return {
         success: true,
-        message: `Klien SaaS memiliki riwayat transaksi aktif, status tenant berhasil diubah menjadi Nonaktif (SUSPENDED).`,
+        message: `Klien SaaS ${company.name} berhasil dinonaktifkan dan dihapus dari portal.`,
       };
     }
   }
