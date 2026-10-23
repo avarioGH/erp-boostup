@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label"
 import { Select as UISelect, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import { formatThousands, parseThousands } from "@/lib/utils"
 
 export default function PosReports() {
   const [history, setHistory] = useState<any[]>([])
@@ -228,7 +229,20 @@ export default function PosReports() {
             
             <div className="space-y-2">
               <Label>Nominal Pembayaran (Rp)</Label>
-              <Input type="number" min="1" value={payAmount} onChange={e => setPayAmount(Number(e.target.value) || '')} placeholder="Nominal Rp" />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">Rp</span>
+                <Input 
+                  type="text" 
+                  inputMode="numeric" 
+                  value={formatThousands(payAmount)} 
+                  onChange={e => {
+                    const val = parseThousands(e.target.value);
+                    setPayAmount(val > 0 ? val : '');
+                  }} 
+                  placeholder="0"
+                  className="pl-10 text-base font-bold"
+                />
+              </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4">

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from"@/components/ui/tabs";
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatThousands, parseThousands } from '@/lib/utils';
 import { User, Activity, FileText, ShoppingCart, Truck, CreditCard, CheckCircle, AlertTriangle, ArrowLeft, Building2, MapPin, Phone, Mail, FileClock, Navigation } from 'lucide-react';
 import { Button } from"@/components/ui/button";
 import { toast } from 'sonner';
@@ -819,12 +819,20 @@ export default function Customer360Page() {
             </div>
             <div className="space-y-2">
               <Label>Nominal Pembayaran (Rp)</Label>
-              <Input
-                type="number"
-                value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value ? Number(e.target.value) : '')}
-                placeholder="Masukkan nominal"
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">Rp</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={formatThousands(payAmount)}
+                  onChange={(e) => {
+                    const val = parseThousands(e.target.value);
+                    setPayAmount(val > 0 ? val : '');
+                  }}
+                  placeholder="0"
+                  className="pl-10 text-base font-bold"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Metode Pembayaran</Label>
@@ -871,12 +879,20 @@ export default function Customer360Page() {
             </div>
             <div className="space-y-2">
               <Label>Nominal Pembayaran (Rp) *</Label>
-              <Input
-                type="number"
-                value={payApAmount}
-                onChange={(e) => setPayApAmount(e.target.value ? Number(e.target.value) : '')}
-                placeholder="Masukkan nominal yang dibayar"
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">Rp</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={formatThousands(payApAmount)}
+                  onChange={(e) => {
+                    const val = parseThousands(e.target.value);
+                    setPayApAmount(val > 0 ? val : '');
+                  }}
+                  placeholder="0"
+                  className="pl-10 text-base font-bold"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Metode Pembayaran (Pengeluaran Kas/Bank)</Label>
@@ -1003,14 +1019,20 @@ export default function Customer360Page() {
                         </button>
                       )}
                     </div>
-                    <Input
-                      type="number"
-                      placeholder="Masukkan nominal kompensasi..."
-                      value={nettingAmount}
-                      max={maxNetting}
-                      onChange={(e) => setNettingAmount(e.target.value)}
-                      className={`text-base font-bold ${isExceeded ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">Rp</span>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="0"
+                        value={formatThousands(nettingAmount)}
+                        onChange={(e) => {
+                          const rawNum = parseThousands(e.target.value);
+                          setNettingAmount(rawNum > 0 ? String(rawNum) : '');
+                        }}
+                        className={`pl-10 text-base font-bold ${isExceeded ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                      />
+                    </div>
                     <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                       <span>Maksimal kompensasi: <strong>{formatCurrency(maxNetting)}</strong></span>
                       {isExceeded && (

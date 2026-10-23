@@ -18,6 +18,7 @@ import {
   Tag, RefreshCw
 } from "lucide-react"
 import { FinanceAPI } from "@/lib/api"
+import { formatThousands, parseThousands } from "@/lib/utils"
 
 const CATEGORY_COLORS = [
   "#f43f5e", "#0ea5e9", "#f59e0b", "#10b981", 
@@ -741,14 +742,21 @@ export default function DetailedExpensesPage() {
 
             <div className="space-y-1">
               <Label className="text-xs">Nominal Pengeluaran (Rp)</Label>
-              <Input
-                type="number"
-                placeholder="Misal: 350000"
-                value={expenseForm.amount}
-                onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
-                className="h-9 text-base font-bold"
-                required
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">Rp</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={formatThousands(expenseForm.amount)}
+                  onChange={(e) => {
+                    const val = parseThousands(e.target.value);
+                    setExpenseForm({ ...expenseForm, amount: val > 0 ? String(val) : "" });
+                  }}
+                  className="pl-10 h-9 text-base font-bold"
+                  required
+                />
+              </div>
             </div>
 
             <div className="space-y-1">
