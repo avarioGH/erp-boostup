@@ -33,7 +33,7 @@ export default function LoginPage() {
  localStorage.setItem("erp_user", JSON.stringify(data.user))
  
  // Redirect ke dashboard
- window.location.href ="/"
+ window.location.href = window.location.hostname.includes("adminku") ? "/settings/saas-clients" : "/"
  } catch (err: any) {
  setError(err.message)
  } finally {
