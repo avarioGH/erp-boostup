@@ -297,7 +297,13 @@ export class CrmService {
     });
 
     const invoices = await this.prisma.invoice.findMany({
-      where: { customer_id: customerId, company_id: companyId },
+      where: {
+        company_id: companyId,
+        OR: [
+          { customer_id: customerId },
+          { supplier_id: customerId },
+        ],
+      },
       include: { sales_order: true },
       orderBy: { created_at: 'desc' },
     });
@@ -330,7 +336,14 @@ export class CrmService {
 
     const nettings = await this.prisma.netting.findMany({ where: { partner_id: customerId, company_id: companyId }, orderBy: { date: 'desc' }});
     const payments = await this.prisma.payment.findMany({
-      where: { invoice: { customer_id: customerId }, company_id: companyId },
+      where: {
+        company_id: companyId,
+        OR: [
+          { customer_id: customerId },
+          { invoice: { customer_id: customerId } },
+          { invoice: { supplier_id: customerId } },
+        ],
+      },
       orderBy: { created_at: 'desc' },
     });
 

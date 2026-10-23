@@ -27,6 +27,14 @@ export default function Customer360Page() {
   const [payMethod, setPayMethod] = useState('Transfer');
   const [payRef, setPayRef] = useState('');
   const [isPaying, setIsPaying] = useState(false);
+
+  // Bayar Utang AP states
+  const [payApModalOpen, setPayApModalOpen] = useState(false);
+  const [payApAmount, setPayApAmount] = useState<number | ''>('');
+  const [payApMethod, setPayApMethod] = useState('Transfer');
+  const [payApRef, setPayApRef] = useState('');
+  const [payApInvoiceId, setPayApInvoiceId] = useState<string | null>(null);
+  const [isPayingAp, setIsPayingAp] = useState(false);
   const [activityModalOpen, setActivityModalOpen] = useState(false);
   const [actType, setActType] = useState('NOTE');
   const [actTitle, setActTitle] = useState('');
@@ -134,6 +142,56 @@ export default function Customer360Page() {
       toast.error('Gagal: ' + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message));
     } finally {
       setIsPaying(false);
+    }
+  };
+
+  const handlePayAp = async () => {
+    if (!payApAmount || Number(payApAmount) <= 0) return toast.error('Nominal tidak valid');
+    setIsPayingAp(true);
+    try {
+      const apInvoices = (data?.finance?.invoices || [])
+        .filter((inv: any) => inv.type === 'AP' && (inv.status !== 'PAID' && inv.status !== 'CANCELLED') && inv.remaining_amount > 0)
+        .sort((a: any, b: any) => new Date(a.invoice_date || a.created_at).getTime() - new Date(b.invoice_date || b.created_at).getTime());
+
+      let remainingToPay = Number(payApAmount);
+      const allocations: any[] = [];
+
+      if (payApInvoiceId) {
+        // Specific invoice payment
+        const targetInv = apInvoices.find((i: any) => i.id === payApInvoiceId);
+        const alloc = Math.min(targetInv ? targetInv.remaining_amount : remainingToPay, remainingToPay);
+        allocations.push({ invoiceId: payApInvoiceId, amount: alloc });
+      } else {
+        // Auto allocate from oldest AP invoices
+        for (const inv of apInvoices) {
+          if (remainingToPay <= 0) break;
+          const alloc = Math.min(inv.remaining_amount, remainingToPay);
+          allocations.push({ invoiceId: inv.id, amount: alloc });
+          remainingToPay -= alloc;
+        }
+      }
+
+      await FinanceAPI.createPayment({
+        partnerId,
+        amount: Number(payApAmount),
+        paymentMethod: payApMethod,
+        reference: payApRef || 'Pembayaran Hutang Perusahaan (AP)',
+        allocations,
+        allowUnallocated: true,
+      });
+
+      toast.success('Pembayaran hutang perusahaan berhasil dicatat!');
+      setPayApModalOpen(false);
+      setPayApAmount('');
+      setPayApRef('');
+      setPayApInvoiceId(null);
+
+      const res = await CRMAPI.getPartner360(partnerId);
+      setData(res);
+    } catch(err: any) {
+      toast.error('Gagal bayar hutang: ' + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message));
+    } finally {
+      setIsPayingAp(false);
     }
   };
 
@@ -268,7 +326,21 @@ export default function Customer360Page() {
   <Card className="shadow-sm">
     <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
       <CardTitle className="text-sm font-medium text-muted-foreground">Hutang & Kredit Supplier</CardTitle>
-      </CardHeader>
+      {finance.outstandingAp > 0 && (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-6 px-2 text-xs border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300" 
+          onClick={() => { 
+            setPayApAmount(finance.outstandingAp || 0); 
+            setPayApInvoiceId(null);
+            setPayApModalOpen(true); 
+          }}
+        >
+          Bayar Hutang
+        </Button>
+      )}
+    </CardHeader>
       <CardContent>
         {finance.outstandingAp < 0 ? (
           <>
@@ -572,29 +644,76 @@ export default function Customer360Page() {
  <Link href="/finance/invoices"><Button variant="outline" size="sm">Kelola <Navigation className="w-3 h-3 ml-1" /></Button></Link>
  </CardHeader>
  <CardContent className="overflow-x-auto">
- <table className="min-w-[600px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
+ <table className="min-w-[650px] md:min-w-full w-full text-sm text-left whitespace-nowrap">
  <thead className="bg-muted/50 border-b">
  <tr>
  <th className="px-4 py-3 font-medium">Nomor Faktur</th>
 <th className="px-4 py-3 font-medium">Tipe</th>
  <th className="px-4 py-3 font-medium">Tanggal</th>
+ <th className="px-4 py-3 font-medium">Jatuh Tempo (Termin)</th>
  <th className="px-4 py-3 font-medium">Status</th>
  <th className="px-4 py-3 font-medium text-right">Total</th>
  <th className="px-4 py-3 font-medium text-right">Sisa Tagihan</th>
+ <th className="px-4 py-3 text-right font-medium">Aksi</th>
  </tr>
  </thead>
  <tbody>
  {finance.invoices.map((inv: any) => (
  <tr key={inv.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
  <td className="px-4 py-3 font-mono text-xs">{inv.invoice_number}</td>
-<td className="px-4 py-3 text-xs">{inv.type === "AR" ? "Penjualan (AR)" : "Pembelian (AP)"}</td>
- <td className="px-4 py-3">{new Date(inv.invoice_date || inv.created_at).toLocaleDateString()}</td>
+<td className="px-4 py-3 text-xs">
+  {inv.type === "AR" ? (
+    <span className="text-blue-600 font-medium">Penjualan (Piutang)</span>
+  ) : (
+    <span className="text-amber-600 font-medium">Pembelian (Hutang AP)</span>
+  )}
+</td>
+ <td className="px-4 py-3">{new Date(inv.invoice_date || inv.created_at).toLocaleDateString('id-ID')}</td>
+ <td className="px-4 py-3">
+   {inv.due_date ? (
+     <span className="text-xs bg-muted px-2 py-1 rounded">
+       {new Date(inv.due_date).toLocaleDateString('id-ID')}
+     </span>
+   ) : (
+     <span className="text-muted-foreground text-xs">-</span>
+   )}
+ </td>
  <td className="px-4 py-3"><Badge variant="outline">{inv.status}</Badge></td>
  <td className="px-4 py-3 text-right font-medium">{formatCurrency(inv.total)}</td>
  <td className="px-4 py-3 text-right text-destructive font-medium">{formatCurrency(inv.remaining_amount)}</td>
+ <td className="px-4 py-3 text-right">
+   {inv.remaining_amount > 0 && (
+     inv.type === "AP" ? (
+       <Button 
+         size="sm" 
+         variant="outline" 
+         className="h-7 text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+         onClick={() => {
+           setPayApAmount(inv.remaining_amount);
+           setPayApInvoiceId(inv.id);
+           setPayApModalOpen(true);
+         }}
+       >
+         Bayar Hutang
+       </Button>
+     ) : (
+       <Button 
+         size="sm" 
+         variant="outline" 
+         className="h-7 text-xs border-red-300 text-red-600 hover:bg-red-50"
+         onClick={() => {
+           setPayAmount(inv.remaining_amount);
+           setPayModalOpen(true);
+         }}
+       >
+         Bayar Piutang
+       </Button>
+     )
+   )}
+ </td>
  </tr>
  ))}
- {finance.invoices.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Tidak ada faktur tagihan.</td></tr>}
+ {finance.invoices.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">Tidak ada faktur tagihan.</td></tr>}
  </tbody>
  </table>
  </CardContent>
@@ -723,6 +842,57 @@ export default function Customer360Page() {
             <Button variant="outline" onClick={() => setPayModalOpen(false)}>Batal</Button>
             <Button onClick={handlePay} disabled={isPaying || !payAmount}>
               {isPaying ? 'Menyimpan...' : 'Simpan Pembayaran'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* PAY AP MODAL (BAYAR HUTANG PERUSAHAAN) */}
+      <Dialog open={payApModalOpen} onOpenChange={setPayApModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Bayar Hutang Perusahaan (AP)</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Total Sisa Hutang ke Supplier / Nelayan</Label>
+              <div className="text-xl font-bold text-amber-600">
+                {formatCurrency(data?.finance?.outstandingAp || 0)}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Nominal Pembayaran (Rp) *</Label>
+              <Input
+                type="number"
+                value={payApAmount}
+                onChange={(e) => setPayApAmount(e.target.value ? Number(e.target.value) : '')}
+                placeholder="Masukkan nominal yang dibayar"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Metode Pembayaran (Pengeluaran Kas/Bank)</Label>
+              <Select value={payApMethod} onValueChange={(val: any) => setPayApMethod(val || "")}>
+                <SelectTrigger><SelectValue placeholder="Pilih Metode" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Tunai">Kas Tunai</SelectItem>
+                  <SelectItem value="Transfer">Transfer Bank</SelectItem>
+                  <SelectItem value="Giro">Bilyet Giro / Cek</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Referensi / Bukti Transfer (Opsional)</Label>
+              <Input
+                value={payApRef}
+                onChange={(e) => setPayApRef(e.target.value)}
+                placeholder="Cth: Trf BCA - No Ref 12345"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPayApModalOpen(false)}>Batal</Button>
+            <Button onClick={handlePayAp} disabled={isPayingAp || !payApAmount} className="bg-amber-600 hover:bg-amber-700 text-white">
+              {isPayingAp ? 'Memproses...' : 'Proses Pembayaran Hutang'}
             </Button>
           </DialogFooter>
         </DialogContent>
