@@ -350,15 +350,15 @@ export default function PosTransaction() {
 
  {/* PAYMENT MODAL */}
  <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
- <DialogContent className="sm:max-w-[425px]">
- <DialogHeader>
+ <DialogContent className="sm:max-w-[450px] max-h-[90vh] flex flex-col p-6">
+ <DialogHeader className="shrink-0">
  <DialogTitle className="text-xl">Proses Pembayaran</DialogTitle>
  <DialogDescription>
  Pilih metode pembayaran untuk menyelesaikan transaksi.
  </DialogDescription>
  </DialogHeader>
  
- <div className="py-4 space-y-6">
+ <div className="py-2 space-y-5 overflow-y-auto pr-1 flex-1">
  <div className="space-y-2">
     <div className="flex justify-between items-center">
        <p className="text-sm font-medium text-foreground">Pelanggan</p>
@@ -443,7 +443,7 @@ export default function PosTransaction() {
  </div>
  </div>
  
- <DialogFooter>
+ <DialogFooter className="shrink-0 pt-3 border-t">
  <Button variant="outline" onClick={() => setIsPaymentOpen(false)} disabled={isCheckingOut || (paidAmount || 0) > total}>Batal</Button>
  <Button 
  className="bg-primary hover:bg-primary/90 text-primary-foreground" 
