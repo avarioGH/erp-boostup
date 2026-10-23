@@ -58,6 +58,22 @@ export default function PosTransaction() {
   const [receiptData, setReceiptData] = useState<any>(null)
   const [isReceiptOpen, setIsReceiptOpen] = useState(false)
  const [isTaxEnabled, setIsTaxEnabled] = useState(true)
+
+  useEffect(() => {
+    const savedTax = localStorage.getItem('pos_tax_enabled')
+    if (savedTax !== null) {
+      setIsTaxEnabled(savedTax === 'true')
+    }
+  }, [])
+
+  const toggleTax = () => {
+    setIsTaxEnabled(prev => {
+      const nextVal = !prev
+      localStorage.setItem('pos_tax_enabled', String(nextVal))
+      return nextVal
+    })
+  }
+
  const [idempotencyKey, setIdempotencyKey] = useState("")
 
  useEffect(() => {
@@ -302,7 +318,7 @@ export default function PosTransaction() {
  </div>
  <div 
  className="flex justify-between text-sm text-muted-foreground cursor-pointer hover:text-primary transition-colors select-none group"
- onClick={() => setIsTaxEnabled(!isTaxEnabled)}
+ onClick={toggleTax}
  >
  <div className="flex items-center gap-1.5">
  <span>Pajak (11%)</span>
