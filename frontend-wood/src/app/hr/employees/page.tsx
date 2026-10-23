@@ -20,6 +20,7 @@ export default function EmployeesPage() {
  const [departments, setDepartments] = useState<any[]>([])
  const [loading, setLoading] = useState(true)
  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
  const [formData, setFormData] = useState({ 
  firstName:"", 
  lastName:"",
@@ -42,15 +43,16 @@ export default function EmployeesPage() {
  }
  
  const editEmp = (emp: any) => {
-   setFormData({
-     firstName: emp.first_name,
-     lastName: emp.last_name,
-     email: emp.email || "",
-     position: emp.position || "",
-     basicSalary: emp.basic_salary || ""
-   });
-   setShowForm(true);
- }
+    setEditingId(emp.id);
+    setFormData({
+      firstName: emp.first_name || "",
+      lastName: emp.last_name || "",
+      email: emp.email || "",
+      position: emp.position || "",
+      basicSalary: emp.basic_salary ? String(emp.basic_salary) : ""
+    });
+    setShowForm(true);
+  }
 
  const fetchData = async () => {
  try {
@@ -74,22 +76,30 @@ export default function EmployeesPage() {
  }, [])
 
  const handleSave = async (e: React.FormEvent) => {
- e.preventDefault()
- try {
- await HrAPI.createEmployee({
- firstName: formData.firstName,
- lastName: formData.lastName,
- email: formData.email,
- position: formData.position,
- basicSalary: Number(formData.basicSalary)
- })
- setShowForm(false)
- setFormData({ firstName:"", lastName:"", email:"", position:"", basicSalary:"" })
- fetchData()
- } catch (e) {
- console.error(e)
- }
- }
+    e.preventDefault();
+    try {
+      const payload = {
+        firstName: formData.firstName.trim() || "Pegawai",
+        lastName: formData.lastName.trim() || undefined,
+        email: formData.email.trim() || undefined,
+        position: formData.position.trim() || undefined,
+        basicSalary: formData.basicSalary ? Number(formData.basicSalary) : 0,
+      };
+
+      if (editingId) {
+        await HrAPI.updateEmployee(editingId, payload);
+      } else {
+        await HrAPI.createEmployee(payload);
+      }
+
+      setShowForm(false);
+      setEditingId(null);
+      setFormData({ firstName: "", lastName: "", email: "", position: "", basicSalary: "" });
+      fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
  const openBioModal = (emp: any) => {
  setSelectedEmp(emp)
@@ -127,7 +137,7 @@ export default function EmployeesPage() {
  <h1 className="text-[28px] font-bold tracking-tight text-foreground">Employees</h1>
  <p className="text-muted-foreground">Manage your workforce and biometrics.</p>
  </div>
- <Button onClick={() => setShowForm(!showForm)}>
+ <Button onClick={() => { if (showForm) { setShowForm(false); setEditingId(null); } else { setEditingId(null); setFormData({ firstName: "", lastName: "", email: "", position: "", basicSalary: "" }); setShowForm(true); } }}>
  <Plus className="mr-2 h-4 w-4" />
  Add Employee
  </Button>
@@ -137,34 +147,37 @@ export default function EmployeesPage() {
  <Card>
  <form onSubmit={handleSave}>
  <CardHeader>
- <CardTitle>New Employee</CardTitle>
+ <CardTitle>{editingId ? "Edit Pegawai" : "Tambah Pegawai Baru"}</CardTitle>
  </CardHeader>
  <CardContent className="space-y-4">
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label>First Name</Label>
- <Input required value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} />
+ <Input placeholder="Contoh: Julian" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} />
  </div>
  <div className="space-y-2">
  <Label>Last Name</Label>
- <Input required value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} />
+ <Input placeholder="Opsional" value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} />
  </div>
  </div>
  <div className="space-y-2">
  <Label>Email</Label>
- <Input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+ <Input type="email" placeholder="Opsional: email@perusahaan.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
  </div>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label>Position</Label>
- <Input required value={formData.position} onChange={(e) => setFormData({...formData, position: e.target.value})} />
+ <Input placeholder="Opsional: Sales, Staff, Operator..." value={formData.position} onChange={(e) => setFormData({...formData, position: e.target.value})} />
  </div>
  <div className="space-y-2">
  <Label>Basic Salary</Label>
- <Input type="number" required value={formData.basicSalary} onChange={(e) => setFormData({...formData, basicSalary: e.target.value})} />
+ <Input type="number" placeholder="Opsional (default: 0)" value={formData.basicSalary} onChange={(e) => setFormData({...formData, basicSalary: e.target.value})} />
  </div>
  </div>
- <Button type="submit" className="w-full">Save Employee</Button>
+ <div className="flex gap-2">
+      <Button type="button" variant="outline" className="w-1/3" onClick={() => { setShowForm(false); setEditingId(null); }}>Batal</Button>
+      <Button type="submit" className="w-2/3">{editingId ? "Simpan Perubahan" : "Simpan Pegawai"}</Button>
+    </div>
  </CardContent>
  </form>
  </Card>
