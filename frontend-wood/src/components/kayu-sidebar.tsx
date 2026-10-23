@@ -137,6 +137,13 @@ export function KayuSidebar() {
  const pathname = usePathname()
  const { t } = useLanguage()
  const [user, setUser] = useState<any>(null)
+ const [isAdminku, setIsAdminku] = useState(false)
+
+ useEffect(() => {
+   if (typeof window !== 'undefined') {
+     setIsAdminku(window.location.hostname.includes('adminku'))
+   }
+ }, [])
 
  useEffect(() => {
  if (typeof window !== 'undefined') {
@@ -160,7 +167,7 @@ export function KayuSidebar() {
  <div className="h-9 w-9 bg-primary rounded-xl flex items-center justify-center text-sidebar-primary-foreground shadow-sm">
  <Hexagon className="h-5 w-5" />
  </div>
- <span className="font-bold text-lg tracking-tight text-sidebar-foreground">Tatalora Wood ERP</span>
+ <span className="font-bold text-lg tracking-tight text-sidebar-foreground">{isAdminku ? "Tatalora Superadmin" : "Tatalora Wood ERP"}</span>
  </SidebarHeader>
  
  <SidebarContent className="px-3 py-4 custom-scrollbar">
@@ -169,6 +176,7 @@ export function KayuSidebar() {
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
  {(Array.isArray(items) ? items : []).filter(item => {
+        if (isAdminku) return false;
  const userName = user?.name?.toLowerCase() || "";
  const isKayu = true;
  const isIkan = false; // Default to Ikan logic if not explicitly Kayu
@@ -248,7 +256,7 @@ export function KayuSidebar() {
  <SidebarGroupLabel className="text-[11px] font-[650] tracking-widest text-sidebar-foreground/50 uppercase mb-4 px-2 mt-2">Settings</SidebarGroupLabel>
  <SidebarGroupContent>
  <SidebarMenu className="gap-[2px]">
- {(Array.isArray(settings) ? settings : []).filter(item => {
+ {(isAdminku ? [{ title: "Database & Klien SaaS", url: "/settings/saas-clients", icon: Database, id: "saas" }] : (Array.isArray(settings) ? settings : [])).filter(item => {
  const userName = user?.name?.toLowerCase() || "";
  const isKayu = true;
  const isIkan = false;

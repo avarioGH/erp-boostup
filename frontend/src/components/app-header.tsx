@@ -123,7 +123,7 @@ export function AppHeader() {
  <DropdownMenuSeparator className="mx-1 mt-1" />
  <DropdownMenuItem 
  id="warehouse-manage"
- onClick={() => router.push("/settings/warehouse")}
+ onClick={() => router.push("/inventory/warehouses")}
  className="cursor-pointer text-primary font-medium focus:text-primary focus:bg-primary/10 my-0.5 rounded-md px-3 py-2"
  >
  + Kelola Gudang
