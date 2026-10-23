@@ -20,29 +20,42 @@ export class DisposalController {
 
   @Get()
   async list(@Request() req: any) {
-    return this.disposalService.list(req.user.companyId);
+    const companyId = req.user.company_id || req.user.companyId;
+    return this.disposalService.list(companyId);
   }
 
   @Get(':id')
   async detail(@Param('id') id: string, @Request() req: any) {
-    return this.disposalService.detail(id, req.user.companyId);
+    const companyId = req.user.company_id || req.user.companyId;
+    return this.disposalService.detail(id, companyId);
   }
 
   @Post()
   async create(@Body() dto: CreateDisposalDto, @Request() req: any) {
-    dto.companyId = req.user.companyId || req.user.company_id;
+    dto.companyId = req.user.company_id || req.user.companyId;
     dto.reason = dto.reason || dto.notes || "Pemusnahan (Disposal)";
-    return this.disposalService.create(dto, req.user.id);
+    const userId = req.user.id || req.user.userId;
+    return this.disposalService.create(dto, userId);
   }
 
   @Post(':id/submit')
   async submit(@Param('id') id: string, @Request() req: any) {
-    return this.disposalService.submit(id, req.user.companyId);
+    const companyId = req.user.company_id || req.user.companyId;
+    return this.disposalService.submit(id, companyId);
   }
 
   @Post(':id/approve')
   async approve(@Param('id') id: string, @Request() req: any) {
-    return this.disposalService.approve(id, req.user.companyId, req.user.id);
+    const companyId = req.user.company_id || req.user.companyId;
+    const userId = req.user.id || req.user.userId;
+    return this.disposalService.approve(id, companyId, userId);
+  }
+
+  @Post(':id/reverse')
+  async reverse(@Param('id') id: string, @Request() req: any) {
+    const companyId = req.user.company_id || req.user.companyId;
+    const userId = req.user.id || req.user.userId;
+    return this.disposalService.reverse(id, companyId, userId);
   }
 
   @Post(':id/reject')
@@ -51,17 +64,20 @@ export class DisposalController {
     @Body('notes') notes: string,
     @Request() req: any,
   ) {
+    const companyId = req.user.company_id || req.user.companyId;
+    const userId = req.user.id || req.user.userId;
     return this.disposalService.reject(
       id,
-      req.user.companyId,
-      req.user.id,
+      companyId,
+      userId,
       notes,
     );
   }
 
   @Post(':id/cancel')
   async cancel(@Param('id') id: string, @Request() req: any) {
-    return this.disposalService.cancel(id, req.user.companyId);
+    const companyId = req.user.company_id || req.user.companyId;
+    return this.disposalService.cancel(id, companyId);
   }
 
   @Put(':id')
@@ -70,11 +86,13 @@ export class DisposalController {
     @Body() dto: Partial<CreateDisposalDto>,
     @Request() req: any,
   ) {
-    return this.disposalService.update(id, dto, req.user.companyId);
+    const companyId = req.user.company_id || req.user.companyId;
+    return this.disposalService.update(id, dto, companyId);
   }
 
   @Delete(':id')
   async delete(@Param('id') id: string, @Request() req: any) {
-    return this.disposalService.delete(id, req.user.companyId);
+    const companyId = req.user.company_id || req.user.companyId;
+    return this.disposalService.delete(id, companyId);
   }
 }
