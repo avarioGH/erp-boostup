@@ -4,11 +4,14 @@ import {
   Controller,
   Post,
   Get,
+  Put,
+  Delete,
   Body,
   UseGuards,
   Request,
   Param,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { FinanceService, FinanceTransactionDto } from './finance.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -26,6 +29,49 @@ export class FinanceController {
   @Get('categories')
   async getCategories(@Request() req) {
     return this.financeService.getCategories(req.user.company_id);
+  }
+
+  @Permissions('finance.create')
+  @Post('categories')
+  async createCategory(@Request() req, @Body() data: any) {
+    if (!data.name) {
+      throw new BadRequestException('Nama kategori harus diisi');
+    }
+    return this.prisma.financeCategory.create({
+      data: {
+        company_id: req.user.company_id,
+        name: data.name,
+        type: data.type || 'EXPENSE',
+        color: data.color || null,
+        icon: data.icon || null,
+      },
+    });
+  }
+
+  @Permissions('finance.edit')
+  @Put('categories/:id')
+  async updateCategory(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
+    return this.prisma.financeCategory.updateMany({
+      where: { id, company_id: req.user.company_id },
+      data: {
+        name: data.name,
+        type: data.type,
+        color: data.color,
+        icon: data.icon,
+      },
+    });
+  }
+
+  @Permissions('finance.delete')
+  @Delete('categories/:id')
+  async deleteCategory(@Request() req, @Param('id') id: string) {
+    return this.prisma.financeCategory.deleteMany({
+      where: { id, company_id: req.user.company_id },
+    });
   }
 
   @Permissions('finance.view')
@@ -87,12 +133,25 @@ export class FinanceController {
           in: ['Approved', 'COMPLETED'],
         },
       },
+      include: {
+        items: {
+          include: {
+            category: true,
+          },
+        },
+      },
     });
 
     let totalIncomeMtd = 0;
     let totalExpensesMtd = 0;
     let totalIncomeLastMonth = 0;
     let totalExpensesLastMonth = 0;
+
+    // Category breakdown for expenses
+    const categoryExpenseMap = new Map<
+      string,
+      { categoryId: string; categoryName: string; amount: number; count: number }
+    >();
 
     // Chart Data Generation (Last 30 days)
     const chartMap = new Map<
@@ -117,8 +176,23 @@ export class FinanceController {
 
       // MTD Check
       if (txDate >= startOfMonth) {
-        if (isIncome) totalIncomeMtd += val;
-        else totalExpensesMtd += val;
+        if (isIncome) {
+          totalIncomeMtd += val;
+        } else {
+          totalExpensesMtd += val;
+          // Track expense category breakdown
+          const catName = tx.items?.[0]?.category?.name || 'Lain-lain / Operasional';
+          const catId = tx.items?.[0]?.category_id || 'unknown';
+          const existing = categoryExpenseMap.get(catName) || {
+            categoryId: catId,
+            categoryName: catName,
+            amount: 0,
+            count: 0,
+          };
+          existing.amount += val;
+          existing.count += 1;
+          categoryExpenseMap.set(catName, existing);
+        }
       }
       // Last Month Check
       else if (txDate >= startOfLastMonth && txDate <= endOfLastMonth) {
@@ -161,6 +235,10 @@ export class FinanceController {
       return Number(dayA) - Number(dayB);
     });
 
+    const expenseCategories = Array.from(categoryExpenseMap.values()).sort(
+      (a, b) => b.amount - a.amount,
+    );
+
     return {
       totalCash,
       cashGrowth,
@@ -172,6 +250,7 @@ export class FinanceController {
       profitGrowth,
       chartData,
       cashAccounts,
+      expenseCategories,
     };
   }
 

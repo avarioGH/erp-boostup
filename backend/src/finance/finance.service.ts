@@ -31,13 +31,16 @@ export class FinanceService {
 
     if (categories.length === 0) {
       const defaultCategories = [
-        { name: 'Gaji Karyawan', type: 'EXPENSE' },
+        { name: 'Gaji Pegawai (Bulanan)', type: 'EXPENSE' },
+        { name: 'Gaji / Upah Harian', type: 'EXPENSE' },
+        { name: 'Jasa Borongan & Komisi Kerja', type: 'EXPENSE' },
+        { name: 'Bahan Pembantu & Kemasan (Plastik, Lakban, Styrofoam)', type: 'EXPENSE' },
+        { name: 'Pembayaran / Beli Ikan (Suplier/Nelayan)', type: 'EXPENSE' },
+        { name: 'Es Balok & Pendingin', type: 'EXPENSE' },
         { name: 'Listrik, Air & Internet', type: 'EXPENSE' },
-        { name: 'Pembayaran / Beli Ikan (Suplier)', type: 'EXPENSE' },
-        { name: 'Operasional Gudang & Logistik', type: 'EXPENSE' },
-        { name: 'Bahan Bakar & Transportasi', type: 'EXPENSE' },
-        { name: 'Perawatan & Servis Mesin', type: 'EXPENSE' },
-        { name: 'Konsumsi & Perlengkapan Kantor', type: 'EXPENSE' },
+        { name: 'Bahan Bakar & Transportasi Logistik', type: 'EXPENSE' },
+        { name: 'Perawatan & Servis Mesin / Cold Storage', type: 'EXPENSE' },
+        { name: 'Konsumsi & Perlengkapan Operasional', type: 'EXPENSE' },
         { name: 'Pengeluaran Lain-lain', type: 'EXPENSE' },
         { name: 'Penjualan Ikan & Seafood', type: 'INCOME' },
         { name: 'Pendapatan Jasa / Cold Storage', type: 'INCOME' },

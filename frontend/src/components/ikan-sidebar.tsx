@@ -218,7 +218,8 @@ const items: MenuItem[] = [
  id: "finance",
  subItems: [
  { title: "Dashboard Keuangan", url: "/finance" },
- { title: "Kas & Bank", url: "/finance/cash" },
+ { title: "Kas & Bank (Buku Kas)", url: "/finance/cash" },
+        { title: "Rincian Pengeluaran", url: "/finance/expense" },
  { title: "Pemasukan", url: "/finance/cash-in" },
  { title: "Pengeluaran", url: "/finance/cash-out" },
  { title: "Buku Besar (GL)", url: "/finance/gl" },
