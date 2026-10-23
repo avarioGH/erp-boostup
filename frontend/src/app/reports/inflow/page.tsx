@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useEffect } from 'react'
 import { InventoryAPI } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -23,8 +23,17 @@ export default function InflowReportPage() {
       const params: any = {}
       if (startDate) params.startDate = startDate
       if (endDate) params.endDate = endDate
+
+      const activeWarehouseJSON = typeof window !== 'undefined' ? localStorage.getItem("active_warehouse") : null
+      if (activeWarehouseJSON && activeWarehouseJSON !== "null" && activeWarehouseJSON !== "undefined") {
+        try {
+          const activeWh = JSON.parse(activeWarehouseJSON)
+          if (activeWh && activeWh.id) params.warehouseId = activeWh.id
+        } catch(e) {}
+      }
+
       const res = await InventoryAPI.getInflowReport(params)
-      setReport(res)
+      setReport(res || { summary: {}, data: [] })
     } catch (e) {
       setReport({ summary: {}, data: [] })
     } finally {
@@ -36,7 +45,11 @@ export default function InflowReportPage() {
     fetchData();
     const handleWhChange = () => fetchData();
     window.addEventListener('warehouse-changed', handleWhChange);
-    return () => window.removeEventListener('warehouse-changed', handleWhChange);
+    window.addEventListener('warehouse_changed', handleWhChange);
+    return () => {
+      window.removeEventListener('warehouse-changed', handleWhChange);
+      window.removeEventListener('warehouse_changed', handleWhChange);
+    };
   }, [])
 
   const filtered = (report.data || []).filter((t: any) =>
@@ -98,19 +111,20 @@ export default function InflowReportPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>No. Tally</TableHead>
+                <TableHead>No. Tally / Penerimaan</TableHead>
                 <TableHead>Tanggal</TableHead>
                 <TableHead>Gudang</TableHead>
+                <TableHead>Keterangan</TableHead>
                 <TableHead>Produk</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
+                <TableHead className="text-right">Qty (Kg)</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">Memuat data...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Memuat data...</TableCell></TableRow>
               ) : filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">Belum ada data ikan masuk</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Belum ada data ikan masuk</TableCell></TableRow>
               ) : (
                 filtered.flatMap((tally: any) =>
                   (tally.items || []).map((item: any, idx: number) => (
@@ -121,14 +135,15 @@ export default function InflowReportPage() {
                           <TableCell rowSpan={tally.items.length} className="text-sm align-top text-muted-foreground">
                             {tally.tally_date ? format(new Date(tally.tally_date), 'dd MMM yyyy', { locale: id }) : '-'}
                           </TableCell>
-                          <TableCell rowSpan={tally.items.length} className="text-sm align-top">{tally.warehouse?.name || '-'}</TableCell>
+                          <TableCell rowSpan={tally.items.length} className="text-sm align-top font-medium">{tally.warehouse?.name || '-'}</TableCell>
+                          <TableCell rowSpan={tally.items.length} className="text-xs align-top text-muted-foreground max-w-[180px]">{tally.notes || '-'}</TableCell>
                         </>
                       ) : null}
                       <TableCell>
                         <div className="text-sm font-medium">{item.product?.name || '-'}</div>
                         <div className="text-xs text-muted-foreground">{item.product?.code}</div>
                       </TableCell>
-                      <TableCell className="text-right font-semibold text-green-600">+{item.qty}</TableCell>
+                      <TableCell className="text-right font-semibold text-green-600">+{item.qty} kg</TableCell>
                       {idx === 0 ? (
                         <TableCell rowSpan={tally.items.length} className="align-top">
                           <Badge variant={tally.status === 'POSTED' ? 'default' : 'secondary'}>

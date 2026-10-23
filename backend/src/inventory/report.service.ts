@@ -723,42 +723,101 @@ export class ReportService {
   }
 
   async getInflowReport(params: {
+    companyId?: string;
     startDate?: string;
     endDate?: string;
     warehouseId?: string;
   }) {
-    const where: any = { status: { not: 'CANCELLED' } };
-    if (params.startDate || params.endDate) {
-      where.tally_date = {};
-      if (params.startDate) where.tally_date.gte = new Date(params.startDate);
-      if (params.endDate)
-        where.tally_date.lte = new Date(params.endDate + 'T23:59:59');
-    }
-    if (params.warehouseId) where.warehouse_id = params.warehouseId;
+    const tallyWhere: any = { status: { not: 'CANCELLED' } };
+    const grWhere: any = { status: { not: 'CANCELLED' } };
 
-    const tallies = await this.prisma.stockInTally.findMany({
-      where,
-      include: {
-        warehouse: { select: { id: true, name: true } },
-        items: {
-          include: {
-            product: { select: { id: true, name: true, code: true } },
+    if (params.companyId) {
+      tallyWhere.company_id = params.companyId;
+      grWhere.company_id = params.companyId;
+    }
+
+    if (params.startDate || params.endDate) {
+      tallyWhere.tally_date = {};
+      grWhere.receipt_date = {};
+      if (params.startDate) {
+        tallyWhere.tally_date.gte = new Date(params.startDate);
+        grWhere.receipt_date.gte = new Date(params.startDate);
+      }
+      if (params.endDate) {
+        tallyWhere.tally_date.lte = new Date(params.endDate + 'T23:59:59');
+        grWhere.receipt_date.lte = new Date(params.endDate + 'T23:59:59');
+      }
+    }
+    if (params.warehouseId) {
+      tallyWhere.warehouse_id = params.warehouseId;
+      grWhere.warehouse_id = params.warehouseId;
+    }
+
+    const [tallies, goodsReceipts] = await Promise.all([
+      this.prisma.stockInTally.findMany({
+        where: tallyWhere,
+        include: {
+          warehouse: { select: { id: true, name: true } },
+          items: {
+            include: {
+              product: { select: { id: true, name: true, code: true } },
+            },
           },
         },
-      },
-      orderBy: { tally_date: 'desc' },
-    });
+        orderBy: { tally_date: 'desc' },
+      }),
+      this.prisma.goodsReceipt.findMany({
+        where: grWhere,
+        include: {
+          warehouse: { select: { id: true, name: true } },
+          supplier: { select: { id: true, name: true } },
+          items: {
+            include: {
+              product: { select: { id: true, name: true, code: true } },
+            },
+          },
+        },
+        orderBy: { receipt_date: 'desc' },
+      }),
+    ]);
+
+    // Format goodsReceipts to look like tallies so frontend displays seamlessly
+    const formattedReceipts = goodsReceipts.map((gr) => ({
+      id: gr.id,
+      tally_number: gr.receipt_number,
+      tally_date: gr.receipt_date,
+      warehouse: gr.warehouse,
+      status: 'POSTED',
+      notes: gr.supplier ? `Pembelian dari ${gr.supplier.name}` : 'Penerimaan Pembelian Ikan',
+      items: gr.items.map((it) => ({
+        id: it.id,
+        qty: it.qty,
+        product: it.product,
+      })),
+    }));
+
+    // Avoid duplication if tally was already auto-created from FP
+    const tallyNumbers = new Set(tallies.map((t) => t.tally_number));
+    const uniqueReceipts = formattedReceipts.filter(
+      (r) => !tallyNumbers.has(`TLY-${r.tally_number.replace('GR-', '')}`) && !tallyNumbers.has(r.tally_number),
+    );
+
+    const allInflows = [...tallies, ...uniqueReceipts].sort(
+      (a, b) => new Date(b.tally_date).getTime() - new Date(a.tally_date).getTime(),
+    );
 
     // Summary aggregation
-    const totalItems = tallies.reduce(
-      (sum, t) => sum + t.items.reduce((s, i) => s + i.qty, 0),
-      0,
-    );
-    const totalTransactions = tallies.length;
+    let totalItems = 0;
+    for (const t of allInflows as any[]) {
+      for (const it of t.items || []) {
+        totalItems += Number(it.qty || 0);
+      }
+    }
+    const totalTransactions = allInflows.length;
 
     return {
       summary: { totalTransactions, totalItems },
-      data: tallies,
+      data: allInflows,
     };
   }
 }

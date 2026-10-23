@@ -1,6 +1,6 @@
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
-import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Param, UseGuards, Request } from '@nestjs/common';
 import { ReportService } from './report.service';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -78,11 +78,14 @@ export class ReportController {
 
   @Get('inflow')
   async getInflowReport(
+    @Request() req: any,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('warehouseId') warehouseId?: string,
   ) {
+    const companyId = req?.user?.company_id || req?.user?.companyId;
     return this.reportService.getInflowReport({
+      companyId,
       startDate,
       endDate,
       warehouseId,
