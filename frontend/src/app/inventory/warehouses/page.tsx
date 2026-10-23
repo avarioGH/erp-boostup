@@ -9,44 +9,49 @@ import { Label } from"@/components/ui/label"
 import { Plus, Edit2, Trash2 } from "lucide-react"
 
 export default function WarehousesPage() {
- const [warehouses, setWarehouses] = useState<any[]>([])
- const [loading, setLoading] = useState(true)
- const [showForm, setShowForm] = useState(false)
- const [editingId, setEditingId] = useState<string | null>(null)
- const [formData, setFormData] = useState({ name:"", code:"", address:"" })
+  const [warehouses, setWarehouses] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [formData, setFormData] = useState({ name:"", code:"", address:"" })
 
- const fetchWarehouses = async () => {
- try {
- setLoading(true)
- const token = localStorage.getItem("erp_token")
- const res = await api.get("/inventory/warehouses")
- setWarehouses(res.data)
- } catch (e) {
- console.error(e)
- } finally {
- setLoading(false)
- }
- }
+  const fetchWarehouses = async () => {
+    try {
+      setLoading(true)
+      const res = await api.get("/inventory/warehouses")
+      setWarehouses(res.data)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
+  }
 
- useEffect(() => {
- fetchWarehouses()
- }, [])
+  useEffect(() => {
+    fetchWarehouses()
+  }, [])
 
- const handleSave = async (e: React.FormEvent) => {
- e.preventDefault()
- try {
- const token = localStorage.getItem("erp_token")
- const res = editingId 
-    ? await api.put(`/inventory/warehouses/${editingId}`, formData)
-    : await api.post("/inventory/warehouses", formData)
- if (res.status === 200 || res.status === 201) {
- resetForm()
- fetchWarehouses()
- }
- } catch (e) {
- console.error(e)
- }
- }
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSaving(true)
+    try {
+      const res = editingId 
+        ? await api.put(`/inventory/warehouses/${editingId}`, formData)
+        : await api.post("/inventory/warehouses", formData)
+      if (res.status === 200 || res.status === 201) {
+        alert(editingId ? "Gudang berhasil diperbarui!" : "Gudang berhasil ditambahkan!")
+        resetForm()
+        fetchWarehouses()
+      }
+    } catch (e: any) {
+      console.error(e)
+      const msg = e.response?.data?.message || e.message || "Gagal menyimpan gudang. Pastikan Kode Gudang belum pernah dipakai."
+      alert("Gagal: " + msg)
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
  const handleEdit = (w: any) => {
  setEditingId(w.id)
@@ -106,10 +111,10 @@ export default function WarehousesPage() {
  <Label>Address</Label>
  <Input value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} />
  </div>
- <div className="flex justify-end gap-2 pt-4">
- <Button variant="outline" type="button" onClick={resetForm}>Cancel</Button>
- <Button type="submit">{editingId ? "Update" : "Save"}</Button>
- </div>
+  <div className="flex justify-end gap-2 pt-4">
+  <Button variant="outline" type="button" onClick={resetForm} disabled={isSaving}>Batal</Button>
+  <Button type="submit" disabled={isSaving}>{isSaving ? "Menyimpan..." : (editingId ? "Perbarui" : "Simpan")}</Button>
+  </div>
  </CardContent>
  </form>
  </Card>
