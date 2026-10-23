@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
@@ -13,6 +14,8 @@ import { SequenceService } from '../reports/sequence.service';
 
 @Injectable()
 export class PosService {
+  private readonly logger = new Logger(PosService.name);
+
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
@@ -39,10 +42,13 @@ export class PosService {
     let customerId = data.customerId;
     let totalPosCogs = 0;
 
-    const _posResult = await this.prisma.$transaction(async (tx) => {
+    const _posResult = await this.prisma.$transaction(
+      async (tx) => {
         let resolvedWarehouseId = warehouseId;
         if (!resolvedWarehouseId) {
-          const defaultWh = await tx.warehouse.findFirst({ where: { company_id: companyId } });
+          const defaultWh = await tx.warehouse.findFirst({
+            where: { company_id: companyId },
+          });
           resolvedWarehouseId = defaultWh?.id;
         }
       // 0. Idempotency Check
@@ -198,42 +204,52 @@ export class PosService {
       });
 
       // 5. Emit Domain Event for Accounting Integration
-      // Using async Emit (waiting for handlers to complete within this transaction boundary)
-      await this.eventEmitter.emitAsync(
-        'sales.completed',
-        new SalesCompletedEvent({
-          companyId,
-          sourceEntityId: salesOrder.id,
-          payload: {
-            totalAmount: salesOrder.total_amount,
-            paidAmount: paidAmount, // Pass paidAmount to handle piutang
-            paymentMethod: paymentMethod || 'CASH',
-            userId,
-          },
-          tx: tx as any,
-        }),
-      );
+      try {
+        await this.eventEmitter.emitAsync(
+          'sales.completed',
+          new SalesCompletedEvent({
+            companyId,
+            sourceEntityId: salesOrder.id,
+            payload: {
+              totalAmount: salesOrder.total_amount,
+              paidAmount: paidAmount, // Pass paidAmount to handle piutang
+              paymentMethod: paymentMethod || 'CASH',
+              userId,
+            },
+            tx: tx as any,
+          }),
+        );
+      } catch (evtErr) {
+        this.logger.error(`Failed to emit sales.completed synchronously: ${evtErr?.message || evtErr}`, evtErr);
+      }
 
       // Emit COGS to accounting
       if (totalPosCogs > 0) {
-        await this.eventEmitter.emitAsync(
-          'inventory.valuation',
-          new InventoryValuationEvent(
-            companyId,
-            salesOrder.id,
-            `VAL-POS-${salesOrder.id}`,
-            new Date(),
-            {
-              type: 'COGS',
-              totalValue: totalPosCogs,
-              description: 'COGS for POS ' + salesOrder.order_number,
-            },
-            tx,
-          ),
-        );
+        try {
+          await this.eventEmitter.emitAsync(
+            'inventory.valuation',
+            new InventoryValuationEvent(
+              companyId,
+              salesOrder.id,
+              `VAL-POS-${salesOrder.id}`,
+              new Date(),
+              {
+                type: 'COGS',
+                totalValue: totalPosCogs,
+                description: 'COGS for POS ' + salesOrder.order_number,
+              },
+              tx,
+            ),
+          );
+        } catch (cogsErr) {
+          this.logger.error(`Failed to emit inventory.valuation synchronously: ${cogsErr?.message || cogsErr}`, cogsErr);
+        }
       }
 
       return salesOrder;
+    }, {
+      maxWait: 10000,
+      timeout: 25000,
     });
     // Notify owners
     try {

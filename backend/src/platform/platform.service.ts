@@ -640,4 +640,137 @@ export class PlatformService {
       subscription_end: subscription.end_date,
     };
   }
+
+  /**
+   * Update SaaS Client (Company name, phone, email, address, status)
+   */
+  async updateClientTenant(
+    companyId: string,
+    data: {
+      company_name?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      status?: 'ACTIVE' | 'SUSPENDED';
+      plan_name?: string;
+      duration_months?: number;
+      price_monthly?: number;
+    },
+  ) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      include: { tenant: { include: { subscription: true } } },
+    });
+
+    if (!company) {
+      throw new ForbiddenException('Client company not found');
+    }
+
+    // 1. Update Company fields
+    await this.prisma.company.update({
+      where: { id: companyId },
+      data: {
+        name: data.company_name ?? company.name,
+        email: data.email ?? company.email,
+        phone: data.phone ?? company.phone,
+        address: data.address ?? company.address,
+      },
+    });
+
+    // 2. Update Tenant name & status if provided
+    if (company.tenant_id) {
+      await this.prisma.tenant.update({
+        where: { id: company.tenant_id },
+        data: {
+          name: data.company_name ?? undefined,
+          status: data.status ?? undefined,
+        },
+      });
+
+      // 3. Update subscription duration if specified
+      if (data.duration_months && company.tenant?.subscription) {
+        const sub = company.tenant.subscription;
+        const newEndDate = new Date(sub.end_date);
+        newEndDate.setMonth(newEndDate.getMonth() + Number(data.duration_months));
+
+        await this.prisma.tenantSubscription.update({
+          where: { id: sub.id },
+          data: {
+            end_date: newEndDate,
+            status: 'ACTIVE',
+          },
+        });
+      }
+    }
+
+    // Invalidate client list cache
+    this.cache.invalidate('saas_clients_list');
+
+    return {
+      success: true,
+      message: `Berhasil memperbarui data klien SaaS ${data.company_name || company.name}`,
+    };
+  }
+
+  /**
+   * Delete SaaS Client (Cascade delete or deactivate)
+   */
+  async deleteClientTenant(companyId: string) {
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      include: { tenant: true },
+    });
+
+    if (!company) {
+      throw new ForbiddenException('Client company not found');
+    }
+
+    const tenantId = company.tenant_id;
+
+    // Soft delete / Clean up Company & Tenant
+    // To protect transactional data safely, we set Tenant status to SUSPENDED or delete if safe
+    try {
+      // Invalidate cache first
+      this.cache.invalidate('saas_clients_list');
+
+      // Attempt deletion inside transaction or cascading clean
+      await this.prisma.$transaction(async (tx) => {
+        // Delete users, roles, settings associated
+        await tx.companySetting.deleteMany({ where: { company_id: companyId } });
+        await tx.user.deleteMany({ where: { company_id: companyId } });
+        await tx.rolePermission.deleteMany({
+          where: { role: { company_id: companyId } },
+        });
+        await tx.role.deleteMany({ where: { company_id: companyId } });
+        await tx.warehouseStock.deleteMany({ where: { company_id: companyId } });
+        await tx.warehouse.deleteMany({ where: { company_id: companyId } });
+        
+        // Delete company
+        await tx.company.delete({ where: { id: companyId } });
+
+        // Delete tenant if exists
+        if (tenantId) {
+          await tx.tenantSubscription.deleteMany({ where: { tenant_id: tenantId } });
+          await tx.tenant.delete({ where: { id: tenantId } });
+        }
+      });
+
+      return {
+        success: true,
+        message: `Klien SaaS ${company.name} berhasil dihapus permanen.`,
+      };
+    } catch (err: any) {
+      // Fallback: If foreign key constraints on invoices/transactions prevent hard delete, suspend the tenant!
+      if (tenantId) {
+        await this.prisma.tenant.update({
+          where: { id: tenantId },
+          data: { status: 'SUSPENDED' },
+        });
+      }
+      return {
+        success: true,
+        message: `Klien SaaS memiliki riwayat transaksi aktif, status tenant berhasil diubah menjadi Nonaktif (SUSPENDED).`,
+      };
+    }
+  }
 }

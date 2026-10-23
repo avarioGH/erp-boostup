@@ -11,7 +11,8 @@ import {
   Building2, Users, Save, Plus, Shield, UserPlus, 
   Trash2, AlertCircle, Key, CheckCircle2, LayoutDashboard,
   Server, HardDrive, Bot, Calendar, ArrowLeft, RefreshCw, Trees, Fish,
-  DollarSign, CreditCard, Activity, CheckCircle, Clock, ExternalLink
+  DollarSign, CreditCard, Activity, CheckCircle, Clock, ExternalLink,
+  Edit, Edit3, X
 } from "lucide-react"
 import Link from "next/link"
 import { api } from "@/lib/api"
@@ -24,6 +25,23 @@ export default function AdminSaaSDashboard() {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState("")
   const [error, setError] = useState("")
+
+  // Edit State
+  const [editModal, setEditModal] = useState(false)
+  const [editingClient, setEditingClient] = useState<any>(null)
+  const [editFormData, setEditFormData] = useState({
+    company_name: "",
+    email: "",
+    phone: "",
+    address: "",
+    status: "ACTIVE",
+    duration_months: 0,
+  })
+
+  // Delete State
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState(false)
+  const [clientToDelete, setClientToDelete] = useState<any>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const [formData, setFormData] = useState({
     type: "FISH",
@@ -102,6 +120,63 @@ export default function AdminSaaSDashboard() {
       setError(err.response?.data?.message || "Gagal mendaftarkan klien baru")
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleOpenEdit = (client: any) => {
+    setEditingClient(client)
+    setEditFormData({
+      company_name: client.company_name || "",
+      email: client.email || "",
+      phone: client.phone || "",
+      address: client.address || "",
+      status: client.status || "ACTIVE",
+      duration_months: 0,
+    })
+    setEditModal(true)
+  }
+
+  const handleUpdateClient = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingClient) return
+    setSubmitting(true)
+    setError("")
+
+    try {
+      await api.put(`/platform/clients/${editingClient.company_id}`, editFormData)
+      setSuccess(`Data klien ${editFormData.company_name} berhasil diperbarui!`)
+      setEditModal(false)
+      setEditingClient(null)
+      fetchClients()
+      setTimeout(() => setSuccess(""), 4000)
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Gagal memperbarui klien")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleConfirmDelete = (client: any) => {
+    setClientToDelete(client)
+    setDeleteConfirmModal(true)
+  }
+
+  const handleDeleteClient = async () => {
+    if (!clientToDelete) return
+    setDeleting(true)
+    setError("")
+
+    try {
+      const res = await api.delete(`/platform/clients/${clientToDelete.company_id}`)
+      setSuccess(res.data?.message || `Klien ${clientToDelete.company_name} berhasil dihapus!`)
+      setDeleteConfirmModal(false)
+      setClientToDelete(null)
+      fetchClients()
+      setTimeout(() => setSuccess(""), 4000)
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Gagal menghapus klien")
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -511,6 +586,26 @@ export default function AdminSaaSDashboard() {
                         <div className="text-[10px] text-muted-foreground mt-0.5">AI Engine Token</div>
                       </div>
                     </div>
+
+                    {/* Aksi Edit & Hapus Klien */}
+                    <div className="flex items-center gap-2 lg:flex-col justify-end pt-2 lg:pt-0 border-t lg:border-t-0">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenEdit(client)}
+                        className="gap-1.5 text-xs font-semibold hover:bg-primary/10 hover:text-primary w-full sm:w-auto"
+                      >
+                        <Edit className="w-3.5 h-3.5" /> Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleConfirmDelete(client)}
+                        className="gap-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40 w-full sm:w-auto"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Hapus
+                      </Button>
+                    </div>
                   </div>
                 )
               })}
@@ -518,6 +613,157 @@ export default function AdminSaaSDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal Edit Klien SaaS */}
+      {editModal && editingClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl border bg-card">
+            <CardHeader className="border-b bg-muted/30 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                    <Edit3 className="w-5 h-5 text-primary" /> Edit Klien SaaS
+                  </CardTitle>
+                  <CardDescription>
+                    Perbarui profil perusahaan, kontak, status aktif, dan perpanjangan masa langganan.
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full"
+                  onClick={() => setEditModal(false)}
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </CardHeader>
+            <form onSubmit={handleUpdateClient}>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Nama Perusahaan / Bisnis</Label>
+                  <Input
+                    required
+                    value={editFormData.company_name}
+                    onChange={(e) => setEditFormData({ ...editFormData, company_name: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Email Perusahaan / Billing</Label>
+                    <Input
+                      type="email"
+                      value={editFormData.email}
+                      onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>No. WhatsApp / Telepon</Label>
+                    <Input
+                      value={editFormData.phone}
+                      onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Alamat Operasional</Label>
+                  <Input
+                    value={editFormData.address}
+                    onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t">
+                  <div className="space-y-1.5">
+                    <Label>Status Tenant</Label>
+                    <select
+                      className="w-full h-10 px-3 rounded-lg border bg-background text-sm"
+                      value={editFormData.status}
+                      onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                    >
+                      <option value="ACTIVE">Aktif (ACTIVE)</option>
+                      <option value="SUSPENDED">Nonaktif / Ditangguhkan (SUSPENDED)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label>Perpanjang Masa Aktif (+Bulan)</Label>
+                    <select
+                      className="w-full h-10 px-3 rounded-lg border bg-background text-sm"
+                      value={editFormData.duration_months}
+                      onChange={(e) => setEditFormData({ ...editFormData, duration_months: Number(e.target.value) })}
+                    >
+                      <option value="0">Tetap (Tidak Ada Perpanjangan)</option>
+                      <option value="1">+1 Bulan</option>
+                      <option value="3">+3 Bulan</option>
+                      <option value="6">+6 Bulan</option>
+                      <option value="12">+12 Bulan (1 Tahun)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button type="button" variant="outline" onClick={() => setEditModal(false)}>
+                    Batal
+                  </Button>
+                  <Button type="submit" disabled={submitting} className="font-bold gap-2">
+                    {submitting ? "Menyimpan..." : <><Save className="w-4 h-4" /> Simpan Perubahan</>}
+                  </Button>
+                </div>
+              </CardContent>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Klien SaaS */}
+      {deleteConfirmModal && clientToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="w-full max-w-md shadow-2xl border bg-card">
+            <CardHeader className="pb-3 border-b">
+              <div className="flex items-center gap-3 text-rose-600">
+                <div className="p-2.5 rounded-full bg-rose-100 dark:bg-rose-950/60">
+                  <Trash2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-bold text-foreground">Hapus Klien SaaS?</CardTitle>
+                  <CardDescription className="text-xs">Tindakan ini memerlukan konfirmasi.</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <p className="text-sm text-foreground">
+                Apakah Anda yakin ingin menghapus data klien <strong>{clientToDelete.company_name}</strong>?
+              </p>
+              <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-300">
+                ⚠️ Jika perusahaan ini sudah memiliki riwayat transaksi/faktur/jurnal keuangan yang saling berkait, sistem otomatis mengubah status tenant menjadi <strong>Nonaktif (SUSPENDED)</strong> untuk melindungi integritas pembukuan.
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setDeleteConfirmModal(false)}
+                  disabled={deleting}
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDeleteClient}
+                  disabled={deleting}
+                  className="gap-2 font-bold bg-rose-600 hover:bg-rose-700"
+                >
+                  {deleting ? "Menghapus..." : <><Trash2 className="w-4 h-4" /> Ya, Hapus Klien</>}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

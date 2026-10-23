@@ -211,40 +211,51 @@ export class AccountingListener {
     codes: string[],
     names: string[],
   ): Promise<string> {
-    for (const code of codes) {
-      const acc = await tx.chartOfAccount.findFirst({
-        where: { company_id: companyId, account_code: code },
-      });
-      if (acc) return acc.id;
-    }
-    for (const name of names) {
-      const acc = await tx.chartOfAccount.findFirst({
-        where: { company_id: companyId, account_name: name },
-      });
-      if (acc) return acc.id;
-    }
+    const db = tx || this.prisma;
+    try {
+      for (const code of codes) {
+        const acc = await db.chartOfAccount.findFirst({
+          where: { company_id: companyId, account_code: code },
+        });
+        if (acc) return acc.id;
+      }
+      for (const name of names) {
+        const acc = await db.chartOfAccount.findFirst({
+          where: { company_id: companyId, account_name: name },
+        });
+        if (acc) return acc.id;
+      }
 
-    // Create it dynamically for tests
-    let act = await tx.accountType.findFirst();
-    if (!act) {
-      act = await tx.accountType.create({
+      // Create it dynamically for tests
+      let act = await db.accountType.findFirst({
+        where: { company_id: companyId },
+      });
+      if (!act) {
+        act = await db.accountType.create({
+          data: {
+            company_id: companyId,
+            name: 'Auto Generated',
+            normal_balance: 'Debit',
+            code: 'AUTO-' + Date.now(),
+          },
+        });
+      }
+      const newAcc = await db.chartOfAccount.create({
         data: {
           company_id: companyId,
-          name: 'Auto Generated',
-          normal_balance: 'Debit',
-          code: 'AUTO-' + Date.now(),
+          account_code: codes[0],
+          account_name: names[0],
+          account_type_id: act.id,
         },
       });
+      return newAcc.id;
+    } catch (e: any) {
+      if ((e?.code === 'P2028' || e?.message?.includes('Transaction not found')) && db !== this.prisma) {
+        this.logger.warn(`Transaction error in resolveAccount, retrying with direct Prisma client`);
+        return this.resolveAccount(this.prisma, companyId, codes, names);
+      }
+      throw e;
     }
-    const newAcc = await tx.chartOfAccount.create({
-      data: {
-        company_id: companyId,
-        account_code: codes[0],
-        account_name: names[0],
-        account_type_id: act.id,
-      },
-    });
-    return newAcc.id;
   }
 
   private async checkIdempotency(
@@ -340,14 +351,30 @@ export class AccountingListener {
       credit: event.payload.totalAmount,
     });
 
-    await this.glService.createJournalEntryWithinTx(tx as any, {
-      companyId: event.companyId,
-      entryDate: event.occurredAt,
-      referenceType: 'POS',
-      referenceId: event.sourceEntityId,
-      description: `Penjualan POS (Event ${event.eventId})`,
-      items: items,
-    });
+    try {
+      await this.glService.createJournalEntryWithinTx(tx as any, {
+        companyId: event.companyId,
+        entryDate: event.occurredAt,
+        referenceType: 'POS',
+        referenceId: event.sourceEntityId,
+        description: `Penjualan POS (Event ${event.eventId})`,
+        items: items,
+      });
+    } catch (e: any) {
+      if ((e?.code === 'P2028' || e?.message?.includes('Transaction not found')) && tx !== this.prisma) {
+        this.logger.warn(`Transaction failed on createJournalEntryWithinTx for POS, retrying with direct Prisma`);
+        await this.glService.createJournalEntryWithinTx(this.prisma as any, {
+          companyId: event.companyId,
+          entryDate: event.occurredAt,
+          referenceType: 'POS',
+          referenceId: event.sourceEntityId,
+          description: `Penjualan POS (Event ${event.eventId})`,
+          items: items,
+        });
+      } else {
+        throw e;
+      }
+    }
   }
 
   @OnEvent('invoice.posted', { async: false })

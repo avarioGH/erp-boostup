@@ -4,6 +4,9 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Delete,
+  Param,
   Body,
   UseGuards,
   Request,
@@ -71,6 +74,21 @@ export class PlatformController {
   @Post('clients')
   async createClient(@Body() data: any) {
     return this.platformService.createClientTenant(data);
+  }
+
+  @Permissions('platform.create')
+  @Put('clients/:companyId')
+  async updateClient(
+    @Param('companyId') companyId: string,
+    @Body() data: any,
+  ) {
+    return this.platformService.updateClientTenant(companyId, data);
+  }
+
+  @Permissions('platform.create')
+  @Delete('clients/:companyId')
+  async deleteClient(@Param('companyId') companyId: string) {
+    return this.platformService.deleteClientTenant(companyId);
   }
 }
 
