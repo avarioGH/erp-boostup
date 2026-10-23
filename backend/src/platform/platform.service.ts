@@ -1,15 +1,37 @@
 import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MemoryCacheService } from '../common/memory-cache.service';
+import OpenAI from 'openai';
 
 @Injectable()
 export class PlatformService {
   private readonly logger = new Logger(PlatformService.name);
+  private openai: OpenAI;
+  private readonly fallbackModels = [
+    'gemma-4-31b-it',
+    'laguna-s-2.1',
+    'laguna-xs-2.1',
+    'gpt-oss:120b',
+    'agnes-2.5-flash',
+    'agnes-3.0-flash',
+    'muse-glimmer',
+    'nemotron-3.5-lightning',
+    'mistral-large',
+    'qwen3-8b',
+  ];
 
   constructor(
     private prisma: PrismaService,
     private cache: MemoryCacheService,
-  ) {}
+  ) {
+    const apiKey =
+      process.env.JUAN_API_KEY ||
+      'sk-p8GXAXmljYonz0t5fvS0r09aN9K6iPvkCpR9UWyhXuU9ykf8';
+    this.openai = new OpenAI({
+      apiKey: apiKey,
+      baseURL: 'https://router.juan.web.id/v1',
+    });
+  }
 
 
   /**
@@ -61,294 +83,163 @@ export class PlatformService {
     incomingContextData: any,
     tenantId: string,
   ) {
-    this.logger.log(`Generating AI Insight for Tenant: ${tenantId}`);
-    const q = prompt.toLowerCase().trim();
+    this.logger.log(`Generating flexible AI Insight for Tenant: ${tenantId}`);
+    const q = prompt.trim();
 
-    const rp = new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    });
+    try {
+      // 1. Fetch Comprehensive Business Database Context for this Tenant
+      const [products, stocks, disposals, tallies, sales, financeAccounts, customers] = await Promise.all([
+        this.prisma.product.findMany({
+          where: { company_id: tenantId },
+          include: { warehouse_stocks: { include: { warehouse: true } } },
+          orderBy: { name: 'asc' },
+        }).catch(() => []),
+        this.prisma.warehouseStock.findMany({
+          where: { company_id: tenantId },
+          include: { product: true, warehouse: true },
+        }).catch(() => []),
+        this.prisma.inventoryDisposal.findMany({
+          where: { company_id: tenantId },
+          include: { items: { include: { product: true } }, warehouse: true },
+          orderBy: { disposal_date: 'desc' },
+          take: 10,
+        }).catch(() => []),
+        this.prisma.stockInTally.findMany({
+          where: { company_id: tenantId },
+          include: { items: { include: { product: true } }, warehouse: true },
+          orderBy: { tally_date: 'desc' },
+          take: 10,
+        }).catch(() => []),
+        this.prisma.salesOrder.findMany({
+          where: { company_id: tenantId, status: { notIn: ['CANCELLED'] } },
+          include: { customer: true, items: { include: { product: true } } },
+          orderBy: { order_date: 'desc' },
+          take: 10,
+        }).catch(() => []),
+        this.prisma.cashAccount.findMany({
+          where: { company_id: tenantId, status: true },
+        }).catch(() => []),
+        this.prisma.customer.findMany({
+          where: { company_id: tenantId, status: true },
+          take: 15,
+        }).catch(() => []),
+      ]);
 
-    const isGreeting = q.includes('halo') || q.includes('hai') || q.includes('hi') || q.includes('selamat');
-    const isStockQuery = q.includes('stok') || q.includes('sisa') || q.includes('katalog') || q.includes('barang') || q.includes('ikan') || q.includes('kayu') || q.includes('produk') || q.includes('gudang');
-    const isSalesQuery = q.includes('penjualan') || q.includes('omset') || q.includes('omzet') || q.includes('laku') || q.includes('laporan jual') || q.includes('sales');
-    const isCustomerQuery = q.includes('pelanggan') || q.includes('customer') || q.includes('klien') || q.includes('langganan');
-    const isFinanceQuery = q.includes('kas') || q.includes('bank') || q.includes('keuangan') || q.includes('saldo') || q.includes('duit') || q.includes('uang');
-    const isReceivableQuery = q.includes('piutang') || q.includes('tagihan') || q.includes('belum lunas') || q.includes('tempo');
-    const isPurchaseQuery = q.includes('pembelian') || q.includes('beli') || q.includes('teli') || q.includes('masuk') || q.includes('kulakan') || q.includes('supplier');
-    const isEmployeeQuery = q.includes('karyawan') || q.includes('pegawai') || q.includes('staff') || q.includes('pekerja');
+      // 2. Format Stock & Empty/Low Stock Breakdown
+      const productSummary = products.map((p: any) => {
+        const total = (p.warehouse_stocks || []).reduce((acc: number, ws: any) => acc + (ws.current_stock || 0), 0);
+        const whDetails = (p.warehouse_stocks || [])
+          .map((ws: any) => `${ws.warehouse?.name || 'Gudang'}: ${ws.current_stock}`)
+          .join(', ');
+        return `- ${p.name} (${p.code}): Total ${total} kg/unit (Gudang: ${whDetails || 'Kosong/0'}), Harga Jual: Rp ${p.selling_price || 0}, HPP: Rp ${p.purchase_price || 0}`;
+      }).join('\n');
 
-    let insight = '';
+      const zeroStockProducts = products.filter((p: any) => {
+        const total = (p.warehouse_stocks || []).reduce((acc: number, ws: any) => acc + (ws.current_stock || 0), 0);
+        return total <= 0;
+      }).map((p: any) => `- ${p.name} (${p.code})`).join('\n') || 'Tidak ada (semua produk memiliki stok).';
 
-    // 1. GREETING
-    if (isGreeting && !isStockQuery && !isSalesQuery && !isCustomerQuery && !isFinanceQuery && !isReceivableQuery && !isPurchaseQuery) {
-      insight = 'Halo! Saya adalah **AI Assistant ERP** bisnis Anda. Saya terhubung langsung ke database usaha Anda secara real-time dan aman.\n\n' +
-        'Anda dapat menanyakan hal-hal berikut:\n' +
-        '- **Stok Barang / Ikan / Kayu**: *"tolong cek stok ikan nya"*, *"stok udang"*, atau *"cek stok gudang"*\n' +
-        '- **Penjualan & Omset**: *"berapa penjualan hari ini?"* atau *"omset bulan ini"*\n' +
-        '- **Pelanggan & CRM**: *"daftar pelanggan kita siapa saja?"*\n' +
-        '- **Keuangan & Kas**: *"berapa saldo kas dan bank saat ini?"*\n' +
-        '- **Piutang Usaha**: *"berapa total piutang yang belum tertagih?"*\n' +
-        '- **Barang Masuk / Pembelian**: *"ada barang atau teli masuk hari ini?"*';
-      return { success: true, provider: 'Boostup-Internal-AI', insight };
-    }
-
-    // 2. STOK & KATALOG PRODUK (Multi-tenant isolated by company_id)
-    if (isStockQuery) {
-      const products = await this.prisma.product.findMany({
-        where: { company_id: tenantId, status: true },
-        include: { warehouse_stocks: { include: { warehouse: true } } },
-        orderBy: { name: 'asc' },
-      });
-
-      // Filter stop words to detect specific product keywords if mentioned
-      const stopWords = ['tolong', 'bantu', 'cek', 'lihat', 'berapa', 'sisa', 'stok', 'ada', 'kah', 'nya', 'di', 'gudang', 'semua', 'daftar', 'barang', 'produk', 'ikan', 'kayu'];
-      const searchWords = q
-        .replace(/[^\w\s]/gi, ' ')
-        .split(/\s+/)
-        .filter((w) => w.length >= 2 && !stopWords.includes(w));
-
-      let matchedProducts = products;
-      if (searchWords.length > 0) {
-        matchedProducts = products.filter((p) => {
-          const nameLower = (p.name || '').toLowerCase();
-          const codeLower = (p.code || '').toLowerCase();
-          return searchWords.some((sw) => nameLower.includes(sw) || codeLower.includes(sw));
-        });
+      // 3. Format Disposals (Ikan Hilang, Rusak, Musnah)
+      let disposalSummary = 'Belum ada data pemusnahan / ikan hilang/rusak.';
+      if (disposals.length > 0) {
+        disposalSummary = disposals.map((d: any) => {
+          const itemsStr = d.items.map((it: any) => `${it.product?.name || 'Item'}: ${it.qty} ${it.unit || 'kg'}`).join(', ');
+          const dateStr = d.disposal_date ? new Date(d.disposal_date).toLocaleDateString('id-ID') : '-';
+          return `- [${d.disposal_number}] Tgl: ${dateStr}, Status: ${d.status}, Alasan: ${d.reason || '-'}, Gudang: ${d.warehouse?.name || '-'}, Barang: ${itemsStr}, Catatan: ${d.notes || '-'}`;
+        }).join('\n');
       }
 
-      if (matchedProducts.length > 0) {
-        insight = `Berikut adalah data **stok ${searchWords.length > 0 ? 'yang dicocokkan' : 'seluruh produk'}** di usaha Anda:\n\n`;
-        matchedProducts.forEach((p) => {
-          const totalStock = (p.warehouse_stocks || []).reduce(
-            (acc, ws) => acc + (ws.current_stock || 0),
-            0,
-          );
-          const warehouseBreakdown = (p.warehouse_stocks || [])
-            .filter((ws) => (ws.current_stock || 0) > 0)
-            .map((ws) => `${ws.warehouse?.name || 'Gudang'}: ${ws.current_stock}`)
-            .join(', ');
-
-          const detail = warehouseBreakdown ? ` [${warehouseBreakdown}]` : ' (Belum ada stok fisik)';
-          insight += `- **${p.name}** (${p.code}): Total **${totalStock} unit/kg**${detail}\n`;
-        });
-
-        if (matchedProducts.length < products.length) {
-          insight += `\n*(Menampilkan ${matchedProducts.length} dari total ${products.length} produk di katalog Anda)*`;
-        }
-      } else {
-        if (products.length > 0) {
-          insight = `Barang spesifik tersebut tidak ditemukan dalam katalog Anda. Berikut daftar produk yang tersedia di usaha Anda:\n` +
-            products.map((p) => `- **${p.name}** (${p.code})`).join('\n') +
-            `\n\nSilakan tanyakan dengan nama produk di atas.`;
-        } else {
-          insight = 'Belum ada data barang atau stok yang terdaftar pada database usaha Anda. Silakan tambahkan produk baru di menu Master Produk terlebih dahulu.';
-        }
+      // 4. Format Inflows / Tallies
+      let tallySummary = 'Belum ada data penerimaan teli ikan masuk.';
+      if (tallies.length > 0) {
+        tallySummary = tallies.map((t: any) => {
+          const itemsStr = t.items.map((it: any) => `${it.product?.name || 'Item'}: ${it.qty} kg`).join(', ');
+          const dateStr = t.tally_date ? new Date(t.tally_date).toLocaleDateString('id-ID') : '-';
+          return `- [${t.tally_number}] Tgl: ${dateStr}, Gudang: ${t.warehouse?.name || '-'}, Item: ${itemsStr}, Catatan: ${t.notes || '-'}`;
+        }).join('\n');
       }
-      return { success: true, provider: 'Boostup-Internal-AI', insight };
-    }
 
-    // 3. PENJUALAN & OMSET (Multi-tenant isolated by company_id)
-    if (isSalesQuery) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-      const todaySales = await this.prisma.salesOrder.aggregate({
-        where: {
-          company_id: tenantId,
-          order_date: { gte: today },
-          status: { notIn: ['CANCELLED'] },
-        },
-        _sum: { total_amount: true },
-        _count: { id: true },
-      });
-
-      const monthSales = await this.prisma.salesOrder.aggregate({
-        where: {
-          company_id: tenantId,
-          order_date: { gte: startOfMonth },
-          status: { notIn: ['CANCELLED'] },
-        },
-        _sum: { total_amount: true },
-        _count: { id: true },
-      });
-
-      const recentOrders = await this.prisma.salesOrder.findMany({
-        where: {
-          company_id: tenantId,
-          status: { notIn: ['CANCELLED'] },
-        },
-        include: { customer: true },
-        orderBy: { order_date: 'desc' },
-        take: 3,
-      });
-
-      insight = `Ringkasan **Penjualan & Omset** usaha Anda:\n` +
-        `- **Hari Ini**: **${rp.format(todaySales._sum.total_amount || 0)}** (${todaySales._count.id || 0} transaksi)\n` +
-        `- **Bulan Ini**: **${rp.format(monthSales._sum.total_amount || 0)}** (${monthSales._count.id || 0} transaksi)\n`;
-
-      if (recentOrders.length > 0) {
-        insight += `\n**Transaksi Terakhir:**\n` +
-          recentOrders
-            .map(
-              (o) =>
-                `- #${o.order_number} (${o.customer?.name || 'Pelanggan Umum'}): **${rp.format(o.total_amount || 0)}** [${o.status}]`,
-            )
-            .join('\n');
+      // 5. Format Sales (B2B & POS)
+      let salesSummary = 'Belum ada transaksi penjualan tercatat.';
+      if (sales.length > 0) {
+        salesSummary = sales.map((s: any) => {
+          const dateStr = s.order_date ? new Date(s.order_date).toLocaleDateString('id-ID') : '-';
+          return `- [${s.order_number}] (${s.channel || 'B2B'}) Tgl: ${dateStr}, Pelanggan: ${s.customer?.name || 'Umum/POS'}, Total: Rp ${s.total_amount || 0}, Status: ${s.status}`;
+        }).join('\n');
       }
-      return { success: true, provider: 'Boostup-Internal-AI', insight };
-    }
 
-    // 4. DAFTAR PELANGGAN / CUSTOMER (Multi-tenant isolated by company_id)
-    if (isCustomerQuery) {
-      const customers = await this.prisma.customer.findMany({
-        where: { company_id: tenantId, status: true },
-        orderBy: { name: 'asc' },
-        take: 15,
-      });
+      // 6. Format Financials & Customers
+      const financeSummary = financeAccounts.map((a: any) => `- ${a.name}: Rp ${a.current_balance || 0}`).join('\n') || 'Belum ada akun kas.';
+      const customerSummary = customers.map((c: any) => `- ${c.name} (${c.phone || '-'}, ${c.address || '-'})`).join('\n') || 'Belum ada customer.';
 
-      if (customers.length > 0) {
-        insight = `Berikut adalah daftar **Pelanggan Terdaftar** di usaha Anda (${customers.length} pelanggan):\n\n`;
-        customers.forEach((c) => {
-          const contact = [c.phone, c.address].filter(Boolean).join(' - ');
-          insight += `- **${c.name}** (${c.code})${contact ? `: ${contact}` : ''}\n`;
-        });
-      } else {
-        insight = 'Belum ada data pelanggan yang tersimpan di usaha Anda. Anda bisa menambahkan pelanggan baru melalui menu Pelanggan / CRM.';
-      }
-      return { success: true, provider: 'Boostup-Internal-AI', insight };
-    }
+      const systemPrompt = `Anda adalah Boostup AI Assistant, asisten bisnis cerdas untuk pengguna ERP.
+Tugas Anda: Menjawab pertanyaan user tentang bisnis atau data mereka dengan SANGAT LUWES, RAMAH, FLEKSIBEL, dan AKURAT sesuai fakta database.
+JANGAN kaku, JANGAN gunakan template robot yang menolak atau membatasi format pertanyaan.
+Jika ditanya apa saja (misalnya "ikan yang hilang ada berapa", "stok yang kosong apa saja", "siapa pelanggan kita", "analisis bisnis saya"), jawablah langsung secara to-the-point dan jelas berdasarkan DATA LIVE DATABASE KLIEN berikut:
 
-    // 5. KEUANGAN & KAS/BANK (Multi-tenant isolated by company_id)
-    if (isFinanceQuery) {
-      const accounts = await this.prisma.cashAccount.findMany({
-        where: { company_id: tenantId, status: true },
-        orderBy: { name: 'asc' },
-      });
+=== DATA LIVE DATABASE KLIEN ===
+[KATALOG & STOK PRODUK]
+${productSummary || 'Tidak ada produk'}
 
-      const totalBalance = accounts.reduce((acc, a) => acc + (a.current_balance || 0), 0);
+[PRODUK DENGAN STOK KOSONG / 0]
+${zeroStockProducts}
 
-      if (accounts.length > 0) {
-        insight = `Ringkasan **Saldo Kas & Bank** usaha Anda (Total: **${rp.format(totalBalance)}**):\n\n`;
-        accounts.forEach((a) => {
-          insight += `- **${a.name}** (${a.account_type}): **${rp.format(a.current_balance || 0)}**\n`;
-        });
-      } else {
-        insight = 'Belum ada rekening kas atau bank yang tercatat untuk usaha Anda. Silakan daftarkan akun kas di menu Keuangan > Kas & Bank.';
-      }
-      return { success: true, provider: 'Boostup-Internal-AI', insight };
-    }
+[DATA PEMUSNAHAN / IKAN HILANG / RUSAK]
+${disposalSummary}
 
-    // 6. PIUTANG & INVOICE (Multi-tenant isolated by company_id)
-    if (isReceivableQuery) {
-      const pendingInvoices = await this.prisma.invoice.findMany({
-        where: {
-          company_id: tenantId,
-          type: 'AR',
-          status: { in: ['POSTED', 'PARTIALLY PAID'] },
-        },
-        include: { customer: true },
-        orderBy: { due_date: 'asc' },
-        take: 5,
-      });
+[DATA IKAN MASUK (TELI & SUPPLIER)]
+${tallySummary}
 
-      const totalReceivable = pendingInvoices.reduce((acc, inv) => acc + (inv.remaining_amount || 0), 0);
+[DATA PENJUALAN TERAKHIR (POS & SALES)]
+${salesSummary}
 
-      if (pendingInvoices.length > 0) {
-        insight = `Total **Piutang Belum Lunas** usaha Anda: **${rp.format(totalReceivable)}**\n\n**Daftar Invoice Belum Lunas:**\n`;
-        pendingInvoices.forEach((inv) => {
-          const cust = inv.customer?.name || 'Pelanggan';
-          const due = inv.due_date ? new Date(inv.due_date).toLocaleDateString('id-ID') : 'Tanpa Jatuh Tempo';
-          insight += `- **#${inv.invoice_number}** (${cust}): Sisa **${rp.format(inv.remaining_amount)}** (Jatuh tempo: ${due})\n`;
-        });
-      } else {
-        insight = 'Hebat! Saat ini tidak ada piutang usaha (AR) yang tertunggak atau belum lunas.';
-      }
-      return { success: true, provider: 'Boostup-Internal-AI', insight };
-    }
+[SALDO KEUANGAN & KAS]
+${financeSummary}
 
-    // 7. BARANG MASUK / TELI / PEMBELIAN (Multi-tenant isolated by company_id)
-    if (isPurchaseQuery) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+[PELANGGAN]
+${customerSummary}
+================================
 
-      const recentTallies = await this.prisma.stockInTally.findMany({
-        where: { company_id: tenantId },
-        include: { items: { include: { product: true } }, warehouse: true },
-        orderBy: { tally_date: 'desc' },
-        take: 3,
-      });
+Aturan Menjawab:
+1. Jawab langsung ke inti pertanyaan dengan bahasa Indonesia yang natural, ramah, dan profesional.
+2. Jika ditanya tentang ikan hilang/pemusnahan, gunakan data [DATA PEMUSNAHAN / IKAN HILANG / RUSAK].
+3. Jika ditanya stok kosong, sebutkan produk-produk dari [PRODUK DENGAN STOK KOSONG / 0].
+4. Format angka rupiah dengan rapi (Rp xxx.xxx).
+5. Jangan pernah menyebut "saya membaca dari database teks", bersikaplah layaknya asisten pribadi yang tahu seluruh data operasional toko mereka.`;
 
-      const recentPurchases = await this.prisma.purchaseOrder.findMany({
-        where: { company_id: tenantId },
-        include: { supplier: true },
-        orderBy: { order_date: 'desc' },
-        take: 3,
-      });
-
-      if (recentTallies.length > 0 || recentPurchases.length > 0) {
-        insight = 'Ringkasan **Barang Masuk & Pembelian** usaha Anda:\n\n';
-
-        if (recentTallies.length > 0) {
-          insight += '**Penerimaan Fisik / Teli Terakhir:**\n';
-          recentTallies.forEach((t) => {
-            const itemStr = t.items.map((i) => `${i.product?.name || 'Barang'}: ${i.qty}`).join(', ');
-            const tDate = new Date(t.tally_date).toLocaleDateString('id-ID');
-            insight += `- **${t.tally_number}** (${tDate}) di ${t.warehouse?.name || 'Gudang'}: ${itemStr || 'Kosong'}\n`;
+      // 7. Call LLM with Juan Router Models
+      for (const modelName of this.fallbackModels) {
+        try {
+          const completion = await this.openai.chat.completions.create({
+            model: modelName,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: q },
+            ],
+            temperature: 0.3,
           });
-          insight += '\n';
-        }
 
-        if (recentPurchases.length > 0) {
-          insight += '**Pembelian Terakhir:**\n';
-          recentPurchases.forEach((po) => {
-            const supp = po.supplier?.name || 'Supplier Umum';
-            const poDate = new Date(po.order_date).toLocaleDateString('id-ID');
-            insight += `- **${po.order_number}** (${poDate}) dari ${supp}: **${rp.format(po.total_amount || 0)}** [${po.status}]\n`;
-          });
+          const reply = completion.choices[0]?.message?.content;
+          if (reply && reply.trim()) {
+            return {
+              success: true,
+              provider: modelName,
+              insight: reply.trim(),
+            };
+          }
+        } catch (modelErr: any) {
+          this.logger.warn(`Model ${modelName} failed in generateAiInsight: ${modelErr.message}`);
         }
-      } else {
-        insight = 'Belum ada riwayat penerimaan barang (Teli) atau pembelian yang tercatat di database usaha Anda.';
       }
-      return { success: true, provider: 'Boostup-Internal-AI', insight };
+    } catch (dbErr: any) {
+      this.logger.error(`Error gathering AI context: ${dbErr.message}`, dbErr);
     }
 
-    // 8. DATA KARYAWAN / PEGAWAI (Multi-tenant isolated by company_id)
-    if (isEmployeeQuery) {
-      const employees = await this.prisma.employee.findMany({
-        where: { company_id: tenantId, status: 'ACTIVE' },
-        include: { department: true },
-        orderBy: { first_name: 'asc' },
-        take: 10,
-      });
-
-      if (employees.length > 0) {
-        insight = `Usaha Anda memiliki **${employees.length} karyawan aktif** yang terdaftar:\n\n`;
-        employees.forEach((e) => {
-          const fullName = [e.first_name, e.last_name].filter(Boolean).join(' ');
-          insight += `- **${fullName}** (${e.position || 'Staff'}${e.department ? ' - ' + e.department.name : ''})\n`;
-        });
-      } else {
-        insight = 'Belum ada data pegawai/karyawan yang tercatat aktif di usaha Anda.';
-      }
-      return { success: true, provider: 'Boostup-Internal-AI', insight };
-    }
-
-    // 9. FALLBACK DENGAN REKOMENDASI FORMAT PERTANYAAN
-    insight = 'Maaf, saya belum memahami pertanyaan spesifik Anda. Sebagai asisten bisnis ERP, saya dapat membaca data live usaha Anda secara langsung. Cobalah bertanya:\n\n' +
-      '- *"tolong cek stok ikan nya"* atau *"stok barang"* (Melihat seluruh sisa stok di gudang Anda)\n' +
-      '- *"berapa penjualan hari ini"* atau *"omset bulan ini"* (Melihat omset dan riwayat pesanan)\n' +
-      '- *"siapa saja pelanggan kita"* (Melihat daftar customer aktif)\n' +
-      '- *"berapa saldo kas kita"* (Melihat rekening kas & bank)\n' +
-      '- *"cek piutang belum lunas"* (Melihat tagihan invoice pelanggan)\n' +
-      '- *"cek barang masuk atau teli"* (Melihat penerimaan barang masuk)';
-
+    // Direct fallback if all router models are offline
     return {
       success: true,
-      provider: 'Boostup-Internal-AI',
-      insight,
+      provider: 'Boostup-Internal-Fallback',
+      insight: 'Maaf, server AI sedang mengalami antrean jaringan. Silakan ulangi pertanyaan Anda beberapa saat lagi.',
     };
   }
 
