@@ -109,11 +109,15 @@ export default function CustomersPage() {
   }
 
   const filteredCustomers = [...customers].sort((a, b) => {
-    const outA = a.totalOutstanding || 0;
-    const outB = b.totalOutstanding || 0;
-    if (outA > 0 || outB > 0) return outB - outA;
+    const debtA = (a.totalOutstanding || 0) + (a.totalPayable || 0);
+    const debtB = (b.totalOutstanding || 0) + (b.totalPayable || 0);
+    if (debtA > 0 || debtB > 0) return debtB - debtA;
     return 0;
   });
+
+  const grandPiutang = customers.reduce((sum, c) => sum + (c.totalOutstanding || 0), 0);
+  const grandUtang = customers.reduce((sum, c) => sum + (c.totalPayable || 0), 0);
+
 return (
  <div className="space-y-6">
  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -125,6 +129,31 @@ return (
  <Plus className="mr-2 h-4 w-4" />
  New Customer
  </Button>
+ </div>
+
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   <Card className="border border-red-200 bg-red-50/40 dark:bg-red-950/20 shadow-sm">
+     <CardContent className="p-4 flex items-center justify-between">
+       <div>
+         <p className="text-xs font-medium text-red-600 dark:text-red-400 uppercase tracking-wider">Total Piutang (Customer Belum Bayar)</p>
+         <h2 className="text-2xl font-bold text-red-700 dark:text-red-300 mt-1">Rp {grandPiutang.toLocaleString('id-ID')}</h2>
+       </div>
+       <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-600">
+         <Building2 className="h-5 w-5" />
+       </div>
+     </CardContent>
+   </Card>
+   <Card className="border border-amber-200 bg-amber-50/40 dark:bg-amber-950/20 shadow-sm">
+     <CardContent className="p-4 flex items-center justify-between">
+       <div>
+         <p className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">Total Utang Perusahaan (Ke Supplier / Nelayan)</p>
+         <h2 className="text-2xl font-bold text-amber-700 dark:text-amber-300 mt-1">Rp {grandUtang.toLocaleString('id-ID')}</h2>
+       </div>
+       <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600">
+         <ArrowRight className="h-5 w-5" />
+       </div>
+     </CardContent>
+   </Card>
  </div>
 
  {showForm && (
@@ -200,13 +229,14 @@ return (
  ) : (
  <>
  <div className="border rounded-md overflow-x-auto">
- <table className="min-w-[600px] md:min-w-full w-full text-sm">
+ <table className="min-w-[650px] md:min-w-full w-full text-sm">
  <thead>
  <tr className="border-b bg-muted/50">
  <th className="p-3 px-4 text-left font-medium text-muted-foreground">Code</th>
- <th className="p-3 px-4 text-left font-medium text-muted-foreground">Customer</th>
+ <th className="p-3 px-4 text-left font-medium text-muted-foreground">Customer / Partner</th>
  <th className="p-3 px-4 text-left font-medium text-muted-foreground">Contact</th>
- <th className="p-3 px-4 text-left font-medium text-muted-foreground">Piutang</th>
+ <th className="p-3 px-4 text-left font-medium text-muted-foreground">Piutang (AR)</th>
+ <th className="p-3 px-4 text-left font-medium text-muted-foreground">Utang (AP)</th>
  <th className="p-3 px-4 text-left font-medium text-muted-foreground">Status</th>
  <th className="p-3 px-4 text-right font-medium text-muted-foreground">Actions</th>
  </tr>
@@ -224,7 +254,14 @@ return (
  </td>
  <td className="p-3 px-4">
    {(c.totalOutstanding || 0) > 0 ? (
-     <span className="text-red-600 font-bold whitespace-nowrap bg-red-50 px-2 py-1 rounded">Rp {(c.totalOutstanding).toLocaleString('id-ID')}</span>
+     <span className="text-red-600 font-bold whitespace-nowrap bg-red-50 dark:bg-red-950/40 px-2 py-1 rounded">Rp {(c.totalOutstanding).toLocaleString('id-ID')}</span>
+   ) : (
+     <span className="text-muted-foreground text-sm">-</span>
+   )}
+ </td>
+ <td className="p-3 px-4">
+   {(c.totalPayable || 0) > 0 ? (
+     <span className="text-amber-600 font-bold whitespace-nowrap bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded">Rp {(c.totalPayable).toLocaleString('id-ID')}</span>
    ) : (
      <span className="text-muted-foreground text-sm">-</span>
    )}
