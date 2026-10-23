@@ -1,4 +1,4 @@
-﻿import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GlService } from '../gl/gl.service';
 
@@ -24,10 +24,43 @@ export class FinanceService {
   ) {}
 
   async getCategories(companyId: string) {
-    return this.prisma.financeCategory.findMany({
+    let categories = await this.prisma.financeCategory.findMany({
       where: { company_id: companyId },
       orderBy: { name: 'asc' },
     });
+
+    if (categories.length === 0) {
+      const defaultCategories = [
+        { name: 'Gaji Karyawan', type: 'EXPENSE' },
+        { name: 'Listrik, Air & Internet', type: 'EXPENSE' },
+        { name: 'Pembayaran / Beli Ikan (Suplier)', type: 'EXPENSE' },
+        { name: 'Operasional Gudang & Logistik', type: 'EXPENSE' },
+        { name: 'Bahan Bakar & Transportasi', type: 'EXPENSE' },
+        { name: 'Perawatan & Servis Mesin', type: 'EXPENSE' },
+        { name: 'Konsumsi & Perlengkapan Kantor', type: 'EXPENSE' },
+        { name: 'Pengeluaran Lain-lain', type: 'EXPENSE' },
+        { name: 'Penjualan Ikan & Seafood', type: 'INCOME' },
+        { name: 'Pendapatan Jasa / Cold Storage', type: 'INCOME' },
+        { name: 'Pemasukan Lain-lain', type: 'INCOME' },
+      ];
+
+      for (const item of defaultCategories) {
+        await this.prisma.financeCategory.create({
+          data: {
+            company_id: companyId,
+            name: item.name,
+            type: item.type,
+          },
+        });
+      }
+
+      categories = await this.prisma.financeCategory.findMany({
+        where: { company_id: companyId },
+        orderBy: { name: 'asc' },
+      });
+    }
+
+    return categories;
   }
 
   async createCashIn(data: FinanceTransactionDto) {
@@ -51,27 +84,22 @@ export class FinanceService {
         cashAccountId = account.id;
       }
 
-      let debitId = data.debitAccountId;
-      let creditId = data.creditAccountId;
-      if (!debitId || !creditId) {
-        // GL Posting is skipped if accounts are not provided to avoid complex schema dependency here
-      }
-
       let catId = data.categoryId;
       if (!catId) {
         let cat = await tx.financeCategory.findFirst({
-          where: { company_id: data.companyId, name: 'General' },
+          where: { company_id: data.companyId, type: 'INCOME' },
         });
         if (!cat)
           cat = await tx.financeCategory.create({
             data: {
               company_id: data.companyId,
-              name: 'General',
+              name: 'Pemasukan Lain-lain',
               type: 'INCOME',
             },
           });
         catId = cat.id;
       }
+
       // 1. Create Immutable Transaction Header & Item
       const transaction = await tx.financeTransaction.create({
         data: {
@@ -80,7 +108,7 @@ export class FinanceService {
           transaction_type: 'Cash In',
           cash_account_id: cashAccountId,
           transaction_date: data.transactionDate,
-          status: 'Approved', // Langsung approved untuk demo immutable
+          status: 'Approved',
           description: data.description,
           total_amount: data.amount,
           created_by: data.userId,
@@ -98,43 +126,36 @@ export class FinanceService {
         },
       });
 
-      // 3. Audit Log
-      await tx.auditLog.create({
-        data: {
-          company_id: data.companyId,
-          user_id: data.userId,
-          action: 'CREATE_APPROVED',
-          entity: 'FinanceTransaction_CashIn',
-          entity_id: transaction.id,
-        },
+      // 2. Update Cash Account Balance
+      await tx.cashAccount.update({
+        where: { id: cashAccountId },
+        data: { current_balance: { increment: data.amount } },
       });
-      // 4. Generate GL Double Entry
+
+      // 3. GL Double Entry (optional/graceful)
       const accountRecord = await tx.cashAccount.findUnique({
         where: { id: cashAccountId },
       });
-      if (!accountRecord?.chart_of_account_id) {
-        throw new BadRequestException(
-          'Cash Account must have mapped Chart of Account',
-        );
-      }
-      debitId = debitId || accountRecord.chart_of_account_id;
-      if (!creditId) {
-        throw new BadRequestException(
-          'Credit account ID must be provided for Cash In',
-        );
-      }
+      const debitId = data.debitAccountId || accountRecord?.chart_of_account_id;
+      const creditId = data.creditAccountId;
 
-      await this.glService.createJournalEntryWithinTx(tx as any, {
-        companyId: data.companyId,
-        entryDate: data.transactionDate,
-        referenceType: 'FINANCE',
-        referenceId: transaction.id,
-        description: `Cash In: ${data.description}`,
-        items: [
-          { accountId: debitId, debit: data.amount, credit: 0 },
-          { accountId: creditId, debit: 0, credit: data.amount },
-        ],
-      });
+      if (debitId && creditId) {
+        try {
+          await this.glService.createJournalEntryWithinTx(tx as any, {
+            companyId: data.companyId,
+            entryDate: data.transactionDate,
+            referenceType: 'FINANCE',
+            referenceId: transaction.id,
+            description: `Cash In: ${data.description || 'Penerimaan Kas'}`,
+            items: [
+              { accountId: debitId, debit: data.amount, credit: 0 },
+              { accountId: creditId, debit: 0, credit: data.amount },
+            ],
+          });
+        } catch (e) {
+          console.warn('GL Journal entry skipped for Cash In:', e);
+        }
+      }
 
       return transaction;
     });
@@ -161,34 +182,20 @@ export class FinanceService {
         cashAccountId = account.id;
       }
 
-      let debitId = data.debitAccountId;
-      let creditId = data.creditAccountId;
-      if (!debitId || !creditId) {
-        // GL Posting is skipped if accounts are not provided
-      }
-
       let catId = data.categoryId;
       if (!catId) {
         let cat = await tx.financeCategory.findFirst({
-          where: { company_id: data.companyId, name: 'General Expense' },
+          where: { company_id: data.companyId, type: 'EXPENSE' },
         });
         if (!cat)
           cat = await tx.financeCategory.create({
             data: {
               company_id: data.companyId,
-              name: 'General Expense',
+              name: 'Pengeluaran Lain-lain',
               type: 'EXPENSE',
             },
           });
         catId = cat.id;
-      }
-
-      // Validasi Saldo
-      const account = await tx.cashAccount.findUnique({
-        where: { id: cashAccountId },
-      });
-      if (!account || Number(account.current_balance) < data.amount) {
-        throw new BadRequestException('Insufficient balance in Cash Account');
       }
 
       // 1. Create Transaction
@@ -217,33 +224,36 @@ export class FinanceService {
         },
       });
 
-      // 3. GL Double Entry
+      // 2. Update Cash Account Balance
+      await tx.cashAccount.update({
+        where: { id: cashAccountId },
+        data: { current_balance: { decrement: data.amount } },
+      });
+
+      // 3. GL Double Entry (optional/graceful)
       const accountRecord = await tx.cashAccount.findUnique({
         where: { id: cashAccountId },
       });
-      if (!accountRecord?.chart_of_account_id) {
-        throw new BadRequestException(
-          'Cash Account must have mapped Chart of Account',
-        );
-      }
-      creditId = creditId || accountRecord.chart_of_account_id;
-      if (!debitId) {
-        throw new BadRequestException(
-          'Debit account ID must be provided for Cash Out',
-        );
-      }
+      const creditId = data.creditAccountId || accountRecord?.chart_of_account_id;
+      const debitId = data.debitAccountId;
 
-      await this.glService.createJournalEntryWithinTx(tx as any, {
-        companyId: data.companyId,
-        entryDate: data.transactionDate,
-        referenceType: 'FINANCE',
-        referenceId: transaction.id,
-        description: `Cash Out: ${data.description}`,
-        items: [
-          { accountId: debitId, debit: data.amount, credit: 0 },
-          { accountId: creditId, debit: 0, credit: data.amount },
-        ],
-      });
+      if (debitId && creditId) {
+        try {
+          await this.glService.createJournalEntryWithinTx(tx as any, {
+            companyId: data.companyId,
+            entryDate: data.transactionDate,
+            referenceType: 'FINANCE',
+            referenceId: transaction.id,
+            description: `Cash Out: ${data.description || 'Pengeluaran Kas'}`,
+            items: [
+              { accountId: debitId, debit: data.amount, credit: 0 },
+              { accountId: creditId, debit: 0, credit: data.amount },
+            ],
+          });
+        } catch (e) {
+          console.warn('GL Journal entry skipped for Cash Out:', e);
+        }
+      }
 
       return transaction;
     });

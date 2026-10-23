@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
   Param,
+  Query,
 } from '@nestjs/common';
 import { FinanceService, FinanceTransactionDto } from './finance.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -176,14 +177,57 @@ export class FinanceController {
 
   @Permissions('finance.view')
   @Get('transactions')
-  async getTransactions(@Request() req) {
+  async getTransactions(
+    @Request() req,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('type') type?: string,
+    @Query('categoryId') categoryId?: string,
+  ) {
+    const where: any = { company_id: req.user.company_id };
+
+    if (startDate || endDate) {
+      where.transaction_date = {};
+      if (startDate) {
+        where.transaction_date.gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.transaction_date.lte = end;
+      }
+    }
+
+    if (type && type !== 'ALL') {
+      if (type === 'IN') {
+        where.transaction_type = { in: ['Cash In', 'Income'] };
+      } else if (type === 'OUT') {
+        where.transaction_type = { in: ['Cash Out', 'Expense'] };
+      } else {
+        where.transaction_type = type;
+      }
+    }
+
+    if (categoryId && categoryId !== 'ALL') {
+      where.items = {
+        some: {
+          category_id: categoryId,
+        },
+      };
+    }
+
     return this.prisma.financeTransaction.findMany({
-      where: { company_id: req.user.company_id },
+      where,
       orderBy: { transaction_date: 'desc' },
-      take: 100,
+      take: 200,
       include: {
         cash_account: true,
         user_created: { select: { name: true } },
+        items: {
+          include: {
+            category: true,
+          },
+        },
       },
     });
   }
