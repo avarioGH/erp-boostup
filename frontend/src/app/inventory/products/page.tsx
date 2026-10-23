@@ -22,8 +22,8 @@ import { InventoryAPI } from"@/lib/api"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
 import imageCompression from"browser-image-compression"
 
-import { Upload, X, QrCode, Edit } from"lucide-react"
-import Link from"next/link"
+import { Upload, X, QrCode, Edit, ClipboardList } from"lucide-react"
+import Link from "next/link"
 import {
  DropdownMenu,
  DropdownMenuCheckboxItem,
@@ -289,6 +289,11 @@ export default function ProductInventory() {
  <p className="text-muted-foreground mt-1">Pantau pergerakan stok multi-gudang dan katalog produk Anda.</p>
  </div>
  <div className="flex items-center gap-2">
+  <Link href="/inventory/initial-stock">
+    <Button variant="outline" className="gap-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 font-semibold">
+      <ClipboardList className="w-4 h-4 text-primary" /> Hitung & Sesuaikan Stok Fisik
+    </Button>
+  </Link>
  <Button variant="outline" className="gap-2 border-border bg-background">
  <Download className="w-4 h-4" /> Export
  </Button>

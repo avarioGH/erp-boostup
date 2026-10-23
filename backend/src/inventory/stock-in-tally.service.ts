@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   NotFoundException,
   ConflictException,
@@ -84,12 +84,17 @@ export class StockInTallyService {
           },
         });
 
+        const isExactSet = data.mode === 'SET_EXACT' || data.is_exact_stock === true;
+
         if (whStock) {
+          const targetCurrent = isExactSet ? item.qty : whStock.current_stock + item.qty;
+          const targetAvailable = isExactSet ? Math.max(0, item.qty - (whStock.reserved_stock || 0)) : whStock.available_stock + item.qty;
+
           await tx.warehouseStock.update({
             where: { id: whStock.id },
             data: {
-              current_stock: whStock.current_stock + item.qty,
-              available_stock: whStock.available_stock + item.qty,
+              current_stock: targetCurrent,
+              available_stock: targetAvailable,
             },
           });
         } else {
