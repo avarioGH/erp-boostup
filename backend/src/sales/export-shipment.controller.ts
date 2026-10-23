@@ -34,7 +34,8 @@ export class ExportShipmentController {
   @Post()
   @Permissions('sales.create')
   async create(@Body() dto: any, @Request() req) {
-    return this.service.create(req.user.companyId, dto);
+    const userId = req.user.userId || req.user.id || 'SYSTEM';
+    return this.service.create(req.user.companyId || req.user.company_id, dto, userId);
   }
 
   @Put(':id')

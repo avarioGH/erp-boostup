@@ -32,9 +32,36 @@ export class FinanceController {
   async getSummary(@Request() req) {
     const companyId = req.user.company_id;
     // 1. Total Cash from all Cash Accounts
-    const cashAccounts = await this.prisma.cashAccount.findMany({
+    let cashAccounts = await this.prisma.cashAccount.findMany({
       where: { company_id: companyId },
+      orderBy: { code: 'asc' },
     });
+
+    if (cashAccounts.length === 0) {
+      const defaults = [
+        { code: 'KAS-01', name: 'Kasir POS (Retail)', account_type: 'Cash' },
+        { code: 'KAS-02', name: 'Kas Pembelian Ikan (Nelayan)', account_type: 'Cash' },
+        { code: 'KAS-03', name: 'Alokasi Gaji & Karyawan', account_type: 'Cash' },
+        { code: 'KAS-04', name: 'Operasional Gudang & Cold Storage', account_type: 'Cash' },
+        { code: 'BANK-01', name: 'Bank & Kas Utama', account_type: 'Bank' },
+      ];
+      for (const d of defaults) {
+        await this.prisma.cashAccount.create({
+          data: {
+            company_id: companyId,
+            code: d.code,
+            name: d.name,
+            account_type: d.account_type,
+            opening_balance: 0,
+            current_balance: 0,
+          },
+        }).catch(() => {});
+      }
+      cashAccounts = await this.prisma.cashAccount.findMany({
+        where: { company_id: companyId },
+        orderBy: { code: 'asc' },
+      });
+    }
 
     const totalCash = cashAccounts.reduce(
       (sum, acc) => sum + Number(acc.current_balance),
@@ -143,6 +170,7 @@ export class FinanceController {
       netProfitMtd,
       profitGrowth,
       chartData,
+      cashAccounts,
     };
   }
 

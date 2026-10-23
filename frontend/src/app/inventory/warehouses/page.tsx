@@ -60,16 +60,23 @@ export default function WarehousesPage() {
  window.scrollTo({ top: 0, behavior: "smooth" })
  }
 
- const handleDelete = async (id: string) => {
- if (confirm("Are you sure you want to delete this warehouse?")) {
- try {
- await api.delete(`/inventory/warehouses/${id}`)
- fetchWarehouses()
- } catch(e) {
- console.error(e)
- }
- }
- }
+  const handleDelete = async (id: string) => {
+    if (confirm("Apakah Anda yakin ingin menghapus gudang ini?")) {
+      try {
+        const res = await api.delete(`/inventory/warehouses/${id}`)
+        if (res.status === 200 || res.status === 204) {
+          alert("Gudang berhasil dihapus!")
+        } else {
+          alert("Gudang berhasil dihapus.")
+        }
+        fetchWarehouses()
+      } catch(e: any) {
+        console.error(e)
+        const msg = e.response?.data?.message || e.message || "Gagal menghapus gudang. Pastikan gudang tidak memiliki transaksi atau stok aktif."
+        alert("Gagal: " + msg)
+      }
+    }
+  }
 
  const resetForm = () => {
  setShowForm(false)

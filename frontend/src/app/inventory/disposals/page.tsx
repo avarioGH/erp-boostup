@@ -125,11 +125,21 @@ export default function DisposalsPage() {
                       </td>
                       <td className="py-3.5 px-4">
                         {d.items && d.items.length > 0 ? (
-                          <div className="flex flex-wrap gap-1 max-w-[260px]">
+                          <div className="flex flex-col gap-1.5 max-w-[280px]">
                             {d.items.map((it: any, idx: number) => (
-                              <span key={idx} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-rose-500/10 text-rose-500 border border-rose-500/20 font-medium">
-                                {it.product?.name || 'Ikan'} <strong>&nbsp;x{it.qty || it.quantity}</strong>
-                              </span>
+                              <div key={idx} className="flex flex-col p-1.5 rounded-md bg-rose-500/10 border border-rose-500/20 text-xs">
+                                <div className="font-semibold text-rose-700 dark:text-rose-400 flex items-center justify-between gap-2">
+                                  <span>{it.product?.name || 'Ikan'}</span>
+                                  <span className="font-bold text-rose-600 bg-rose-100 dark:bg-rose-950/60 px-1.5 py-0.2 rounded">
+                                    {it.qty || it.quantity} kg
+                                  </span>
+                                </div>
+                                {it.notes && (
+                                  <span className="text-[11px] text-muted-foreground italic mt-0.5">
+                                    Ket: {it.notes}
+                                  </span>
+                                )}
+                              </div>
                             ))}
                           </div>
                         ) : (

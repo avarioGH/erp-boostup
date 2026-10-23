@@ -24,6 +24,9 @@ export class DisposalService {
         warehouse: true,
         creator: { select: { id: true, name: true } },
         approver: { select: { id: true, name: true } },
+        items: {
+          include: { product: true },
+        },
       },
       orderBy: { created_at: 'desc' },
     });

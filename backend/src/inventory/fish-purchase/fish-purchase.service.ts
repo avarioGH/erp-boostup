@@ -125,6 +125,26 @@ export class FishPurchaseService {
         });
       }
 
+      // Record to StockInTally so it appears in Ikan Masuk (/inventory/inflow)
+      const supplier = await tx.customer.findUnique({ where: { id: partner_id } });
+      await tx.stockInTally.create({
+        data: {
+          company_id,
+          idempotency_key: `TLY-FP-${orderNumber}`,
+          tally_number: `TLY-${orderNumber}`,
+          tally_date: new Date(date),
+          warehouse_id,
+          notes: `Pembelian Ikan Nelayan: ${supplier?.name || '-'} (${orderNumber})`,
+          status: 'POSTED',
+          items: {
+            create: items.map((i: any) => ({
+              product_id: i.product_id,
+              qty: Number(i.qty),
+            })),
+          },
+        },
+      });
+
       // 3. Accounts Payable Logic (Invoice + Payment if paid)
       const invoice = await tx.invoice.create({
         data: {

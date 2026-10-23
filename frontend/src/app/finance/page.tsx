@@ -208,6 +208,37 @@ export default function FinanceDashboard() {
  </Card>
  </div>
 
+ {/* POS KAS KEUANGAN VIRTUAL */}
+ <div className="space-y-3">
+ <div className="flex items-center justify-between">
+ <div>
+ <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+ <CreditCard className="w-4 h-4 text-primary" /> Pos Kas & Saldo Virtual
+ </h2>
+ <p className="text-xs text-muted-foreground">Pos keuangan internal untuk mengetahui saldo kasir, alokasi gaji, belanja nelayan, dan operasional.</p>
+ </div>
+ <Link href="/finance/cash" className="text-xs text-primary hover:underline font-medium">
+ Mutasi Buku Kas &rarr;
+ </Link>
+ </div>
+
+ <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+ {(summary?.cashAccounts || []).map((acc: any) => (
+ <Card key={acc.id} className="border-border shadow-none bg-card/60 hover:bg-card transition-all">
+ <CardHeader className="p-3 pb-1">
+ <CardDescription className="text-[11px] font-medium text-muted-foreground truncate">{acc.name}</CardDescription>
+ <CardTitle className="text-base font-bold text-foreground mt-0.5">{formatIDR(acc.current_balance)}</CardTitle>
+ </CardHeader>
+ <CardContent className="p-3 pt-1">
+ <span className="text-[10px] text-muted-foreground font-mono bg-muted/60 px-1.5 py-0.5 rounded">
+ {acc.code}
+ </span>
+ </CardContent>
+ </Card>
+ ))}
+ </div>
+ </div>
+
  {/* CHARTS & TRANSACTIONS */}
  <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
  <Card className="lg:col-span-2 border-border shadow-sm flex flex-col">
