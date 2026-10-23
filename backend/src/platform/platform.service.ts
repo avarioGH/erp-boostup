@@ -493,9 +493,10 @@ Aturan Menjawab:
       const companies = await this.prisma.company.findMany({
         where: {
           deleted_at: null,
-          tenant: {
-            status: { notIn: ['DELETED'] },
-          },
+          OR: [
+            { tenant: { is: null } },
+            { tenant: { status: { notIn: ['DELETED'] } } },
+          ],
         },
         include: {
           tenant: {
