@@ -1,4 +1,4 @@
-﻿import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -63,13 +63,27 @@ export class CustomerService {
   async getCustomersWithReceivables(companyId: string, search?: string, page: number = 1, limit: number = 20, warehouseId?: string) {
     const skip = (page - 1) * limit;
     const where: any = { company_id: companyId };
-    if (warehouseId) where.warehouse_id = warehouseId;
+    if (warehouseId) {
+      where.OR = [
+        { warehouse_id: warehouseId },
+        { warehouse_id: null },
+      ];
+    }
 
     if (search) {
-      where.OR = [
+      const searchCondition = [
         { name: { contains: search, mode: 'insensitive' } },
         { phone: { contains: search, mode: 'insensitive' } },
       ];
+      if (where.OR) {
+        where.AND = [
+          { OR: where.OR },
+          { OR: searchCondition },
+        ];
+        delete where.OR;
+      } else {
+        where.OR = searchCondition;
+      }
     }
 
     const [customers, total] = await Promise.all([
