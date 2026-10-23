@@ -8,16 +8,24 @@ export class NettingService {
   async applyNetting(partner_id: string, amount: number, reqUser: any, notes?: string) {
     if (amount <= 0) throw new BadRequestException('Amount must be positive');
 
-    const company_id = reqUser.company_id || reqUser.companyId;
+    let company_id = reqUser.company_id || reqUser.companyId;
 
     return this.prisma.$transaction(async (tx) => {
-      // Find open Accounts Payable (AP) for this partner
+      if (!company_id) {
+        const partner = await tx.customer.findUnique({ where: { id: partner_id } });
+        if (partner?.company_id) {
+          company_id = partner.company_id;
+        }
+      }
+
+      // Find open Accounts Payable (AP) for this partner (avoid CANCELLED or PAID)
       const apInvoices = await tx.invoice.findMany({
         where: {
           company_id,
           OR: [{ customer_id: partner_id }, { supplier_id: partner_id }],
           type: 'AP',
-          status: { in: ['POSTED', 'PARTIALLY PAID', 'PARTIALLY_PAID'] },
+          status: { notIn: ['CANCELLED', 'PAID'] },
+          remaining_amount: { gt: 0 },
         },
         orderBy: { invoice_date: 'asc' },
       });
@@ -28,7 +36,8 @@ export class NettingService {
           company_id,
           customer_id: partner_id,
           type: 'AR',
-          status: { in: ['POSTED', 'PARTIALLY PAID', 'PARTIALLY_PAID'] },
+          status: { notIn: ['CANCELLED', 'PAID'] },
+          remaining_amount: { gt: 0 },
         },
         orderBy: { invoice_date: 'asc' },
       });
