@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useEffect } from"react"
 import { 
@@ -567,7 +567,7 @@ export default function ProductInventory() {
  <AlertTriangle className="w-5 h-5 text-rose-500 mt-0.5" />
  <div>
  <h4 className="font-semibold text-rose-700">Koneksi Database Terputus</h4>
- <p className="text-sm text-rose-600">Saat ini menampilkan data dummy karena server MongoDB tidak dapat dihubungi. Silakan periksa koneksi MongoDB di server Anda.</p>
+ <p className="text-sm text-rose-600">Saat ini menampilkan data dummy karena server database tidak dapat dihubungi. Silakan periksa koneksi database di server Anda.</p>
  </div>
  </div>
  )}

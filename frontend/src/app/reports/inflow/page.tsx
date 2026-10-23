@@ -107,17 +107,17 @@ export default function InflowReportPage() {
 
       {/* Table */}
       <Card>
-        <CardContent className="p-0">
-          <Table>
+        <CardContent className="p-0 overflow-x-auto">
+          <Table className="min-w-[950px]">
             <TableHeader>
               <TableRow>
-                <TableHead>No. Tally / Penerimaan</TableHead>
-                <TableHead>Tanggal</TableHead>
-                <TableHead>Gudang</TableHead>
-                <TableHead>Keterangan</TableHead>
-                <TableHead>Produk</TableHead>
-                <TableHead className="text-right">Qty (Kg)</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="w-[180px]">No. Tally / Penerimaan</TableHead>
+                <TableHead className="w-[120px]">Tanggal</TableHead>
+                <TableHead className="w-[120px]">Gudang</TableHead>
+                <TableHead className="w-[260px] min-w-[220px]">Keterangan</TableHead>
+                <TableHead className="w-[200px] min-w-[180px]">Produk</TableHead>
+                <TableHead className="w-[120px] text-right">Qty (Kg)</TableHead>
+                <TableHead className="w-[100px]">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -131,19 +131,21 @@ export default function InflowReportPage() {
                     <TableRow key={`${tally.id}-${idx}`}>
                       {idx === 0 ? (
                         <>
-                          <TableCell rowSpan={tally.items.length} className="font-mono text-sm align-top font-medium">{tally.tally_number}</TableCell>
-                          <TableCell rowSpan={tally.items.length} className="text-sm align-top text-muted-foreground">
+                          <TableCell rowSpan={tally.items.length} className="font-mono text-sm align-top font-medium whitespace-nowrap">{tally.tally_number}</TableCell>
+                          <TableCell rowSpan={tally.items.length} className="text-sm align-top text-muted-foreground whitespace-nowrap">
                             {tally.tally_date ? format(new Date(tally.tally_date), 'dd MMM yyyy', { locale: id }) : '-'}
                           </TableCell>
                           <TableCell rowSpan={tally.items.length} className="text-sm align-top font-medium">{tally.warehouse?.name || '-'}</TableCell>
-                          <TableCell rowSpan={tally.items.length} className="text-xs align-top text-muted-foreground max-w-[180px]">{tally.notes || '-'}</TableCell>
+                          <TableCell rowSpan={tally.items.length} className="text-xs align-top text-muted-foreground break-words leading-relaxed pr-4">
+                            {tally.notes || '-'}
+                          </TableCell>
                         </>
                       ) : null}
-                      <TableCell>
+                      <TableCell className="align-top">
                         <div className="text-sm font-medium">{item.product?.name || '-'}</div>
-                        <div className="text-xs text-muted-foreground">{item.product?.code}</div>
+                        <div className="text-xs text-muted-foreground font-mono">{item.product?.code}</div>
                       </TableCell>
-                      <TableCell className="text-right font-semibold text-green-600">+{item.qty} kg</TableCell>
+                      <TableCell className="text-right font-semibold text-green-600 align-top whitespace-nowrap">+{item.qty} kg</TableCell>
                       {idx === 0 ? (
                         <TableCell rowSpan={tally.items.length} className="align-top">
                           <Badge variant={tally.status === 'POSTED' ? 'default' : 'secondary'}>
