@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Loader2, Plus, Printer, Search, Filter, ChevronLeft, Send, CheckCircle2, FileText, Download, Truck, FileOutput } from 'lucide-react'
+import { Loader2, Plus, Printer, Search, Filter, ChevronLeft, Send, CheckCircle2, FileText, Download, Truck, FileOutput, Eye } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export default function SalesOrdersPage() {
@@ -288,9 +288,14 @@ export default function SalesOrdersPage() {
  <td className="p-4 px-6 text-right font-medium">Rp {Number(item.total_amount || 0).toLocaleString('id-ID')}</td>
  <td className="py-3.5 px-6 text-center text-[13px]">{getStatusBadge(item.status)}</td>
  <td className="py-3.5 px-6 text-center text-[13px]">
- <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
- View
+ <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+ <Button variant="outline" size="sm" className="h-8 gap-1 text-xs font-medium" onClick={() => viewDetails(item)}>
+ <Eye className="w-3.5 h-3.5 text-primary" /> View
  </Button>
+ <Button variant="ghost" size="sm" className="h-8 gap-1 text-xs font-medium text-muted-foreground hover:text-foreground" onClick={() => router.push(`/sales/orders/${item.id}/print`)} title="Cetak Surat Jalan / Invoice SO">
+ <Printer className="w-3.5 h-3.5" /> Cetak
+ </Button>
+ </div>
  </td>
  </tr>
  ))}
