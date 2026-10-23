@@ -15,7 +15,7 @@ export class PrismaService
       const gudangA = warehouses.find(w => w.name.toLowerCase().includes('a'));
       if (gudangA) {
         await this.salesOrder.updateMany({
-          where: { warehouse_id: { isSet: false } },
+          where: { warehouse_id: null },
           data: { warehouse_id: gudangA.id }
         });
       }

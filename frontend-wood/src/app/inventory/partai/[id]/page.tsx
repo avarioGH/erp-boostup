@@ -1,0 +1,3374 @@
+"use client";
+import React, { useEffect, useState } from "react";
+import { api, PartaiAPI, TimberAPI, PurchaseAPI, MasterDataAPI, InventoryAPI, ProductionAPI, ShipmentAPI, PackingAPI } from "@/lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { ArrowLeft, ArrowRight, Plus, Eye, Edit, Trash2, Scissors, MoreHorizontal, Pencil, Trash, CheckCircle2, Check, X, Loader2, Package, CheckSquare, Square, ChevronDown, ChevronRight, Calendar, Layers, Search, Cog, Sparkles, Truck, FileSpreadsheet, Scale } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
+import { TablePagination } from "@/components/ui/table-pagination";
+import { ReceiveLogModal } from "@/components/timber/receive-log-modal";
+import { SawnTimberSpreadsheet, SawnTallyRow } from "@/components/timber/sawn-timber-spreadsheet";
+
+export default function PartaiDetailPage({ params }: { params: any }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+  const { id } = React.use(params as Promise<{ id: string }>);
+  const [partai, setPartai] = useState<any>(null);
+  const [currentTab, setCurrentTab] = useState("purchase");
+
+  // Receive inspection modal state
+  const [receiveModalOpen, setReceiveModalOpen] = useState(false);
+  const [selectedPurchaseForReceive, setSelectedPurchaseForReceive] = useState<any>(null);
+
+  const handleTabChange = (tab: string) => {
+    setCurrentTab(tab);
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(`partai_${id}_active_tab`, tab);
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", tab);
+        window.history.replaceState(null, "", url.toString());
+      } catch (e) {}
+    }
+  };
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get("tab");
+    if (tabFromUrl) {
+      setCurrentTab(tabFromUrl);
+      if (typeof window !== "undefined") {
+        try {
+          sessionStorage.setItem(`partai_${id}_active_tab`, tabFromUrl);
+        } catch (e) {}
+      }
+    } else if (typeof window !== "undefined") {
+      try {
+        const savedTab = sessionStorage.getItem(`partai_${id}_active_tab`);
+        if (savedTab) {
+          setCurrentTab(savedTab);
+          const url = new URL(window.location.href);
+          url.searchParams.set("tab", savedTab);
+          window.history.replaceState(null, "", url.toString());
+        }
+      } catch (e) {}
+    }
+  }, [searchParams, id]);
+
+  // -- Pagination & Page Size states --
+  const [purchasePage, setPurchasePage] = useState(1);
+  const [purchasePageSize, setPurchasePageSize] = useState(50);
+
+  const [dukbPage, setDukbPage] = useState(1);
+  const [dukbPageSize, setDukbPageSize] = useState(50);
+
+  const [trimmingPage, setTrimmingPage] = useState(1);
+  const [trimmingPageSize, setTrimmingPageSize] = useState(50);
+
+  const [inputPage, setInputPage] = useState(1);
+  const [inputPageSize, setInputPageSize] = useState(50);
+
+  const [outputPage, setOutputPage] = useState(1);
+  const [outputPageSize, setOutputPageSize] = useState(50);
+  
+  // Processing States
+  const [processingList, setProcessingList] = useState<any[]>([]);
+  const [processingLoading, setProcessingLoading] = useState(false);
+  const [processingPage, setProcessingPage] = useState(1);
+  const [processingPageSize, setProcessingPageSize] = useState(50);
+  const [processingFilterType, setProcessingFilterType] = useState("ALL");
+  const [processingTypes, setProcessingTypes] = useState<any[]>([]);
+
+  // Shipment (Muat Fuso / Truk Kalimantan -> Surabaya) States (Excel 3)
+  const [shipmentsList, setShipmentsList] = useState<any[]>([]);
+  const [shipmentLoading, setShipmentLoading] = useState(false);
+  const [shipmentPage, setShipmentPage] = useState(1);
+  const [shipmentPageSize, setShipmentPageSize] = useState(50);
+
+  // Packing (Dual Record: Asli vs Customer) States (Excel 6)
+  const [packingsList, setPackingsList] = useState<any[]>([]);
+  const [packingLoading, setPackingLoading] = useState(false);
+  const [packingPage, setPackingPage] = useState(1);
+  const [packingPageSize, setPackingPageSize] = useState(50);
+
+  // Purchase Filters
+  const [purchaseFilterType, setPurchaseFilterType] = useState<string>("ALL"); // ALL, RAW_LOG, SAWN_TIMBER
+  const [purchaseFilterSpecies, setPurchaseFilterSpecies] = useState<string>("ALL");
+  const [purchaseFilterStartDate, setPurchaseFilterStartDate] = useState<string>("");
+  const [purchaseFilterEndDate, setPurchaseFilterEndDate] = useState<string>("");
+  const [speciesList, setSpeciesList] = useState<any[]>([]);
+
+
+  // DUKB selection & bulk trimming state
+  const [selectedDukbLogIds, setSelectedDukbLogIds] = useState<string[]>([]);
+  const [isBulkTrimming, setIsBulkTrimming] = useState(false);
+  
+  const [grades, setGrades] = useState<any[]>([]);
+  const [selectedOutputItems, setSelectedOutputItems] = useState<{id: string, outputId: string}[]>([]);
+  const [isGrading, setIsGrading] = useState(false);
+  const [selectedGradeId, setSelectedGradeId] = useState("");
+  
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [selectedTrimmedLogIds, setSelectedTrimmedLogIds] = useState<string[]>([]);
+  
+  // WIP Trimming Log Picker State
+  const [wipLogSearch, setWipLogSearch] = useState("");
+  const [wipLogStatusFilter, setWipLogStatusFilter] = useState<"ALL" | "UNTOUCHED" | "WORKED">("ALL");
+  const [wipLogPage, setWipLogPage] = useState(1);
+  const [wipLogPageSize, setWipLogPageSize] = useState(12);
+  
+  // Tally Modal State for Tab 4 WIP
+  const [isTallyModalOpen, setIsTallyModalOpen] = useState(false);
+  const [targetInputLogForTally, setTargetInputLogForTally] = useState<any>(null);
+  const [tallyDate, setTallyDate] = useState(new Date().toISOString().split('T')[0]);
+  const [tallyWarehouseId, setTallyWarehouseId] = useState("");
+  const [tallyLines, setTallyLines] = useState<SawnTallyRow[]>([
+    { thickness: "", width: "", length: "", pcs: "", productType: "BALOK" }
+  ]);
+  const [isSavingTally, setIsSavingTally] = useState(false);
+  const [expandedInputLogIds, setExpandedInputLogIds] = useState<string[]>([]);
+  const toggleExpandInputLog = (logId: string) => {
+    setExpandedInputLogIds(prev => 
+      prev.includes(logId) ? prev.filter(id => id !== logId) : [...prev, logId]
+    );
+  };
+
+  useEffect(() => {
+    MasterDataAPI.getSpecies().then((res: any) => {
+      const list = Array.isArray(res) ? res : (res?.data || []);
+      setSpeciesList(list);
+    }).catch(() => {});
+    MasterDataAPI.getGrades().then((res: any) => setGrades(res.data || res)).catch(() => {});
+    InventoryAPI.getWarehouses().then((res: any) => {
+      const list = Array.isArray(res) ? res : (res?.data || []);
+      setWarehouses(list);
+      if (list.length > 0) setTallyWarehouseId(list[0].id);
+    }).catch(() => {});
+  }, []);
+
+  const openTallyModalWithSelection = (specificLogIds?: string[], existingInputLog?: any) => {
+    const logsToUse = specificLogIds || selectedTrimmedLogIds;
+    if (!existingInputLog && (!logsToUse || logsToUse.length === 0)) {
+      toast({ 
+        title: "Pilih Log Terlebih Dahulu", 
+        description: "Silakan centang log hasil trimming yang ingin diproses.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    setTargetInputLogForTally(existingInputLog || null);
+    if (!existingInputLog && logsToUse) {
+      setSelectedTrimmedLogIds(logsToUse);
+    }
+    setTallyDate(new Date().toISOString().split('T')[0]);
+    if (!tallyWarehouseId && warehouses.length > 0) {
+      setTallyWarehouseId(warehouses[0].id);
+    }
+    setTallyLines([{ thickness: "", width: "", length: "", pcs: "", productType: "BALOK" }]);
+    setIsTallyModalOpen(true);
+  };
+
+  const handleSaveWipTally = async () => {
+    const validLines = tallyLines.filter(l => {
+      const t = parseFloat(String(l.thickness).replace(",", "."));
+      const w = parseFloat(String(l.width).replace(",", "."));
+      const p = parseFloat(String(l.length).replace(",", "."));
+      const pcs = parseInt(String(l.pcs));
+      return t > 0 && w > 0 && p > 0 && pcs > 0;
+    });
+
+    if (validLines.length === 0) {
+      toast({ 
+        title: "Ukuran Belum Lengkap", 
+        description: "Isi minimal 1 baris ukuran (T, L, P, dan PCS harus lebih dari 0).", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    let whId = tallyWarehouseId || partai?.warehouseId || partai?.warehouse?.id;
+    if (!whId && warehouses.length > 0) whId = warehouses[0].id;
+    if (!whId) {
+      toast({ title: "Gudang Belum Tersedia", description: "Pilih gudang tujuan output terlebih dahulu.", variant: "destructive" });
+      return;
+    }
+
+    setIsSavingTally(true);
+    try {
+      let inputLogId = targetInputLogForTally?.id;
+
+      // If no existing inputLog, create one from selected trimmed logs first
+      if (!inputLogId) {
+        if (!selectedTrimmedLogIds || selectedTrimmedLogIds.length === 0) {
+          throw new Error("Tidak ada log trimming yang dipilih");
+        }
+        const createdInputLog = await TimberAPI.createInputLog({
+          trimmedLogIds: selectedTrimmedLogIds,
+          locationId: whId,
+          partaiId: id,
+          date: tallyDate,
+        });
+        inputLogId = createdInputLog.id;
+      }
+
+      // Create Sawn Timber Output (Daily Tally)
+      const payload = {
+        inputLogId: inputLogId,
+        partaiId: id,
+        outputDate: tallyDate,
+        locationId: whId,
+        items: validLines.map(line => {
+          const t = parseFloat(String(line.thickness).replace(",", "."));
+          const w = parseFloat(String(line.width).replace(",", "."));
+          const p = parseFloat(String(line.length).replace(",", "."));
+          const pcs = parseInt(String(line.pcs));
+          return {
+            thickness: t * 10, // cm to mm
+            width: w * 10,     // cm to mm
+            length: p * 10,    // cm to mm
+            quantityPcs: pcs,
+            grade: "PENDING",
+            productType: line.productType || "BALOK"
+          };
+        })
+      };
+
+      const res = await api.post('/inventory/sawn-timber/output', payload);
+      // Auto-post the tally so it directly enters output stock
+      await api.post(`/inventory/sawn-timber/output/${res.data.id}/post`);
+
+      toast({ 
+        title: "Tally Berhasil Disimpan!", 
+        description: `Hasil tally ${validLines.length} ukuran berhasil dicatat ke WIP dan diposting ke output.` 
+      });
+      setIsTallyModalOpen(false);
+      setSelectedTrimmedLogIds([]);
+      setTargetInputLogForTally(null);
+      setTallyLines([{ thickness: "", width: "", length: "", pcs: "", productType: "BALOK" }]);
+      fetchPartai();
+    } catch (err: any) {
+      console.error(err);
+      toast({ 
+        title: "Gagal Menyimpan Tally", 
+        description: err?.response?.data?.error?.message || err?.response?.data?.message || err.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsSavingTally(false);
+    }
+  };
+  
+  const handleBulkGrade = async () => {
+    if (!selectedGradeId) {
+       toast({ title: "Pilih Grade", description: "Silakan pilih grade terlebih dahulu", variant: "destructive" });
+       return;
+    }
+    const gradeObj = grades.find(g => g.id === selectedGradeId);
+    setIsGrading(true);
+    let success = 0;
+    for (const item of selectedOutputItems) {
+       try {
+         await api.patch(`/inventory/sawn-timber/output/${item.outputId}/items/${item.id}/grade`, {
+           gradeId: gradeObj.id,
+           grade: gradeObj.code || gradeObj.name || 'STANDARD',
+         });
+         success++;
+       } catch (e: any) {
+         console.error(e);
+         const msg = e?.response?.data?.error?.message || e?.response?.data?.message || 'Gagal update grade';
+         toast({ title: 'Gagal', description: msg, variant: 'destructive' });
+       }
+    }
+    setIsGrading(false);
+    if (success > 0) {
+      toast({ title: "Selesai", description: `Berhasil mengupdate ${success} item.` });
+    }
+    setSelectedOutputItems([]);
+    fetchPartai();
+  };
+
+  const [isPostingOutputs, setIsPostingOutputs] = useState(false);
+  const handlePostOutputs = async () => {
+    const draftOutputs = (partai?.sawnOutputs || []).filter((o: any) => o.status === 'DRAFT');
+    const outputsToPost = selectedOutputItems.length > 0
+      ? Array.from(new Set(selectedOutputItems.map(i => i.outputId))).filter(oid => {
+          const out = (partai?.sawnOutputs || []).find((o: any) => o.id === oid);
+          return out?.status === 'DRAFT';
+        })
+      : draftOutputs.map((o: any) => o.id);
+
+    if (outputsToPost.length === 0) {
+      toast({ title: "Info", description: "Tidak ada output berstatus DRAFT untuk di-posting ke stok." });
+      return;
+    }
+
+    setIsPostingOutputs(true);
+    let success = 0;
+    for (const outputId of outputsToPost) {
+      try {
+        await api.post(`/inventory/sawn-timber/output/${outputId}/post`);
+        success++;
+      } catch (err: any) {
+        console.error(err);
+        const msg = err?.response?.data?.error?.message || err?.response?.data?.message || 'Gagal posting output';
+        toast({ title: 'Gagal', description: msg, variant: 'destructive' });
+      }
+    }
+    setIsPostingOutputs(false);
+    if (success > 0) {
+      toast({ title: "Berhasil", description: `${success} output berhasil di-posting ke Stok!` });
+    }
+    setSelectedOutputItems([]);
+    fetchPartai();
+  };
+  
+  const toggleSelectOutputItem = (id: string, outputId: string) => {
+    const exists = selectedOutputItems.find(x => x.id === id);
+    if (exists) {
+      setSelectedOutputItems(selectedOutputItems.filter(x => x.id !== id));
+    } else {
+      setSelectedOutputItems([...selectedOutputItems, {id, outputId}]);
+    }
+  };
+  
+  const toggleSelectAllOutputItems = (allItems: any[]) => {
+    if (selectedOutputItems.length === allItems.length) {
+       setSelectedOutputItems([]);
+    } else {
+        setSelectedOutputItems(allItems.map(i => ({ id: i.id, outputId: i.parentOutputId })));
+     }
+  };
+
+  const fetchPartai = () => {
+    if (id) {
+      PartaiAPI.getPartai(id).then((res: any) => {
+        setPartai(res);
+      }).catch(console.error);
+    }
+  };
+
+  const fetchProcessingData = async () => {
+    setProcessingLoading(true);
+    setShipmentLoading(true);
+    setPackingLoading(true);
+    try {
+      const [res, typesRes, shipRes, packRes] = await Promise.all([
+        ProductionAPI.getProcesses({ partaiId: id, take: 100 }).catch(() => []),
+        MasterDataAPI.getProcessingTypes().catch(() => []),
+        ShipmentAPI.getShipments({ partaiId: id }).catch(() => []),
+        PackingAPI.getPackings({ partaiId: id }).catch(() => []),
+      ]);
+      const list = Array.isArray(res) ? res : res?.items || [];
+      setProcessingList(list);
+      setProcessingTypes(Array.isArray(typesRes) ? typesRes : typesRes?.data || []);
+      setShipmentsList(Array.isArray(shipRes) ? shipRes : shipRes?.items || []);
+      setPackingsList(Array.isArray(packRes) ? packRes : packRes?.items || []);
+    } catch (e) {
+      console.error("Error loading processing, shipment or packing data:", e);
+    } finally {
+      setProcessingLoading(false);
+      setShipmentLoading(false);
+      setPackingLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPartai();
+    fetchProcessingData();
+  }, [id]);
+
+  
+  
+  const handleOpenReceiveModal = (purchaseId: string, rawPurchase?: any) => {
+    const p = rawPurchase || (partai?.purchases || []).find((x: any) => x.id === purchaseId);
+    if (p) {
+      setSelectedPurchaseForReceive(p);
+      setReceiveModalOpen(true);
+    } else {
+      handleReceivePurchase(purchaseId);
+    }
+  };
+
+  const handleReceivePurchase = async (purchaseId: string) => {
+    try {
+      await PurchaseAPI.receivePurchase(purchaseId);
+      toast({ title: "Berhasil", description: "Pembelian berhasil diterima! Stok kayu telah masuk ke inventaris gudang." });
+      fetchPartai();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.response?.data?.message || "Failed to receive", variant: "destructive" });
+    }
+  };
+
+  const handleConfirmPurchase = async (purchaseId: string) => {
+    try {
+      await PurchaseAPI.confirmPurchase(purchaseId);
+      toast({ title: "Success", description: "Purchase confirmed." });
+      fetchPartai();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.response?.data?.message || "Failed to confirm", variant: "destructive" });
+    }
+  };
+
+  const handleDeletePurchase = async (purchaseId: string) => {
+    if (!confirm("Are you sure you want to delete this purchase?")) return;
+    try {
+      await PurchaseAPI.deletePurchase(purchaseId);
+      toast({ title: "Success", description: "Purchase deleted." });
+      fetchPartai();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.response?.data?.message || "Delete failed", variant: "destructive" });
+    }
+  };
+
+      const handleDirectTrim = async (log: any) => {
+    if (!confirm(`Buat hasil trimming penuh (100% full) untuk log ${log.logNumber} tanpa pemotongan?`)) return;
+    try {
+      await api.post(`/inventory/logs/${log.id}/trimming`, {
+        length: log.originalLength,
+        diameter1: log.diameter1 || 0,
+        diameter2: log.diameter2 || 0,
+        diameter3: log.diameter3 || 0,
+        diameter4: log.diameter4 || 0,
+        averageDiameter: log.averageDiameter || 0,
+        gerowong: log.gerowong || 0,
+        trimmingLength: 0
+      });
+      toast({ title: "Success", description: "Log berhasil di-trim penuh." });
+      fetchPartai();
+    } catch (e: any) {
+      console.error(e);
+      const rawData = e?.response?.data;
+      const msg = rawData?.error?.message || rawData?.message || e.message;
+      toast({ title: "Gagal Trimming", description: msg, variant: "destructive" });
+      alert("Gagal Trimming: " + msg);
+    }
+  };
+
+  const handleDeleteLog = async (logId: string) => {
+    if (!confirm("Are you sure you want to delete this log?")) return;
+    try {
+      await TimberAPI.deleteLog(logId);
+      toast({ title: "Success", description: "Log deleted." });
+      fetchPartai();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.response?.data?.message || "Delete failed", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteTrim = async (trimId: string) => {
+    if (!confirm("Are you sure you want to delete this trim record?")) return;
+    try {
+      await TimberAPI.deleteTrimmingLog(trimId);
+      toast({ title: "Success", description: "Trim deleted." });
+      fetchPartai();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.response?.data?.message || "Delete failed", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteInput = async (inputId: string) => {
+    if (!confirm("Are you sure you want to delete this input log?")) return;
+    try {
+      await TimberAPI.deleteInputLog(inputId);
+      toast({ title: "Success", description: "Input log deleted." });
+      fetchPartai();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.response?.data?.message || "Delete failed", variant: "destructive" });
+    }
+  };
+
+  const handleDeleteOutput = async (outputId: string) => {
+    if (!confirm("Are you sure you want to delete this output?")) return;
+    try {
+      await TimberAPI.cancelSawnOutput(outputId);
+      toast({ title: "Success", description: "Output deleted/cancelled." });
+      fetchPartai();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.response?.data?.message || "Delete failed", variant: "destructive" });
+    }
+  };
+
+  // 1. Flatten Purchases: Each log / sawn timber item has its own row ("di jejerkan langsung 2 log")
+  const flattenedPurchases = React.useMemo(() => {
+    if (!partai?.purchases) return [];
+    const list: any[] = [];
+
+    partai.purchases.forEach((p: any) => {
+      const pDate = p.purchaseDate || p.createdAt;
+      const pStatus = p.status || "DRAFT";
+      const docNum = p.purchaseNumber || p.code || "PO";
+
+      let hasItems = false;
+
+      // Raw Log items
+      if (p.logItems && p.logItems.length > 0) {
+        hasItems = true;
+        p.logItems.forEach((li: any, idx: number) => {
+          const itemReceivingDate = li.receivingDate || p.receivingDate || (li.status === 'RECEIVED' ? (p.receivingDate || li.updatedAt || p.updatedAt) : null);
+          list.push({
+            id: li.id || `${p.id}-log-${idx}`,
+            purchaseId: p.id,
+            purchaseNumber: docNum,
+            purchaseDate: pDate,
+            receivingDate: itemReceivingDate,
+            createdAt: li.createdAt || p.createdAt,
+            itemType: "RAW_LOG",
+            itemCode: li.logNumber || `Log #${idx + 1}`,
+            species: li.species || "Log",
+            dimensions: li.purchaseLength
+              ? `${li.purchaseLength}m (D: ${li.purchaseDiameter1 || li.purchaseDiameter2 || "-"}cm)`
+              : "-",
+            quantityStr: "1 Log",
+            volume: Number(li.purchaseVolume || 0),
+            status: li.status === "RECEIVED" ? "RECEIVED" : pStatus,
+            purchaseStatus: pStatus,
+            source: p.source?.name ? `${p.source.name}${p.source.code ? ` (${p.source.code})` : ""}` : (p.source?.code || p.sourceId || "-"),
+            rawPurchase: p,
+          });
+        });
+      }
+
+      // Sawn Timber items
+      if (p.items && p.items.length > 0) {
+        hasItems = true;
+        p.items.forEach((it: any, idx: number) => {
+          const t = it.purchaseThickness || it.timberVariant?.thickness || 0;
+          const w = it.purchaseWidth || it.timberVariant?.width || 0;
+          const l = it.purchaseLength || it.timberVariant?.length || 0;
+          const isCmFormat = l <= 1000 && t <= 100 && w <= 100;
+          const dimStr = t && w && l 
+            ? (isCmFormat ? `${l} × ${t} × ${w} cm` : `${t} × ${w} × ${l} mm`)
+            : "-";
+          const sku = it.timberVariant?.sku || (dimStr !== "-" ? dimStr : `Item #${idx + 1}`);
+          const sp = it.timberVariant?.species || it.timberVariant?.timberSpecies?.name || "Sawn Timber";
+          const itemReceivingDate = p.receivingDate || (pStatus === 'RECEIVED' ? (p.receivingDate || it.updatedAt || p.updatedAt) : null);
+
+          list.push({
+            id: it.id || `${p.id}-item-${idx}`,
+            purchaseId: p.id,
+            purchaseNumber: docNum,
+            purchaseDate: pDate,
+            receivingDate: itemReceivingDate,
+            createdAt: it.createdAt || p.createdAt,
+            itemType: "SAWN_TIMBER",
+            itemCode: sku,
+            species: sp,
+            dimensions: dimStr,
+            quantityStr: `${it.quantityPcs || 0} Pcs`,
+            volume: Number(it.volumeM3 || 0),
+            status: pStatus,
+            purchaseStatus: pStatus,
+            source: p.source?.name ? `${p.source.name}${p.source.code ? ` (${p.source.code})` : ""}` : (p.source?.code || p.sourceId || "-"),
+            rawPurchase: p,
+          });
+        });
+      }
+
+      // Fallback if purchase has no items yet
+      if (!hasItems) {
+        list.push({
+          id: p.id,
+          purchaseId: p.id,
+          purchaseNumber: docNum,
+          purchaseDate: pDate,
+          receivingDate: p.receivingDate || (pStatus === 'RECEIVED' ? p.updatedAt : null),
+          createdAt: p.createdAt,
+          itemType: "EMPTY",
+          itemCode: "-",
+          species: "-",
+          dimensions: "-",
+          quantityStr: "-",
+          volume: Number(p.totalVolumeM3 || 0),
+          status: pStatus,
+          purchaseStatus: pStatus,
+          source: p.source?.name ? `${p.source.name}${p.source.code ? ` (${p.source.code})` : ""}` : (p.source?.code || p.sourceId || "-"),
+          rawPurchase: p,
+        });
+      }
+    });
+
+    // Sort newest first
+    return list.sort((a, b) => {
+      const timeA = new Date(a.purchaseDate || a.createdAt || 0).getTime();
+      const timeB = new Date(b.purchaseDate || b.createdAt || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.id || "").localeCompare(a.id || "");
+    });
+  }, [partai?.purchases]);
+
+  const filteredPurchases = React.useMemo(() => {
+    return flattenedPurchases.filter((p: any) => {
+      // 1. Filter Tipe Pembelian (Beli Log Bulat / Beli Masak Sawn Timber)
+      if (purchaseFilterType && purchaseFilterType !== "ALL") {
+        if (p.itemType !== purchaseFilterType) {
+          return false;
+        }
+      }
+
+      // 2. Filter Species
+      if (purchaseFilterSpecies && purchaseFilterSpecies !== "ALL") {
+        const searchSpec = purchaseFilterSpecies.trim().toUpperCase();
+        const itemSpecies = (p.species || "").trim().toUpperCase();
+        if (itemSpecies !== searchSpec && !itemSpecies.includes(searchSpec)) {
+          return false;
+        }
+      }
+
+      // 3. Filter Tanggal (berdasarkan purchaseDate atau createdAt)
+      const dateVal = p.purchaseDate || p.createdAt;
+      if (dateVal) {
+        const itemDateStr = new Date(dateVal).toISOString().split("T")[0];
+        if (purchaseFilterStartDate && itemDateStr < purchaseFilterStartDate) return false;
+        if (purchaseFilterEndDate && itemDateStr > purchaseFilterEndDate) return false;
+      } else {
+        if (purchaseFilterStartDate || purchaseFilterEndDate) return false;
+      }
+
+      return true;
+    });
+  }, [flattenedPurchases, purchaseFilterType, purchaseFilterSpecies, purchaseFilterStartDate, purchaseFilterEndDate]);
+
+
+  const paginatedPurchases = React.useMemo(() => {
+    if (purchasePageSize >= 9999) return filteredPurchases;
+    const start = (purchasePage - 1) * purchasePageSize;
+    return filteredPurchases.slice(start, start + purchasePageSize);
+  }, [filteredPurchases, purchasePage, purchasePageSize]);
+
+  // Trimming mapping: track which raw logs have already been trimmed
+  const trimmedLogMap = React.useMemo(() => {
+    const map = new Map<string, string>(); // rawLogId -> trimNumber
+    (partai?.trimmedLogs || []).forEach((t: any) => {
+      if (t.rawLogId) {
+        map.set(t.rawLogId, t.trimNumber || "Trimmed");
+      }
+    });
+    (partai?.rawLogs || []).forEach((r: any) => {
+      if (r.trimmedLogs && r.trimmedLogs.length > 0) {
+        map.set(r.id, r.trimmedLogs[0]?.trimNumber || "Trimmed");
+      }
+    });
+    return map;
+  }, [partai?.trimmedLogs, partai?.rawLogs]);
+
+  // 2. DUKB (Raw Logs) deduplicated by logNumber and sorted newest first
+  const sortedRawLogs = React.useMemo(() => {
+    const rawList = partai?.rawLogs || [];
+    const groupMap = new Map<string, any[]>();
+    for (const r of rawList) {
+      const key = (r.logNumber || "").trim();
+      if (!key) continue;
+      if (!groupMap.has(key)) groupMap.set(key, []);
+      groupMap.get(key)!.push(r);
+    }
+
+    const uniqueList: any[] = [];
+    for (const [_, items] of groupMap.entries()) {
+      if (items.length === 1) {
+        uniqueList.push(items[0]);
+      } else {
+        items.sort((a: any, b: any) => {
+          const aTrim = (a.status === 'TRIMMED' || trimmedLogMap.has(a.id) || (a.trimmedLogs && a.trimmedLogs.length > 0)) ? 1 : 0;
+          const bTrim = (b.status === 'TRIMMED' || trimmedLogMap.has(b.id) || (b.trimmedLogs && b.trimmedLogs.length > 0)) ? 1 : 0;
+          if (aTrim !== bTrim) return bTrim - aTrim;
+          const aAvg = Number(a.averageDiameter || 0);
+          const bAvg = Number(b.averageDiameter || 0);
+          if (aAvg !== bAvg) return bAvg - aAvg;
+          const aTime = new Date(a.createdAt || 0).getTime();
+          const bTime = new Date(b.createdAt || 0).getTime();
+          return bTime - aTime;
+        });
+        uniqueList.push(items[0]);
+      }
+    }
+
+    return uniqueList.sort((a: any, b: any) => {
+      const timeA = new Date(a.receivingDate || a.date || a.createdAt || 0).getTime();
+      const timeB = new Date(b.receivingDate || b.date || b.createdAt || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.logNumber || "").localeCompare(a.logNumber || "");
+    });
+  }, [partai?.rawLogs, trimmedLogMap]);
+
+  const untrimmedLogs = React.useMemo(() => {
+    return sortedRawLogs.filter((r: any) => r.status !== 'TRIMMED' && !trimmedLogMap.has(r.id));
+  }, [sortedRawLogs, trimmedLogMap]);
+
+  const paginatedRawLogs = React.useMemo(() => {
+    if (dukbPageSize >= 9999) return sortedRawLogs;
+    const start = (dukbPage - 1) * dukbPageSize;
+    return sortedRawLogs.slice(start, start + dukbPageSize);
+  }, [sortedRawLogs, dukbPage, dukbPageSize]);
+
+  const handleBulkTrim = async (targetIds?: string[]) => {
+    const idsToTrim = targetIds || selectedDukbLogIds;
+    const finalIds = idsToTrim.filter((id) => !trimmedLogMap.has(id));
+
+    if (finalIds.length === 0) {
+      toast({
+        title: "Tidak ada log untuk di-trim",
+        description: "Semua log yang dipilih sudah berstatus trim.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const confirmMsg = `Trimming penuh (100% full length) untuk ${finalIds.length} log?\nLog yang di-trim akan otomatis mendapatkan nomor trim dan siap masuk ke Input Sawmill.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setIsBulkTrimming(true);
+    try {
+      const res = await TimberAPI.bulkTrimLogs(finalIds, 0);
+      toast({
+        title: "Trimming Berhasil!",
+        description: `${res?.successCount || finalIds.length} log berhasil di-trim penuh.`,
+      });
+      setSelectedDukbLogIds([]);
+      fetchPartai();
+    } catch (e: any) {
+      console.error(e);
+      const msg = e.response?.data?.message || e.message || "Gagal melakukan bulk trimming";
+      toast({
+        title: "Gagal Bulk Trimming",
+        description: msg,
+        variant: "destructive",
+      });
+    } finally {
+      setIsBulkTrimming(false);
+    }
+  };
+
+  // 3. Trimming sorted newest first
+  const sortedTrimmedLogs = React.useMemo(() => {
+    return [...(partai?.trimmedLogs || [])].sort((a: any, b: any) => {
+      const timeA = new Date(a.trimDate || a.createdAt || 0).getTime();
+      const timeB = new Date(b.trimDate || b.createdAt || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.trimNumber || "").localeCompare(a.trimNumber || "");
+    });
+  }, [partai?.trimmedLogs]);
+
+  const paginatedTrimmedLogs = React.useMemo(() => {
+    if (trimmingPageSize >= 9999) return sortedTrimmedLogs;
+    const start = (trimmingPage - 1) * trimmingPageSize;
+    return sortedTrimmedLogs.slice(start, start + trimmingPageSize);
+  }, [sortedTrimmedLogs, trimmingPage, trimmingPageSize]);
+
+  // 4. Input (WIP) sorted newest first (filter out direct purchase virtual jobs)
+  const sortedInputLogs = React.useMemo(() => {
+    return [...(partai?.inputLogs || [])]
+      .filter((a: any) => !a.inputNumber?.startsWith("DIRECT-PURCHASE"))
+      .sort((a: any, b: any) => {
+        const timeA = new Date(a.inputDate || a.createdAt || 0).getTime();
+        const timeB = new Date(b.inputDate || b.createdAt || 0).getTime();
+        if (timeB !== timeA) return timeB - timeA;
+        return (b.inputNumber || "").localeCompare(a.inputNumber || "");
+      });
+  }, [partai?.inputLogs]);
+
+  const paginatedInputLogs = React.useMemo(() => {
+    if (inputPageSize >= 9999) return sortedInputLogs;
+    const start = (inputPage - 1) * inputPageSize;
+    return sortedInputLogs.slice(start, start + inputPageSize);
+  }, [sortedInputLogs, inputPage, inputPageSize]);
+
+  // 5. Output (Sawn Timber) sorted newest first
+  const allOutputItems = React.useMemo(() => {
+    const list = (partai?.sawnOutputs || []).flatMap((o: any) =>
+      (o.items || []).map((item: any) => ({
+        ...item,
+        parentDate: o.outputDate,
+        parentInputId: o.inputLogId,
+        parentBundleNumber: o.bundleNumber,
+        parentOutputId: o.id,
+        parentStatus: o.status,
+        parentCreatedAt: o.createdAt,
+        parentNotes: o.notes,
+      }))
+    );
+    return list.sort((a: any, b: any) => {
+      const timeA = new Date(a.parentDate || a.parentCreatedAt || a.createdAt || 0).getTime();
+      const timeB = new Date(b.parentDate || b.parentCreatedAt || b.createdAt || 0).getTime();
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.id || "").localeCompare(a.id || "");
+    });
+  }, [partai?.sawnOutputs]);
+
+  const paginatedOutputItems = React.useMemo(() => {
+    if (outputPageSize >= 9999) return allOutputItems;
+    const start = (outputPage - 1) * outputPageSize;
+    return allOutputItems.slice(start, start + outputPageSize);
+  }, [allOutputItems, outputPage, outputPageSize]);
+
+  if (!partai) return <div className="p-8 text-center">Loading...</div>;
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="flex justify-between items-center bg-card p-4 rounded-lg border shadow-sm">
+        <div className="flex items-center space-x-4">
+          <Button variant="outline" size="icon" onClick={() => router.push('/inventory/partai')}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Detail Partai: {partai.code}</h1>
+            <p className="text-sm text-muted-foreground">{partai.name || "Tanpa Nama"}</p>
+          </div>
+        </div>
+        <Badge variant={partai.status === 'ACTIVE' ? 'default' : 'secondary'} className="text-sm px-3 py-1">
+          {partai.status}
+        </Badge>
+      </div>
+
+      {/* REKAP POSISI STOK PER GUDANG (LOG & SAWN TIMBER) */}
+      <Card className="border shadow-xs bg-muted/15">
+        <CardHeader className="py-3 px-4 md:px-5 border-b bg-muted/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Layers className="w-4 h-4 text-primary" />
+              Posisi & Sebaran Stok Partai Berdasarkan Gudang
+            </CardTitle>
+            <span className="text-[11px] text-muted-foreground">
+              Menampilkan rincian posisi fisik Log Bulat (DUKB), Trimming, dan Sawn Timber di setiap gudang penyimpanan.
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4 md:p-5">
+          {(() => {
+            // Aggregate inventory per warehouse for this partai
+            const whMap: Record<string, {
+              warehouseId: string;
+              warehouseName: string;
+              rawLogsPcs: number;
+              rawLogsM3: number;
+              trimmedLogsPcs: number;
+              trimmedLogsM3: number;
+              sawnTimberPcs: number;
+              sawnTimberM3: number;
+            }> = {};
+
+            const getOrCreateWh = (whId?: string, fallbackName?: string) => {
+              const id = whId || "UNASSIGNED";
+              if (!whMap[id]) {
+                const foundWh = warehouses.find(w => w.id === whId);
+                whMap[id] = {
+                  warehouseId: id,
+                  warehouseName: foundWh?.name || fallbackName || (whId === "UNASSIGNED" ? "Gudang Utama / Default" : `Gudang (${id.slice(-4)})`),
+                  rawLogsPcs: 0,
+                  rawLogsM3: 0,
+                  trimmedLogsPcs: 0,
+                  trimmedLogsM3: 0,
+                  sawnTimberPcs: 0,
+                  sawnTimberM3: 0,
+                };
+              }
+              return whMap[id];
+            };
+
+            // 1. Raw Logs (DUKB)
+            (partai?.rawLogs || []).forEach((r: any) => {
+              if (r.status !== 'CONSUMED' && r.status !== 'CANCELLED') {
+                const pWh = r.locationId || r.purchase?.warehouseId || partai?.warehouseId;
+                const rec = getOrCreateWh(pWh);
+                rec.rawLogsPcs += 1;
+                rec.rawLogsM3 += Number(r.netVolume || r.grossVolume || 0);
+              }
+            });
+
+            // 2. Trimmed Logs
+            (partai?.trimmedLogs || []).forEach((t: any) => {
+              if (t.status === 'AVAILABLE' || t.status === 'ASSIGNED_TO_INPUT') {
+                const tWh = t.locationId || t.rawLog?.locationId || partai?.warehouseId;
+                const rec = getOrCreateWh(tWh);
+                rec.trimmedLogsPcs += 1;
+                rec.trimmedLogsM3 += Number(t.netVolume || 0);
+              }
+            });
+
+            // 3. Sawn Timber Output
+            (partai?.sawnOutputs || []).forEach((o: any) => {
+              const oWh = o.locationId || partai?.warehouseId;
+              const rec = getOrCreateWh(oWh);
+              (o.items || []).forEach((it: any) => {
+                rec.sawnTimberPcs += Number(it.quantityPcs || 0);
+                rec.sawnTimberM3 += Number(it.volumeM3 || 0);
+              });
+            });
+
+            // 4. Shipment / Pindahan Stok Antar Gudang (Fuso)
+            // Kurangi stok di gudang asal muat dan tambahkan di gudang tujuan transfer
+            const activeShipments = (partai?.shipments || shipmentsList || []).filter((s: any) => s.status === 'CONFIRMED');
+            activeShipments.forEach((s: any) => {
+              const fromWh = s.warehouseId || partai?.warehouseId;
+              const toWh = s.destinationWarehouseId;
+              const toWhName = s.destinationWarehouse?.name || s.destinationName;
+              const fromWhName = s.warehouse?.name;
+              const shipPcs = Number(s.totalPcs || 0);
+              const shipM3 = Number(s.totalVolumeM3 || 0);
+
+              if (fromWh) {
+                const originRec = getOrCreateWh(fromWh, fromWhName);
+                originRec.sawnTimberPcs = Math.max(0, originRec.sawnTimberPcs - shipPcs);
+                originRec.sawnTimberM3 = Math.max(0, Number((originRec.sawnTimberM3 - shipM3).toFixed(4)));
+              }
+
+              if (toWh) {
+                const destRec = getOrCreateWh(toWh, toWhName);
+                destRec.sawnTimberPcs += shipPcs;
+                destRec.sawnTimberM3 = Number((destRec.sawnTimberM3 + shipM3).toFixed(4));
+              }
+            });
+
+            const whList = Object.values(whMap);
+
+            if (whList.length === 0) {
+              return (
+                <p className="text-xs text-muted-foreground text-center py-2">
+                  Belum ada catatan lokasi stok untuk partai ini.
+                </p>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {whList.map((wh) => {
+                  const totalWhM3 = wh.rawLogsM3 + wh.trimmedLogsM3 + wh.sawnTimberM3;
+                  return (
+                    <div 
+                      key={wh.warehouseId} 
+                      className="border rounded-lg p-3.5 bg-background shadow-2xs space-y-2.5 transition-all hover:border-primary/40"
+                    >
+                      <div className="flex items-center justify-between border-b pb-2">
+                        <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
+                          <Layers className="w-3.5 h-3.5 text-primary" />
+                          <span>{wh.warehouseName}</span>
+                        </div>
+                        <Badge variant="outline" className="font-mono text-[10px] bg-primary/5 text-primary border-primary/20">
+                          {totalWhM3.toFixed(3)} M³
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 text-[11px]">
+                        <div className="space-y-0.5 bg-blue-50/50 dark:bg-blue-950/20 p-2 rounded border border-blue-100 dark:border-blue-900/30">
+                          <span className="text-[10px] text-muted-foreground block font-medium">Log Mentah (DUKB)</span>
+                          <span className="font-bold text-blue-700 dark:text-blue-400 block font-mono">{wh.rawLogsPcs} Log</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">{wh.rawLogsM3.toFixed(3)} M³</span>
+                        </div>
+                        <div className="space-y-0.5 bg-amber-50/50 dark:bg-amber-950/20 p-2 rounded border border-amber-100 dark:border-amber-900/30">
+                          <span className="text-[10px] text-muted-foreground block font-medium">Log Trimming</span>
+                          <span className="font-bold text-amber-700 dark:text-amber-400 block font-mono">{wh.trimmedLogsPcs} Log</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">{wh.trimmedLogsM3.toFixed(3)} M³</span>
+                        </div>
+                        <div className="space-y-0.5 bg-emerald-50/50 dark:bg-emerald-950/20 p-2 rounded border border-emerald-100 dark:border-emerald-900/30">
+                          <span className="text-[10px] text-muted-foreground block font-medium">Sawn Timber</span>
+                          <span className="font-bold text-emerald-700 dark:text-emerald-400 block font-mono">{wh.sawnTimberPcs} Pcs</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">{wh.sawnTimberM3.toFixed(3)} M³</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </CardContent>
+      </Card>
+
+      <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
+        <div className="w-full overflow-x-auto pb-1 mb-6">
+          <TabsList className="inline-flex w-max min-w-full h-11 p-1 bg-muted/60 border rounded-lg gap-1">
+            <TabsTrigger value="purchase" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              1. Purchase
+            </TabsTrigger>
+            <TabsTrigger value="rawlogs" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              2. DUKB (Raw Logs)
+            </TabsTrigger>
+            <TabsTrigger value="trimming" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              3. Trimming
+            </TabsTrigger>
+            <TabsTrigger value="input" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              4. Input (WIP)
+            </TabsTrigger>
+            <TabsTrigger value="output" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              5. Output (Sawn Timber)
+            </TabsTrigger>
+            <TabsTrigger value="shipment" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5">
+              <Truck className="w-3.5 h-3.5 text-amber-600" />
+              6. Pindahan Stok / Kirim (Fuso)
+            </TabsTrigger>
+            <TabsTrigger value="processing" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5">
+              <Cog className="w-3.5 h-3.5 text-cyan-600" />
+              7. Processing
+            </TabsTrigger>
+            <TabsTrigger value="packing" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5">
+              <Package className="w-3.5 h-3.5 text-purple-600" />
+              8. Packing List (Asli vs Cust)
+            </TabsTrigger>
+            <TabsTrigger value="summary" className="px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              9. Rekapan Rendemen
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* 1. PURCHASE LOGS */}
+        <TabsContent value="purchase">
+          <Card>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <CardTitle>Purchase Log / Sawn Timber</CardTitle>
+                <CardDescription>Data pembelian awal bahan baku (log bulat atau sawn timber) untuk partai ini.</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=raw-log&tab=purchase`)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> + Beli Log Bulat (DUKB)
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=sawn-timber&tab=purchase`)}
+                  className="border-emerald-600/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 font-semibold"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> + Beli Sawn Timber
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* FILTER BAR PURCHASE */}
+              <div className="bg-muted/30 p-3 rounded-lg border border-border space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <span>🔍</span> Filter Data Pembelian
+                  </span>
+                  {(purchaseFilterType !== "ALL" || purchaseFilterSpecies !== "ALL" || purchaseFilterStartDate || purchaseFilterEndDate) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setPurchaseFilterType("ALL");
+                        setPurchaseFilterSpecies("ALL");
+                        setPurchaseFilterStartDate("");
+                        setPurchaseFilterEndDate("");
+                        setPurchasePage(1);
+                      }}
+                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Reset Filter
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">Tipe Pembelian</label>
+                    <Select 
+                      value={purchaseFilterType} 
+                      onValueChange={(val: any) => {
+                        setPurchaseFilterType(val || "ALL");
+                        setPurchasePage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs bg-background font-medium">
+                        <SelectValue placeholder="Semua Tipe" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">Semua Pembelian</SelectItem>
+                        <SelectItem value="RAW_LOG">
+                          <span className="flex items-center gap-1.5">
+                            <span>🪵</span> Beli Log Bulat (Raw Log)
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="SAWN_TIMBER">
+                          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                            <span>🌲</span> Beli Masak (Sawn Timber)
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">Jenis Kayu (Species)</label>
+                    <Select 
+                      value={purchaseFilterSpecies} 
+                      onValueChange={(val: any) => {
+                        setPurchaseFilterSpecies(val || "ALL");
+                        setPurchasePage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-xs bg-background">
+                        <SelectValue placeholder="Semua Jenis Kayu" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">Semua Jenis Kayu</SelectItem>
+                        {speciesList.map((s) => (
+                          <SelectItem key={s.id || s.code || s.name} value={s.name || s.code}>
+                            {s.name} {s.code && s.code !== s.name ? `(${s.code})` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">Dari Tanggal</label>
+                    <Input
+                      type="date"
+                      value={purchaseFilterStartDate}
+                      onChange={(e) => {
+                        setPurchaseFilterStartDate(e.target.value);
+                        setPurchasePage(1);
+                      }}
+                      className="h-8 text-xs bg-background"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-medium text-muted-foreground">Sampai Tanggal</label>
+                    <Input
+                      type="date"
+                      value={purchaseFilterEndDate}
+                      onChange={(e) => {
+                        setPurchaseFilterEndDate(e.target.value);
+                        setPurchasePage(1);
+                      }}
+                      className="h-8 text-xs bg-background"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>No. Pembelian</TableHead>
+                    <TableHead>No. Log / SKU</TableHead>
+                    <TableHead>Spesies</TableHead>
+                    <TableHead>Tgl Dibuat</TableHead>
+                    <TableHead>Tgl Diterima</TableHead>
+                    <TableHead>Dimensi / Ukuran</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Jumlah</TableHead>
+                    <TableHead className="text-right">Volume (m³)</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedPurchases.map((r: any) => (
+                    <TableRow 
+                      key={r.id} 
+                      className="group hover:bg-muted/50 cursor-pointer" 
+                      onClick={() => router.push(`/inventory/purchase/${r.purchaseId}?partaiId=${id}&tab=purchase`)}
+                    >
+                      <TableCell className="font-medium text-foreground">
+                        {r.purchaseNumber}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-semibold text-primary">
+                          {r.itemCode}
+                        </span>
+                        {r.itemType === "RAW_LOG" ? (
+                          <Badge variant="outline" className="ml-2 text-xs py-0 border-blue-400/60 text-blue-600 dark:text-blue-400">
+                            Log
+                          </Badge>
+                        ) : r.itemType === "SAWN_TIMBER" ? (
+                          <Badge variant="outline" className="ml-2 text-xs py-0 border-emerald-400/60 text-emerald-600 dark:text-emerald-400">
+                            Sawn
+                          </Badge>
+                        ) : null}
+                      </TableCell>
+                      <TableCell>{r.species || "-"}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">{r.purchaseDate ? new Date(r.purchaseDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {r.status === 'RECEIVED' ? (
+                          r.receivingDate ? (
+                            <span className="text-foreground font-medium">
+                              {new Date(r.receivingDate).toLocaleDateString("id-ID")}
+                            </span>
+                          ) : (
+                            <Badge variant="outline" className="text-emerald-600 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 text-xs">
+                              Diterima
+                            </Badge>
+                          )
+                        ) : (
+                          <span className="text-muted-foreground italic">Belum diterima</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{r.dimensions || "-"}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            r.status === 'CONFIRMED' || r.status === 'RECEIVED'
+                              ? 'text-emerald-500 border-emerald-500 bg-emerald-500/10'
+                              : r.status === 'CANCELLED'
+                              ? 'text-destructive border-destructive/30'
+                              : 'text-amber-500 border-amber-500/40 bg-amber-500/10'
+                          }
+                        >
+                          {r.status === 'RECEIVED' ? 'DITERIMA' : (r.status || "DRAFT")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium text-foreground">
+                        {r.quantityStr}
+                      </TableCell>
+                      <TableCell className="text-right font-semibold text-foreground">
+                        {Number(r.volume || 0).toFixed(4)}
+                      </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {r.purchaseStatus === 'DRAFT' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-2 text-emerald-600 border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                              title="Terima Purchase (Cek Ukuran & Masuk DUKB)"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenReceiveModal(r.purchaseId, r.rawPurchase);
+                              }}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Terima
+                            </Button>
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 px-2 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" 
+                            title="View" 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              router.push(`/inventory/purchase/${r.purchaseId}?partaiId=${id}&tab=purchase`);
+                            }}
+                          >
+                            <Eye className="w-4 h-4 mr-1" /> View
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" 
+                            title="Edit" 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              router.push(`/inventory/purchase/${r.purchaseId}/edit?partaiId=${id}&tab=purchase`);
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" 
+                            title="Delete" 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              handleDeletePurchase(r.purchaseId);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredPurchases.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                        {flattenedPurchases.length === 0 
+                          ? "Belum ada pembelian untuk partai ini." 
+                          : "Tidak ada pembelian yang sesuai dengan filter jenis kayu / tanggal."}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              <TablePagination
+                currentPage={purchasePage}
+                pageSize={purchasePageSize}
+                totalItems={filteredPurchases.length}
+                onPageChange={setPurchasePage}
+                onPageSizeChange={(newSize) => {
+                  setPurchasePageSize(newSize);
+                  setPurchasePage(1);
+                }}
+                itemLabel="item pembelian / log"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 2. DUKB (RAW LOGS) */}
+        <TabsContent value="rawlogs">
+          <Card>
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <CardTitle>Data Ukur Kayu Bulat (DUKB)</CardTitle>
+                <CardDescription>
+                  Daftar log mentah yang telah diterima. Pilih log untuk proses Trimming sebelum masuk mesin gesek Sawmill.
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {untrimmedLogs.length > 0 && (
+                  <Button 
+                    onClick={() => handleBulkTrim(untrimmedLogs.map((l: any) => l.id))}
+                    disabled={isBulkTrimming}
+                    variant="outline"
+                    className="border-emerald-500 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 font-semibold shadow-sm"
+                    title={`Trim Semua (${untrimmedLogs.length}) Log yang Belum Di-trim`}
+                  >
+                    <Scissors className="w-4 h-4 mr-1.5" />
+                    {isBulkTrimming ? "Memproses..." : `Trim Semua (${untrimmedLogs.length} Log)`}
+                  </Button>
+                )}
+                <Button 
+                  onClick={() => router.push(`/inventory/purchase/create?partaiId=${id}&type=raw-log&tab=rawlogs`)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> + Beli Log Baru (DUKB)
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {selectedDukbLogIds.length > 0 && (
+                <div className="mb-4 p-3 bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-lg flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-emerald-600 text-white font-bold">
+                      {selectedDukbLogIds.length} Log Terpilih
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      Log siap di-trim penuh (100% full length) dan masuk ke tab Trimming & Input Sawmill.
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => handleBulkTrim()}
+                      disabled={isBulkTrimming}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold h-8 text-xs"
+                    >
+                      <Scissors className="w-3.5 h-3.5 mr-1" />
+                      {isBulkTrimming ? "Memproses..." : `Trim Terpilih (${selectedDukbLogIds.length})`}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setSelectedDukbLogIds([])}
+                      className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Batal Pilih
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[40px] text-center">
+                      <Checkbox
+                        checked={
+                          paginatedRawLogs.length > 0 &&
+                          paginatedRawLogs.filter((r: any) => !trimmedLogMap.has(r.id)).length > 0 &&
+                          paginatedRawLogs.filter((r: any) => !trimmedLogMap.has(r.id)).every((r: any) => selectedDukbLogIds.includes(r.id))
+                        }
+                        onCheckedChange={(checked) => {
+                          const untrimmedOnPage = paginatedRawLogs.filter((r: any) => !trimmedLogMap.has(r.id)).map((r: any) => r.id);
+                          if (checked) {
+                            setSelectedDukbLogIds((prev) => Array.from(new Set([...prev, ...untrimmedOnPage])));
+                          } else {
+                            setSelectedDukbLogIds((prev) => prev.filter((id) => !untrimmedOnPage.includes(id)));
+                          }
+                        }}
+                        aria-label="Pilih semua log belum trim di halaman ini"
+                      />
+                    </TableHead>
+                    <TableHead>No. Log</TableHead>
+                    <TableHead>Spesies</TableHead>
+                    <TableHead>Tgl Diterima</TableHead>
+                    <TableHead className="text-right">Panjang (m)</TableHead>
+                    <TableHead className="text-right">Avg (cm)</TableHead>
+                    <TableHead className="text-right">Grw (cm)</TableHead>
+                    <TableHead className="text-right">Gross (m³)</TableHead>
+                    <TableHead className="text-right">Net (m³)</TableHead>
+                    <TableHead className="text-center">Status Trim</TableHead>
+                    <TableHead className="text-center w-[120px]">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedRawLogs.map((r: any) => {
+                    const isTrimmed = r.status === 'TRIMMED' || trimmedLogMap.has(r.id);
+                    const trimCode = trimmedLogMap.get(r.id);
+                    const isSelected = selectedDukbLogIds.includes(r.id);
+
+                    return (
+                      <TableRow 
+                        key={r.id} 
+                        className={`hover:bg-muted/50 cursor-pointer group ${isSelected ? "bg-emerald-50/30 dark:bg-emerald-950/20" : ""}`} 
+                        onClick={() => router.push(`/inventory/logs/${r.id}?partaiId=${id}&tab=rawlogs`)}
+                      >
+                        <TableCell className="text-center p-2" onClick={(e) => e.stopPropagation()}>
+                          {isTrimmed ? (
+                            <span title="Log sudah selesai di-trim">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto opacity-70" />
+                            </span>
+                          ) : (
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedDukbLogIds((prev) => [...prev, r.id]);
+                                } else {
+                                  setSelectedDukbLogIds((prev) => prev.filter((id) => id !== r.id));
+                                }
+                              }}
+                              aria-label={`Pilih log ${r.logNumber}`}
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell className="font-semibold text-foreground">{r.logNumber}</TableCell>
+                        <TableCell>{r.species}</TableCell>
+                        <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+                          {r.receivingDate ? new Date(r.receivingDate).toLocaleDateString("id-ID") : (r.date ? new Date(r.date).toLocaleDateString("id-ID") : (r.createdAt ? new Date(r.createdAt).toLocaleDateString("id-ID") : "-"))}
+                        </TableCell>
+                        <TableCell className="text-right">{r.originalLength}</TableCell>
+                        <TableCell className="text-right">{Number(r.averageDiameter || 0).toFixed(1)}</TableCell>
+                        <TableCell className="text-right">{r.gerowong ? Number(r.gerowong).toFixed(1) : "-"}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{Number(r.grossVolume || 0).toFixed(4)}</TableCell>
+                        <TableCell className="text-right font-bold text-blue-600 dark:text-blue-400">{Number(r.netVolume || 0).toFixed(4)}</TableCell>
+                        <TableCell className="text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                          {isTrimmed ? (
+                            <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-semibold text-xs py-0.5">
+                              <CheckCircle2 className="w-3 h-3 mr-1 inline" />
+                              Sudah Di-trim {trimCode ? `(${trimCode})` : ""}
+                            </Badge>
+                          ) : r.status === 'IN_TRIMMING' ? (
+                            <Badge variant="outline" className="border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-500/10 text-xs py-0.5">
+                              Trim Sebagian
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-amber-600 dark:text-amber-400 border-amber-400/40 bg-amber-500/10 text-xs py-0.5">
+                              Belum Di-trim
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" title="View Detail Log" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}?partaiId=${id}&tab=rawlogs`); }}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {!isTrimmed ? (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20" title="Tanpa Trimming (Langsung Trim Penuh)" onClick={(e) => { e.stopPropagation(); handleDirectTrim(r); }}>
+                                <Scissors className="w-4 h-4" />
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground opacity-40 cursor-not-allowed" title="Log sudah selesai di-trim" disabled>
+                                <Scissors className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20" title="Edit / Ukur DUKB" onClick={(e) => { e.stopPropagation(); router.push(`/inventory/logs/${r.id}/edit?partaiId=${id}&tab=rawlogs`); }}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete" onClick={(e) => { e.stopPropagation(); handleDeleteLog(r.id); }}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {sortedRawLogs.length === 0 && (
+                    <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">Belum ada raw log (DUKB) terdaftar.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              <TablePagination
+                currentPage={dukbPage}
+                pageSize={dukbPageSize}
+                totalItems={sortedRawLogs.length}
+                onPageChange={setDukbPage}
+                onPageSizeChange={(newSize) => {
+                  setDukbPageSize(newSize);
+                  setDukbPage(1);
+                }}
+                itemLabel="log mentah (DUKB)"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 3. TRIMMING */}
+        <TabsContent value="trimming">
+          <Card>
+                          <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Trimming</CardTitle>
+                  <CardDescription>Proses pemotongan log (pangkal/ujung) sebelum masuk sawmill.</CardDescription>
+                </div>
+              </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>No. Trim</TableHead>
+                    <TableHead>No. Log Asal</TableHead>
+                    <TableHead className="text-right">Volume Hasil (m³)</TableHead>
+                    <TableHead className="text-right">Sisa Gerowong</TableHead>
+                    <TableHead className="text-center">Status Pemrosesan</TableHead>
+                    <TableHead className="text-center w-[80px]">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedTrimmedLogs.map((t: any) => {
+                    const isCut = t.status === 'ASSIGNED_TO_INPUT' || t.status === 'CONSUMED' || t.status === 'IN_PROCESS' || !!t.inputLogId;
+                    return (
+                    <TableRow key={t.id} className="hover:bg-muted/60 cursor-pointer" onClick={() => router.push(`/inventory/trimming/${t.id}?partaiId=${id}&tab=trimming`)}>
+                      <TableCell className="font-semibold text-foreground font-mono">{t.trimNumber || t.logNumber}</TableCell>
+                      <TableCell className="text-primary font-medium">{t.rawLog?.logNumber || "-"}</TableCell>
+                      <TableCell className="text-right font-bold text-foreground/90">{Number(t.netVolume || 0).toFixed(4)}</TableCell>
+                      <TableCell className="text-right">{Number(t.hollowVolume || 0).toFixed(4)}</TableCell>
+                      <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                        {isCut ? (
+                          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-xs font-semibold py-0.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1 inline" />
+                            Sudah Dipotong (WIP)
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-blue-500/40 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30 text-xs font-semibold py-0.5">
+                            Available (Siap Potong)
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8 p-0 border-0 bg-transparent">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/inventory/trimming/${t.id}?partaiId=${id}&tab=trimming`)}><Eye className="w-4 h-4 mr-2" /> View Details</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push(`/inventory/trimming/${t.id}?partaiId=${id}&tab=trimming`)}><Pencil className="w-4 h-4 mr-2" /> Edit Log</DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDeleteTrim(t.id) }} className="text-destructive"><Trash className="w-4 h-4 mr-2" /> Delete Log</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                  {sortedTrimmedLogs.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Belum ada proses trimming.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              <TablePagination
+                currentPage={trimmingPage}
+                pageSize={trimmingPageSize}
+                totalItems={sortedTrimmedLogs.length}
+                onPageChange={setTrimmingPage}
+                onPageSizeChange={(newSize) => {
+                  setTrimmingPageSize(newSize);
+                  setTrimmingPage(1);
+                }}
+                itemLabel="hasil trimming"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 4. INPUT LOGS (WIP & INPUT TALLY) */}
+        <TabsContent value="input" className="space-y-6">
+          {/* SECTION 1: PILIH LOG DARI TRIMMING & LANGSUNG INPUT TALLY */}
+          <Card className="border-amber-500/30 bg-amber-50/20 dark:bg-amber-950/20 shadow-sm">
+            <CardHeader className="flex flex-col gap-4 border-b pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="text-amber-800 dark:text-amber-400 text-lg flex items-center gap-2">
+                    <span className="text-xl">🪵</span> Pilih Log Trimming & Input Tally Hasil Gergajian
+                  </CardTitle>
+                  <CardDescription>
+                    Pilih satu atau beberapa log di bawah ini (baik yang baru maupun lanjutan pengerjaan), lalu klik <strong>Input Tally Harian</strong>.
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    type="button"
+                    onClick={() => openTallyModalWithSelection()}
+                    disabled={selectedTrimmedLogIds.length === 0}
+                    className="h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Input Tally Harian ({selectedTrimmedLogIds.length} Log Terpilih)
+                  </Button>
+                </div>
+              </div>
+
+              {/* SEARCH & STATUS FILTER CONTROLS */}
+              {(() => {
+                const allTrims = partai.trimmedLogs || [];
+                const touchedCount = allTrims.filter((t: any) => t.status === 'ASSIGNED_TO_INPUT' || t.status === 'CONSUMED' || !!t.inputLogId).length;
+                const untouchedCount = allTrims.length - touchedCount;
+
+                return (
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="Cari No. Trim / No. Log..."
+                        value={wipLogSearch}
+                        onChange={(e) => {
+                          setWipLogSearch(e.target.value);
+                          setWipLogPage(1);
+                        }}
+                        className="pl-9 h-9 text-xs bg-background"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={wipLogStatusFilter === "ALL" ? "default" : "outline"}
+                        onClick={() => {
+                          setWipLogStatusFilter("ALL");
+                          setWipLogPage(1);
+                        }}
+                        className="h-8 text-xs"
+                      >
+                        Semua ({allTrims.length})
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={wipLogStatusFilter === "UNTOUCHED" ? "default" : "outline"}
+                        onClick={() => {
+                          setWipLogStatusFilter("UNTOUCHED");
+                          setWipLogPage(1);
+                        }}
+                        className={`h-8 text-xs ${wipLogStatusFilter === "UNTOUCHED" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "text-emerald-700 dark:text-emerald-400 border-emerald-500/30"}`}
+                      >
+                        🟢 Belum Dikerjakan ({untouchedCount})
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={wipLogStatusFilter === "WORKED" ? "default" : "outline"}
+                        onClick={() => {
+                          setWipLogStatusFilter("WORKED");
+                          setWipLogPage(1);
+                        }}
+                        className={`h-8 text-xs ${wipLogStatusFilter === "WORKED" ? "bg-blue-600 hover:bg-blue-700 text-white" : "text-blue-700 dark:text-blue-400 border-blue-500/30"}`}
+                      >
+                        🔵 Sudah Pernah Dikerjakan ({touchedCount})
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardHeader>
+            <CardContent className="pt-4">
+              {(() => {
+                const allTrims = partai.trimmedLogs || [];
+                if (allTrims.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
+                      <p className="font-medium text-sm">Belum ada log trimming untuk partai ini.</p>
+                      <p className="text-xs mt-1">Lakukan trimming log terlebih dahulu pada tab <strong>3. Trimming</strong>.</p>
+                    </div>
+                  );
+                }
+
+                // Filter by search & status
+                const filtered = allTrims.filter((t: any) => {
+                  const isWorked = t.status === 'ASSIGNED_TO_INPUT' || t.status === 'CONSUMED' || !!t.inputLogId;
+                  if (wipLogStatusFilter === "UNTOUCHED" && isWorked) return false;
+                  if (wipLogStatusFilter === "WORKED" && !isWorked) return false;
+
+                  if (wipLogSearch.trim()) {
+                    const q = wipLogSearch.toLowerCase().trim();
+                    const matchTrim = (t.trimNumber || "").toLowerCase().includes(q);
+                    const matchRaw = (t.rawLog?.logNumber || "").toLowerCase().includes(q);
+                    const matchSpecies = (t.species || "").toLowerCase().includes(q);
+                    if (!matchTrim && !matchRaw && !matchSpecies) return false;
+                  }
+                  return true;
+                });
+
+                const totalItems = filtered.length;
+                const totalPages = Math.ceil(totalItems / wipLogPageSize) || 1;
+                const safeCurrentPage = Math.min(wipLogPage, totalPages);
+                const startIndex = (safeCurrentPage - 1) * wipLogPageSize;
+                const paginatedLogs = filtered.slice(startIndex, startIndex + wipLogPageSize);
+
+                const isAllPageSelected = paginatedLogs.length > 0 && paginatedLogs.every((t: any) => selectedTrimmedLogIds.includes(t.id));
+
+                return (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                      <div className="flex items-center gap-2">
+                        <span>Menampilkan <strong>{filtered.length}</strong> log dari total {allTrims.length}</span>
+                        {selectedTrimmedLogIds.length > 0 && (
+                          <Badge variant="secondary" className="font-mono text-xs">
+                            {selectedTrimmedLogIds.length} log terpilih
+                          </Badge>
+                        )}
+                      </div>
+                      {paginatedLogs.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (isAllPageSelected) {
+                                const pageIds = paginatedLogs.map((t: any) => t.id);
+                                setSelectedTrimmedLogIds(selectedTrimmedLogIds.filter(id => !pageIds.includes(id)));
+                              } else {
+                                const newIds = Array.from(new Set([...selectedTrimmedLogIds, ...paginatedLogs.map((t: any) => t.id)]));
+                                setSelectedTrimmedLogIds(newIds);
+                              }
+                            }}
+                            className="h-7 text-xs font-semibold px-2"
+                          >
+                            {isAllPageSelected ? "Batal Pilih Halaman Ini" : "Pilih Semua di Halaman Ini"}
+                          </Button>
+                          {selectedTrimmedLogIds.length > 0 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedTrimmedLogIds([])}
+                              className="h-7 text-xs text-destructive hover:text-destructive px-2"
+                            >
+                              Reset Pilihan
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {filtered.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
+                        <p className="font-medium text-sm">Tidak ada log trimming yang cocok dengan pencarian / filter.</p>
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          onClick={() => {
+                            setWipLogSearch("");
+                            setWipLogStatusFilter("ALL");
+                            setWipLogPage(1);
+                          }}
+                          className="text-xs mt-1"
+                        >
+                          Reset Filter
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {paginatedLogs.map((t: any) => {
+                          const isSelected = selectedTrimmedLogIds.includes(t.id);
+                          const isWorked = t.status === 'ASSIGNED_TO_INPUT' || t.status === 'CONSUMED' || !!t.inputLogId;
+
+                          return (
+                            <div
+                              key={t.id}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setSelectedTrimmedLogIds(selectedTrimmedLogIds.filter(x => x !== t.id));
+                                } else {
+                                  setSelectedTrimmedLogIds([...selectedTrimmedLogIds, t.id]);
+                                }
+                              }}
+                              className={`flex flex-col border rounded-lg p-3.5 bg-background shadow-sm cursor-pointer transition-all ${
+                                isSelected
+                                  ? "border-blue-500 bg-blue-50/40 dark:bg-blue-950/40 ring-2 ring-blue-500/25"
+                                  : isWorked
+                                  ? "hover:border-blue-300 border-border/80"
+                                  : "hover:border-emerald-400 border-border/80"
+                              }`}
+                            >
+                              <div className="flex justify-between items-start mb-2 gap-2">
+                                <div className="flex items-center gap-2.5">
+                                  <Checkbox
+                                    checked={isSelected}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedTrimmedLogIds([...selectedTrimmedLogIds, t.id]);
+                                      } else {
+                                        setSelectedTrimmedLogIds(selectedTrimmedLogIds.filter(x => x !== t.id));
+                                      }
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                  <span className="font-bold text-base text-foreground font-mono">{t.trimNumber}</span>
+                                </div>
+                                {isWorked ? (
+                                  <Badge variant="outline" className="text-blue-700 dark:text-blue-400 border-blue-500/40 bg-blue-500/10 text-[11px] font-semibold whitespace-nowrap">
+                                    Sudah Pernah Dikerjakan
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-emerald-700 dark:text-emerald-400 border-emerald-500/40 bg-emerald-500/10 text-[11px] font-semibold whitespace-nowrap">
+                                    Belum Dikerjakan
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground space-y-1 mb-3 pl-6">
+                                <p>Spesies: <span className="font-semibold text-foreground">{t.species || "-"}</span></p>
+                                <p>Dimensi: <span className="font-medium text-foreground">{t.roundedDiameter || t.averageDiameter || "-"} cm &times; {t.length || "-"} m</span></p>
+                                <p>Volume: <span className="font-bold text-foreground font-mono">{Number(t.netVolume || 0).toFixed(4)} m&sup3;</span></p>
+                                {t.rawLog?.logNumber && (
+                                  <p className="text-[11px] text-muted-foreground/80">Log Asal: <span className="font-mono">{t.rawLog.logNumber}</span></p>
+                                )}
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                className={`w-full mt-auto font-medium text-xs h-8 ${
+                                  isWorked 
+                                    ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openTallyModalWithSelection([t.id]);
+                                }}
+                              >
+                                <Plus className="w-3.5 h-3.5 mr-1" /> Langsung Input Tally Log Ini
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {filtered.length > 0 && (
+                      <TablePagination
+                        currentPage={safeCurrentPage}
+                        pageSize={wipLogPageSize}
+                        totalItems={filtered.length}
+                        onPageChange={setWipLogPage}
+                        onPageSizeChange={(newSize) => {
+                          setWipLogPageSize(newSize);
+                          setWipLogPage(1);
+                        }}
+                        itemLabel="log trimming"
+                      />
+                    )}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* SECTION 2: PRODUCTION JOBS (INPUT WIP) YANG SEDANG BERJALAN */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-4 flex-wrap gap-2">
+              <div>
+                <CardTitle className="text-lg">Daftar Pekerjaan Produksi (Input WIP)</CardTitle>
+                <CardDescription>Pekerjaan gergajian per tanggal beserta rekapan log yang dipotong dan hasil tally output.</CardDescription>
+              </div>
+              <Button 
+                type="button" 
+                size="sm" 
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-9 shadow-sm"
+                onClick={() => openTallyModalWithSelection()}
+              >
+                <Plus className="w-4 h-4 mr-1.5" /> + Tambah Input Tally / Pekerjaan
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {paginatedInputLogs.map((i: any) => {
+                const totalInputVol = Number(i.totalVolume || 0);
+                const outItems = (i.sawnOutputs || []).flatMap((o: any) => o.items || []);
+                const totalOutputVol = outItems.reduce((acc: number, cur: any) => acc + (cur.volumeM3 || 0), 0);
+                const totalOutputPcs = outItems.reduce((acc: number, cur: any) => acc + (cur.quantityPcs || 0), 0);
+                const progressPct = totalInputVol > 0 ? Math.min(100, Math.round((totalOutputVol / totalInputVol) * 100)) : 0;
+                const isExpanded = expandedInputLogIds.includes(i.id);
+                
+                return (
+                  <Card key={i.id} className="overflow-hidden border-border/70 hover:border-primary/50 transition-all shadow-sm">
+                    {/* Header Row */}
+                    <div 
+                      className="p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center cursor-pointer hover:bg-muted/30 transition-colors"
+                      onClick={() => toggleExpandInputLog(i.id)}
+                    >
+                      <div className="md:col-span-4 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <button 
+                            type="button" 
+                            className="text-muted-foreground hover:text-foreground p-0.5 rounded transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleExpandInputLog(i.id);
+                            }}
+                          >
+                            {isExpanded ? <ChevronDown className="w-5 h-5 text-primary" /> : <ChevronRight className="w-5 h-5" />}
+                          </button>
+                          <span className="font-bold text-base text-primary font-mono">{i.inputNumber}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground flex flex-wrap gap-1.5 items-center pl-7">
+                          <span className="inline-flex items-center gap-1 font-semibold text-foreground">
+                            <Calendar className="w-3.5 h-3.5 text-primary" />
+                            {i.date ? new Date(i.date).toLocaleDateString("id-ID", { day: 'numeric', month: 'numeric', year: 'numeric' }) : (i.createdAt ? new Date(i.createdAt).toLocaleDateString("id-ID", { day: 'numeric', month: 'numeric', year: 'numeric' }) : "-")}
+                          </span>
+                          <span>&bull;</span>
+                          <span className="font-medium text-foreground/80">{i.species || "-"}</span> 
+                          <span>&bull;</span>
+                          <span className="text-foreground/90 font-medium">{i.items?.length || 0} Log Sumber</span>
+                        </div>
+                      </div>
+                      
+                      <div className="md:col-span-5 grid grid-cols-3 gap-2.5 text-sm text-center">
+                        <div className="bg-muted/40 rounded-md p-2">
+                          <div className="text-[11px] text-muted-foreground mb-0.5">Input Bahan</div>
+                          <div className="font-semibold text-foreground/90 font-mono text-xs md:text-sm">{totalInputVol.toFixed(4)} m³</div>
+                        </div>
+                        <div className="bg-muted/40 rounded-md p-2">
+                          <div className="text-[11px] text-muted-foreground mb-0.5">Output Hasil</div>
+                          <div className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono text-xs md:text-sm">
+                            {totalOutputVol.toFixed(4)} m³
+                            {totalOutputPcs > 0 && <span className="block text-[10px] text-muted-foreground font-normal">{totalOutputPcs} pcs</span>}
+                          </div>
+                        </div>
+                        <div className="bg-muted/40 rounded-md p-2">
+                          <div className="text-[11px] text-muted-foreground mb-0.5">Rendemen</div>
+                          <div className="font-semibold text-blue-600 dark:text-blue-400 text-xs md:text-sm">{progressPct}%</div>
+                        </div>
+                      </div>
+                      
+                      <div className="md:col-span-3 flex justify-end items-center gap-1.5">
+                        <Button 
+                          size="sm" 
+                          className="h-8 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs shadow-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openTallyModalWithSelection([], i);
+                          }}
+                        >
+                          <Plus className="w-3.5 h-3.5 mr-1" /> + Tally
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 text-xs font-semibold"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpandInputLog(i.id);
+                          }}
+                        >
+                          {isExpanded ? "Tutup" : "Buka Isi"}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" 
+                          title="Hapus Pekerjaan Input WIP"
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            handleDeleteInput(i.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          className="h-8 text-xs px-2"
+                          title="Buka Halaman Job Card Lengkap"
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            router.push(`/inventory/input-logs/${i.id}?partaiId=${id}&tab=input`);
+                          }}
+                        >
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar Visualizer */}
+                    <div className="h-1.5 w-full bg-muted/50">
+                      <div className={`h-full transition-all duration-500 ${i.status === 'DONE' ? 'bg-emerald-500' : 'bg-primary'}`} style={{ width: `${progressPct}%` }} />
+                    </div>
+
+                    {/* EXPANDED DETAILS (Log Sumber, Tanggal, Hasil Tally PxLxT=m3, PCS) */}
+                    {isExpanded && (
+                      <div className="border-t bg-muted/15 p-4 sm:p-5 space-y-4">
+                        {/* 1. Log Sumber yang Dipotong */}
+                        <div className="bg-background rounded-lg border p-3.5 shadow-sm space-y-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                              🪵 Log Sumber Yang Dipotong ({i.items?.length || 0} Log)
+                            </span>
+                            <span className="text-xs font-semibold text-muted-foreground">
+                              Total Input: <strong className="text-foreground font-mono">{totalInputVol.toFixed(4)} m³</strong>
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            {(i.items || []).map((item: any, idx: number) => {
+                              const logCode = item.trimmedLog?.trimNumber || item.rawLog?.logNumber || `Log #${idx + 1}`;
+                              const pjg = item.trimmedLog?.length || item.rawLog?.length;
+                              const dia = item.trimmedLog?.averageDiameter || item.rawLog?.averageDiameter;
+                              const vol = item.volume || item.trimmedLog?.netVolume || item.rawLog?.netVolume || 0;
+                              return (
+                                <div key={item.id || idx} className="inline-flex items-center gap-2 bg-muted/60 border rounded-md px-2.5 py-1 text-xs">
+                                  <span className="font-bold font-mono text-primary">{logCode}</span>
+                                  {(dia || pjg) && <span className="text-muted-foreground text-[11px]">({dia ? `Ø${dia}cm` : ''} {pjg ? `P${pjg}m` : ''})</span>}
+                                  <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">{Number(vol).toFixed(4)} m³</span>
+                                </div>
+                              );
+                            })}
+                            {(!i.items || i.items.length === 0) && (
+                              <span className="text-xs text-muted-foreground italic">Tidak ada rincian data log sumber.</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 2. Info Tanggal & Spesies */}
+                        <div className="flex flex-wrap items-center justify-between text-xs text-muted-foreground px-1 gap-2">
+                          <div className="flex flex-wrap items-center gap-4">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5" /> Tanggal Pengerjaan: <strong className="text-foreground">{i.date ? new Date(i.date).toLocaleDateString("id-ID") : (i.createdAt ? new Date(i.createdAt).toLocaleDateString("id-ID") : "-")}</strong>
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Layers className="w-3.5 h-3.5" /> Spesies Kayu: <strong className="text-foreground">{i.species || "-"}</strong>
+                            </span>
+                          </div>
+                          <span className="text-xs font-medium">
+                            Total Hasil: <strong className="text-emerald-600 font-mono">{totalOutputPcs} PCS</strong> ({totalOutputVol.toFixed(4)} m³)
+                          </span>
+                        </div>
+
+                        {/* 3. Hasil Tally Gergajian (T x L x P = m3, PCS) */}
+                        <div className="bg-background rounded-lg border overflow-hidden shadow-sm">
+                          <div className="bg-muted/40 px-3.5 py-2 border-b flex items-center justify-between">
+                            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                              📋 Rincian Hasil Tally Gergajian (P × L × T = m³)
+                            </span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950 p-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openTallyModalWithSelection([], i);
+                              }}
+                            >
+                              <Plus className="w-3 h-3 mr-1" /> Tambah Tally
+                            </Button>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="bg-muted/20">
+                                  <TableHead className="h-8 text-xs">Tgl Tally</TableHead>
+                                  <TableHead className="h-8 text-xs">Kategori Produk</TableHead>
+                                  <TableHead className="h-8 text-xs font-bold text-foreground">Ukuran: P × L × T (cm)</TableHead>
+                                  <TableHead className="h-8 text-xs text-right font-bold">Jumlah (PCS)</TableHead>
+                                  <TableHead className="h-8 text-xs text-right font-bold text-emerald-600">Hasil (m³)</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {(i.sawnOutputs || []).flatMap((o: any) => 
+                                  (o.items || []).map((item: any) => ({ ...item, outputDate: o.outputDate, status: o.status }))
+                                ).map((item: any, rowIdx: number) => {
+                                  const tCm = item.thicknessMm ? (item.thicknessMm / 10) : 0;
+                                  const lCm = item.widthMm ? (item.widthMm / 10) : 0;
+                                  const pCm = item.lengthMm ? (item.lengthMm / 10) : 0;
+                                  return (
+                                    <TableRow key={item.id || rowIdx} className="hover:bg-muted/30">
+                                      <TableCell className="py-2 text-xs text-muted-foreground font-medium">
+                                        {item.outputDate ? new Date(item.outputDate).toLocaleDateString("id-ID") : "-"}
+                                      </TableCell>
+                                      <TableCell className="py-2 text-xs">
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                          item.productType === 'RENG' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' :
+                                          item.productType === 'AFKIR_BS' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20' :
+                                          item.productType === 'AIR_DRY' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20' :
+                                          item.productType === 'FJL' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' :
+                                          'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                                        }`}>
+                                          {item.productType || 'BALOK'}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="py-2 text-xs font-semibold font-mono text-foreground">
+                                        {pCm} &times; {lCm} &times; {tCm} cm
+                                      </TableCell>
+                                      <TableCell className="py-2 text-xs text-right font-bold text-foreground">
+                                        {item.quantityPcs} pcs
+                                      </TableCell>
+                                      <TableCell className="py-2 text-xs text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                                        {Number(item.volumeM3 || 0).toFixed(4)} m³
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                                {outItems.length === 0 && (
+                                  <TableRow>
+                                    <TableCell colSpan={6} className="text-center py-6 text-xs text-muted-foreground">
+                                      Belum ada hasil tally gergajian yang dimasukkan untuk pekerjaan ini.
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                          {outItems.length > 0 && (
+                            <div className="bg-muted/30 px-3.5 py-2 border-t flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
+                              <span className="font-semibold text-muted-foreground">Total Rekapitulasi Output:</span>
+                              <div className="flex items-center gap-4">
+                                <span>Jumlah: <strong className="text-foreground font-mono">{totalOutputPcs} PCS</strong></span>
+                                <span>Volume: <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{totalOutputVol.toFixed(4)} m³</strong></span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+              {sortedInputLogs.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
+                  Belum ada pekerjaan produksi (WIP). Pilih log hasil trimming di atas dan klik <strong>Input Tally Harian</strong> untuk memulai pekerjaan.
+                </div>
+              )}
+              <TablePagination
+                currentPage={inputPage}
+                pageSize={inputPageSize}
+                totalItems={sortedInputLogs.length}
+                onPageChange={setInputPage}
+                onPageSizeChange={(newSize) => {
+                  setInputPageSize(newSize);
+                  setInputPage(1);
+                }}
+                itemLabel="pekerjaan WIP"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        
+          {/* 5. SAWN TIMBER OUTPUT */}
+          <TabsContent value="output">
+            
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+              <div>
+                <CardTitle>Sawn Timber Output (Daily Tally)</CardTitle>
+                <CardDescription>Hasil akhir gergajian yang tercatat dari seluruh WIP partai ini.</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex items-center space-x-4 mb-4 bg-muted/30 p-3 rounded-lg border">
+                <div className="text-sm font-medium">{selectedOutputItems.length} item terpilih</div>
+                <Select value={selectedGradeId} onValueChange={(val) => setSelectedGradeId(val || "")}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Pilih Grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {grades.map(g => (
+                      <SelectItem key={g.id || g._id} value={g.id || g._id}>{g.name && g.code ? (g.code + " - " + g.name) : (g.name || g.code || ("Grade " + (g.id || g._id).toString().slice(-4)))}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  onClick={handleBulkGrade} 
+                  disabled={selectedOutputItems.length === 0 || !selectedGradeId || isGrading}
+                >
+                  {isGrading ? "Memproses..." : "Update Grade"}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={handlePostOutputs} 
+                  disabled={isPostingOutputs || (partai?.sawnOutputs || []).filter((o: any) => o.status === 'DRAFT').length === 0}
+                  className="ml-auto text-emerald-600 border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-950/30"
+                >
+                  {isPostingOutputs ? "Memposting..." : "Post Output ke Stok"}
+                </Button>
+              </div>
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <TableRow>
+                    <TableHead className="w-[50px]">
+                      <Checkbox 
+                        checked={allOutputItems.length > 0 && selectedOutputItems.length === allOutputItems.length}
+                        onCheckedChange={() => toggleSelectAllOutputItems(allOutputItems)}
+                      />
+                    </TableHead>
+                    <TableHead>Tgl Produksi</TableHead>
+                    <TableHead>Bundle No</TableHead>
+                    <TableHead>Source WIP</TableHead>
+                    <TableHead>Kategori</TableHead>
+                    <TableHead>Tebal</TableHead>
+                    <TableHead>Lebar</TableHead>
+                    <TableHead>Panjang</TableHead>
+                    <TableHead className="text-right">PCS</TableHead>
+                    <TableHead className="text-right">M&sup3;</TableHead>
+                    <TableHead className="text-center">Grade</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-center w-[90px]">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedOutputItems.map((i: any) => {
+                    const wip = (partai.inputLogs || []).find((log: any) => log.id === i.parentInputId);
+                    const isDirectPurchase =
+                      (wip?.inputNumber && wip.inputNumber.startsWith("DIRECT-PURCHASE")) ||
+                      (i.parentNotes && i.parentNotes.includes("Beli Masak")) ||
+                      (i.notes && i.notes.includes("Penerimaan Sawn Timber"));
+                    return (
+                      <TableRow key={i.id} className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => router.push(`/inventory/sawn-timber/output/${i.parentOutputId}?partaiId=${id}&tab=output`)}>
+                        <TableCell onClick={e => e.stopPropagation()}>
+                          <Checkbox 
+                            checked={!!selectedOutputItems.find(x => x.id === i.id)} 
+                            onCheckedChange={() => toggleSelectOutputItem(i.id, i.parentOutputId)} 
+                          />
+                        </TableCell>
+                        <TableCell>{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                        <TableCell className="font-medium text-blue-600 dark:text-blue-400">{i.parentBundleNumber}</TableCell>
+                        <TableCell className="font-medium text-primary">
+                          {isDirectPurchase ? (
+                            <Badge variant="outline" className="border-blue-500 text-blue-600 bg-blue-50/50">
+                              Beli Jadi
+                            </Badge>
+                          ) : (
+                            <Link href={`/inventory/input-logs/${i.parentInputId}`} onClick={e => e.stopPropagation()}>
+                              {wip?.inputNumber || "WIP"}
+                            </Link>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={
+                            i.productType === 'RENG' ? 'border-amber-500 text-amber-600 bg-amber-50/50' :
+                            i.productType === 'AFKIR_BS' ? 'border-red-500 text-red-600 bg-red-50/50' :
+                            i.productType === 'AIR_DRY' ? 'border-sky-500 text-sky-600 bg-sky-50/50' :
+                            i.productType === 'FJL' ? 'border-purple-500 text-purple-600 bg-purple-50/50' :
+                            'border-emerald-500 text-emerald-600 bg-emerald-50/50'
+                          }>
+                            {i.productType === 'BALOK' ? 'Balok / Main' :
+                             i.productType === 'RENG' ? 'Reng / Papan' :
+                             i.productType === 'AFKIR_BS' ? 'BS / Afkir' :
+                             i.productType === 'AIR_DRY' ? 'Air Dry' :
+                             i.productType === 'FJL' ? 'FJL' : (i.productType || 'Balok / Main')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{i.thicknessMm / 10} cm</TableCell>
+                        <TableCell>{i.widthMm / 10} cm</TableCell>
+                        <TableCell>{i.lengthMm / 10} cm</TableCell>
+                        <TableCell className="text-right font-medium">{i.quantityPcs}</TableCell>
+                        <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400">{Number((i.volumeM3 || 0).toFixed(4))}</TableCell>
+                        <TableCell className="text-center">
+                          {i.grade === 'PENDING' ? <Badge variant="outline" className="text-amber-500 border-amber-500">PENDING</Badge> : <Badge className="bg-primary">{grades.find(g => g.code === i.grade)?.name || i.grade}</Badge>}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {i.parentStatus === 'POSTED' ? <Badge className="bg-emerald-500">POSTED</Badge> : <Badge variant="outline">DRAFT</Badge>}
+                        </TableCell>
+                        <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20" 
+                              title="Lihat Bundle Output"
+                              onClick={() => router.push(`/inventory/sawn-timber/output/${i.parentOutputId}?partaiId=${id}&tab=output`)}
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" 
+                              title="Hapus / Batalkan Output"
+                              onClick={() => handleDeleteOutput(i.parentOutputId)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {allOutputItems.length === 0 && (
+                    <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-8">Belum ada output produksi.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              <TablePagination
+                currentPage={outputPage}
+                pageSize={outputPageSize}
+                totalItems={allOutputItems.length}
+                onPageChange={setOutputPage}
+                onPageSizeChange={(newSize) => {
+                  setOutputPageSize(newSize);
+                  setOutputPage(1);
+                }}
+                itemLabel="output sawn timber"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 6. MUAT / PENGIRIMAN ANTAR PULAU (FUSO / TRUK KALIMANTAN -> SURABAYA) - SESUAI EXCEL 3 */}
+        <TabsContent value="shipment">
+          <Card>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-amber-600" /> Surat Jalan & Pindahan Stok / Kirim (Fuso)
+                </CardTitle>
+                <CardDescription>
+                  Pencatatan perpindahan stok kayu antar-gudang (Gudang Asal ➔ Gudang Tujuan / Pembeli) menggunakan armada Truk / Fuso.
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => router.push(`/inventory/shipment/create?partaiId=${id}`)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-semibold shadow-sm"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> + Buat Muat / Surat Jalan Fuso
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {/* Statistik Rekap Muatan Fuso */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-muted/30 p-3.5 rounded-lg border text-xs">
+                <div>
+                  <span className="text-muted-foreground">Total Pengiriman: </span>
+                  <p className="text-lg font-bold font-mono text-foreground">{shipmentsList.length} Armada</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Total Batang (Pcs): </span>
+                  <p className="text-lg font-bold font-mono text-blue-600">
+                    {shipmentsList.reduce((acc, s) => acc + (s.totalPcs || 0), 0)} Pcs
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Total Kubikasi Muat: </span>
+                  <p className="text-lg font-bold font-mono text-amber-600">
+                    {shipmentsList.reduce((acc, s) => acc + (s.totalVolumeM3 || 0), 0).toFixed(4)} M³
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Status Muat: </span>
+                  <p className="text-sm font-semibold text-emerald-600 mt-1">
+                    {shipmentsList.filter(s => s.status === 'CONFIRMED').length} Terkirim / {shipmentsList.filter(s => s.status === 'DRAFT').length} Draft
+                  </p>
+                </div>
+              </div>
+
+              {/* Table Muatan Fuso */}
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow>
+                      <TableHead className="w-[110px]">Tgl Muat</TableHead>
+                      <TableHead>No. Surat Jalan</TableHead>
+                      <TableHead>Armada / Fuso</TableHead>
+                      <TableHead>No. Polisi / Supir</TableHead>
+                      <TableHead>Dari (Gudang Asal)</TableHead>
+                      <TableHead>Ke (Gudang Tujuan)</TableHead>
+                      <TableHead className="text-right">Total Pcs</TableHead>
+                      <TableHead className="text-right">Total Kubikasi (M³)</TableHead>
+                      <TableHead className="text-center w-[100px]">Status</TableHead>
+                      <TableHead className="text-right w-[140px]">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {shipmentsList.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={10} className="text-center py-10 text-muted-foreground text-xs">
+                          Belum ada data pengiriman / muatan armada Fuso untuk partai ini. Klik tombol di atas untuk mencatat surat jalan muat.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      shipmentsList.map((item: any) => {
+                        const originName = item.warehouse?.name || (warehouses.find(w => w.id === item.warehouseId)?.name) || partai?.warehouse?.name || "Kalteng";
+                        const destName = item.destinationWarehouse?.name || (warehouses.find(w => w.id === item.destinationWarehouseId)?.name) || item.destinationName || item.destinationAddress || "Surabaya";
+
+                        return (
+                          <TableRow key={item.id} className="hover:bg-muted/30">
+                            <TableCell className="text-xs font-mono">
+                              {new Date(item.shipmentDate || item.createdAt).toLocaleDateString('id-ID')}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs font-bold text-amber-700 dark:text-amber-400">
+                              {item.shipmentNumber}
+                            </TableCell>
+                            <TableCell className="text-xs font-semibold">
+                              {item.fusoName || "FUSO"}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <span className="font-mono font-bold">{item.policeNumber || "-"}</span>
+                              {item.driverName && <span className="text-muted-foreground ml-1.5">({item.driverName})</span>}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant="outline" className="text-xs font-medium border-blue-300 bg-blue-50/50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-300">
+                                {originName}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant="outline" className="text-xs font-medium border-emerald-300 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-300">
+                                {destName}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-mono font-medium text-xs">
+                              {item.totalPcs || 0}
+                            </TableCell>
+                            <TableCell className="text-right font-mono font-bold text-xs text-amber-600 dark:text-amber-400">
+                              {Number(item.totalVolumeM3 || 0).toFixed(4)} M³
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {item.status === 'CONFIRMED' ? (
+                                <Badge className="bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold">
+                                  TERKIRIM
+                                </Badge>
+                              ) : item.status === 'CANCELLED' ? (
+                                <Badge variant="destructive" className="text-xs">
+                                  BATAL
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">
+                                  DRAFT
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                {item.status !== 'CONFIRMED' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 px-2 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-300 font-bold"
+                                    onClick={async () => {
+                                      if (!confirm(`Konfirmasi keberangkatan armada ${item.fusoName || item.shipmentNumber}? Stok di ${originName} akan dipotong dan dimasukkan ke ${destName}.`)) return;
+                                      try {
+                                        await ShipmentAPI.confirmShipment(item.id);
+                                        toast({ title: "Berhasil Dipindahkan", description: `Stok dari ${originName} telah dipindahkan ke ${destName}` });
+                                        fetchPartai();
+                                        fetchProcessingData();
+                                      } catch (err: any) {
+                                        toast({ 
+                                          title: "Gagal Konfirmasi", 
+                                          description: err?.response?.data?.message || err.message || "Gagal konfirmasi pengiriman", 
+                                          variant: "destructive" 
+                                        });
+                                      }
+                                    }}
+                                    title="Konfirmasi & Pindahkan Stok Sekarang"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600" /> Kirim
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/10 font-semibold"
+                                  onClick={() => router.push(`/inventory/shipment/${item.id}?partaiId=${id}`)}
+                                  title="Lihat Detail Tally"
+                                >
+                                  Detail <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                                </Button>
+                                {item.status !== 'CONFIRMED' && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30 font-semibold"
+                                    onClick={() => router.push(`/inventory/shipment/${item.id}/edit?partaiId=${id}`)}
+                                    title="Edit Surat Muat Fuso"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                                  </Button>
+                                )}
+                                {item.status !== 'CONFIRMED' && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 font-semibold"
+                                    onClick={async () => {
+                                      if (!confirm(`Hapus draft muatan armada ${item.fusoName || item.shipmentNumber}?`)) return;
+                                      try {
+                                        await ShipmentAPI.deleteShipment(item.id);
+                                        toast({ title: "Berhasil", description: "Draft surat muat berhasil dihapus" });
+                                        fetchPartai();
+                                        fetchProcessingData();
+                                      } catch (err: any) {
+                                        toast({ 
+                                          title: "Gagal Hapus", 
+                                          description: err?.response?.data?.message || err.message || "Gagal menghapus draft surat muat", 
+                                          variant: "destructive" 
+                                        });
+                                      }
+                                    }}
+                                    title="Hapus Draft Surat Muat"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 mr-1" /> Hapus
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 7. PROCESSING (PENGOLAHAN LANJUTAN: KD, MOLDING, DLL) */}
+        <TabsContent value="processing">
+          <Card>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Cog className="w-5 h-5 text-primary" /> Pengolahan & Processing Kayu
+                </CardTitle>
+                <CardDescription>
+                  Pekerjaan pemindahan produk lama ke produk olahan baru (KD, Molding, Resaw, S4S, dll) berbasis konversi kubikasi M³.
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => router.push(`/production/processing/create?partaiId=${id}`)}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-sm"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> + Buat Proses ({processingFilterType !== 'ALL' ? processingFilterType : 'Baru'})
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {/* Filter and stats row */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-muted/30 p-3 rounded-lg border">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">Filter Jenis Proses:</span>
+                  <Select value={processingFilterType} onValueChange={(val) => {
+                    setProcessingFilterType(val || "ALL");
+                    setProcessingPage(1);
+                  }}>
+                    <SelectTrigger className="w-[180px] h-9 text-xs">
+                      <SelectValue placeholder="Semua Proses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">Semua Jenis Proses</SelectItem>
+                      {processingTypes.map((t: any) => (
+                        <SelectItem key={t.id || t.code} value={t.code}>
+                          {t.name || t.code}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-4 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">Total Batch: </span>
+                    <strong className="font-mono text-foreground">
+                      {processingList.filter((p: any) => processingFilterType === 'ALL' || p.processType === processingFilterType).length}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Input M³: </span>
+                    <strong className="font-mono text-blue-600">
+                      {processingList
+                        .filter((p: any) => processingFilterType === 'ALL' || p.processType === processingFilterType)
+                        .reduce((acc, p) => acc + (p.inputVolumeM3 || 0), 0)
+                        .toFixed(4)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Output M³: </span>
+                    <strong className="font-mono text-emerald-600">
+                      {processingList
+                        .filter((p: any) => processingFilterType === 'ALL' || p.processType === processingFilterType)
+                        .reduce((acc, p) => acc + (p.outputVolumeM3 || 0), 0)
+                        .toFixed(4)}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow>
+                      <TableHead className="w-[120px]">Tgl Proses</TableHead>
+                      <TableHead>No. Proses</TableHead>
+                      <TableHead>Jenis Proses</TableHead>
+                      <TableHead>Catatan / Operator</TableHead>
+                      <TableHead className="text-right">Bahan Masuk (M³)</TableHead>
+                      <TableHead className="text-right">Hasil Baru (M³)</TableHead>
+                      <TableHead className="text-center">Rendemen</TableHead>
+                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead className="w-[100px] text-right">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(() => {
+                      const filtered = processingList.filter((p: any) => 
+                        processingFilterType === 'ALL' || p.processType === processingFilterType
+                      );
+                      const start = (processingPage - 1) * processingPageSize;
+                      const paginated = filtered.slice(start, start + processingPageSize);
+
+                      if (paginated.length === 0) {
+                        return (
+                          <TableRow>
+                            <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
+                              Belum ada proses pengolahan ({processingFilterType !== 'ALL' ? processingFilterType : 'KD, Molding, dll'}) yang dicatat. Klik <strong>+ Buat Proses</strong> untuk mencatat proses baru.
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
+
+                      return paginated.map((item: any) => {
+                        const rendemen = item.inputVolumeM3 > 0 
+                          ? ((item.outputVolumeM3 / item.inputVolumeM3) * 100).toFixed(1) 
+                          : "0.0";
+                        return (
+                          <TableRow 
+                            key={item.id} 
+                            className="hover:bg-muted/30 cursor-pointer transition-colors"
+                            onClick={() => router.push(`/production/processing/${item.id}`)}
+                          >
+                            <TableCell className="font-mono text-xs">
+                              {item.processDate ? new Date(item.processDate).toLocaleDateString("id-ID") : "-"}
+                            </TableCell>
+                            <TableCell className="font-bold text-primary font-mono text-xs">
+                              {item.processNo}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-bold uppercase text-[11px]">
+                                {item.processType}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                              {item.notes || "-"}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs text-blue-600 font-semibold">
+                              {Number(item.inputVolumeM3 || 0).toFixed(4)} M³
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-xs text-emerald-600 font-bold">
+                              {Number(item.outputVolumeM3 || 0).toFixed(4)} M³
+                            </TableCell>
+                            <TableCell className="text-center font-mono text-xs">
+                              <span className={`inline-flex px-1.5 py-0.5 rounded font-semibold ${
+                                Number(rendemen) >= 70 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40' :
+                                Number(rendemen) >= 40 ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40' :
+                                'bg-rose-50 text-rose-700 dark:bg-rose-950/40'
+                              }`}>
+                                {rendemen}%
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {item.status === 'CONFIRMED' ? (
+                                <Badge className="bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold">
+                                  POSTED
+                                </Badge>
+                              ) : item.status === 'CANCELLED' ? (
+                                <Badge variant="destructive" className="text-xs">
+                                  CANCELLED
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-amber-500 text-amber-600 text-xs">
+                                  DRAFT
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/10"
+                                onClick={() => router.push(`/production/processing/${item.id}`)}
+                              >
+                                Detail <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      });
+                    })()}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination */}
+              {(() => {
+                const filtered = processingList.filter((p: any) => 
+                  processingFilterType === 'ALL' || p.processType === processingFilterType
+                );
+                return (
+                  <TablePagination
+                    currentPage={processingPage}
+                    pageSize={processingPageSize}
+                    totalItems={filtered.length}
+                    onPageChange={setProcessingPage}
+                    onPageSizeChange={(newSize) => {
+                      setProcessingPageSize(newSize);
+                      setProcessingPage(1);
+                    }}
+                    itemLabel="batch proses"
+                  />
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 8. PACKING LIST (DUAL RECORD: UKURAN ASLI PABRIK VS UKURAN CUSTOMER NOMINAL) - SESUAI EXCEL 6 */}
+        <TabsContent value="packing">
+          <Card>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Package className="w-5 h-5 text-purple-600" /> Packing List & Ekspor (Asli vs Customer)
+                </CardTitle>
+                <CardDescription>
+                  Pencatatan packing list dua sisi (Dual Measurement) sesuai Sheet PACKING Excel 6: Ukuran & M³ Riil Pabrik berdampingan dengan Ukuran & M³ Nominal Customer.
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => router.push(`/inventory/packing/create?partaiId=${id}`)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-sm"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" /> + Buat Packing List Baru
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-4">
+              {/* Statistik Rekap Packing List */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-muted/30 p-3.5 rounded-lg border text-xs">
+                <div>
+                  <span className="text-muted-foreground">Total Dokumen Packing: </span>
+                  <p className="text-lg font-bold font-mono text-foreground">{packingsList.length} Packing List</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Total Batang (Pcs): </span>
+                  <p className="text-lg font-bold font-mono text-purple-600">
+                    {packingsList.reduce((acc, p) => acc + (p.totalRealPcs || 0), 0)} Pcs
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Kubikasi Riil Pabrik: </span>
+                  <p className="text-lg font-bold font-mono text-blue-600">
+                    {packingsList.reduce((acc, p) => acc + (p.totalRealVolume || 0), 0).toFixed(4)} M³
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Kubikasi Customer (Nominal): </span>
+                  <p className="text-lg font-bold font-mono text-emerald-600">
+                    {packingsList.reduce((acc, p) => acc + (p.totalCustVolume || 0), 0).toFixed(4)} M³
+                  </p>
+                </div>
+              </div>
+
+              {/* Table Packing List */}
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow>
+                      <TableHead className="w-[110px]">Tgl Packing</TableHead>
+                      <TableHead>No. Packing / SPK</TableHead>
+                      <TableHead>Pemilik / Jenis Kayu</TableHead>
+                      <TableHead>No. Kontainer / Gudang</TableHead>
+                      <TableHead className="text-center">Jml Palet</TableHead>
+                      <TableHead className="text-right text-blue-700 dark:text-blue-400">Total Riil Pabrik (M³)</TableHead>
+                      <TableHead className="text-right text-emerald-700 dark:text-emerald-400">Total Customer (M³)</TableHead>
+                      <TableHead className="text-center w-[90px]">Status</TableHead>
+                      <TableHead className="text-right w-[90px]">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {packingsList.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-10 text-muted-foreground text-xs">
+                          Belum ada data Packing List untuk partai ini. Klik tombol di atas untuk membuat packing baru dengan format Excel (Ukuran Asli vs Ukuran Customer).
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      packingsList.map((item: any) => (
+                        <TableRow key={item.id} className="hover:bg-muted/30">
+                          <TableCell className="text-xs font-mono">
+                            {new Date(item.packingDate || item.createdAt).toLocaleDateString('id-ID')}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs font-bold text-purple-700 dark:text-purple-400">
+                            {item.packingNumber}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            <span className="font-semibold">{item.ownerName || "PT Daun Emas"}</span>
+                            <span className="text-muted-foreground ml-1.5">({item.species || "MERBAU"})</span>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {item.containerNo ? `Cont: ${item.containerNo}` : (item.warehouse?.name || "-")}
+                          </TableCell>
+                          <TableCell className="text-center font-mono font-semibold text-xs">
+                            {item.palletCount || 1} PLT
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-bold text-xs text-blue-600 dark:text-blue-400">
+                            {Number(item.totalRealVolume || 0).toFixed(4)} M³
+                            <span className="text-[10px] text-muted-foreground block font-normal">({item.totalRealPcs || 0} pcs)</span>
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                            {Number(item.totalCustVolume || 0).toFixed(4)} M³
+                            <span className="text-[10px] text-muted-foreground block font-normal">({item.totalCustPcs || 0} pcs)</span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge className="bg-emerald-500 hover:bg-emerald-600 text-xs font-semibold">
+                              {item.status || "CONFIRMED"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-2.5 shadow-sm"
+                                onClick={() => router.push(`/sales/invoices/create?packingId=${item.id}&partaiId=${id}`)}
+                              >
+                                Buat Invoice
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/10 px-2"
+                                onClick={() => router.push(`/inventory/packing/${item.id}`)}
+                              >
+                                Detail
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 9. REKAPAN */}
+        <TabsContent value="summary">
+            {(() => {
+              // 1. Pembelian (Purchase Log & Sawn Timber)
+              const purchases = partai.purchases || [];
+              let purchaseLogVolM3 = 0;
+              let purchaseLogPcs = 0;
+              let purchaseSawnVolM3 = 0;
+              let purchaseSawnPcs = 0;
+
+              purchases.forEach((p: any) => {
+                (p.logItems || []).forEach((li: any) => {
+                  purchaseLogPcs += 1;
+                  purchaseLogVolM3 += Number(li.purchaseVolume || 0);
+                });
+                (p.items || []).forEach((it: any) => {
+                  purchaseSawnPcs += Number(it.quantityPcs || 0);
+                  purchaseSawnVolM3 += Number(it.volumeM3 || 0);
+                });
+              });
+
+              const totalPurchaseVolM3 = purchaseLogVolM3 + purchaseSawnVolM3;
+              const totalPurchasePcs = purchaseLogPcs + purchaseSawnPcs;
+
+              // 2. Raw Logs (DUKB)
+              const rawLogs = partai.rawLogs || [];
+              const totalRawLogPcs = rawLogs.length;
+              const totalRawLogVolM3 = rawLogs.reduce((s: number, r: any) => {
+                if (r.netVolume && Number(r.netVolume) > 0) return s + Number(r.netVolume);
+                if (r.grossVolume && Number(r.grossVolume) > 0) return s + Number(r.grossVolume);
+                const d = (r.averageDiameter || r.roundedDiameter || r.diameter || 0);
+                const l = r.originalLength || r.length || 0;
+                if (d > 0 && l > 0) {
+                  const lenCm = l <= 50 ? l * 100 : l;
+                  return s + (0.7854 * lenCm * d * d) / 1000000;
+                }
+                return s;
+              }, 0);
+
+              // 3. Trimming
+              const trimmedLogs = partai.trimmedLogs || [];
+              const totalTrimmedPcs = trimmedLogs.length;
+              const totalTrimmedVolM3 = trimmedLogs.reduce((s: number, t: any) => {
+                if (t.netVolume && Number(t.netVolume) > 0) return s + Number(t.netVolume);
+                if (t.grossVolume && Number(t.grossVolume) > 0) return s + Number(t.grossVolume);
+                const d = (t.averageDiameter || t.roundedDiameter || t.diameter || 0);
+                const l = t.length || 0;
+                if (d > 0 && l > 0) {
+                  const lenCm = l <= 50 ? l * 100 : l;
+                  return s + (0.7854 * lenCm * d * d) / 1000000;
+                }
+                return s;
+              }, 0);
+
+              // 4. Input WIP
+              const inputLogs = partai.inputLogs || [];
+              const totalInputPcs = inputLogs.length;
+              const totalInputVolM3 = inputLogs.reduce((s: number, i: any) => s + (Number(i.totalVolume || 0)), 0);
+
+              // 5. Output Sawn Timber
+              const allOutputItems = (partai.sawnOutputs || []).flatMap((o: any) => o.items || []);
+              const totalOutputPcs = allOutputItems.reduce((s: number, i: any) => s + (i.quantityPcs || 0), 0);
+              const totalOutputM3 = allOutputItems.reduce((s: number, i: any) => s + (i.volumeM3 || 0), 0);
+              const postedItems = (partai.sawnOutputs || []).filter((o: any) => o.status === 'POSTED').flatMap((o: any) => o.items || []);
+              const postedPcs = postedItems.reduce((s: number, i: any) => s + (i.quantityPcs || 0), 0);
+              const postedM3 = postedItems.reduce((s: number, i: any) => s + (i.volumeM3 || 0), 0);
+
+              // 6. Processing (Pengolahan / KD / Gesek Potong Lanjutan)
+              const procInputVolM3 = processingList.reduce((acc, p) => acc + (p.inputVolumeM3 || 0), 0);
+              const procOutputVolM3 = processingList.reduce((acc, p) => acc + (p.outputVolumeM3 || 0), 0);
+              const procBatches = processingList.length;
+
+              // Rendemen Sawmill (Output Sawn Timber thdp Bahan Baku)
+              const baseLogVol = totalPurchaseVolM3 > 0 
+                ? totalPurchaseVolM3 
+                : (totalRawLogVolM3 > 0 ? totalRawLogVolM3 : (totalInputVolM3 > 0 ? totalInputVolM3 : totalTrimmedVolM3));
+              const rendemenSawmill = baseLogVol > 0 ? (totalOutputM3 / baseLogVol) * 100 : 0;
+
+              // Rendemen Processing (Hasil Olahan Baru thdp Bahan Input Processing)
+              const rendemenProcessing = procInputVolM3 > 0 ? (procOutputVolM3 / procInputVolM3) * 100 : 0;
+
+              // Total Kumulatif Akhir (Output Kayu Siap Jual / Hasil Olahan Akhir)
+              // Jika ada processing, hasil olahan akhir menggantikan kubikasi bahan yang dipotong
+              const totalFinalProducedM3 = (totalOutputM3 - procInputVolM3) + procOutputVolM3;
+              const rendemenEndToEnd = baseLogVol > 0 
+                ? ((procOutputVolM3 > 0 ? totalFinalProducedM3 : totalOutputM3) / baseLogVol) * 100 
+                : 0;
+
+              // Product Category breakdown (Balok, Reng, BS, Air Dry, FJL)
+              const CATEGORY_CONFIG: Record<string, { label: string; badgeClass: string }> = {
+                BALOK: { label: 'Balok / Main Size', badgeClass: 'border-emerald-500/50 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/20' },
+                RENG: { label: 'Reng / Papan', badgeClass: 'border-amber-500/50 text-amber-600 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/20' },
+                AFKIR_BS: { label: 'BS / Afkir', badgeClass: 'border-red-500/50 text-red-600 dark:text-red-400 bg-red-500/10 dark:bg-red-500/20' },
+                AIR_DRY: { label: 'Air Dry', badgeClass: 'border-sky-500/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 dark:bg-sky-500/20' },
+                FJL: { label: 'FJL', badgeClass: 'border-purple-500/50 text-purple-600 dark:text-purple-400 bg-purple-500/10 dark:bg-purple-500/20' },
+              };
+              const categoryBreakdown: Record<string, { pcs: number; m3: number }> = {};
+              allOutputItems.forEach((i: any) => {
+                const cat = i.productType || 'BALOK';
+                if (!categoryBreakdown[cat]) categoryBreakdown[cat] = { pcs: 0, m3: 0 };
+                categoryBreakdown[cat].pcs += i.quantityPcs || 0;
+                categoryBreakdown[cat].m3 += i.volumeM3 || 0;
+              });
+
+              // Grade breakdown
+              const gradeBreakdown: Record<string, { pcs: number; m3: number }> = {};
+              allOutputItems.forEach((i: any) => {
+                const gradeKey = i.grade || 'PENDING';
+                const gradeName = grades.find((g: any) => g.code === gradeKey)?.name || gradeKey;
+                if (!gradeBreakdown[gradeName]) gradeBreakdown[gradeName] = { pcs: 0, m3: 0 };
+                gradeBreakdown[gradeName].pcs += i.quantityPcs || 0;
+                gradeBreakdown[gradeName].m3 += i.volumeM3 || 0;
+              });
+
+              return (
+                <div className="space-y-6">
+                  {/* KARTU STATISTIK UTAMA (DARI PEMBELIAN S.D. HASIL AKHIR) */}
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+                    <Card className="border-blue-500/30 bg-blue-50/30 dark:bg-blue-900/10">
+                      <CardContent className="pt-4 pb-3.5 px-4">
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">1. Beli Bahan Baku</p>
+                        <p className="text-xl font-bold text-blue-600 dark:text-blue-400 font-mono">
+                          {totalPurchaseVolM3 > 0 ? totalPurchaseVolM3.toFixed(3) : totalRawLogVolM3.toFixed(3)} m³
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {totalPurchasePcs > 0 ? `${totalPurchasePcs} item beli` : `${totalRawLogPcs} log DUKB`}
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-amber-500/30 bg-amber-50/30 dark:bg-amber-900/10">
+                      <CardContent className="pt-4 pb-3.5 px-4">
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">2. Input WIP Gergaji</p>
+                        <p className="text-xl font-bold text-amber-600 dark:text-amber-400 font-mono">
+                          {totalInputVolM3 > 0 ? totalInputVolM3.toFixed(3) : totalTrimmedVolM3.toFixed(3)} m³
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{totalInputPcs} batch pekerjaan</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-900/10">
+                      <CardContent className="pt-4 pb-3.5 px-4">
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">3. Output Gergajian</p>
+                        <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                          {totalOutputM3.toFixed(4)} m³
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{totalOutputPcs} pcs sawn timber</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-cyan-500/30 bg-cyan-50/30 dark:bg-cyan-900/10">
+                      <CardContent className="pt-4 pb-3.5 px-4">
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">4. Hasil Processing</p>
+                        <p className="text-xl font-bold text-cyan-600 dark:text-cyan-400 font-mono">
+                          {procOutputVolM3.toFixed(4)} m³
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">dari {procInputVolM3.toFixed(3)} m³ dipotong</p>
+                      </CardContent>
+                    </Card>
+
+                    <Card className={rendemenEndToEnd >= 50 ? "border-purple-500/30 bg-purple-50/30 dark:bg-purple-900/10" : "border-red-500/30 bg-red-50/30 dark:bg-red-900/10"}>
+                      <CardContent className="pt-4 pb-3.5 px-4">
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">Total Rendemen</p>
+                        <p className={`text-xl font-bold font-mono ${rendemenEndToEnd >= 50 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600'}`}>
+                          {rendemenEndToEnd.toFixed(1)}%
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Hasil Jadi / Beli M³</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card>
+                    <CardHeader className="border-b pb-4">
+                      <CardTitle>Alur Proses Partai</CardTitle>
+                      <CardDescription>Ringkasan volume & jumlah di setiap tahap produksi</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Tahap</TableHead>
+                            <TableHead className="text-right">Jumlah (Pcs)</TableHead>
+                            <TableHead className="text-right">Volume (M³)</TableHead>
+                            <TableHead className="text-right">Susut</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow className="bg-blue-50/20 dark:bg-blue-900/10">
+                            <TableCell className="font-semibold text-blue-700 dark:text-blue-400">1. Pembelian Bahan Baku</TableCell>
+                            <TableCell className="text-right font-mono font-medium">{totalPurchasePcs > 0 ? totalPurchasePcs : totalRawLogPcs}</TableCell>
+                            <TableCell className="text-right font-mono font-bold text-blue-700 dark:text-blue-400">
+                              {(totalPurchaseVolM3 > 0 ? totalPurchaseVolM3 : totalRawLogVolM3).toFixed(3)} m³
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground">Bahan Baku Masuk</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium pl-6">↳ 2. DUKB (Raw Log Diterima)</TableCell>
+                            <TableCell className="text-right">{totalRawLogPcs}</TableCell>
+                            <TableCell className="text-right">{Number(totalRawLogVolM3.toFixed(3))} m³</TableCell>
+                            <TableCell className="text-right text-muted-foreground">-</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium pl-6">↳ 3. Trimming Log</TableCell>
+                            <TableCell className="text-right">{totalTrimmedPcs}</TableCell>
+                            <TableCell className="text-right">{Number(totalTrimmedVolM3.toFixed(3))} m³</TableCell>
+                            <TableCell className="text-right">
+                              {totalRawLogVolM3 > 0 && totalTrimmedVolM3 > 0 ? (
+                                <span className="text-amber-600 font-medium">-{Number((totalRawLogVolM3 - totalTrimmedVolM3).toFixed(3))} m³</span>
+                              ) : '-'}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell className="font-medium">4. Input Mesin (WIP Gergaji)</TableCell>
+                            <TableCell className="text-right">{totalInputPcs}</TableCell>
+                            <TableCell className="text-right font-medium text-amber-600 dark:text-amber-400">
+                              {totalInputVolM3 > 0 ? Number(totalInputVolM3.toFixed(4)) + " m³" : "-"}
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground">-</TableCell>
+                          </TableRow>
+                          <TableRow className="bg-emerald-50/30 dark:bg-emerald-900/10">
+                            <TableCell className="font-bold text-emerald-700 dark:text-emerald-400">5. Output Sawn Timber (Sawmill)</TableCell>
+                            <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400">{totalOutputPcs}</TableCell>
+                            <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400 font-mono">{Number(totalOutputM3.toFixed(4))} m³</TableCell>
+                            <TableCell className="text-right">
+                              {baseLogVol > 0 ? (
+                                <span className={`font-bold ${rendemenSawmill >= 50 ? 'text-emerald-600' : 'text-amber-600'}`}>Rendemen Gergaji {rendemenSawmill.toFixed(1)}%</span>
+                              ) : '-'}
+                            </TableCell>
+                          </TableRow>
+                          {/* 6. MUAT FUSO (EXCEL 3) */}
+                          {shipmentsList.length > 0 && (
+                            <TableRow className="bg-amber-50/20 dark:bg-amber-900/10 border-t">
+                              <TableCell className="font-medium text-amber-700 dark:text-amber-400">
+                                6. Pindahan Stok / Kirim (Fuso)
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-muted-foreground">{shipmentsList.length} armada</TableCell>
+                              <TableCell className="text-right font-mono font-bold text-amber-600 dark:text-amber-400">
+                                {shipmentsList.reduce((acc, s) => acc + (s.totalVolumeM3 || 0), 0).toFixed(4)} m³
+                              </TableCell>
+                              <TableCell className="text-right text-muted-foreground">
+                                Terkirim: {shipmentsList.reduce((acc, s) => acc + (s.totalPcs || 0), 0)} pcs
+                              </TableCell>
+                            </TableRow>
+                          )}
+
+                          {procInputVolM3 > 0 && (
+                            <>
+                              <TableRow className="bg-cyan-50/20 dark:bg-cyan-900/10 border-t">
+                                <TableCell className="font-medium text-cyan-700 dark:text-cyan-400">
+                                  7. Processing / Pengolahan (Bahan Dipotong)
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-muted-foreground">{procBatches} batch</TableCell>
+                                <TableCell className="text-right font-mono font-semibold text-rose-600">
+                                  -{procInputVolM3.toFixed(4)} m³
+                                </TableCell>
+                                <TableCell className="text-right text-muted-foreground">Dipakai ke Proses</TableCell>
+                              </TableRow>
+                              <TableRow className="bg-cyan-50/30 dark:bg-cyan-900/10">
+                                <TableCell className="font-bold text-cyan-700 dark:text-cyan-400 pl-6">
+                                  ↳ Hasil Olahan Baru ({processingList.map((p: any) => p.processType).filter((v, i, a) => a.indexOf(v) === i).join(", ") || "KD"})
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-cyan-700 font-medium">{procBatches} batch</TableCell>
+                                <TableCell className="text-right font-mono font-bold text-cyan-600">
+                                  +{procOutputVolM3.toFixed(4)} m³
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <span className="font-bold text-cyan-600">
+                                    Rendemen Olah {rendemenProcessing.toFixed(1)}%
+                                  </span>
+                                </TableCell>
+                              </TableRow>
+                            </>
+                          )}
+
+                          {/* 8. PACKING LIST (EXCEL 6) */}
+                          {packingsList.length > 0 && (
+                            <TableRow className="bg-purple-50/20 dark:bg-purple-900/10 border-t">
+                              <TableCell className="font-medium text-purple-700 dark:text-purple-400">
+                                8. Packing List (Dual Measurement)
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-muted-foreground">{packingsList.length} packing</TableCell>
+                              <TableCell className="text-right font-mono font-bold text-purple-600 dark:text-purple-400">
+                                {packingsList.reduce((acc, p) => acc + (p.totalRealVolume || 0), 0).toFixed(4)} m³ (Asli)
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-xs text-emerald-600 font-semibold">
+                                Nominal: {packingsList.reduce((acc, p) => acc + (p.totalCustVolume || 0), 0).toFixed(4)} m³
+                              </TableCell>
+                            </TableRow>
+                          )}
+
+                          <TableRow className="bg-primary/10 border-t-2 font-bold">
+                            <TableCell className="text-primary text-base">
+                              TOTAL HASIL AKHIR (KAYU SIAP JUAL / STOK JADI)
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-primary">
+                              {totalOutputPcs} PCS
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-primary text-base">
+                              {(procOutputVolM3 > 0 ? totalFinalProducedM3 : totalOutputM3).toFixed(4)} m³
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Badge className={rendemenEndToEnd >= 50 ? "bg-emerald-600 text-white font-bold" : "bg-purple-600 text-white font-bold"}>
+                                RENDEMEN TOTAL: {rendemenEndToEnd.toFixed(1)}%
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+
+                  {Object.keys(categoryBreakdown).length > 0 && (
+                    <Card>
+                      <CardHeader className="border-b pb-4">
+                        <CardTitle>Rendemen & Rekap per Kategori Produk</CardTitle>
+                        <CardDescription>Distribusi Balok (Main Size), Reng/Papan, BS/Afkir & rendemen parsial terhadap Log Raw / WIP</CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Kategori Produk</TableHead>
+                              <TableHead className="text-right">Jumlah (Pcs)</TableHead>
+                              <TableHead className="text-right">Volume (M³)</TableHead>
+                              <TableHead className="text-right">% dari Output</TableHead>
+                              <TableHead className="text-right">Rendemen thdp Log (%)</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {Object.entries(categoryBreakdown).map(([catKey, val]) => {
+                              const conf = CATEGORY_CONFIG[catKey] || { label: catKey, badgeClass: 'border-slate-500/50 text-slate-600 dark:text-slate-400 bg-slate-500/10 dark:bg-slate-500/20' };
+                              const pctOutput = totalOutputM3 > 0 ? (val.m3 / totalOutputM3) * 100 : 0;
+                              const partialRendemen = baseLogVol > 0 ? (val.m3 / baseLogVol) * 100 : 0;
+                              return (
+                                <TableRow key={catKey}>
+                                  <TableCell>
+                                    <Badge variant="outline" className={conf.badgeClass}>{conf.label}</Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium">{val.pcs}</TableCell>
+                                  <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400">{Number(val.m3.toFixed(4))}</TableCell>
+                                  <TableCell className="text-right text-muted-foreground">{pctOutput.toFixed(1)}%</TableCell>
+                                  <TableCell className="text-right font-bold text-primary">{partialRendemen.toFixed(2)}%</TableCell>
+                                </TableRow>
+                              );
+                            })}
+                            <TableRow className="bg-muted/30 font-bold border-t">
+                              <TableCell>Total Output</TableCell>
+                              <TableCell className="text-right">{totalOutputPcs}</TableCell>
+                              <TableCell className="text-right text-emerald-600 dark:text-emerald-400">{Number(totalOutputM3.toFixed(4))}</TableCell>
+                              <TableCell className="text-right">100%</TableCell>
+                              <TableCell className={`text-right ${rendemenSawmill >= 50 ? 'text-emerald-600' : 'text-red-600'}`}>{rendemenSawmill.toFixed(2)}%</TableCell>
+                            </TableRow>
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {Object.keys(gradeBreakdown).length > 0 && (
+                    <Card>
+                      <CardHeader className="border-b pb-4">
+                        <CardTitle>Output per Grade / Kualitas</CardTitle>
+                        <CardDescription>Distribusi hasil gergajian berdasarkan grade</CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Grade</TableHead>
+                              <TableHead className="text-right">Pcs</TableHead>
+                              <TableHead className="text-right">Volume (M³)</TableHead>
+                              <TableHead className="text-right">% dari Total</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {Object.entries(gradeBreakdown).sort((a, b) => b[1].m3 - a[1].m3).map(([gradeName, val]) => (
+                              <TableRow key={gradeName}>
+                                <TableCell>
+                                  {gradeName === 'PENDING'
+                                    ? <Badge variant="outline" className="text-amber-500 border-amber-500">BELUM DIISI</Badge>
+                                    : <Badge className="bg-primary">{gradeName}</Badge>}
+                                </TableCell>
+                                <TableCell className="text-right">{val.pcs}</TableCell>
+                                <TableCell className="text-right font-bold">{Number(val.m3.toFixed(4))}</TableCell>
+                                <TableCell className="text-right text-muted-foreground">
+                                  {totalOutputM3 > 0 ? ((val.m3 / totalOutputM3) * 100).toFixed(1) + '%' : '-'}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {totalRawLogPcs === 0 && totalOutputPcs === 0 && (
+                    <div className="text-center py-16 text-muted-foreground">
+                      <p className="text-lg font-medium">Belum ada data untuk ditampilkan.</p>
+                      <p className="text-sm mt-1">Lengkapi data di tab DUKB, Trimming, dan Output terlebih dahulu.</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </TabsContent>
+      </Tabs>
+
+      <ReceiveLogModal
+        isOpen={receiveModalOpen}
+        onClose={() => {
+          setReceiveModalOpen(false);
+          setSelectedPurchaseForReceive(null);
+        }}
+        purchase={selectedPurchaseForReceive}
+        partaiId={id}
+        onSuccess={fetchPartai}
+      />
+
+      {/* MODAL INPUT TALLY HARIAN (LANGSUNG DARI TAB WIP) */}
+      <Dialog open={isTallyModalOpen} onOpenChange={setIsTallyModalOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-4xl md:max-w-5xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <span>Input Tally Harian</span>
+              {targetInputLogForTally && (
+                <Badge variant="outline" className="font-mono text-xs text-primary border-primary">
+                  {targetInputLogForTally.inputNumber}
+                </Badge>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {targetInputLogForTally 
+                ? `Masukkan hasil gergajian untuk WIP Job ${targetInputLogForTally.inputNumber}. Sistem otomatis menghitung M³ (T × L × P × PCS ÷ 1.000.000).`
+                : `Masukkan hasil gergajian untuk ${selectedTrimmedLogIds.length} log trimming terpilih. Sistem akan membuat pekerjaan WIP dan otomatis posting output ke stok.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-2 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Tanggal Produksi</Label>
+                <Input 
+                  type="date" 
+                  value={tallyDate} 
+                  onChange={e => setTallyDate(e.target.value)} 
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Gudang Tujuan Output</Label>
+                <select
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={tallyWarehouseId}
+                  onChange={(e) => setTallyWarehouseId(e.target.value)}
+                >
+                  {warehouses.map((wh: any) => (
+                    <option key={wh.id} value={wh.id}>
+                      {wh.name || wh.code}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* LIST OF SELECTED LOGS INFO */}
+            {!targetInputLogForTally && selectedTrimmedLogIds.length > 0 && (
+              <div className="p-3 bg-muted/40 rounded-lg border text-xs">
+                <span className="font-semibold text-foreground">Log Trimming Sumber ({selectedTrimmedLogIds.length} log): </span>
+                <span className="text-muted-foreground">
+                  {(partai?.trimmedLogs || [])
+                    .filter((t: any) => selectedTrimmedLogIds.includes(t.id))
+                    .map((t: any) => `${t.trimNumber} (${Number(t.netVolume || 0).toFixed(4)} m³)`)
+                    .join(", ")}
+                </span>
+              </div>
+            )}
+            
+            <div className="border rounded-md overflow-hidden shadow-sm p-1 bg-background">
+              <SawnTimberSpreadsheet
+                initialRows={tallyLines}
+                showSpecies={false}
+                showGrade={false}
+                showProductType={true}
+                defaultProductType="BALOK"
+                onChange={(updatedRows) => setTallyLines(updatedRows)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t">
+            <Button type="button" variant="outline" onClick={() => setIsTallyModalOpen(false)}>
+              Batal
+            </Button>
+            <Button 
+              type="button"
+              onClick={handleSaveWipTally} 
+              disabled={isSavingTally}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold"
+            >
+              {isSavingTally ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 mr-2" /> Simpan Tally (POST)
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

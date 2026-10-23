@@ -1,4 +1,4 @@
-﻿import type { NextConfig } from "next";
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   async redirects() {
@@ -59,6 +59,14 @@ const nextConfig: NextConfig = {
         destination: '/inventory/transfers',
         permanent: true,
       }
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/backend-api/:path*',
+        destination: 'http://backend:5000/:path*',
+      },
     ];
   },
 };

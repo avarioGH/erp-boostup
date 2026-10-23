@@ -1,13 +1,22 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.erp.boostup.id';
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    return '/backend-api';
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://backend:5000';
+};
 
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: getBaseUrl(),
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Update baseURL on client-side requests dynamically
 api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    config.baseURL = getBaseUrl();
+  }
   const token = typeof window !== 'undefined' ? localStorage.getItem('erp_token') : null;
   if (token) config.headers.Authorization = 'Bearer ' + token;
   const activeWarehouse = typeof window !== 'undefined' ? localStorage.getItem('active_warehouse') : null;

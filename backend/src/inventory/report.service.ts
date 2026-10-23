@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MemoryCacheService } from '../common/memory-cache.service';
 
 @Injectable()
 export class ReportService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: MemoryCacheService,
+  ) {}
 
   async getInventoryDashboard() {
     return {
@@ -34,8 +38,15 @@ export class ReportService {
     };
   }
   async getDashboardSummary() {
+    return this.cache.getOrSet('timber_dashboard_summary', 30, async () => {
+      return this.computeDashboardSummary();
+    });
+  }
+
+  private async computeDashboardSummary() {
     try {
       // 1. Aggregations for Timber Stock (Stok Kayu Jadi di Gudang)
+
       const timberStocksSum = await this.prisma.timberStock
         .aggregate({ _sum: { currentPcs: true, currentVolumeM3: true } })
         .catch(() => ({ _sum: { currentPcs: 0, currentVolumeM3: 0 } }));

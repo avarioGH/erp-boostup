@@ -26,8 +26,8 @@ export class AuditService {
         action: data.action,
         entity: data.entity,
         entity_id: data.entity_id,
-        before_data: data.before_data ? JSON.stringify(data.before_data) : null,
-        after_data: data.after_data ? JSON.stringify(data.after_data) : null,
+        before_data: data.before_data ? (data.before_data as any) : undefined,
+        after_data: data.after_data ? (data.after_data as any) : undefined,
       },
     });
   }

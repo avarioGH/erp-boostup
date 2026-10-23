@@ -59,4 +59,18 @@ export class PlatformController {
   async getAuditLogs(@Request() req) {
     return this.platformService.getAuditLogs(req.user.company_id);
   }
+
+  // --- SaaS Client Tenant & Subscription Endpoints ---
+  @Permissions('platform.view')
+  @Get('clients')
+  async listClients() {
+    return this.platformService.listClients();
+  }
+
+  @Permissions('platform.create')
+  @Post('clients')
+  async createClient(@Body() data: any) {
+    return this.platformService.createClientTenant(data);
+  }
 }
+

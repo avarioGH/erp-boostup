@@ -1,11 +1,16 @@
-﻿import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MemoryCacheService } from '../common/memory-cache.service';
 
 @Injectable()
 export class PlatformService {
   private readonly logger = new Logger(PlatformService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cache: MemoryCacheService,
+  ) {}
+
 
   /**
    * Tenant Middleware Validation (Dipanggil di Global Guard)
@@ -382,5 +387,257 @@ export class PlatformService {
     }
 
     return logs;
+  }
+
+  // =========================================================
+  // SAAS MULTI-TENANT & CLIENT SUBSCRIPTION MANAGEMENT
+  // =========================================================
+
+  /**
+   * List all SaaS Client Tenants (Wood & Fish clients) with their subscriptions and usage
+   */
+  async listClients() {
+    return this.cache.getOrSet('saas_clients_list', 30, async () => {
+      const companies = await this.prisma.company.findMany({
+
+      include: {
+        tenant: {
+          include: {
+            subscription: {
+              include: { plan: true },
+            },
+          },
+        },
+        users: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            email: true,
+            status: true,
+            role: { select: { name: true } },
+          },
+        },
+        warehouses: {
+          select: { id: true, name: true, code: true },
+        },
+        _count: {
+          select: {
+            users: true,
+            warehouses: true,
+            products: true,
+            transactions: true,
+            ai_chats: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+
+    return companies.map((c) => {
+      const sub = c.tenant?.subscription;
+      const plan = sub?.plan;
+      const isKayu =
+        c.name.toLowerCase().includes('kayu') ||
+        c.name.toLowerCase().includes('wood');
+
+      return {
+        company_id: c.id,
+        tenant_id: c.tenant_id,
+        company_name: c.name,
+        type: isKayu ? 'WOOD' : 'FISH',
+        email: c.email,
+        phone: c.phone,
+        status: c.tenant?.status || 'ACTIVE',
+        subscription: {
+          status: sub?.status || 'ACTIVE',
+          plan_name: plan?.name || 'Pro Business',
+          price_monthly: plan?.price_monthly || 2500000,
+          price_yearly: plan?.price_yearly || 25000000,
+          billing_cycle: sub?.billing_cycle || 'MONTHLY',
+          start_date: sub?.start_date || c.created_at,
+          end_date:
+            sub?.end_date ||
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          is_expired: sub?.end_date ? new Date() > new Date(sub.end_date) : false,
+        },
+        usage: {
+          total_users: c._count.users,
+          total_warehouses: c._count.warehouses,
+          total_products: c._count.products,
+          ai_queries_used: c._count.ai_chats,
+          storage_used_mb: (c._count.products * 0.5 + c._count.transactions * 0.1).toFixed(1),
+          storage_limit_mb: plan?.storage_limit_mb || 5120,
+        },
+        owners: c.users.filter((u) => u.role?.name === 'Owner' || u.username === 'owner'),
+      };
+    });
+    });
+  }
+
+  /**
+   * Create a new SaaS Client (Wood or Fish) with its Owner account & Subscription
+   */
+  async createClientTenant(data: {
+
+    company_name: string;
+    type: 'WOOD' | 'FISH';
+    owner_username: string;
+    owner_email: string;
+    owner_password?: string;
+    owner_name: string;
+    plan_name?: string;
+    duration_months?: number;
+    phone?: string;
+    address?: string;
+    price_monthly?: number;
+  }) {
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash(
+      data.owner_password || 'password123',
+      10,
+    );
+
+    // 1. Create Tenant
+    const tenant = await this.prisma.tenant.create({
+      data: {
+        name: data.company_name,
+        status: 'ACTIVE',
+      },
+    });
+
+    // 2. Create Company linked to Tenant
+    const company = await this.prisma.company.create({
+      data: {
+        tenant_id: tenant.id,
+        name: data.company_name,
+        email: data.owner_email,
+        phone: data.phone || '',
+        address: data.address || '',
+        timezone: 'Asia/Jakarta',
+        currency: 'IDR',
+      },
+    });
+
+    // 3. Create Owner Role with Super Admin Permission
+    let permAll = await this.prisma.permission.findUnique({
+      where: { name: '*' },
+    });
+    if (!permAll) {
+      permAll = await this.prisma.permission.create({
+        data: { name: '*', description: 'Super Admin Access' },
+      });
+    }
+
+    const role = await this.prisma.role.create({
+      data: {
+        company_id: company.id,
+        name: 'Owner',
+        description: `Pemilik Bisnis ${data.type === 'WOOD' ? 'Kayu' : 'Ikan'}`,
+      },
+    });
+
+    await this.prisma.rolePermission.create({
+      data: {
+        role_id: role.id,
+        permission_id: permAll.id,
+      },
+    });
+
+    // 4. Create Owner User
+    const user = await this.prisma.user.create({
+      data: {
+        company_id: company.id,
+        role_id: role.id,
+        username: data.owner_username.trim().toLowerCase(),
+        name: data.owner_name,
+        email: data.owner_email.trim().toLowerCase(),
+        password: hashedPassword,
+        status: true,
+      },
+    });
+
+    // 5. Create Subscription Plan & Tenant Subscription
+    const months = data.duration_months || 12;
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + months);
+
+    let plan = await this.prisma.subscriptionPlan.findFirst({
+      where: { name: data.plan_name || 'Enterprise' },
+    });
+
+    const monthlyPrice = data.price_monthly !== undefined ? Number(data.price_monthly) : 2500000;
+    const yearlyPrice = monthlyPrice * 10; // 2 months free discount
+
+    if (!plan) {
+      plan = await this.prisma.subscriptionPlan.create({
+        data: {
+          name: data.plan_name || 'Enterprise',
+          price_monthly: monthlyPrice,
+          price_yearly: yearlyPrice,
+          max_users: 50,
+          max_warehouses: 10,
+          max_assets: 500,
+          storage_limit_mb: 10240,
+          api_limit_day: 10000,
+          ai_credits_mo: 1000,
+        },
+      });
+    }
+
+    const subscription = await this.prisma.tenantSubscription.create({
+      data: {
+        tenant_id: tenant.id,
+        plan_id: plan.id,
+        billing_cycle: months >= 12 ? 'YEARLY' : 'MONTHLY',
+        status: 'ACTIVE',
+        start_date: startDate,
+        end_date: endDate,
+      },
+    });
+
+    // 6. Seed Default Warehouses based on vertical type
+    if (data.type === 'WOOD') {
+      await this.prisma.warehouse.create({
+        data: {
+          company_id: company.id,
+          code: 'WH-KLT-01',
+          name: 'Gudang Pengolahan Log & Sawmill',
+          address: data.address || 'Kalteng',
+        },
+      });
+      await this.prisma.warehouse.create({
+        data: {
+          company_id: company.id,
+          code: 'WH-SBY-01',
+          name: 'Gudang Transit Pelabuhan Surabaya',
+          address: 'Tanjung Perak, Surabaya',
+        },
+      });
+    } else {
+      await this.prisma.warehouse.create({
+        data: {
+          company_id: company.id,
+          code: 'WH-COLD-01',
+          name: 'Cold Storage Utama (-25°C)',
+          address: data.address || 'Pelabuhan Perikanan',
+        },
+      });
+    }
+
+    // Invalidate client list cache
+    this.cache.invalidate('saas_clients_list');
+
+    return {
+      success: true,
+      message: `Berhasil mendaftarkan klien SaaS ${data.company_name}!`,
+
+      company_id: company.id,
+      tenant_id: tenant.id,
+      user_id: user.id,
+      username: user.username,
+      subscription_end: subscription.end_date,
+    };
   }
 }

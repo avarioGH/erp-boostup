@@ -1,0 +1,535 @@
+"use client"
+import { useState, useEffect, use } from "react"
+import { TimberAPI, InventoryAPI, api } from "@/lib/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { Loader2, ArrowLeft, ArrowRight, Box, CheckCircle2, Factory, Calendar, Package, Plus, Trash, Check, Edit, X, AlertCircle, Warehouse } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
+import { SawnTimberSpreadsheet, SawnTallyRow } from "@/components/timber/sawn-timber-spreadsheet"
+
+export default function InputLogDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { toast } = useToast()
+  
+  const handleBack = () => {
+    const targetPartaiId = searchParams.get('partaiId') || data?.partaiId
+    const fromTab = searchParams.get('tab') || 'input'
+    if (targetPartaiId) {
+      router.push(`/inventory/partai/${targetPartaiId}?tab=${fromTab}`)
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/inventory/input-logs')
+    }
+  }
+  
+  const [data, setData] = useState<any>(null)
+  const [warehouses, setWarehouses] = useState<any[]>([])
+  const [selectedWhId, setSelectedWhId] = useState<string>("")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    InventoryAPI.getWarehouses()
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : (res?.data || []);
+        setWarehouses(list);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (data?.locationId) {
+      setSelectedWhId(data.locationId);
+    } else if (data?.partai?.warehouseId) {
+      setSelectedWhId(data.partai.warehouseId);
+    } else if (warehouses.length > 0 && !selectedWhId) {
+      setSelectedWhId(warehouses[0].id);
+    }
+  }, [data, warehouses, selectedWhId]);
+  
+  // Tally Modal State
+  const [tallyOpen, setTallyOpen] = useState(false)
+  const [tallyLines, setTallyLines] = useState<SawnTallyRow[]>([{ thickness: "", width: "", length: "", pcs: "", productType: "BALOK" }])
+  const [tallyDate, setTallyDate] = useState(new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0])
+  const [savingTally, setSavingTally] = useState(false)
+
+  // Edit states
+  const [editTallyOpen, setEditTallyOpen] = useState(false)
+  const [editTallyId, setEditTallyId] = useState("")
+  const [editTallyDate, setEditTallyDate] = useState("")
+  const [editTallyStatus, setEditTallyStatus] = useState("")
+  const [editTallyLines, setEditTallyLines] = useState<{t:string, l:string, p:string, pcs:string}[]>([])
+  const [deletingId, setDeletingId] = useState("")
+  
+  // Status Update State
+  const [updatingStatus, setUpdatingStatus] = useState(false)
+
+  const loadData = () => {
+    setLoading(true)
+    TimberAPI.getInputLog(id)
+      .then(setData)
+      .catch((err: any) => setError(err?.response?.data?.message || "Gagal memuat data input log"))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    if (id) loadData()
+  }, [id])
+
+  const handleUpdateStatus = async (newStatus: string) => {
+    try {
+      setUpdatingStatus(true)
+      await api.post(`/inventory/input-logs/${id}/status`, { status: newStatus })
+      toast({ title: "Status Diperbarui", description: `Status WIP berubah menjadi ${newStatus}.` })
+      loadData()
+    } catch (err: any) {
+      toast({ title: "Gagal Merubah Status", description: err?.response?.data?.message || err.message, variant: "destructive" })
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
+  const handleDeleteTally = async (tallyId: string, status: string) => {
+    if (!confirm("Hapus tally ini? Jika sudah POSTED, stok akan direverse (dibatalkan).")) return;
+    setDeletingId(tallyId);
+    try {
+      if (status === "POSTED") {
+        await TimberAPI.cancelSawnOutput(tallyId);
+      }
+      await TimberAPI.deleteSawnOutput(tallyId);
+      toast({ title: "Berhasil", description: "Tally berhasil dihapus." });
+      loadData();
+    } catch (e: any) {
+      toast({ title: "Gagal", description: e.response?.data?.message || "Gagal menghapus tally.", variant: "destructive" });
+    } finally {
+      setDeletingId("");
+    }
+  }
+
+  const openEditDialog = (o: any) => {
+    setEditTallyId(o.id);
+    setEditTallyStatus(o.status);
+    setEditTallyDate(o.outputDate ? new Date(o.outputDate).toISOString().substring(0, 10) : new Date().toISOString().substring(0, 10));
+    setEditTallyLines(o.items.map((i: any) => ({
+      t: (i.thicknessMm / 10).toString(),
+      l: (i.widthMm / 10).toString(),
+      p: (i.lengthMm / 10).toString(),
+      pcs: i.quantityPcs.toString()
+    })));
+    setEditTallyOpen(true);
+  }
+
+  const handleSaveEdit = async () => {
+    try {
+      const validLines = editTallyLines.filter(line => Number(line.t) > 0 && Number(line.l) > 0 && Number(line.p) > 0 && Number(line.pcs) > 0)
+      if (validLines.length === 0) {
+        toast({ title: "Input Tidak Valid", description: "Mohon isi setidaknya satu baris dimensi dengan benar.", variant: "destructive" })
+        return
+      }
+
+      setSavingTally(true)
+      
+      if (editTallyStatus === "POSTED") {
+        await TimberAPI.cancelSawnOutput(editTallyId);
+      }
+
+      const payload = {
+        outputDate: editTallyDate,
+        items: validLines.map(line => ({
+          timberVariantId: undefined, 
+          thickness: parseFloat(line.t) * 10,
+          width: parseFloat(line.l) * 10,
+          length: parseFloat(line.p) * 10,
+          quantityPcs: parseInt(line.pcs),
+          grade: "A"
+        }))
+      }
+
+      await TimberAPI.updateSawnOutput(editTallyId, payload);
+      await api.post('/inventory/sawn-timber/output/' + editTallyId + '/post');
+
+      toast({ title: "Berhasil", description: "Tally berhasil diperbarui." })
+      setEditTallyOpen(false)
+      loadData()
+    } catch (err: any) {
+      toast({ title: "Gagal", description: (err.response?.data?.error?.message || err.response?.data?.message) || err.message, variant: "destructive" })
+    } finally {
+      setSavingTally(false)
+    }
+  }
+
+  const handleSaveTally = async () => {
+    try {
+      // Validate
+      const validLines = tallyLines.filter(line => {
+        const t = parseFloat(String(line.thickness).replace(",", "."));
+        const w = parseFloat(String(line.width).replace(",", "."));
+        const p = parseFloat(String(line.length).replace(",", "."));
+        const pcs = parseInt(String(line.pcs));
+        return t > 0 && w > 0 && p > 0 && pcs > 0;
+      });
+      if (validLines.length === 0) {
+        toast({ title: "Input Tidak Valid", description: "Mohon isi setidaknya satu baris dimensi dengan benar.", variant: "destructive" })
+        return
+      }
+
+      setSavingTally(true)
+      
+      let whId = selectedWhId || data?.locationId || data?.partai?.warehouseId;
+      if (!whId) {
+        try {
+          const stored = localStorage.getItem('active_warehouse');
+          if (stored) whId = JSON.parse(stored).id;
+        } catch(e) {}
+      }
+      if (!whId && warehouses.length > 0) {
+        whId = warehouses[0].id;
+      }
+      if (!whId) {
+        try {
+          const whs = await InventoryAPI.getWarehouses();
+          const list = Array.isArray(whs) ? whs : (whs?.data || []);
+          if (list.length > 0) whId = list[0].id;
+        } catch(e) {}
+      }
+
+      if (!whId) {
+        toast({ title: "Error", description: "Belum ada gudang yang tersedia. Silakan buat data gudang terlebih dahulu.", variant: "destructive" })
+        setSavingTally(false)
+        return
+      }
+        
+      const payload = {
+        inputLogId: id,
+        partaiId: data?.partaiId,
+        outputDate: tallyDate,
+        locationId: whId,
+        items: validLines.map(line => {
+          const t = parseFloat(String(line.thickness).replace(",", "."));
+          const w = parseFloat(String(line.width).replace(",", "."));
+          const p = parseFloat(String(line.length).replace(",", "."));
+          const pcs = parseInt(String(line.pcs));
+          return {
+            thickness: t * 10,
+            width: w * 10,
+            length: p * 10,
+            quantityPcs: pcs,
+            grade: "PENDING",
+            productType: line.productType || "BALOK"
+          };
+        })
+      }
+
+      const res = await api.post('/inventory/sawn-timber/output', payload)
+      // Auto-post the tally so it enters inventory
+      await api.post(`/inventory/sawn-timber/output/${res.data.id}/post`)
+      
+      toast({ title: "Berhasil", description: "Tally harian berhasil disimpan dan di-posting." })
+      setTallyOpen(false)
+      setTallyLines([{ thickness: "", width: "", length: "", pcs: "", productType: "BALOK" }])
+      loadData()
+    } catch (err: any) {
+      toast({ title: "Gagal Menyimpan Tally", description: err?.response?.data?.error?.message || err?.response?.data?.message || err.message, variant: "destructive" });
+    } finally {
+      setSavingTally(false)
+    }
+  }
+
+  if (loading) return <div className="p-8 md:p-24 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
+  if (error || !data) return (
+    <div className="p-8 md:p-24 flex flex-col items-center justify-center gap-4 text-center">
+      <Package className="w-10 h-10 text-muted-foreground opacity-40" />
+      <p className="text-base font-semibold text-foreground">{error || "Input log tidak ditemukan."}</p>
+      <Button variant="outline" onClick={handleBack}>
+        <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
+      </Button>
+    </div>
+  )
+
+  const totalInputVol = Number(data.totalVolume || 0)
+  const outItems = (data.sawnOutputs || []).flatMap((o: any) => o.items || [])
+  const totalOutputVol = outItems.reduce((acc: number, cur: any) => acc + (cur.volumeM3 || 0), 0)
+  const progressPct = totalInputVol > 0 ? Math.min(100, Math.round((totalOutputVol / totalInputVol) * 100)) : 0
+
+  return (
+    <div className="space-y-6 max-w-[1400px] w-full mx-auto animate-in fade-in duration-500 pb-8 px-4 md:px-6 box-border">
+      
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center space-x-4">
+            <Button variant="outline" size="icon" onClick={handleBack}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+                Job Card: {data.inputNumber}
+                {data.status === 'DONE' ? <Badge className="bg-emerald-500 hover:bg-emerald-600 text-sm py-1">DONE</Badge> 
+                  : data.status === 'IN_PROCESS' ? <Badge className="bg-amber-500 hover:bg-amber-600 text-sm py-1">IN PROCESS</Badge> 
+                  : <Badge className="bg-rose-500 hover:bg-rose-600 text-sm py-1">AVAILABLE</Badge>}
+              </h1>
+              <div className="flex flex-wrap items-center text-muted-foreground mt-1 gap-x-4 gap-y-1 text-sm">
+                <span className="flex items-center"><Calendar className="w-4 h-4 mr-1"/> {data.date ? new Date(data.date).toLocaleDateString("id-ID") : "-"}</span>
+                <span className="flex items-center"><Box className="w-4 h-4 mr-1"/> {data.species}</span>
+                <span className="flex items-center"><Warehouse className="w-4 h-4 mr-1"/> {data.location?.name || data.partai?.warehouse?.name || (warehouses.find(w => w.id === selectedWhId)?.name) || "Gudang Utama"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {data.status === 'AVAILABLE' && (
+            <Button variant="outline" className="border-amber-500 text-amber-600 hover:bg-amber-50" onClick={() => handleUpdateStatus('IN_PROCESS')} disabled={updatingStatus}>
+              {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Factory className="w-4 h-4 mr-2" />} Mulai Pekerjaan
+            </Button>
+          )}
+          {data.status === 'IN_PROCESS' && (
+            <Button variant="outline" className="border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={() => handleUpdateStatus('DONE')} disabled={updatingStatus}>
+              {updatingStatus ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />} Tandai Selesai
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        
+        {/* LEFT COL: STATS & PROGRESS */}
+        <div className="md:col-span-1 space-y-6">
+          <Card className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="bg-muted/30 p-4 border-b">
+              <h3 className="font-semibold text-foreground flex items-center gap-2"><Factory className="w-4 h-4 text-primary" /> Produksi M&sup3;</h3>
+            </div>
+            <CardContent className="p-4 space-y-4">
+              <div className="flex justify-between items-end">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Input Bahan Baku</div>
+                  <div className="text-2xl font-bold">{totalInputVol.toFixed(4)} <span className="text-sm font-normal text-muted-foreground">m&sup3;</span></div>
+                </div>
+              </div>
+              <div className="flex justify-between items-end">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">Output Sawn Timber</div>
+                  <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{totalOutputVol.toFixed(4)} <span className="text-sm font-normal text-muted-foreground">m&sup3;</span></div>
+                </div>
+              </div>
+              
+              <div className="pt-2 border-t">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="text-sm font-medium">Rendemen (Yield)</div>
+                  <div className="text-sm font-bold text-blue-600 dark:text-blue-400">{progressPct}%</div>
+                </div>
+                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 transition-all duration-500" style={{ width: `${progressPct}%` }} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* RIGHT COL: MATERIAL & TALLY */}
+        <div className="md:col-span-3 space-y-6">
+          
+          <Card className="bg-card rounded-xl border border-border shadow-sm">
+            <CardHeader className="p-4 md:p-5 border-b border-border/50 bg-muted/10 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-[16px] font-semibold flex items-center gap-2">
+                  <span>🪵</span> Source Material (Log Sumber)
+                </CardTitle>
+                <CardDescription>Bahan baku log yang diproses dalam pekerjaan gergajian ini.</CardDescription>
+              </div>
+            </CardHeader>
+            <div className="p-4 border-b bg-muted/20 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-muted-foreground uppercase mr-1">Log Terpilih:</span>
+              {(data.items || []).map((item: any, idx: number) => {
+                const logNum = item.trimmedLog?.trimNumber || item.rawLog?.logNumber || `Log #${idx + 1}`;
+                const vol = item.volume || item.trimmedLog?.netVolume || item.rawLog?.netVolume || 0;
+                return (
+                  <Badge key={item.id || idx} variant="secondary" className="font-mono text-xs font-bold border px-2.5 py-1 flex items-center gap-1.5">
+                    <span className="text-primary font-bold">{logNum}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">({Number(vol).toFixed(4)} m³)</span>
+                  </Badge>
+                );
+              })}
+              {(!data.items || data.items.length === 0) && (
+                <span className="text-xs text-muted-foreground italic">Belum ada data log sumber.</span>
+              )}
+            </div>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableHead className="h-10 text-xs">NO. LOG / CODE</TableHead>
+                      <TableHead className="h-10 text-xs text-right">PJG (m)</TableHead>
+                      <TableHead className="h-10 text-xs text-right">RT (cm)</TableHead>
+                      <TableHead className="h-10 text-xs text-right text-emerald-600 font-bold">VOL (m³)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(data.items || []).map((item: any) => {
+                      const logNum = item.trimmedLog?.trimNumber || item.rawLog?.logNumber || "N/A"
+                      const pjg = item.trimmedLog?.length || item.rawLog?.length || 0
+                      const rt = item.trimmedLog?.averageDiameter || item.rawLog?.averageDiameter || 0
+                      const vol = item.volume || 0
+                      return (
+                        <TableRow key={item.id} className="hover:bg-muted/30">
+                          <TableCell className="font-semibold font-mono text-primary">{logNum}</TableCell>
+                          <TableCell className="text-right">{pjg}</TableCell>
+                          <TableCell className="text-right">{rt}</TableCell>
+                          <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">{vol.toFixed(4)}</TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card rounded-xl border border-border shadow-sm">
+            <CardHeader className="p-4 md:p-5 border-b border-border/50 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-[16px] font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Hasil Tally Gergajian (P &times; L &times; T = m³)
+                </CardTitle>
+                <CardDescription>Catatan output harian dari pemotongan log ini.</CardDescription>
+              </div>
+              <Dialog open={tallyOpen} onOpenChange={setTallyOpen}>
+                <DialogTrigger>
+                  <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-emerald-600 text-primary-foreground shadow hover:bg-emerald-700 h-8 rounded-md px-3" style={data.status === "DONE" ? {opacity: 0.5, pointerEvents: "none"} : {}}><Plus className="w-4 h-4" /> Tally Hari Ini</div>
+                </DialogTrigger>
+                <DialogContent className="w-[95vw] sm:max-w-4xl md:max-w-5xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
+                  <DialogHeader>
+                    <DialogTitle>Input Tally Harian</DialogTitle>
+                    <DialogDescription>Masukkan hasil produksi gergajian. Sistem otomatis menghitung M&sup3; (T &times; L &times; P &times; PCS &divide; 1.000.000).</DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4 space-y-4 overflow-x-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Tanggal Produksi</Label>
+                        <Input type="date" value={tallyDate} onChange={e => setTallyDate(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label>Gudang Tujuan Output</Label>
+                        <select
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          value={selectedWhId}
+                          onChange={(e) => setSelectedWhId(e.target.value)}
+                        >
+                          {warehouses.map((wh: any) => (
+                            <option key={wh.id} value={wh.id}>
+                              {wh.name || wh.code}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="border rounded-md overflow-hidden shadow-sm p-1 bg-background">
+                      <SawnTimberSpreadsheet
+                        initialRows={tallyLines}
+                        showSpecies={false}
+                        showGrade={false}
+                        showProductType={true}
+                        defaultProductType="BALOK"
+                        onChange={(updatedRows) => setTallyLines(updatedRows)}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setTallyOpen(false)}>Batal</Button>
+                    <Button onClick={handleSaveTally} disabled={savingTally}>
+                      {savingTally ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />} Simpan Tally (POST)
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableHead className="h-10 text-xs">TANGGAL</TableHead>
+                      <TableHead className="h-10 text-xs">KATEGORI</TableHead>
+                      <TableHead className="h-10 text-xs font-bold">UKURAN: T &times; L &times; P (cm)</TableHead>
+                      <TableHead className="h-10 text-xs text-right font-bold">JUMLAH (PCS)</TableHead>
+                      <TableHead className="h-10 text-xs text-right font-bold text-emerald-600">HASIL (m&sup3;)</TableHead>
+                      <TableHead className="h-10 text-xs text-center w-[100px]">STATUS</TableHead>
+                      <TableHead className="h-10 text-xs text-center w-[80px]">AKSI</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(data.sawnOutputs || []).flatMap((o: any) => (o.items || []).map((item: any) => ({ ...item, parentDate: o.outputDate, status: o.status, parentOutput: o }))).map((i: any, idx: number) => {
+                      const tCm = i.thicknessMm ? (i.thicknessMm / 10) : 0;
+                      const lCm = i.widthMm ? (i.widthMm / 10) : 0;
+                      const pCm = i.lengthMm ? (i.lengthMm / 10) : 0;
+                      return (
+                        <TableRow key={i.id || idx} className="hover:bg-muted/30">
+                          <TableCell className="font-medium text-sm">{i.parentDate ? new Date(i.parentDate).toLocaleDateString("id-ID") : "-"}</TableCell>
+                          <TableCell className="text-sm">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${
+                              i.productType === 'RENG' ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20' :
+                              i.productType === 'AFKIR_BS' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' :
+                              i.productType === 'AIR_DRY' ? 'bg-cyan-500/10 text-cyan-600 border border-cyan-500/20' :
+                              i.productType === 'FJL' ? 'bg-purple-500/10 text-purple-600 border border-purple-500/20' :
+                              'bg-blue-500/10 text-blue-600 border border-blue-500/20'
+                            }`}>
+                              {i.productType || 'BALOK'}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-sm font-semibold font-mono text-foreground">
+                            {tCm} &times; {lCm} &times; {pCm} cm
+                          </TableCell>
+                          <TableCell className="text-right text-sm font-bold text-foreground">{i.quantityPcs} pcs</TableCell>
+                          <TableCell className="text-right font-bold text-emerald-600 dark:text-emerald-400 text-sm font-mono">{Number(i.volumeM3 || 0).toFixed(4)} m³</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className={i.status === 'POSTED' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[11px]" : "text-[11px]"}>{i.status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-7 w-7 text-rose-500 hover:text-rose-700 hover:bg-rose-50" 
+                              disabled={deletingId === i.parentOutput?.id}
+                              onClick={() => i.parentOutput && handleDeleteTally(i.parentOutput.id, i.status)}
+                              title="Hapus Tally"
+                            >
+                              <Trash className="w-3.5 h-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                    {(!data.sawnOutputs || data.sawnOutputs.length === 0) && (
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Belum ada history tally.</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              {outItems.length > 0 && (
+                <div className="bg-muted/30 px-4 py-3 border-t flex flex-col sm:flex-row sm:items-center justify-between text-sm gap-2">
+                  <span className="font-semibold text-muted-foreground">Total Rekapitulasi Output:</span>
+                  <div className="flex items-center gap-6">
+                    <span>Jumlah: <strong className="text-foreground font-mono">{outItems.reduce((acc: number, cur: any) => acc + (cur.quantityPcs || 0), 0)} PCS</strong></span>
+                    <span>Volume: <strong className="text-emerald-600 dark:text-emerald-400 font-mono text-base">{totalOutputVol.toFixed(4)} m³</strong></span>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}

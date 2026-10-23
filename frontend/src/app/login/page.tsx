@@ -48,9 +48,9 @@ export default function LoginPage() {
  <div className="mx-auto bg-primary h-12 w-12 rounded-xl flex items-center justify-center mb-4">
  <Activity className="text-primary-foreground h-6 w-6" />
  </div>
- <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+ <h1 className="text-2xl font-semibold tracking-tight">Tatalora Fish ERP</h1>
  <p className="text-sm text-muted-foreground">
- Enter your credentials to sign in to your workspace
+ SaaS Solusi Manajemen Perikanan & Nelayan
  </p>
  </div>
 

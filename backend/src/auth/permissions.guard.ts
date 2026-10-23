@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   CanActivate,
   ExecutionContext,
@@ -7,12 +7,14 @@
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from './permissions.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { MemoryCacheService } from '../common/memory-cache.service';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private prisma: PrismaService,
+    private cache: MemoryCacheService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -32,19 +34,22 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    // Load user role
-    const dbUser = await this.prisma.user.findUnique({
-      where: { id: user.userId },
-      include: {
-        role: {
-          include: {
-            permissions: {
-              include: { permission: true },
+    // Load user role with 60s cache
+    const dbUser = await this.cache.getOrSet(`user_perm_${user.userId}`, 60, async () => {
+      return this.prisma.user.findUnique({
+        where: { id: user.userId },
+        include: {
+          role: {
+            include: {
+              permissions: {
+                include: { permission: true },
+              },
             },
           },
         },
-      },
+      });
     });
+
 
     if (!dbUser || !dbUser.role) {
       throw new ForbiddenException('User has no role');

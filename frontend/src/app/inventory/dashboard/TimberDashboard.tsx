@@ -21,7 +21,12 @@ export default function TimberDashboard() {
     setRefreshing(true);
     TimberAPI.getDashboardSummary()
       .then((res: any) => {
-        setData(res || {});
+        if (res && (res.kpi || res.pipeline)) {
+          setData(res);
+          try {
+            localStorage.setItem('timber_dashboard_cache', JSON.stringify(res));
+          } catch(e) {}
+        }
       })
       .catch((err: any) => console.error("Error loading timber dashboard summary:", err))
       .finally(() => {
@@ -31,10 +36,23 @@ export default function TimberDashboard() {
   };
 
   useEffect(() => {
+    // 1. Instant load from local storage cache (0ms)
+    try {
+      const cached = localStorage.getItem('timber_dashboard_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && (parsed.kpi || parsed.pipeline)) {
+          setData(parsed);
+          setLoading(false);
+        }
+      }
+    } catch(e) {}
+
+    // 2. Fresh fetch in background (Stale-While-Revalidate)
     loadData();
   }, []);
 
-  if (loading) return (
+  if (loading && !data) return (
     <div className="flex h-[50vh] w-full items-center justify-center">
       <div className="flex flex-col items-center gap-2 text-muted-foreground">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -42,6 +60,7 @@ export default function TimberDashboard() {
       </div>
     </div>
   );
+
 
   const kpi = data?.kpi || { 
     stock: 0, 

@@ -1,9 +1,21 @@
 node_modules
 .env
 .env.*
-! .env.example
+!.env.example
 dist
 coverage
 .vscode
 *.log
 backend-deploy.zip
+*.tar.gz
+*.backup
+*.xlsx
+.next
+deploy_*.js
+check_*.js
+test_*.js
+setup_*.js
+sync_*.tar.gz
+/*.js
+
+

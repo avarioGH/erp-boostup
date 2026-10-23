@@ -3,14 +3,14 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Company {
   timberPartais TimberPartai[]
-  id            String         @id @default(auto()) @map("_id") @db.ObjectId
-  tenant_id     String?        @db.ObjectId
+  id            String         @id @default(uuid())
+  tenant_id     String?
   tenant        Tenant?        @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   name          String
   logo          String?
@@ -125,8 +125,8 @@ model Company {
 }
 
 model CompanySetting {
-  id                   String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id           String  @unique @db.ObjectId
+  id                   String  @id @default(uuid())
+  company_id           String  @unique
   company              Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   currency             String  @default("IDR")
   timezone             String  @default("Asia/Jakarta")
@@ -144,8 +144,8 @@ model CompanySetting {
 }
 
 model Role {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String?  @db.ObjectId
+  id          String   @id @default(uuid())
+  company_id  String?
   company     Company? @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   name        String
   description String?
@@ -163,7 +163,7 @@ model Role {
 }
 
 model Permission {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  id          String  @id @default(uuid())
   name        String  @unique
   description String?
 
@@ -176,10 +176,10 @@ model Permission {
 }
 
 model RolePermission {
-  id            String     @id @default(auto()) @map("_id") @db.ObjectId
-  role_id       String     @db.ObjectId
+  id            String     @id @default(uuid())
+  role_id       String
   role          Role       @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  permission_id String     @db.ObjectId
+  permission_id String
   permission    Permission @relation(fields: [permission_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   created_at DateTime @default(now())
@@ -188,10 +188,10 @@ model RolePermission {
 }
 
 model User {
-  id                 String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id         String?   @db.ObjectId
+  id                 String    @id @default(uuid())
+  company_id         String?
   company            Company?  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  role_id            String?   @db.ObjectId
+  role_id            String?
   role               Role?     @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   username           String    @unique
   name               String
@@ -274,8 +274,8 @@ model Warehouse {
   manufacturing_orders  ManufacturingOrder[]
   material_reservations MaterialReservation[]
   timberDeliveryItems   TimberDeliveryNoteItem[]
-  id                    String                   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id            String                   @db.ObjectId
+  id                    String                   @id @default(uuid())
+  company_id            String
   company               Company                  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   code                  String
   name                  String
@@ -328,10 +328,10 @@ model Warehouse {
 }
 
 model UserWarehouseAccess {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  user_id      String    @db.ObjectId
+  id           String    @id @default(uuid())
+  user_id      String
   user         User      @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  warehouse_id String    @db.ObjectId
+  warehouse_id String
   warehouse    Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   created_at   DateTime  @default(now())
 
@@ -339,10 +339,10 @@ model UserWarehouseAccess {
 }
 
 model Category {
-  id         String     @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String     @db.ObjectId
+  id         String     @id @default(uuid())
+  company_id String
   company    Company    @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  parent_id  String?    @db.ObjectId
+  parent_id  String?
   parent     Category?  @relation("CategoryHierarchy", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children   Category[] @relation("CategoryHierarchy")
   name       String
@@ -355,8 +355,8 @@ model Category {
 }
 
 model Unit {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   name       String
 
@@ -368,8 +368,8 @@ model Unit {
 }
 
 model Brand {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   name       String
 
@@ -391,16 +391,16 @@ model Product {
   quality_control_points    QualityControlPoint[]
   material_reservations     MaterialReservation[]
   stockInTallyItems         StockInTallyItem[]
-  id                        String                   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id                String                   @db.ObjectId
+  id                        String                   @id @default(uuid())
+  company_id                String
   company                   Company                  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  category_id               String?                  @db.ObjectId
+  category_id               String?
   category                  Category?                @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  brand_id                  String?                  @db.ObjectId
+  brand_id                  String?
   brand                     Brand?                   @relation(fields: [brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  unit_id                   String                   @db.ObjectId
+  unit_id                   String
   unit                      Unit                     @relation(fields: [unit_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  supplier_id               String?                  @db.ObjectId
+  supplier_id               String?
   supplier                  Customer?                @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   code           String
@@ -452,8 +452,8 @@ model Product {
 }
 
 model ProductImage {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  product_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  product_id String
   product    Product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   image_url  String
   is_primary Boolean @default(false)
@@ -465,8 +465,8 @@ model ProductImage {
 }
 
 model ProductDocument {
-  id            String  @id @default(auto()) @map("_id") @db.ObjectId
-  product_id    String  @db.ObjectId
+  id            String  @id @default(uuid())
+  product_id    String
   product       Product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   document_url  String
   document_type String
@@ -483,10 +483,10 @@ model ProductDocument {
 // =======================
 
 model AssetCategory {
-  id         String          @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String          @db.ObjectId
+  id         String          @id @default(uuid())
+  company_id String
   company    Company         @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  parent_id  String?         @db.ObjectId
+  parent_id  String?
   parent     AssetCategory?  @relation("AssetCategoryHierarchy", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children   AssetCategory[] @relation("AssetCategoryHierarchy")
 
@@ -505,14 +505,14 @@ model AssetCategory {
 }
 
 model AssetMaster {
-  id           String        @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String        @db.ObjectId
+  id           String        @id @default(uuid())
+  company_id   String
   company      Company       @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  category_id  String        @db.ObjectId
+  category_id  String
   category     AssetCategory @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  warehouse_id String?       @db.ObjectId
+  warehouse_id String?
 
-  assigned_user_id String? @db.ObjectId
+  assigned_user_id String?
   assigned_user    User?   @relation("UserAssets", fields: [assigned_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   asset_code    String
@@ -525,7 +525,7 @@ model AssetMaster {
 
   purchase_date  DateTime?
   purchase_price Float     @default(0)
-  supplier_id    String?   @db.ObjectId
+  supplier_id    String?
 
   current_value       Float   @default(0)
   useful_life         Int? // In months
@@ -570,21 +570,21 @@ model AssetMaster {
 }
 
 model AssetHistory {
-  id           String      @id @default(auto()) @map("_id") @db.ObjectId
-  asset_id     String      @db.ObjectId
+  id           String      @id @default(uuid())
+  asset_id     String
   asset        AssetMaster @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   action       String
   before_data  Json?
   after_data   Json?
-  performed_by String      @db.ObjectId
+  performed_by String
   user         User        @relation("PerformedAssetHistories", fields: [performed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   performed_at DateTime @default(now())
 }
 
 model AssetLocation {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  asset_id      String      @db.ObjectId
+  id            String      @id @default(uuid())
+  asset_id      String
   asset         AssetMaster @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   from_location String?
   to_location   String
@@ -592,16 +592,16 @@ model AssetLocation {
   to_user       String?
   notes         String?
 
-  created_by String   @db.ObjectId
+  created_by String
   user       User     @relation("CreatedAssetLocations", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   moved_at   DateTime @default(now())
 }
 
 model AssetAssignment {
-  id       String      @id @default(auto()) @map("_id") @db.ObjectId
-  asset_id String      @db.ObjectId
+  id       String      @id @default(uuid())
+  asset_id String
   asset    AssetMaster @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user_id  String      @db.ObjectId
+  user_id  String
   user     User        @relation("AssignedAssets", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   assigned_at DateTime  @default(now())
@@ -611,10 +611,10 @@ model AssetAssignment {
 }
 
 model AssetBorrowing {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
-  asset_id   String      @db.ObjectId
+  id         String      @id @default(uuid())
+  asset_id   String
   asset      AssetMaster @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  borrower   String      @db.ObjectId
+  borrower   String
   user       User        @relation("BorrowedAssets", fields: [borrower], references: [id], onDelete: NoAction, onUpdate: NoAction)
   department String?
 
@@ -623,7 +623,7 @@ model AssetBorrowing {
   actual_return_date DateTime?
 
   status      String // PENDING, BORROWED, RETURNED, OVERDUE, CANCELLED
-  approved_by String? @db.ObjectId
+  approved_by String?
   approver    User?   @relation("ApprovedAssetBorrowings", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   notes       String?
 
@@ -634,8 +634,8 @@ model AssetBorrowing {
 }
 
 model MaintenanceLog {
-  id               String      @id @default(auto()) @map("_id") @db.ObjectId
-  asset_id         String      @db.ObjectId
+  id               String      @id @default(uuid())
+  asset_id         String
   asset            AssetMaster @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   maintenance_type String // Preventive, Corrective, Emergency, Calibration, Inspection
   vendor           String?
@@ -651,7 +651,7 @@ model MaintenanceLog {
   technician        String?
   status            String // SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED
 
-  created_by String @db.ObjectId
+  created_by String
   user       User   @relation("CreatedMaintenanceLogs", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   created_at DateTime @default(now())
@@ -661,8 +661,8 @@ model MaintenanceLog {
 }
 
 model MaintenanceSchedule {
-  id             String      @id @default(auto()) @map("_id") @db.ObjectId
-  asset_id       String      @db.ObjectId
+  id             String      @id @default(uuid())
+  asset_id       String
   asset          AssetMaster @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   interval_type  String // DAYS, MONTHS, YEARS, USAGE_HOURS, KM
   interval_value Int
@@ -678,8 +678,8 @@ model MaintenanceSchedule {
 }
 
 model WorkOrder {
-  id               String      @id @default(auto()) @map("_id") @db.ObjectId
-  asset_id         String      @db.ObjectId
+  id               String      @id @default(uuid())
+  asset_id         String
   asset            AssetMaster @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   wo_number        String      @unique
   title            String
@@ -687,7 +687,7 @@ model WorkOrder {
   maintenance_type String
   priority         String // LOW, MEDIUM, HIGH, CRITICAL
 
-  assigned_to String? @db.ObjectId
+  assigned_to String?
   technician  User?   @relation("AssignedWorkOrders", fields: [assigned_to], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   estimated_hours Float?
@@ -699,33 +699,33 @@ model WorkOrder {
   started_at   DateTime?
   completed_at DateTime?
 
-  created_by String @db.ObjectId
+  created_by String
   user       User   @relation("CreatedWorkOrders", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   leave_requests LeaveRequest[]
-  company_id     String?        @db.ObjectId
+  company_id     String?
 }
 
 model AssetDocument {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  asset_id      String      @db.ObjectId
+  id            String      @id @default(uuid())
+  asset_id      String
   asset         AssetMaster @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   document_type String // Manual, Invoice, Warranty, Certificate, Photo, License, Other
   file_name     String
   file_url      String
 
-  uploaded_by String @db.ObjectId
+  uploaded_by String
   user        User   @relation("UploadedAssetDocuments", fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   uploaded_at DateTime @default(now())
 }
 
 model DepreciationLog {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  asset_id      String      @db.ObjectId
+  id            String      @id @default(uuid())
+  asset_id      String
   asset         AssetMaster @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   period        String // e.g. "2026-07"
   opening_value Float
@@ -736,17 +736,17 @@ model DepreciationLog {
 }
 
 model Netting {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String   @db.ObjectId
+  id             String   @id @default(uuid())
+  company_id     String
   company        Company  @relation(fields: [company_id], references: [id])
-  partner_id     String   @db.ObjectId
+  partner_id     String
   partner        Customer @relation(fields: [partner_id], references: [id])
   netting_number String
   date           DateTime
   amount         Float
   notes          String?
   status         String   @default("COMPLETED") // COMPLETED, REVERSED
-  created_by     String?  @db.ObjectId
+  created_by     String?
 
   allocations NettingAllocation[]
   created_at  DateTime            @default(now())
@@ -756,10 +756,10 @@ model Netting {
 }
 
 model NettingAllocation {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  netting_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  netting_id String
   netting    Netting @relation(fields: [netting_id], references: [id], onDelete: Cascade)
-  invoice_id String  @db.ObjectId
+  invoice_id String
   invoice    Invoice @relation(fields: [invoice_id], references: [id], onDelete: NoAction)
   type       String // "AR" or "AP"
   amount     Float
@@ -768,9 +768,9 @@ model NettingAllocation {
 }
 
 model AuditLog {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String? @db.ObjectId
-  user_id    String? @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String?
+  user_id    String?
   ip_address String?
   browser    String?
   device     String?
@@ -790,14 +790,14 @@ model AuditLog {
 // =======================
 
 model InventoryTransaction {
-  id                  String     @id @default(auto()) @map("_id") @db.ObjectId
-  company_id          String     @db.ObjectId
+  id                  String     @id @default(uuid())
+  company_id          String
   company             Company    @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   transaction_no      String
   transaction_type    String // IN, OUT, TRANSFER, ADJUSTMENT, OPNAME, RETURN
-  warehouse_id        String     @db.ObjectId
+  warehouse_id        String
   warehouse           Warehouse  @relation("TransactionWarehouse", fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  target_warehouse_id String?    @db.ObjectId
+  target_warehouse_id String?
   target_warehouse    Warehouse? @relation("TransactionTargetWarehouse", fields: [target_warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   reference_type      String?
   reference_id        String?
@@ -805,9 +805,9 @@ model InventoryTransaction {
   transaction_date    DateTime
   notes               String?
 
-  created_by    String    @db.ObjectId
+  created_by    String
   user_created  User      @relation("CreatedTransactions", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  approved_by   String?   @db.ObjectId
+  approved_by   String?
   user_approved User?     @relation("ApprovedTransactions", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   approved_at   DateTime?
 
@@ -821,10 +821,10 @@ model InventoryTransaction {
 }
 
 model InventoryTransactionItem {
-  id             String               @id @default(auto()) @map("_id") @db.ObjectId
-  transaction_id String               @db.ObjectId
+  id             String               @id @default(uuid())
+  transaction_id String
   transaction    InventoryTransaction @relation(fields: [transaction_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_id     String               @db.ObjectId
+  product_id     String
   product        Product              @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   qty            Float
   system_qty     Float?
@@ -843,15 +843,15 @@ model InventoryTransactionItem {
 }
 
 model StockMovement {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String    @db.ObjectId
-  warehouse_id String    @db.ObjectId
+  id           String    @id @default(uuid())
+  company_id   String
+  warehouse_id String
   warehouse    Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_id   String    @db.ObjectId
+  product_id   String
   product      Product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   transaction_type String // IN, OUT, TRANSFER, ADJUSTMENT, OPNAME, RETURN
-  transaction_id   String? @db.ObjectId
+  transaction_id   String?
   movement_type    String // IN, OUT, TRANSFER_IN, TRANSFER_OUT, ADJUSTMENT_PLUS, ADJUSTMENT_MINUS, OPNAME, RETURN
 
   qty_in        Float @default(0)
@@ -866,7 +866,7 @@ model StockMovement {
   reference_number String?
   remarks          String?
 
-  created_by String @db.ObjectId
+  created_by String
   user       User   @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   created_at           DateTime               @default(now())
@@ -875,11 +875,11 @@ model StockMovement {
 }
 
 model WarehouseStock {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String    @db.ObjectId
-  warehouse_id String    @db.ObjectId
+  id           String    @id @default(uuid())
+  company_id   String
+  warehouse_id String
   warehouse    Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_id   String    @db.ObjectId
+  product_id   String
   product      Product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   current_stock   Float @default(0)
@@ -896,13 +896,13 @@ model WarehouseStock {
 // =======================
 
 model CashAccount {
-  id                  String          @id @default(auto()) @map("_id") @db.ObjectId
-  company_id          String          @db.ObjectId
+  id                  String          @id @default(uuid())
+  company_id          String
   company             Company         @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   code                String
   name                String
   account_type        String // Cash, Bank, Petty Cash, Digital Wallet
-  chart_of_account_id String?         @db.ObjectId
+  chart_of_account_id String?
   chart_of_account    ChartOfAccount? @relation(fields: [chart_of_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   currency            String          @default("IDR")
 
@@ -922,10 +922,10 @@ model CashAccount {
 }
 
 model FinanceCategory {
-  id         String            @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String            @db.ObjectId
+  id         String            @id @default(uuid())
+  company_id String
   company    Company           @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  parent_id  String?           @db.ObjectId
+  parent_id  String?
   parent     FinanceCategory?  @relation("FinanceCatHierarchy", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children   FinanceCategory[] @relation("FinanceCatHierarchy")
   name       String
@@ -940,14 +940,14 @@ model FinanceCategory {
 }
 
 model FinanceTransaction {
-  id               String      @id @default(auto()) @map("_id") @db.ObjectId
-  company_id       String      @db.ObjectId
+  id               String      @id @default(uuid())
+  company_id       String
   company          Company     @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  warehouse_id     String?     @db.ObjectId
+  warehouse_id     String?
   warehouse        Warehouse?  @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   transaction_no   String
   transaction_type String // Cash In, Cash Out, Transfer, Expense, Income, Adjustment
-  cash_account_id  String      @db.ObjectId
+  cash_account_id  String
   cash_account     CashAccount @relation(fields: [cash_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   reference_type   String?
@@ -957,9 +957,9 @@ model FinanceTransaction {
   description      String?
   total_amount     Float    @default(0)
 
-  created_by    String    @db.ObjectId
+  created_by    String
   user_created  User      @relation("CreatedFinanceTx", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  approved_by   String?   @db.ObjectId
+  approved_by   String?
   user_approved User?     @relation("ApprovedFinanceTx", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   approved_at   DateTime?
 
@@ -974,10 +974,10 @@ model FinanceTransaction {
 }
 
 model FinanceTransactionItem {
-  id             String             @id @default(auto()) @map("_id") @db.ObjectId
-  transaction_id String             @db.ObjectId
+  id             String             @id @default(uuid())
+  transaction_id String
   transaction    FinanceTransaction @relation(fields: [transaction_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  category_id    String             @db.ObjectId
+  category_id    String
   category       FinanceCategory    @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   amount         Float
   tax            Float              @default(0)
@@ -985,24 +985,24 @@ model FinanceTransactionItem {
 }
 
 model FinanceDocument {
-  id             String             @id @default(auto()) @map("_id") @db.ObjectId
-  transaction_id String             @db.ObjectId
+  id             String             @id @default(uuid())
+  transaction_id String
   transaction    FinanceTransaction @relation(fields: [transaction_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   document_type  String
   file_url       String
 
-  uploaded_by String   @db.ObjectId
+  uploaded_by String
   user        User     @relation("UploadedFinanceDocs", fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   uploaded_at DateTime @default(now())
 }
 
 model PettyCash {
-  id              String      @id @default(auto()) @map("_id") @db.ObjectId
-  company_id      String      @db.ObjectId
+  id              String      @id @default(uuid())
+  company_id      String
   company         Company     @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  cash_account_id String      @db.ObjectId
+  cash_account_id String
   cash_account    CashAccount @relation(fields: [cash_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  employee_id     String      @db.ObjectId
+  employee_id     String
   employee        User        @relation("PettyCashEmployee", fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   opening_balance Float
@@ -1016,12 +1016,12 @@ model PettyCash {
 }
 
 model Budget {
-  id            String          @id @default(auto()) @map("_id") @db.ObjectId
-  company_id    String          @db.ObjectId
+  id            String          @id @default(uuid())
+  company_id    String
   company       Company         @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  category_id   String          @db.ObjectId
+  category_id   String
   category      FinanceCategory @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  department_id String?         @db.ObjectId
+  department_id String?
   period        String // e.g. "2026-07"
 
   budget_amount    Float
@@ -1036,10 +1036,10 @@ model Budget {
 }
 
 model Reconciliation {
-  id              String      @id @default(auto()) @map("_id") @db.ObjectId
-  company_id      String      @db.ObjectId
+  id              String      @id @default(uuid())
+  company_id      String
   company         Company     @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  cash_account_id String      @db.ObjectId
+  cash_account_id String
   cash_account    CashAccount @relation(fields: [cash_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   period          String // e.g. "2026-07"
 
@@ -1047,7 +1047,7 @@ model Reconciliation {
   physical_balance Float
   difference       Float
 
-  approved_by String? @db.ObjectId
+  approved_by String?
   approver    User?   @relation("ApprovedReconciliations", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   status      String // PENDING, APPROVED, ADJUSTED
 
@@ -1062,8 +1062,8 @@ model Reconciliation {
 // =======================
 
 model AccountType {
-  id             String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String  @db.ObjectId
+  id             String  @id @default(uuid())
+  company_id     String
   company        Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   code           String
   name           String
@@ -1079,13 +1079,13 @@ model AccountType {
 }
 
 model ChartOfAccount {
-  id              String           @id @default(auto()) @map("_id") @db.ObjectId
-  company_id      String           @db.ObjectId
+  id              String           @id @default(uuid())
+  company_id      String
   company         Company          @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  parent_id       String?          @db.ObjectId
+  parent_id       String?
   parent          ChartOfAccount?  @relation("CoA_Hierarchy", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children        ChartOfAccount[] @relation("CoA_Hierarchy")
-  account_type_id String           @db.ObjectId
+  account_type_id String
   account_type    AccountType      @relation(fields: [account_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   account_code       String
@@ -1106,8 +1106,8 @@ model ChartOfAccount {
 }
 
 model JournalEntry {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id      String   @db.ObjectId
+  id              String   @id @default(uuid())
+  company_id      String
   company         Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   journal_no      String
   reference_type  String // INVENTORY, ASSET, FINANCE, MANUAL
@@ -1117,9 +1117,9 @@ model JournalEntry {
   description     String?
   status          String // Draft, Pending, Approved, Posted, Closed
 
-  created_by    String    @db.ObjectId
+  created_by    String
   user_created  User      @relation("CreatedJournals", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  approved_by   String?   @db.ObjectId
+  approved_by   String?
   user_approved User?     @relation("ApprovedJournals", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   approved_at   DateTime?
 
@@ -1135,10 +1135,10 @@ model JournalEntry {
 }
 
 model JournalEntryItem {
-  id               String         @id @default(auto()) @map("_id") @db.ObjectId
-  journal_entry_id String         @db.ObjectId
+  id               String         @id @default(uuid())
+  journal_entry_id String
   journal_entry    JournalEntry   @relation(fields: [journal_entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  account_id       String         @db.ObjectId
+  account_id       String
   account          ChartOfAccount @relation(fields: [account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   debit       Float   @default(0)
@@ -1147,8 +1147,8 @@ model JournalEntryItem {
 }
 
 model FiscalYear {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String   @db.ObjectId
+  id         String   @id @default(uuid())
+  company_id String
   company    Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   year       Int
   start_date DateTime
@@ -1156,7 +1156,7 @@ model FiscalYear {
   status     String // OPEN, CLOSED
 
   closed_at DateTime?
-  closed_by String?   @db.ObjectId
+  closed_by String?
   closer    User?     @relation("ClosedFiscalYears", fields: [closed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   created_at DateTime @default(now())
@@ -1165,8 +1165,8 @@ model FiscalYear {
 }
 
 model AccountingPeriod {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String   @db.ObjectId
+  id         String   @id @default(uuid())
+  company_id String
   company    Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   month      Int
   year       Int
@@ -1180,33 +1180,33 @@ model AccountingPeriod {
 }
 
 model JournalAdjustment {
-  id               String       @id @default(auto()) @map("_id") @db.ObjectId
-  company_id       String       @db.ObjectId
+  id               String       @id @default(uuid())
+  company_id       String
   company          Company      @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  journal_entry_id String       @db.ObjectId
+  journal_entry_id String
   journal_entry    JournalEntry @relation(fields: [journal_entry_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   reason           String
 
-  created_by  String  @db.ObjectId
+  created_by  String
   creator     User    @relation("CreatedAdjustments", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  approved_by String? @db.ObjectId
+  approved_by String?
   approver    User?   @relation("ApprovedAdjustments", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   created_at DateTime @default(now())
 }
 
 model JournalReversal {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  original_journal_id String       @db.ObjectId
+  original_journal_id String
   original_journal    JournalEntry @relation("OriginalJournal", fields: [original_journal_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  reverse_journal_id  String       @db.ObjectId
+  reverse_journal_id  String
   reverse_journal     JournalEntry @relation("ReverseJournal", fields: [reverse_journal_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   reason     String
-  created_by String @db.ObjectId
+  created_by String
   creator    User   @relation("CreatedReversals", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   created_at DateTime @default(now())
@@ -1217,10 +1217,10 @@ model JournalReversal {
 // =======================
 
 model DashboardLayout {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String  @db.ObjectId
+  id          String  @id @default(uuid())
+  company_id  String
   company     Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user_id     String  @db.ObjectId
+  user_id     String
   user        User    @relation("DashboardLayouts", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   name        String // "Manager Layout", "Finance Default"
   is_default  Boolean @default(false)
@@ -1233,15 +1233,15 @@ model DashboardLayout {
 }
 
 model DashboardWidget {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String  @db.ObjectId
+  id          String  @id @default(uuid())
+  company_id  String
   company     Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   widget_type String // e.g. "LineChart", "PieChart", "KPICard"
   data_source String // e.g. "api/analytics/net-profit"
   title       String
   config      Json? // Optional filter configs saved by user
 
-  user_id String @db.ObjectId
+  user_id String
   user    User   @relation("DashboardWidgets", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   created_at DateTime @default(now())
@@ -1251,8 +1251,8 @@ model DashboardWidget {
 }
 
 model BusinessInsight {
-  id           String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String  @db.ObjectId
+  id           String  @id @default(uuid())
+  company_id   String
   company      Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   insight_type String // "Warning", "Recommendation", "Achievement"
   title        String
@@ -1269,15 +1269,15 @@ model BusinessInsight {
 // =======================
 
 model ReportSchedule {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String  @db.ObjectId
+  id          String  @id @default(uuid())
+  company_id  String
   company     Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   name        String
   report_type String // "Inventory", "Finance", "Accounting"
   cron_expr   String // e.g. "0 8 * * *"
   recipients  String // comma separated emails
   status      Boolean @default(true)
-  created_by  String  @db.ObjectId
+  created_by  String
   user        User    @relation("ScheduledReports", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   created_at DateTime @default(now())
@@ -1287,15 +1287,15 @@ model ReportSchedule {
 }
 
 model ReportExportLog {
-  id           String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String  @db.ObjectId
+  id           String  @id @default(uuid())
+  company_id   String
   company      Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   report_type  String
   format       String // "PDF", "EXCEL", "CSV"
   status       String // "PENDING", "PROCESSING", "COMPLETED", "FAILED"
   file_url     String?
   error_msg    String?
-  requested_by String  @db.ObjectId
+  requested_by String
   user         User    @relation("ExportLogs", fields: [requested_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   started_at   DateTime  @default(now())
@@ -1303,8 +1303,8 @@ model ReportExportLog {
 }
 
 model DocumentMaster {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String  @db.ObjectId
+  id          String  @id @default(uuid())
+  company_id  String
   company     Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   document_no String  @unique
   title       String
@@ -1312,7 +1312,7 @@ model DocumentMaster {
   tags        String? // comma separated, e.g. "Urgent,Finance"
   status      String // "ACTIVE", "ARCHIVED"
 
-  uploaded_by String @db.ObjectId
+  uploaded_by String
   user        User   @relation("UploadedDocuments", fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   versions DocumentVersion[]
@@ -1325,28 +1325,28 @@ model DocumentMaster {
 }
 
 model DocumentVersion {
-  id                 String         @id @default(auto()) @map("_id") @db.ObjectId
-  document_master_id String         @db.ObjectId
+  id                 String         @id @default(uuid())
+  document_master_id String
   document_master    DocumentMaster @relation(fields: [document_master_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   version_number     Int
   file_url           String
   file_size          Int // in bytes
   mime_type          String
-  uploaded_by        String         @db.ObjectId
+  uploaded_by        String
   user               User           @relation("UploadedDocumentVersions", fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   created_at DateTime @default(now())
 }
 
 model DocumentShareLink {
-  id                 String         @id @default(auto()) @map("_id") @db.ObjectId
-  document_master_id String         @db.ObjectId
+  id                 String         @id @default(uuid())
+  document_master_id String
   document_master    DocumentMaster @relation(fields: [document_master_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   token              String         @unique
   password_hash      String?
   expired_at         DateTime
 
-  created_by String   @db.ObjectId
+  created_by String
   user       User     @relation("CreatedShareLinks", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   created_at DateTime @default(now())
 }
@@ -1356,8 +1356,8 @@ model DocumentShareLink {
 // =======================
 
 model WorkflowMaster {
-  id            String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id    String  @db.ObjectId
+  id            String  @id @default(uuid())
+  company_id    String
   company       Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   name          String
   description   String?
@@ -1377,8 +1377,8 @@ model WorkflowMaster {
 }
 
 model WorkflowNode {
-  id                 String         @id @default(auto()) @map("_id") @db.ObjectId
-  workflow_master_id String         @db.ObjectId
+  id                 String         @id @default(uuid())
+  workflow_master_id String
   workflow_master    WorkflowMaster @relation(fields: [workflow_master_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   node_type          String // "Start", "Condition", "Approval", "Notification", "Task", "End"
   node_name          String
@@ -1389,8 +1389,8 @@ model WorkflowNode {
 }
 
 model WorkflowEdge {
-  id                 String         @id @default(auto()) @map("_id") @db.ObjectId
-  workflow_master_id String         @db.ObjectId
+  id                 String         @id @default(uuid())
+  workflow_master_id String
   workflow_master    WorkflowMaster @relation(fields: [workflow_master_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   source_node_id     String
   target_node_id     String
@@ -1400,8 +1400,8 @@ model WorkflowEdge {
 }
 
 model ApprovalRequest {
-  id           String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String  @db.ObjectId
+  id           String  @id @default(uuid())
+  company_id   String
   company      Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   module       String // "Finance", "Inventory"
   reference_id String // ID dari transaksi
@@ -1411,7 +1411,7 @@ model ApprovalRequest {
 
   current_step  Int     @default(1)
   assigned_role String? // Jika approval berdasarkan role
-  assigned_user String? @db.ObjectId // Jika approval spesifik ke user
+  assigned_user String? // Jika approval spesifik ke user
   assignee      User?   @relation("PendingApprovals", fields: [assigned_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   logs ApprovalLog[]
@@ -1423,22 +1423,22 @@ model ApprovalRequest {
 }
 
 model ApprovalLog {
-  id                  String          @id @default(auto()) @map("_id") @db.ObjectId
-  approval_request_id String          @db.ObjectId
+  id                  String          @id @default(uuid())
+  approval_request_id String
   approval_request    ApprovalRequest @relation(fields: [approval_request_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   action              String // "APPROVED", "REJECTED", "ESCALATED"
   notes               String?
 
-  acted_by String   @db.ObjectId
+  acted_by String
   actor    User     @relation("ApprovalHistory", fields: [acted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   acted_at DateTime @default(now())
 }
 
 model InternalInbox {
-  id           String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String  @db.ObjectId
+  id           String  @id @default(uuid())
+  company_id   String
   company      Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user_id      String  @db.ObjectId
+  user_id      String
   user         User    @relation("UserInbox", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   message_type String // "Approval", "Task", "Notification", "Reminder", "Announcement"
   title        String
@@ -1450,10 +1450,10 @@ model InternalInbox {
 }
 
 model UserTask {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String    @db.ObjectId
+  id           String    @id @default(uuid())
+  company_id   String
   company      Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  assigned_to  String    @db.ObjectId
+  assigned_to  String
   assignee     User      @relation("UserTasks", fields: [assigned_to], references: [id], onDelete: NoAction, onUpdate: NoAction)
   title        String
   description  String?
@@ -1469,8 +1469,8 @@ model UserTask {
 }
 
 model NotificationTemplate {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   name       String
   channel    String // "EMAIL", "WHATSAPP", "IN_APP", "SLACK", "WEBHOOK"
@@ -1484,10 +1484,10 @@ model NotificationTemplate {
 }
 
 model AutomationLog {
-  id                 String          @id @default(auto()) @map("_id") @db.ObjectId
-  company_id         String          @db.ObjectId
+  id                 String          @id @default(uuid())
+  company_id         String
   company            Company         @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  workflow_master_id String?         @db.ObjectId
+  workflow_master_id String?
   workflow_master    WorkflowMaster? @relation(fields: [workflow_master_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   event_name         String
   status             String // "SUCCESS", "FAILED", "RETRIED"
@@ -1502,7 +1502,7 @@ model AutomationLog {
 // =======================
 
 model Tenant {
-  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  id     String  @id @default(uuid())
   name   String
   domain String? @unique // e.g. "client1.erp.com"
   status String // "ACTIVE", "SUSPENDED", "CANCELLED"
@@ -1519,7 +1519,7 @@ model Tenant {
 }
 
 model SubscriptionPlan {
-  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  id            String @id @default(uuid())
   name          String // "Starter", "Professional", "Enterprise"
   price_monthly Float
   price_yearly  Float
@@ -1540,10 +1540,10 @@ model SubscriptionPlan {
 }
 
 model TenantSubscription {
-  id        String           @id @default(auto()) @map("_id") @db.ObjectId
-  tenant_id String           @unique @db.ObjectId
+  id        String           @id @default(uuid())
+  tenant_id String           @unique
   tenant    Tenant           @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  plan_id   String           @db.ObjectId
+  plan_id   String
   plan      SubscriptionPlan @relation(fields: [plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   billing_cycle String // "MONTHLY", "YEARLY"
@@ -1560,8 +1560,8 @@ model TenantSubscription {
 }
 
 model BillingInvoice {
-  id                  String             @id @default(auto()) @map("_id") @db.ObjectId
-  subscription_id     String             @db.ObjectId
+  id                  String             @id @default(uuid())
+  subscription_id     String
   subscription        TenantSubscription @relation(fields: [subscription_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   invoice_no          String             @unique
   amount              Float
@@ -1575,8 +1575,8 @@ model BillingInvoice {
 }
 
 model ApiToken {
-  id         String    @id @default(auto()) @map("_id") @db.ObjectId
-  tenant_id  String    @db.ObjectId
+  id         String    @id @default(uuid())
+  tenant_id  String
   tenant     Tenant    @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   name       String
   token_hash String    @unique
@@ -1587,8 +1587,8 @@ model ApiToken {
 }
 
 model InstalledPlugin {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
-  tenant_id String @db.ObjectId
+  id        String @id @default(uuid())
+  tenant_id String
   tenant    Tenant @relation(fields: [tenant_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   plugin_id String // Ref to Marketplace Global DB
   status    String // "ACTIVE", "INACTIVE"
@@ -1606,10 +1606,10 @@ model InstalledPlugin {
 
 model Customer {
   roles        String[]   @default(["CUSTOMER"])
-  id           String     @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String     @db.ObjectId
+  id           String     @id @default(uuid())
+  company_id   String
   company      Company    @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  warehouse_id String?    @db.ObjectId
+  warehouse_id String?
   warehouse    Warehouse? @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   code         String
   name         String
@@ -1650,8 +1650,8 @@ model Customer {
 }
 
 model Voucher {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String   @db.ObjectId
+  id             String   @id @default(uuid())
+  company_id     String
   company        Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   code           String
   name           String
@@ -1673,18 +1673,18 @@ model Voucher {
 }
 
 model SalesOrder {
-  id             String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String    @db.ObjectId
+  id             String    @id @default(uuid())
+  company_id     String
   company        Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customer_id    String?   @db.ObjectId
+  customer_id    String?
   customer       Customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   order_number   String
   order_date     DateTime
   status         String // DRAFT, PENDING, COMPLETED, CANCELLED
   total_amount   Float
   notes          String?
-  pos_shift_id   String?   @db.ObjectId
-  warehouse_id   String?   @db.ObjectId
+  pos_shift_id   String?
+  warehouse_id   String?
   pos_shift      PosShift? @relation(fields: [pos_shift_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   payment_method String? // Cash, QRIS, Debit, Credit, Transfer, Split
   payment_status String? // UNPAID, PARTIAL, PAID
@@ -1695,7 +1695,7 @@ model SalesOrder {
   ecommerce_session_id String? // Idempotency key for checkout
   salesReturns         SalesReturn[]
 
-  quotation_id     String?    @db.ObjectId
+  quotation_id     String?
   quotation        Quotation? @relation(fields: [quotation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   billing_address  String?
   delivery_address String?
@@ -1715,10 +1715,10 @@ model SalesOrder {
 }
 
 model SalesOrderItem {
-  id             String            @id @default(auto()) @map("_id") @db.ObjectId
-  sales_order_id String            @db.ObjectId
+  id             String            @id @default(uuid())
+  sales_order_id String
   sales_order    SalesOrder        @relation(fields: [sales_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_id     String            @db.ObjectId
+  product_id     String
   product        Product           @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   qty            Float
   system_qty     Float?
@@ -1736,12 +1736,12 @@ model SalesOrderItem {
 }
 
 model PosShift {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String    @db.ObjectId
+  id           String    @id @default(uuid())
+  company_id   String
   company      Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  warehouse_id String    @db.ObjectId
+  warehouse_id String
   warehouse    Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user_id      String    @db.ObjectId
+  user_id      String
   user         User      @relation("UserPosShifts", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   start_time    DateTime  @default(now())
@@ -1759,10 +1759,10 @@ model PosShift {
 }
 
 model AiChatHistory {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  user_id    String  @db.ObjectId
+  user_id    String
   user       User    @relation("UserAiChats", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   prompt     String
   response   String
@@ -1776,8 +1776,8 @@ model AiChatHistory {
 // =======================
 
 model Department {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String  @db.ObjectId
+  id          String  @id @default(uuid())
+  company_id  String
   company     Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   name        String
   description String?
@@ -1792,12 +1792,12 @@ model Department {
 
 model Employee {
   sawmillProductionRuns SawmillProductionRun[]
-  id                    String                 @id @default(auto()) @map("_id") @db.ObjectId
-  company_id            String                 @db.ObjectId
+  id                    String                 @id @default(uuid())
+  company_id            String
   company               Company                @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  warehouse_id          String?                @db.ObjectId
+  warehouse_id          String?
   warehouse             Warehouse?             @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  department_id         String?                @db.ObjectId
+  department_id         String?
   department            Department?            @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   employee_code String
@@ -1811,7 +1811,7 @@ model Employee {
 
   basic_salary   Float   @default(0)
   bank_name      String?
-  default_shift_id String? @db.ObjectId
+  default_shift_id String?
   account_number String?
 
   fingerprint_right_thumb String?
@@ -1830,9 +1830,9 @@ model Employee {
 }
 
 model Attendance {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String?   @db.ObjectId
-  employee_id String    @db.ObjectId
+  id          String    @id @default(uuid())
+  company_id  String?
+  employee_id String
   employee    Employee  @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   date        DateTime
   status      String // PRESENT, ABSENT, LEAVE, SICK, LATE
@@ -1840,7 +1840,7 @@ model Attendance {
   check_out   DateTime?
   notes       String?
   
-  shift_id         String? @db.ObjectId
+  shift_id         String?
   shift            Shift?  @relation(fields: [shift_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   late_minutes     Int     @default(0)
   overtime_minutes Int     @default(0)
@@ -1852,10 +1852,10 @@ model Attendance {
 }
 
 model Payroll {
-  company_id  String?  @db.ObjectId
+  company_id  String?
   company     Company? @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  employee_id String   @db.ObjectId
+  id          String   @id @default(uuid())
+  employee_id String
   employee    Employee @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   period      String // e.g. "2026-07"
 
@@ -1876,8 +1876,8 @@ model Payroll {
 }
 
 model PayrollItem {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  payroll_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  payroll_id String
   payroll    Payroll @relation(fields: [payroll_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   type       String // ALLOWANCE, DEDUCTION
   name       String
@@ -1887,8 +1887,8 @@ model PayrollItem {
 }
 
 model MarketplaceIntegration {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id    String    @db.ObjectId
+  id            String    @id @default(uuid())
+  company_id    String
   company       Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   platform      String // e.g., 'SHOPEE', 'TOKOPEDIA'
   partner_id    String?
@@ -1910,10 +1910,10 @@ model MarketplaceIntegration {
 // =======================
 
 model Quotation {
-  id               String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id       String    @db.ObjectId
+  id               String    @id @default(uuid())
+  company_id       String
   company          Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customer_id      String    @db.ObjectId
+  customer_id      String
   customer         Customer  @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   quotation_number String
   quotation_date   DateTime
@@ -1936,10 +1936,10 @@ model Quotation {
 }
 
 model QuotationItem {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  quotation_id String    @db.ObjectId
+  id           String    @id @default(uuid())
+  quotation_id String
   quotation    Quotation @relation(fields: [quotation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_id   String    @db.ObjectId
+  product_id   String
   product      Product   @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   qty          Float
   unit_price   Float
@@ -1955,10 +1955,10 @@ model QuotationItem {
 
 model DeliveryOrder {
   idempotency_key  String?
-  id               String     @id @default(auto()) @map("_id") @db.ObjectId
-  company_id       String     @db.ObjectId
+  id               String     @id @default(uuid())
+  company_id       String
   company          Company    @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  sales_order_id   String     @db.ObjectId
+  sales_order_id   String
   sales_order      SalesOrder @relation(fields: [sales_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   delivery_number  String
   delivery_date    DateTime
@@ -1979,10 +1979,10 @@ model DeliveryOrder {
 }
 
 model DeliveryOrderItem {
-  id                String        @id @default(auto()) @map("_id") @db.ObjectId
-  delivery_order_id String        @db.ObjectId
+  id                String        @id @default(uuid())
+  delivery_order_id String
   delivery_order    DeliveryOrder @relation(fields: [delivery_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_id        String        @db.ObjectId
+  product_id        String
   product           Product       @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   ordered_qty       Float
   delivered_qty     Float
@@ -1995,19 +1995,19 @@ model DeliveryOrderItem {
 }
 
 model Invoice {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   type       String  @default("AR") // "AR" (Accounts Receivable) or "AP" (Accounts Payable)
 
-  sales_order_id String?     @db.ObjectId
+  sales_order_id String?
   sales_order    SalesOrder? @relation(fields: [sales_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customer_id    String?     @db.ObjectId
+  customer_id    String?
   customer       Customer?   @relation("InvoiceCustomer", fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  purchase_order_id String?        @db.ObjectId
+  purchase_order_id String?
   purchase_order    PurchaseOrder? @relation(fields: [purchase_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  supplier_id       String?        @db.ObjectId
+  supplier_id       String?
   supplier          Customer?      @relation("InvoiceSupplier", fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   invoice_number String
@@ -2034,10 +2034,10 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  invoice_id  String  @db.ObjectId
+  id          String  @id @default(uuid())
+  invoice_id  String
   invoice     Invoice @relation(fields: [invoice_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_id  String  @db.ObjectId
+  product_id  String
   product     Product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   description String?
   qty         Float
@@ -2048,12 +2048,12 @@ model InvoiceItem {
 }
 
 model Payment {
-  id             String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String    @db.ObjectId
+  id             String    @id @default(uuid())
+  company_id     String
   company        Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customer_id    String?   @db.ObjectId
+  customer_id    String?
   customer       Customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  invoice_id     String?   @db.ObjectId
+  invoice_id     String?
   invoice        Invoice?  @relation(fields: [invoice_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   payment_number String
   payment_date   DateTime
@@ -2062,7 +2062,7 @@ model Payment {
   reference      String?
   notes          String?
 
-  created_by String? @db.ObjectId
+  created_by String?
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -2074,12 +2074,12 @@ model Payment {
 }
 
 model PaymentAllocation {
-  id             String      @id @default(auto()) @map("_id") @db.ObjectId
-  payment_id     String      @db.ObjectId
+  id             String      @id @default(uuid())
+  payment_id     String
   payment        Payment     @relation(fields: [payment_id], references: [id], onDelete: Cascade)
-  sales_order_id String?     @db.ObjectId
+  sales_order_id String?
   sales_order    SalesOrder? @relation(fields: [sales_order_id], references: [id], onDelete: NoAction)
-  invoice_id     String?     @db.ObjectId
+  invoice_id     String?
   invoice        Invoice?    @relation(fields: [invoice_id], references: [id], onDelete: NoAction)
   amount         Float
 
@@ -2087,10 +2087,10 @@ model PaymentAllocation {
 }
 
 model PurchaseOrder {
-  id               String           @id @default(auto()) @map("_id") @db.ObjectId
-  company_id       String           @db.ObjectId
+  id               String           @id @default(uuid())
+  company_id       String
   company          Company          @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  supplier_id      String           @db.ObjectId
+  supplier_id      String
   supplier         Customer         @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   order_number     String
   order_date       DateTime
@@ -2101,7 +2101,7 @@ model PurchaseOrder {
   bill_status      String           @default("PENDING") // PENDING, BILLED
   payment_status   String           @default("UNPAID") // UNPAID, PARTIAL, PAID
 
-  warehouse_id String?    @db.ObjectId
+  warehouse_id String?
   warehouse    Warehouse? @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   total_amount  Float
@@ -2120,10 +2120,10 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id                String               @id @default(auto()) @map("_id") @db.ObjectId
-  purchase_order_id String               @db.ObjectId
+  id                String               @id @default(uuid())
+  purchase_order_id String
   purchase_order    PurchaseOrder        @relation(fields: [purchase_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_id        String               @db.ObjectId
+  product_id        String
   product           Product              @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   qty               Float
   received_qty      Float                @default(0)
@@ -2137,14 +2137,14 @@ model PurchaseOrderItem {
 }
 
 model GoodsReceipt {
-  id                String        @id @default(auto()) @map("_id") @db.ObjectId
-  company_id        String        @db.ObjectId
+  id                String        @id @default(uuid())
+  company_id        String
   company           Company       @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  purchase_order_id String        @db.ObjectId
+  purchase_order_id String
   purchase_order    PurchaseOrder @relation(fields: [purchase_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  supplier_id       String        @db.ObjectId
+  supplier_id       String
   supplier          Customer      @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  warehouse_id      String        @db.ObjectId
+  warehouse_id      String
   warehouse         Warehouse     @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   receipt_number    String
   receipt_date      DateTime
@@ -2160,19 +2160,19 @@ model GoodsReceipt {
 }
 
 model GoodsReceiptItem {
-  id               String       @id @default(auto()) @map("_id") @db.ObjectId
-  goods_receipt_id String       @db.ObjectId
+  id               String       @id @default(uuid())
+  goods_receipt_id String
   goods_receipt    GoodsReceipt @relation(fields: [goods_receipt_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_id       String       @db.ObjectId
+  product_id       String
   product          Product      @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   qty              Float
 }
 
 model LeaveRequest {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String   @db.ObjectId
+  id          String   @id @default(uuid())
+  company_id  String
   company     Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  employee_id String   @db.ObjectId
+  employee_id String
   employee    Employee @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   leave_type String
@@ -2184,62 +2184,62 @@ model LeaveRequest {
   created_at                 DateTime                  @default(now())
   updated_at                 DateTime                  @updatedAt
   CompanySetting             CompanySetting?           @relation(fields: [companySettingId], references: [id])
-  companySettingId           String?                   @db.ObjectId
+  companySettingId           String?
   Permission                 Permission?               @relation(fields: [permissionId], references: [id])
-  permissionId               String?                   @db.ObjectId
+  permissionId               String?
   ProductImage               ProductImage?             @relation(fields: [productImageId], references: [id])
-  productImageId             String?                   @db.ObjectId
+  productImageId             String?
   ProductDocument            ProductDocument?          @relation(fields: [productDocumentId], references: [id])
-  productDocumentId          String?                   @db.ObjectId
+  productDocumentId          String?
   AssetBorrowing             AssetBorrowing?           @relation(fields: [assetBorrowingId], references: [id])
-  assetBorrowingId           String?                   @db.ObjectId
+  assetBorrowingId           String?
   MaintenanceLog             MaintenanceLog?           @relation(fields: [maintenanceLogId], references: [id])
-  maintenanceLogId           String?                   @db.ObjectId
+  maintenanceLogId           String?
   MaintenanceSchedule        MaintenanceSchedule?      @relation(fields: [maintenanceScheduleId], references: [id])
-  maintenanceScheduleId      String?                   @db.ObjectId
+  maintenanceScheduleId      String?
   WorkOrder                  WorkOrder?                @relation(fields: [workOrderId], references: [id])
-  workOrderId                String?                   @db.ObjectId
+  workOrderId                String?
   InventoryTransactionItem   InventoryTransactionItem? @relation(fields: [inventoryTransactionItemId], references: [id])
-  inventoryTransactionItemId String?                   @db.ObjectId
+  inventoryTransactionItemId String?
   PettyCash                  PettyCash?                @relation(fields: [pettyCashId], references: [id])
-  pettyCashId                String?                   @db.ObjectId
+  pettyCashId                String?
   Budget                     Budget?                   @relation(fields: [budgetId], references: [id])
-  budgetId                   String?                   @db.ObjectId
+  budgetId                   String?
   Reconciliation             Reconciliation?           @relation(fields: [reconciliationId], references: [id])
-  reconciliationId           String?                   @db.ObjectId
+  reconciliationId           String?
   DashboardWidget            DashboardWidget?          @relation(fields: [dashboardWidgetId], references: [id])
-  dashboardWidgetId          String?                   @db.ObjectId
+  dashboardWidgetId          String?
   ReportSchedule             ReportSchedule?           @relation(fields: [reportScheduleId], references: [id])
-  reportScheduleId           String?                   @db.ObjectId
+  reportScheduleId           String?
   WorkflowMaster             WorkflowMaster?           @relation(fields: [workflowMasterId], references: [id])
-  workflowMasterId           String?                   @db.ObjectId
+  workflowMasterId           String?
   ApprovalRequest            ApprovalRequest?          @relation(fields: [approvalRequestId], references: [id])
-  approvalRequestId          String?                   @db.ObjectId
+  approvalRequestId          String?
   UserTask                   UserTask?                 @relation(fields: [userTaskId], references: [id])
-  userTaskId                 String?                   @db.ObjectId
+  userTaskId                 String?
   Tenant                     Tenant?                   @relation(fields: [tenantId], references: [id])
-  tenantId                   String?                   @db.ObjectId
+  tenantId                   String?
   SubscriptionPlan           SubscriptionPlan?         @relation(fields: [subscriptionPlanId], references: [id])
-  subscriptionPlanId         String?                   @db.ObjectId
+  subscriptionPlanId         String?
   TenantSubscription         TenantSubscription?       @relation(fields: [tenantSubscriptionId], references: [id])
-  tenantSubscriptionId       String?                   @db.ObjectId
+  tenantSubscriptionId       String?
   SalesOrderItem             SalesOrderItem?           @relation(fields: [salesOrderItemId], references: [id])
-  salesOrderItemId           String?                   @db.ObjectId
+  salesOrderItemId           String?
   PosShift                   PosShift?                 @relation(fields: [posShiftId], references: [id])
-  posShiftId                 String?                   @db.ObjectId
+  posShiftId                 String?
   Attendance                 Attendance?               @relation(fields: [attendanceId], references: [id])
-  attendanceId               String?                   @db.ObjectId
+  attendanceId               String?
   Payroll                    Payroll?                  @relation(fields: [payrollId], references: [id])
-  payrollId                  String?                   @db.ObjectId
+  payrollId                  String?
   QuotationItem              QuotationItem?            @relation(fields: [quotationItemId], references: [id])
-  quotationItemId            String?                   @db.ObjectId
+  quotationItemId            String?
   DeliveryOrderItem          DeliveryOrderItem?        @relation(fields: [deliveryOrderItemId], references: [id])
-  deliveryOrderItemId        String?                   @db.ObjectId
+  deliveryOrderItemId        String?
 }
 
 model Lead {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   lead_code      String
@@ -2261,14 +2261,14 @@ model Lead {
 }
 
 model Opportunity {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   title       String
-  customer_id String?   @db.ObjectId
+  customer_id String?
   customer    Customer? @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  lead_id     String?   @db.ObjectId
+  lead_id     String?
   lead        Lead?     @relation(fields: [lead_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   expected_value      Float     @default(0)
@@ -2285,16 +2285,16 @@ model Opportunity {
 }
 
 model CrmActivity {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   assigned_user  String?
-  lead_id        String?      @db.ObjectId
+  lead_id        String?
   lead           Lead?        @relation(fields: [lead_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  opportunity_id String?      @db.ObjectId
+  opportunity_id String?
   opportunity    Opportunity? @relation(fields: [opportunity_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customer_id    String?      @db.ObjectId
+  customer_id    String?
   customer       Customer?    @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   type         String // CALL, EMAIL, MEETING, FOLLOW_UP, NOTE, TASK
@@ -2309,8 +2309,8 @@ model CrmActivity {
 }
 
 model DocumentSequence {
-  id         String @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String @db.ObjectId
+  id         String @id @default(uuid())
+  company_id String
   type       String // 'INVOICE', 'QUOTATION', 'SALES_ORDER', 'PURCHASE_ORDER', 'VENDOR_BILL', 'PAYMENT'
   prefix     String // 'INV/2026/'
   last_value Int    @default(0)
@@ -2319,8 +2319,8 @@ model DocumentSequence {
 }
 
 model EcommerceCart {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   session_id String
 
@@ -2333,10 +2333,10 @@ model EcommerceCart {
 }
 
 model EcommerceCartItem {
-  id         String        @id @default(auto()) @map("_id") @db.ObjectId
-  cart_id    String        @db.ObjectId
+  id         String        @id @default(uuid())
+  cart_id    String
   cart       EcommerceCart @relation(fields: [cart_id], references: [id], onDelete: Cascade)
-  product_id String        @db.ObjectId
+  product_id String
   product    Product       @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   quantity   Int
 
@@ -2345,26 +2345,26 @@ model EcommerceCartItem {
 }
 
 model Integration {
-  id         String @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String @db.ObjectId
+  id         String @id @default(uuid())
+  company_id String
   provider   String
   status     String
   config     Json?
 }
 
 model ExternalReference {
-  id          String @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String @db.ObjectId
+  id          String @id @default(uuid())
+  company_id  String
   provider    String
   entity_type String
-  entity_id   String @db.ObjectId
+  entity_id   String
   external_id String
 }
 
 model IntegrationWebhookEvent {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String   @db.ObjectId
-  integration_id String   @db.ObjectId
+  id             String   @id @default(uuid())
+  company_id     String
+  integration_id String
   provider       String
   reference      String
   status         String
@@ -2375,9 +2375,9 @@ model IntegrationWebhookEvent {
 }
 
 model IntegrationIdempotency {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id      String   @db.ObjectId
-  integration_id  String   @db.ObjectId
+  id              String   @id @default(uuid())
+  company_id      String
+  integration_id  String
   idempotency_key String
   operation       String
   status          String
@@ -2388,14 +2388,14 @@ model IntegrationIdempotency {
 }
 
 model InventoryCostLayer {
-  id                 String                 @id @default(auto()) @map("_id") @db.ObjectId
-  company_id         String                 @db.ObjectId
-  product_id         String                 @db.ObjectId
-  warehouse_id       String                 @db.ObjectId
+  id                 String                 @id @default(uuid())
+  company_id         String
+  product_id         String
+  warehouse_id       String
   quantity           Float
   unit_cost          Float
   remaining_quantity Float
-  source_movement_id String                 @db.ObjectId
+  source_movement_id String
   lot_id             String?
   created_at         DateTime               @default(now())
   updated_at         DateTime               @updatedAt
@@ -2407,10 +2407,10 @@ model InventoryCostLayer {
 }
 
 model CostLayerConsumption {
-  id                String             @id @default(auto()) @map("_id") @db.ObjectId
-  company_id        String             @db.ObjectId
-  layer_id          String             @db.ObjectId
-  stock_movement_id String             @db.ObjectId
+  id                String             @id @default(uuid())
+  company_id        String
+  layer_id          String
+  stock_movement_id String
   quantity          Float
   unit_cost         Float
   total_cost        Float
@@ -2421,23 +2421,23 @@ model CostLayerConsumption {
 }
 
 model CheckoutIdempotency {
-  id                   String @id @default(auto()) @map("_id") @db.ObjectId
-  company_id           String @db.ObjectId
+  id                   String @id @default(uuid())
+  company_id           String
   ecommerce_session_id String
-  sales_order_id       String @db.ObjectId
+  sales_order_id       String
 
   @@unique([company_id, ecommerce_session_id])
 }
 
 model Bom {
-  id                   String               @id @default(auto()) @map("_id") @db.ObjectId
-  company_id           String               @db.ObjectId
-  product_id           String               @db.ObjectId
+  id                   String               @id @default(uuid())
+  company_id           String
+  product_id           String
   product              Product              @relation(fields: [product_id], references: [id])
   code                 String
   name                 String
   quantity             Float
-  unit_id              String               @db.ObjectId
+  unit_id              String
   status               String
   items                BomItem[]
   manufacturing_orders ManufacturingOrder[]
@@ -2447,30 +2447,30 @@ model Bom {
 }
 
 model BomItem {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  bom_id     String  @db.ObjectId
+  id         String  @id @default(uuid())
+  bom_id     String
   bom        Bom     @relation(fields: [bom_id], references: [id])
-  product_id String  @db.ObjectId
+  product_id String
   product    Product @relation(fields: [product_id], references: [id])
   quantity   Float
-  unit_id    String  @db.ObjectId
+  unit_id    String
 }
 
 model ManufacturingOrder {
-  id                    String                   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id            String                   @db.ObjectId
+  id                    String                   @id @default(uuid())
+  company_id            String
   order_number          String
-  product_id            String                   @db.ObjectId
+  product_id            String
   product               Product                  @relation(fields: [product_id], references: [id])
-  bom_id                String                   @db.ObjectId
+  bom_id                String
   bom                   Bom                      @relation(fields: [bom_id], references: [id])
-  warehouse_id          String                   @db.ObjectId
+  warehouse_id          String
   warehouse             Warehouse                @relation(fields: [warehouse_id], references: [id])
   planned_quantity      Float
   produced_quantity     Float                    @default(0)
   actual_start_date     DateTime?
   actual_end_date       DateTime?
-  unit_id               String                   @db.ObjectId
+  unit_id               String
   status                String
   reservation_status    String?
   items                 ManufacturingOrderItem[]
@@ -2482,20 +2482,20 @@ model ManufacturingOrder {
 }
 
 model ManufacturingOrderItem {
-  id                     String             @id @default(auto()) @map("_id") @db.ObjectId
-  manufacturing_order_id String             @db.ObjectId
+  id                     String             @id @default(uuid())
+  manufacturing_order_id String
   manufacturing_order    ManufacturingOrder @relation(fields: [manufacturing_order_id], references: [id])
-  product_id             String             @db.ObjectId
+  product_id             String
   product                Product            @relation(fields: [product_id], references: [id])
   required_quantity      Float
   consumed_quantity      Float              @default(0)
-  unit_id                String             @db.ObjectId
+  unit_id                String
 }
 
 model WorkCenter {
   sawmillProductionRuns  SawmillProductionRun[]
-  id                     String                   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id             String                   @db.ObjectId
+  id                     String                   @id @default(uuid())
+  company_id             String
   code                   String
   name                   String
   capacity_per_hour      Float?
@@ -2510,27 +2510,27 @@ model WorkCenter {
 }
 
 model ManufacturingWorkOrder {
-  id                          String             @id @default(auto()) @map("_id") @db.ObjectId
-  company_id                  String             @db.ObjectId
-  manufacturing_order_id      String             @db.ObjectId
+  id                          String             @id @default(uuid())
+  company_id                  String
+  manufacturing_order_id      String
   manufacturing_order         ManufacturingOrder @relation(fields: [manufacturing_order_id], references: [id])
-  work_center_id              String             @db.ObjectId
+  work_center_id              String
   work_center                 WorkCenter         @relation(fields: [work_center_id], references: [id])
   operation_name              String
   planned_start               DateTime?
   planned_end                 DateTime?
   status                      String
   released_at                 DateTime?
-  manufacturing_order_item_id String?            @db.ObjectId
+  manufacturing_order_item_id String?
   created_at                  DateTime           @default(now())
   updated_at                  DateTime           @updatedAt
   quality_checks              QualityCheck[]
 }
 
 model QualityControlPoint {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String   @db.ObjectId
-  product_id     String   @db.ObjectId
+  id             String   @id @default(uuid())
+  company_id     String
+  product_id     String
   product        Product  @relation(fields: [product_id], references: [id])
   operation_name String
   check_type     String
@@ -2540,54 +2540,54 @@ model QualityControlPoint {
 }
 
 model QualityCheck {
-  id                     String               @id @default(auto()) @map("_id") @db.ObjectId
-  company_id             String               @db.ObjectId
-  manufacturing_order_id String?              @db.ObjectId
+  id                     String               @id @default(uuid())
+  company_id             String
+  manufacturing_order_id String?
   manufacturing_order    ManufacturingOrder?  @relation(fields: [manufacturing_order_id], references: [id])
-  control_point_id       String?              @db.ObjectId
+  control_point_id       String?
   status                 String
-  inspector_id           String?              @db.ObjectId
+  inspector_id           String?
   notes                  String?
   created_at             DateTime             @default(now())
   updated_at             DateTime             @updatedAt
   dispositions           QualityDisposition[]
 
-  product_id    String?                 @db.ObjectId
+  product_id    String?
   product       Product?                @relation(fields: [product_id], references: [id])
-  work_order_id String?                 @db.ObjectId
+  work_order_id String?
   work_order    ManufacturingWorkOrder? @relation(fields: [work_order_id], references: [id])
 }
 
 model MaterialReservation {
-  id                          String             @id @default(auto()) @map("_id") @db.ObjectId
-  company_id                  String             @db.ObjectId
-  manufacturing_order_id      String             @db.ObjectId
+  id                          String             @id @default(uuid())
+  company_id                  String
+  manufacturing_order_id      String
   manufacturing_order         ManufacturingOrder @relation(fields: [manufacturing_order_id], references: [id])
-  product_id                  String             @db.ObjectId
+  product_id                  String
   product                     Product            @relation(fields: [product_id], references: [id])
-  warehouse_id                String             @db.ObjectId
+  warehouse_id                String
   warehouse                   Warehouse          @relation(fields: [warehouse_id], references: [id])
   reserved_quantity           Float
   consumed_quantity           Float              @default(0)
   status                      String
   released_at                 DateTime?
-  manufacturing_order_item_id String?            @db.ObjectId
+  manufacturing_order_item_id String?
   created_at                  DateTime           @default(now())
   updated_at                  DateTime           @updatedAt
 }
 
 model BomRouting {
-  id         String         @id @default(auto()) @map("_id") @db.ObjectId
-  bom_id     String         @unique @db.ObjectId
+  id         String         @id @default(uuid())
+  bom_id     String         @unique
   bom        Bom            @relation(fields: [bom_id], references: [id])
   operations BomOperation[]
 }
 
 model BomOperation {
-  id               String     @id @default(auto()) @map("_id") @db.ObjectId
-  routing_id       String     @db.ObjectId
+  id               String     @id @default(uuid())
+  routing_id       String
   routing          BomRouting @relation(fields: [routing_id], references: [id])
-  work_center_id   String?    @db.ObjectId
+  work_center_id   String?
   sequence         Int
   operation_name   String
   setup_minutes    Float      @default(0)
@@ -2595,24 +2595,24 @@ model BomOperation {
 }
 
 model QualityDisposition {
-  id               String       @id @default(auto()) @map("_id") @db.ObjectId
-  company_id       String       @db.ObjectId
-  quality_check_id String       @db.ObjectId
+  id               String       @id @default(uuid())
+  company_id       String
+  quality_check_id String
   quality_check    QualityCheck @relation(fields: [quality_check_id], references: [id])
   type             String
   quantity         Float
   reason           String?
   defect_code      String?
   severity         String?
-  user_id          String?      @db.ObjectId
+  user_id          String?
   created_at       DateTime     @default(now())
   updated_at       DateTime     @updatedAt
 }
 
 model ExpenseClaim {
-  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id          String    @db.ObjectId
-  employee_id         String    @db.ObjectId
+  id                  String    @id @default(uuid())
+  company_id          String
+  employee_id         String
   claim_number        String
   claim_date          DateTime
   title               String
@@ -2632,14 +2632,14 @@ model ExpenseClaim {
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   Employee   Employee? @relation(fields: [employeeId], references: [id])
-  employeeId String?   @db.ObjectId
+  employeeId String?
 }
 
 model ExpenseItem {
-  id               String          @id @default(auto()) @map("_id") @db.ObjectId
-  expense_claim_id String          @db.ObjectId
+  id               String          @id @default(uuid())
+  expense_claim_id String
   expense_claim    ExpenseClaim    @relation(fields: [expense_claim_id], references: [id], onDelete: Cascade)
-  category_id      String          @db.ObjectId
+  category_id      String
   category         FinanceCategory @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   description      String?
   amount           Float
@@ -2648,14 +2648,14 @@ model ExpenseItem {
 }
 
 model PurchaseRequest {
-  id             String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String    @db.ObjectId
+  id             String    @id @default(uuid())
+  company_id     String
   request_number String
   required_date  DateTime?
   source         String
   status         String
   reason         String?
-  warehouse_id   String?   @db.ObjectId
+  warehouse_id   String?
 
   items PurchaseRequestItem[]
 
@@ -2664,10 +2664,10 @@ model PurchaseRequest {
 }
 
 model PurchaseRequestItem {
-  id                  String          @id @default(auto()) @map("_id") @db.ObjectId
-  purchase_request_id String          @db.ObjectId
+  id                  String          @id @default(uuid())
+  purchase_request_id String
   purchase_request    PurchaseRequest @relation(fields: [purchase_request_id], references: [id], onDelete: Cascade)
-  product_id          String          @db.ObjectId
+  product_id          String
   product             Product         @relation(fields: [product_id], references: [id])
   qty                 Float
   unit                String?
@@ -2675,11 +2675,11 @@ model PurchaseRequestItem {
 }
 
 model SupplierProduct {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id        String   @db.ObjectId
-  supplier_id       String   @db.ObjectId
+  id                String   @id @default(uuid())
+  company_id        String
+  supplier_id       String
   supplier          Customer @relation(fields: [supplier_id], references: [id], onDelete: Cascade)
-  product_id        String   @db.ObjectId
+  product_id        String
   unit_price        Float
   minimum_order_qty Float    @default(1)
   lead_time_days    Int      @default(0)
@@ -2691,9 +2691,9 @@ model SupplierProduct {
 }
 
 model AssetDepreciation {
-  id                       String      @id @default(auto()) @map("_id") @db.ObjectId
-  company_id               String      @db.ObjectId
-  asset_id                 String      @db.ObjectId
+  id                       String      @id @default(uuid())
+  company_id               String
+  asset_id                 String
   asset                    AssetMaster @relation(fields: [asset_id], references: [id], onDelete: Cascade)
   period                   String
   depreciation_date        DateTime
@@ -2713,17 +2713,17 @@ model AssetDepreciation {
 // TIMBER INVENTORY: RAW LOG
 // --------------------------------------------------
 model RawLog {
-  partaiId          String?        @db.ObjectId
+  partaiId          String?
   partai            TimberPartai?  @relation(fields: [partaiId], references: [id])
-  purchaseLogItemId String?        @db.ObjectId
-  id                String         @id @default(auto()) @map("_id") @db.ObjectId
+  purchaseLogItemId String?
+  id                String         @id @default(uuid())
   logNumber         String // No Log
   sequence          Int? // Urut
   code              String? // Kode
   species           String // Jenis Kayu
-  speciesId         String?        @db.ObjectId
+  speciesId         String?
   timberSpecies     TimberSpecies? @relation(fields: [speciesId], references: [id])
-  sourceId          String?        @db.ObjectId
+  sourceId          String?
   timberSource      TimberSource?  @relation(fields: [sourceId], references: [id])
   quantity          Int            @default(1)
   originalLength    Float // Pjng (meters)
@@ -2748,7 +2748,7 @@ model RawLog {
   supplierRef   String?
   receivingDate DateTime @default(now())
 
-  locationId String?    @db.ObjectId
+  locationId String?
   location   Warehouse? @relation(fields: [locationId], references: [id])
   status     String     @default("AVAILABLE") // AVAILABLE, RESERVED, IN_TRIMMING, TRIMMED, CONSUMED, CANCELLED
 
@@ -2757,7 +2757,7 @@ model RawLog {
   updatedAt DateTime @updatedAt
 
   trimmedLogs   TrimmedLog[]
-  inputLogId    String?        @db.ObjectId
+  inputLogId    String?
   inputLog      InputLog?      @relation(fields: [inputLogId], references: [id])
   inputLogItems InputLogItem[]
 }
@@ -2766,17 +2766,17 @@ model RawLog {
 // TIMBER INVENTORY: TRIMMED LOG
 // --------------------------------------------------
 model TrimmedLog {
-  partaiId   String?       @db.ObjectId
+  partaiId   String?
   partai     TimberPartai? @relation(fields: [partaiId], references: [id])
-  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  id         String        @id @default(uuid())
   trimNumber String // e.g. 199A
-  rawLogId   String        @db.ObjectId
+  rawLogId   String
   rawLog     RawLog        @relation(fields: [rawLogId], references: [id])
 
   species         String
-  speciesId       String?        @db.ObjectId
+  speciesId       String?
   timberSpecies   TimberSpecies? @relation(fields: [speciesId], references: [id])
-  sourceId        String?        @db.ObjectId
+  sourceId        String?
   timberSource    TimberSource?  @relation(fields: [sourceId], references: [id])
   length          Float
   diameter1       Float
@@ -2794,11 +2794,11 @@ model TrimmedLog {
   netVolume      Float
 
   barcode    String?    @unique
-  locationId String?    @db.ObjectId
+  locationId String?
   location   Warehouse? @relation(fields: [locationId], references: [id])
   status     String     @default("AVAILABLE") // AVAILABLE, RESERVED, ASSIGNED_TO_INPUT, IN_PROCESS, CONSUMED, CANCELLED
 
-  inputLogId    String?        @db.ObjectId
+  inputLogId    String?
   inputLog      InputLog?      @relation(fields: [inputLogId], references: [id])
   inputLogItems InputLogItem[]
 
@@ -2812,10 +2812,10 @@ model TrimmedLog {
 // TIMBER INVENTORY: INPUT LOG / WIP
 // --------------------------------------------------
 model InputLog {
-  partaiId            String?                        @db.ObjectId
+  partaiId            String?
   partai              TimberPartai?                  @relation(fields: [partaiId], references: [id])
   sawmillConsumptions SawmillProductionConsumption[]
-  id                  String                         @id @default(auto()) @map("_id") @db.ObjectId
+  id                  String                         @id @default(uuid())
   inputNumber         String                         @unique
   date                DateTime                       @default(now())
   shift               String?
@@ -2824,9 +2824,9 @@ model InputLog {
   bundleRef           String?
   batch               String?
   species             String
-  speciesId           String?                        @db.ObjectId
+  speciesId           String?
   timberSpecies       TimberSpecies?                 @relation(fields: [speciesId], references: [id])
-  sourceId            String?                        @db.ObjectId
+  sourceId            String?
   timberSource        TimberSource?                  @relation(fields: [sourceId], references: [id])
   totalQty            Int
   totalLength         Float?
@@ -2835,7 +2835,7 @@ model InputLog {
   totalTrimming       Float?
   totalVolume         Float
 
-  locationId String?    @db.ObjectId
+  locationId String?
   location   Warehouse? @relation(fields: [locationId], references: [id])
   status     String     @default("AVAILABLE")
   notes      String?
@@ -2853,19 +2853,19 @@ model InputLog {
 // --------------------------------------------------
 model TimberVariant {
   sawmillOutputItems SawmillOutputItem[]
-  id                 String                   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id         String                   @db.ObjectId
+  id                 String                   @id @default(uuid())
+  company_id         String
   company            Company                  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  productId          String                   @db.ObjectId
+  productId          String
   product            Product                  @relation(fields: [productId], references: [id])
   grade              String
   thickness          Int // mm
   width              Int // mm
   length             Int // mm
   species            String
-  speciesId          String?                  @db.ObjectId
+  speciesId          String?
   timberSpecies      TimberSpecies?           @relation(fields: [speciesId], references: [id])
-  gradeId            String?                  @db.ObjectId
+  gradeId            String?
   timberGrade        TimberGrade?             @relation(fields: [gradeId], references: [id])
   sku                String                   @unique
   barcode            String?                  @unique
@@ -2892,12 +2892,12 @@ model TimberVariant {
 }
 
 model InputLogItem {
-  id           String      @id @default(auto()) @map("_id") @db.ObjectId
-  inputLogId   String      @db.ObjectId
+  id           String      @id @default(uuid())
+  inputLogId   String
   inputLog     InputLog    @relation(fields: [inputLogId], references: [id])
-  trimmedLogId String?     @db.ObjectId
+  trimmedLogId String?
   trimmedLog   TrimmedLog? @relation(fields: [trimmedLogId], references: [id])
-  rawLogId     String?     @db.ObjectId
+  rawLogId     String?
   rawLog       RawLog?     @relation(fields: [rawLogId], references: [id])
   quantity     Int         @default(1)
   volume       Float
@@ -2909,17 +2909,17 @@ model InputLogItem {
 // ==================================================
 
 model SawnTimberOutput {
-  partaiId       String?       @db.ObjectId
+  partaiId       String?
   partai         TimberPartai? @relation(fields: [partaiId], references: [id])
-  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  id             String        @id @default(uuid())
   bundleNumber   String
   outputDate     DateTime      @default(now())
   shift          String?
   operatorName   String?
   machine        String?
-  locationId     String        @db.ObjectId
+  locationId     String
   location       Warehouse     @relation(fields: [locationId], references: [id])
-  inputLogId     String        @db.ObjectId
+  inputLogId     String
   inputLog       InputLog      @relation(fields: [inputLogId], references: [id])
   batch          String? // Partai
   notes          String?
@@ -2933,11 +2933,11 @@ model SawnTimberOutput {
 }
 
 model SawnTimberOutputItem {
-  id       String           @id @default(auto()) @map("_id") @db.ObjectId
-  outputId String           @db.ObjectId
+  id       String           @id @default(uuid())
+  outputId String
   output   SawnTimberOutput @relation(fields: [outputId], references: [id], onDelete: Cascade)
 
-  timberVariantId String        @db.ObjectId
+  timberVariantId String
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
 
   grade       String?
@@ -2951,14 +2951,14 @@ model SawnTimberOutputItem {
 }
 
 model TimberStockReservation {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  locationId String    @db.ObjectId
+  locationId String
   location   Warehouse @relation(fields: [locationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  timberVariantId String        @db.ObjectId
+  timberVariantId String
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   reservedPcs Int   @default(0)
@@ -2971,12 +2971,12 @@ model TimberStockReservation {
 }
 
 model TimberStock {
-  id              String        @id @default(auto()) @map("_id") @db.ObjectId
-  locationId      String        @db.ObjectId
+  id              String        @id @default(uuid())
+  locationId      String
   location        Warehouse     @relation(fields: [locationId], references: [id])
-  subLocationId   String?       @db.ObjectId
+  subLocationId   String?
   subLocation     Location?     @relation(fields: [subLocationId], references: [id])
-  timberVariantId String        @db.ObjectId
+  timberVariantId String
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
 
   openingPcs      Int   @default(0)
@@ -2997,8 +2997,8 @@ model TimberStock {
 }
 
 model TimberStockMovement {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  timberStockId String      @db.ObjectId
+  id            String      @id @default(uuid())
+  timberStockId String
   timberStock   TimberStock @relation(fields: [timberStockId], references: [id])
 
   type          String // IN, OUT, ADJ
@@ -3022,12 +3022,12 @@ model TimberStockMovement {
 // ==================================================
 
 model StockTransfer {
-  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  id             String    @id @default(uuid())
   transferNumber String    @unique
   transferDate   DateTime  @default(now())
-  fromLocationId String    @db.ObjectId
+  fromLocationId String
   fromLocation   Warehouse @relation("TransferFromLocation", fields: [fromLocationId], references: [id])
-  toLocationId   String    @db.ObjectId
+  toLocationId   String
   toLocation     Warehouse @relation("TransferToLocation", fields: [toLocationId], references: [id])
   status         String    @default("DRAFT") // DRAFT, POSTED, CANCELLED
   notes          String?
@@ -3040,11 +3040,11 @@ model StockTransfer {
 }
 
 model StockTransferItem {
-  id         String        @id @default(auto()) @map("_id") @db.ObjectId
-  transferId String        @db.ObjectId
+  id         String        @id @default(uuid())
+  transferId String
   transfer   StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
 
-  timberVariantId String        @db.ObjectId
+  timberVariantId String
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
 
   batch String @default("UNKNOWN")
@@ -3055,10 +3055,10 @@ model StockTransferItem {
 }
 
 model StockAdjustment {
-  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  id               String    @id @default(uuid())
   adjustmentNumber String    @unique
   adjustmentDate   DateTime  @default(now())
-  locationId       String    @db.ObjectId
+  locationId       String
   location         Warehouse @relation(fields: [locationId], references: [id])
   status           String    @default("DRAFT") // DRAFT, POSTED, CANCELLED
   reason           String?
@@ -3072,11 +3072,11 @@ model StockAdjustment {
 }
 
 model StockAdjustmentItem {
-  id           String          @id @default(auto()) @map("_id") @db.ObjectId
-  adjustmentId String          @db.ObjectId
+  id           String          @id @default(uuid())
+  adjustmentId String
   adjustment   StockAdjustment @relation(fields: [adjustmentId], references: [id], onDelete: Cascade)
 
-  timberVariantId String        @db.ObjectId
+  timberVariantId String
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
 
   batch String @default("UNKNOWN")
@@ -3093,7 +3093,7 @@ model StockAdjustmentItem {
 // ==================================================
 
 model ImportSession {
-  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  id            String  @id @default(uuid())
   fileName      String
   fileType      String?
   importType    String // RAW_LOG, TRIMMING_LOG, INPUT_LOG, SAWN_TIMBER_OUTPUT, STOCK_OPENING_BALANCE
@@ -3121,9 +3121,9 @@ model ImportSession {
 // Timber Sales operates on TimberVariant-dimensional items.
 
 model TimberSalesOrder {
-  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  id              String    @id @default(uuid())
   orderNumber     String    @unique
-  customerId      String    @db.ObjectId
+  customerId      String
   customer        Customer  @relation(fields: [customerId], references: [id])
   orderDate       DateTime
   targetDate      DateTime?
@@ -3141,19 +3141,19 @@ model TimberSalesOrder {
 }
 
 model TimberSalesOrderItem {
-  id           String           @id @default(auto()) @map("_id") @db.ObjectId
-  salesOrderId String           @db.ObjectId
+  id           String           @id @default(uuid())
+  salesOrderId String
   salesOrder   TimberSalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
 
   // Dimensional identity - references TimberVariant
-  timberVariantId String?        @db.ObjectId
+  timberVariantId String?
   timberVariant   TimberVariant? @relation(fields: [timberVariantId], references: [id])
 
   // Explicitly stored for historical accuracy even if variant changes
   thicknessMm           Int
   widthMm               Int
   lengthMm              Int
-  fulfillmentLocationId String?    @db.ObjectId
+  fulfillmentLocationId String?
   fulfillmentLocation   Warehouse? @relation(fields: [fulfillmentLocationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   grade                 String?
   species               String?
@@ -3173,9 +3173,9 @@ model TimberSalesOrderItem {
 }
 
 model TimberDeliveryNote {
-  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  id             String           @id @default(uuid())
   deliveryNumber String           @unique
-  salesOrderId   String           @db.ObjectId
+  salesOrderId   String
   salesOrder     TimberSalesOrder @relation(fields: [salesOrderId], references: [id])
   deliveryDate   DateTime
   driverName     String?
@@ -3190,33 +3190,33 @@ model TimberDeliveryNote {
 }
 
 model TimberDeliveryNoteItem {
-  id             String             @id @default(auto()) @map("_id") @db.ObjectId
-  deliveryNoteId String             @db.ObjectId
+  id             String             @id @default(uuid())
+  deliveryNoteId String
   deliveryNote   TimberDeliveryNote @relation(fields: [deliveryNoteId], references: [id], onDelete: Cascade)
 
-  salesOrderItemId String               @db.ObjectId
+  salesOrderItemId String
   salesOrderItem   TimberSalesOrderItem @relation(fields: [salesOrderItemId], references: [id])
 
   // Source stock identity
-  locationId      String        @db.ObjectId
+  locationId      String
   location        Warehouse     @relation(fields: [locationId], references: [id])
-  timberVariantId String        @db.ObjectId
+  timberVariantId String
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
 
   deliveredQty Int
   deliveredM3  Float
 
   // Linked stock movement (created by InventoryLedgerService on Post)
-  stockMovementId String? @unique @db.ObjectId
+  stockMovementId String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model SawmillBundle {
-  id             String              @id @default(auto()) @map("_id") @db.ObjectId
+  id             String              @id @default(uuid())
   bundleNumber   String              @unique
-  parentBundleId String?             @db.ObjectId
+  parentBundleId String?
   parentBundle   SawmillBundle?      @relation("RepackedFrom", fields: [parentBundleId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   childBundles   SawmillBundle[]     @relation("RepackedFrom")
   status         String              @default("ACTIVE") // ACTIVE, REPACKED, SHIPPED
@@ -3226,13 +3226,13 @@ model SawmillBundle {
 }
 
 model SawmillProductionRun {
-  id             String                         @id @default(auto()) @map("_id") @db.ObjectId
+  id             String                         @id @default(uuid())
   productionNo   String                         @unique
   productionDate DateTime
   shift          String
-  operatorId     String                         @db.ObjectId
+  operatorId     String
   operator       Employee                       @relation(fields: [operatorId], references: [id])
-  workCenterId   String                         @db.ObjectId
+  workCenterId   String
   workCenter     WorkCenter                     @relation(fields: [workCenterId], references: [id])
   status         String                         @default("DRAFT") // DRAFT, POSTED, CANCELLED
   notes          String?
@@ -3243,10 +3243,10 @@ model SawmillProductionRun {
 }
 
 model SawmillProductionConsumption {
-  id              String               @id @default(auto()) @map("_id") @db.ObjectId
-  inputLogId      String               @db.ObjectId
+  id              String               @id @default(uuid())
+  inputLogId      String
   inputLog        InputLog             @relation(fields: [inputLogId], references: [id])
-  productionRunId String               @db.ObjectId
+  productionRunId String
   productionRun   SawmillProductionRun @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
   consumedM3      Float
   createdAt       DateTime             @default(now())
@@ -3254,12 +3254,12 @@ model SawmillProductionConsumption {
 }
 
 model SawmillOutputItem {
-  id                 String               @id @default(auto()) @map("_id") @db.ObjectId
-  productionRunId    String               @db.ObjectId
+  id                 String               @id @default(uuid())
+  productionRunId    String
   productionRun      SawmillProductionRun @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
-  bundleId           String               @db.ObjectId
+  bundleId           String
   bundle             SawmillBundle        @relation(fields: [bundleId], references: [id])
-  timberVariantId    String               @db.ObjectId
+  timberVariantId    String
   timberVariant      TimberVariant        @relation(fields: [timberVariantId], references: [id])
   partai             String
   quantityPcs        Int
@@ -3274,8 +3274,8 @@ model SawmillOutputItem {
 // =======================
 
 model TimberSpecies {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String   @db.ObjectId
+  id          String   @id @default(uuid())
+  company_id  String
   company     Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   code        String
   name        String
@@ -3292,8 +3292,8 @@ model TimberSpecies {
 }
 
 model TimberGrade {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String   @db.ObjectId
+  id          String   @id @default(uuid())
+  company_id  String
   company     Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   code        String
   name        String
@@ -3307,8 +3307,8 @@ model TimberGrade {
 }
 
 model TimberSource {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String   @db.ObjectId
+  id          String   @id @default(uuid())
+  company_id  String
   company     Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   code        String
   name        String
@@ -3325,8 +3325,8 @@ model TimberSource {
 }
 
 model Location {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  warehouseId String    @db.ObjectId
+  id          String    @id @default(uuid())
+  warehouseId String
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   code        String
   name        String
@@ -3339,8 +3339,8 @@ model Location {
 }
 
 model Vehicle {
-  id              String           @id @default(auto()) @map("_id") @db.ObjectId
-  company_id      String           @db.ObjectId
+  id              String           @id @default(uuid())
+  company_id      String
   company         Company          @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   code            String
   plateNumber     String
@@ -3354,8 +3354,8 @@ model Vehicle {
 }
 
 model Driver {
-  id              String           @id @default(auto()) @map("_id") @db.ObjectId
-  company_id      String           @db.ObjectId
+  id              String           @id @default(uuid())
+  company_id      String
   company         Company          @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   code            String?
   name            String
@@ -3373,8 +3373,8 @@ model Driver {
 // ==================================================
 
 model ProductionProcess {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String   @db.ObjectId
+  id          String   @id @default(uuid())
+  company_id  String
   company     Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   processNo   String   @unique
   processType String // GESEK, PLAT, MASAK, etc.
@@ -3383,7 +3383,7 @@ model ProductionProcess {
   notes       String?
   createdBy   String?
 
-  partaiId String?       @db.ObjectId
+  partaiId String?
   partai   TimberPartai? @relation(fields: [partaiId], references: [id])
 
   inputVolumeM3   Float @default(0)
@@ -3399,13 +3399,13 @@ model ProductionProcess {
 }
 
 model ProductionProcessInput {
-  id                  String            @id @default(auto()) @map("_id") @db.ObjectId
-  productionProcessId String            @db.ObjectId
+  id                  String            @id @default(uuid())
+  productionProcessId String
   productionProcess   ProductionProcess @relation(fields: [productionProcessId], references: [id], onDelete: Cascade)
 
-  timberStockId String        @db.ObjectId
+  timberStockId String
   timberStock   TimberStock   @relation(fields: [timberStockId], references: [id])
-  variantId     String        @db.ObjectId
+  variantId     String
   variant       TimberVariant @relation(fields: [variantId], references: [id])
 
   quantityPCS Int
@@ -3413,18 +3413,18 @@ model ProductionProcessInput {
 }
 
 model ProductionProcessOutput {
-  id                  String            @id @default(auto()) @map("_id") @db.ObjectId
-  productionProcessId String            @db.ObjectId
+  id                  String            @id @default(uuid())
+  productionProcessId String
   productionProcess   ProductionProcess @relation(fields: [productionProcessId], references: [id], onDelete: Cascade)
 
-  variantId String?        @db.ObjectId
+  variantId String?
   variant   TimberVariant? @relation(fields: [variantId], references: [id]) // Optional because WASTE might not have a variant
 
   outputType  String // PRODUCT, WASTE, BYPRODUCT
   quantityPCS Int    @default(0)
   volumeM3    Float
 
-  warehouseId String?    @db.ObjectId
+  warehouseId String?
   warehouse   Warehouse? @relation(fields: [warehouseId], references: [id]) // Target warehouse for this output
 }
 
@@ -3433,18 +3433,18 @@ model ProductionProcessOutput {
 // ==================================================
 
 model TimberPurchase {
-  partaiId       String?       @db.ObjectId
+  partaiId       String?
   partai         TimberPartai? @relation(fields: [partaiId], references: [id])
-  id             String        @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String        @db.ObjectId
+  id             String        @id @default(uuid())
+  company_id     String
   company        Company       @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   purchaseNumber String        @unique
   purchaseDate   DateTime      @default(now())
 
-  sourceId String       @db.ObjectId
+  sourceId String
   source   TimberSource @relation(fields: [sourceId], references: [id])
 
-  warehouseId String    @db.ObjectId
+  warehouseId String
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
 
   status        String    @default("DRAFT") // DRAFT, CONFIRMED, CANCELLED
@@ -3462,11 +3462,11 @@ model TimberPurchase {
 }
 
 model TimberPurchaseItem {
-  id               String         @id @default(auto()) @map("_id") @db.ObjectId
-  timberPurchaseId String         @db.ObjectId
+  id               String         @id @default(uuid())
+  timberPurchaseId String
   timberPurchase   TimberPurchase @relation(fields: [timberPurchaseId], references: [id], onDelete: Cascade)
 
-  timberVariantId String        @db.ObjectId
+  timberVariantId String
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
 
   quantityPcs Int
@@ -3481,13 +3481,13 @@ model TimberPurchaseItem {
 }
 
 model TimberPurchaseLogItem {
-  id               String         @id @default(auto()) @map("_id") @db.ObjectId
-  timberPurchaseId String         @db.ObjectId
+  id               String         @id @default(uuid())
+  timberPurchaseId String
   timberPurchase   TimberPurchase @relation(fields: [timberPurchaseId], references: [id], onDelete: Cascade)
 
   logNumber     String
   species       String
-  speciesId     String?        @db.ObjectId
+  speciesId     String?
   timberSpecies TimberSpecies? @relation(fields: [speciesId], references: [id])
 
   purchaseLength    Float
@@ -3506,22 +3506,22 @@ model TimberPurchaseLogItem {
 }
 
 model TimberShipment {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String   @db.ObjectId
+  id             String   @id @default(uuid())
+  company_id     String
   company        Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   shipmentNumber String   @unique
   shipmentDate   DateTime @default(now())
 
-  warehouseId String    @db.ObjectId
+  warehouseId String
   warehouse   Warehouse @relation("ShipmentOriginWarehouse", fields: [warehouseId], references: [id])
 
-  destinationWarehouseId String?    @db.ObjectId
+  destinationWarehouseId String?
   destinationWarehouse   Warehouse? @relation("ShipmentDestinationWarehouse", fields: [destinationWarehouseId], references: [id])
 
-  vehicleId String?  @db.ObjectId
+  vehicleId String?
   vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
 
-  driverId String? @db.ObjectId
+  driverId String?
   driver   Driver? @relation(fields: [driverId], references: [id])
 
   // Direct armada fields for external transport (Ex Kalteng Fuso / Truk)
@@ -3529,15 +3529,15 @@ model TimberShipment {
   policeNumber String?
   driverName   String?
 
-  customerId         String?   @db.ObjectId
+  customerId         String?
   customer           Customer? @relation(fields: [customerId], references: [id])
   destinationName    String?
   destinationAddress String?
 
-  salesOrderId String?           @db.ObjectId
+  salesOrderId String?
   salesOrder   TimberSalesOrder? @relation(fields: [salesOrderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  partaiId String?       @db.ObjectId
+  partaiId String?
   partai   TimberPartai? @relation(fields: [partaiId], references: [id])
 
   status        String  @default("DRAFT") // DRAFT, CONFIRMED, CANCELLED
@@ -3553,11 +3553,11 @@ model TimberShipment {
 }
 
 model TimberShipmentItem {
-  id               String         @id @default(auto()) @map("_id") @db.ObjectId
-  timberShipmentId String         @db.ObjectId
+  id               String         @id @default(uuid())
+  timberShipmentId String
   timberShipment   TimberShipment @relation(fields: [timberShipmentId], references: [id], onDelete: Cascade)
 
-  timberVariantId String?        @db.ObjectId
+  timberVariantId String?
   timberVariant   TimberVariant? @relation(fields: [timberVariantId], references: [id])
 
   batch String @default("UNKNOWN")
@@ -3571,7 +3571,7 @@ model TimberShipmentItem {
 
   quantityPcs      Int
   volumeM3         Float
-  salesOrderItemId String?               @db.ObjectId
+  salesOrderItemId String?
   salesOrderItem   TimberSalesOrderItem? @relation(fields: [salesOrderItemId], references: [id])
 }
 
@@ -3580,13 +3580,13 @@ model TimberShipmentItem {
 // ==================================================
 
 model TimberStockOpname {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String   @db.ObjectId
+  id           String   @id @default(uuid())
+  company_id   String
   company      Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   opnameNumber String   @unique
   opnameDate   DateTime @default(now())
 
-  warehouseId String    @db.ObjectId
+  warehouseId String
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
 
   status      String    @default("DRAFT") // DRAFT, COUNTING, CONFIRMED, CANCELLED
@@ -3602,11 +3602,11 @@ model TimberStockOpname {
 }
 
 model TimberStockOpnameItem {
-  id            String            @id @default(auto()) @map("_id") @db.ObjectId
-  stockOpnameId String            @db.ObjectId
+  id            String            @id @default(uuid())
+  stockOpnameId String
   stockOpname   TimberStockOpname @relation(fields: [stockOpnameId], references: [id], onDelete: Cascade)
 
-  timberVariantId String        @db.ObjectId
+  timberVariantId String
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
 
   batch String @default("UNKNOWN")
@@ -3628,18 +3628,18 @@ model TimberStockOpnameItem {
 // ==================================================
 
 model TimberBatchReclassification {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id      String   @db.ObjectId
+  id              String   @id @default(uuid())
+  company_id      String
   company         Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   reclassNumber   String   @unique
   idempotencyKey  String   // Wajib non-null untuk mencegah duplicate null collision di MongoDB
   date            DateTime @default(now())
 
-  warehouseId     String   @db.ObjectId
+  warehouseId     String
   warehouse       Warehouse @relation(fields: [warehouseId], references: [id])
 
-  timberVariantId String   @db.ObjectId
+  timberVariantId String
   timberVariant   TimberVariant @relation(fields: [timberVariantId], references: [id])
 
   sourceBatch     String   @default("UNKNOWN")
@@ -3653,11 +3653,11 @@ model TimberBatchReclassification {
   evidenceType    String   // PHYSICAL_OPNAME_APPROVED, PHYSICAL_TALLY_AUDITED, DELIVERY_DOC
   evidenceRef     String?
 
-  createdBy       String   @db.ObjectId
-  approvedBy      String?  @db.ObjectId
+  createdBy       String
+  approvedBy      String?
 
   reversedAt      DateTime?
-  reversedBy      String?  @db.ObjectId
+  reversedBy      String?
   reversalReason  String?
 
   createdAt       DateTime @default(now())
@@ -3674,8 +3674,8 @@ model TimberBatchReclassification {
 // ==================================================
 
 model ExportShipment {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  company_id  String   @db.ObjectId
+  id          String   @id @default(uuid())
+  company_id  String
   company     Company  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   containerNo String
   sealNo      String
@@ -3690,8 +3690,8 @@ model ExportShipment {
 }
 
 model ExportShipmentItem {
-  id       String         @id @default(auto()) @map("_id") @db.ObjectId
-  exportId String         @db.ObjectId
+  id       String         @id @default(uuid())
+  exportId String
   export   ExportShipment @relation(fields: [exportId], references: [id], onDelete: Cascade)
 
   groupName   String // Supplier / Customer grouping (e.g. "PAK LUCKY")
@@ -3707,12 +3707,12 @@ model ExportShipmentItem {
 model StockInTally {
   idempotency_key String?
   status          String             @default("POSTED")
-  id              String             @id @default(auto()) @map("_id") @db.ObjectId
-  company_id      String             @db.ObjectId
+  id              String             @id @default(uuid())
+  company_id      String
   company         Company            @relation(fields: [company_id], references: [id])
   tally_number    String
   tally_date      DateTime           @default(now())
-  warehouse_id    String             @db.ObjectId
+  warehouse_id    String
   warehouse       Warehouse          @relation(fields: [warehouse_id], references: [id])
   notes           String?
   items           StockInTallyItem[]
@@ -3724,21 +3724,21 @@ model StockInTally {
 }
 
 model StockInTallyItem {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
-  tally_id    String       @db.ObjectId
+  id          String       @id @default(uuid())
+  tally_id    String
   tally       StockInTally @relation(fields: [tally_id], references: [id], onDelete: Cascade)
-  product_id  String       @db.ObjectId
+  product_id  String
   product     Product      @relation(fields: [product_id], references: [id])
   qty         Float
-  movement_id String?      @db.ObjectId
+  movement_id String?
 }
 
 // ==================================================
 // TIMBER PARTAI (PROJECT / BATCH)
 // ==================================================
 model TimberPartai {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   code   String
@@ -3771,10 +3771,10 @@ model TimberPartai {
 // Sesuai Sheet PACKING di Excel 6
 // ==================================================
 model TimberPacking {
-  id         String        @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String        @db.ObjectId
+  id         String        @id @default(uuid())
+  company_id String
   company    Company       @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  partaiId   String?       @db.ObjectId
+  partaiId   String?
   partai     TimberPartai? @relation(fields: [partaiId], references: [id])
 
   packingNumber String   @unique // Contoh: PKG-2026-001
@@ -3784,7 +3784,7 @@ model TimberPacking {
   containerNo   String?  // No Kontainer jika ada
   palletCount   Int      @default(0)
 
-  warehouseId String?    @db.ObjectId
+  warehouseId String?
   warehouse   Warehouse? @relation(fields: [warehouseId], references: [id])
 
   status String @default("CONFIRMED") // DRAFT, CONFIRMED, CANCELLED
@@ -3802,8 +3802,8 @@ model TimberPacking {
 }
 
 model TimberPackingItem {
-  id        String        @id @default(auto()) @map("_id") @db.ObjectId
-  packingId String        @db.ObjectId
+  id        String        @id @default(uuid())
+  packingId String
   packing   TimberPacking @relation(fields: [packingId], references: [id], onDelete: Cascade)
 
   palletNo String? // Contoh: "01", "02"
@@ -3829,10 +3829,10 @@ model TimberPackingItem {
 }
 
 model InventoryDisposal {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id   String    @db.ObjectId
+  id           String    @id @default(uuid())
+  company_id   String
   company      Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  warehouse_id String    @db.ObjectId
+  warehouse_id String
   warehouse    Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   disposal_number String
@@ -3841,9 +3841,9 @@ model InventoryDisposal {
   reason          String
   notes           String?
 
-  created_by  String? @db.ObjectId
+  created_by  String?
   creator     User?   @relation("DisposalCreator", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  approved_by String? @db.ObjectId
+  approved_by String?
   approver    User?   @relation("DisposalApprover", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   approved_at  DateTime?
@@ -3857,10 +3857,10 @@ model InventoryDisposal {
 }
 
 model InventoryDisposalItem {
-  id          String            @id @default(auto()) @map("_id") @db.ObjectId
-  disposal_id String            @db.ObjectId
+  id          String            @id @default(uuid())
+  disposal_id String
   disposal    InventoryDisposal @relation(fields: [disposal_id], references: [id], onDelete: Cascade)
-  product_id  String            @db.ObjectId
+  product_id  String
   product     Product           @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   qty   Float
@@ -3869,15 +3869,15 @@ model InventoryDisposalItem {
 }
 
 model StockTransformation {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  company_id String  @db.ObjectId
+  id         String  @id @default(uuid())
+  company_id String
   company    Company @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   transform_no String   @unique
   date         DateTime @default(now())
   status       String   @default("COMPLETED") // DRAFT, COMPLETED, CANCELLED
   notes        String?
-  created_by   String   @db.ObjectId
+  created_by   String
   user         User     @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   inputs  StockTransformationInput[]
@@ -3888,14 +3888,14 @@ model StockTransformation {
 }
 
 model StockTransformationInput {
-  id                String              @id @default(auto()) @map("_id") @db.ObjectId
-  transformation_id String              @db.ObjectId
+  id                String              @id @default(uuid())
+  transformation_id String
   transformation    StockTransformation @relation(fields: [transformation_id], references: [id], onDelete: Cascade)
 
-  warehouse_id String    @db.ObjectId
+  warehouse_id String
   warehouse    Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  product_id String  @db.ObjectId
+  product_id String
   product    Product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   qty        Float
@@ -3904,14 +3904,14 @@ model StockTransformationInput {
 }
 
 model StockTransformationOutput {
-  id                String              @id @default(auto()) @map("_id") @db.ObjectId
-  transformation_id String              @db.ObjectId
+  id                String              @id @default(uuid())
+  transformation_id String
   transformation    StockTransformation @relation(fields: [transformation_id], references: [id], onDelete: Cascade)
 
-  warehouse_id String    @db.ObjectId
+  warehouse_id String
   warehouse    Warehouse @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  product_id String  @db.ObjectId
+  product_id String
   product    Product @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   qty        Float
@@ -3920,15 +3920,15 @@ model StockTransformationOutput {
 }
 
 model PurchaseReturn {
-  id                String        @id @default(auto()) @map("_id") @db.ObjectId
-  company_id        String        @db.ObjectId
+  id                String        @id @default(uuid())
+  company_id        String
   company           Company       @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   return_number     String
-  purchase_order_id String        @db.ObjectId
+  purchase_order_id String
   purchase_order    PurchaseOrder @relation(fields: [purchase_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  supplier_id       String        @db.ObjectId
+  supplier_id       String
   supplier          Customer      @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  warehouse_id      String        @db.ObjectId
+  warehouse_id      String
   warehouse         Warehouse     @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   return_date  DateTime
@@ -3937,7 +3937,7 @@ model PurchaseReturn {
   notes        String?
   total_amount Float    @default(0) // Informational: based on returned FIFO value or purchase value
 
-  created_by String?  @db.ObjectId
+  created_by String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -3947,12 +3947,12 @@ model PurchaseReturn {
 }
 
 model PurchaseReturnItem {
-  id                     String            @id @default(auto()) @map("_id") @db.ObjectId
-  purchase_return_id     String            @db.ObjectId
+  id                     String            @id @default(uuid())
+  purchase_return_id     String
   purchase_return        PurchaseReturn    @relation(fields: [purchase_return_id], references: [id], onDelete: Cascade)
-  purchase_order_item_id String            @db.ObjectId
+  purchase_order_item_id String
   purchase_order_item    PurchaseOrderItem @relation(fields: [purchase_order_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_id             String            @db.ObjectId
+  product_id             String
   product                Product           @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   quantity   Float
@@ -3963,15 +3963,15 @@ model PurchaseReturnItem {
 }
 
 model SalesReturn {
-  id             String     @id @default(auto()) @map("_id") @db.ObjectId
-  company_id     String     @db.ObjectId
+  id             String     @id @default(uuid())
+  company_id     String
   company        Company    @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   return_number  String
-  sales_order_id String     @db.ObjectId
+  sales_order_id String
   sales_order    SalesOrder @relation(fields: [sales_order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customer_id    String     @db.ObjectId
+  customer_id    String
   customer       Customer   @relation(fields: [customer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  warehouse_id   String     @db.ObjectId
+  warehouse_id   String
   warehouse      Warehouse  @relation(fields: [warehouse_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   return_date     DateTime
@@ -3981,7 +3981,7 @@ model SalesReturn {
   total_amount    Float    @default(0) // Total Revenue Reversal Amount
   idempotency_key String?
 
-  created_by String?  @db.ObjectId
+  created_by String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -3992,12 +3992,12 @@ model SalesReturn {
 }
 
 model SalesReturnItem {
-  id                  String         @id @default(auto()) @map("_id") @db.ObjectId
-  sales_return_id     String         @db.ObjectId
+  id                  String         @id @default(uuid())
+  sales_return_id     String
   sales_return        SalesReturn    @relation(fields: [sales_return_id], references: [id], onDelete: Cascade)
-  sales_order_item_id String         @db.ObjectId
+  sales_order_item_id String
   sales_order_item    SalesOrderItem @relation(fields: [sales_order_item_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  product_id          String         @db.ObjectId
+  product_id          String
   product             Product        @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   quantity          Float
@@ -4014,22 +4014,22 @@ model SalesReturnItem {
 }
 
 model SalesReturnCostAllocation {
-  id                   String          @id @default(auto()) @map("_id") @db.ObjectId
-  company_id           String          @db.ObjectId
-  sales_return_id      String          @db.ObjectId
+  id                   String          @id @default(uuid())
+  company_id           String
+  sales_return_id      String
   sales_return         SalesReturn     @relation(fields: [sales_return_id], references: [id], onDelete: Cascade)
-  sales_return_item_id String          @db.ObjectId
+  sales_return_item_id String
   sales_return_item    SalesReturnItem @relation(fields: [sales_return_item_id], references: [id], onDelete: Cascade)
 
-  original_cost_layer_id             String @db.ObjectId
-  original_cost_layer_consumption_id String @db.ObjectId
+  original_cost_layer_id             String
+  original_cost_layer_consumption_id String
 
-  restored_cost_layer_id String? @db.ObjectId // Points to InventoryCostLayer created by receiveStock
+  restored_cost_layer_id String? // Points to InventoryCostLayer created by receiveStock
 
   quantity     Float
   unit_cost    Float
   total_cost   Float
-  warehouse_id String @db.ObjectId
+  warehouse_id String
 
   created_at DateTime @default(now())
 
@@ -4038,8 +4038,8 @@ model SalesReturnCostAllocation {
 
 
 model Shift {
-  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
-  company_id           String?   @db.ObjectId
+  id                   String    @id @default(uuid())
+  company_id           String?
   company              Company?  @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   code                 String
   name                 String

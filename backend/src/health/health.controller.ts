@@ -11,7 +11,7 @@ export class HealthController {
   async check() {
     let dbStatus = 'disconnected';
     try {
-      await this.prisma.$runCommandRaw({ ping: 1 });
+      await this.prisma.$queryRaw`SELECT 1`;
       dbStatus = 'connected';
     } catch (e) {
       dbStatus = 'error';

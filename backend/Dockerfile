@@ -1,7 +1,9 @@
-﻿# 1. Build Stage
+# 1. Build Stage
 FROM node:20-alpine AS builder
 
 WORKDIR /app
+
+RUN apk add --no-cache openssl openssl-dev libc6-compat
 
 COPY package*.json ./
 COPY prisma ./prisma/
@@ -17,6 +19,8 @@ FROM node:20-alpine AS production
 
 WORKDIR /app
 
+RUN apk add --no-cache openssl libc6-compat
+
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
@@ -27,8 +31,8 @@ RUN addgroup -S erp && adduser -S erp -G erp
 USER erp
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=5000
 
-EXPOSE 3000
+EXPOSE 5000
 
 CMD ["npm", "run", "start:prod"]

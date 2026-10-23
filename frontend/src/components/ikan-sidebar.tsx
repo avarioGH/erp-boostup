@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/sidebar"
 import { 
  LayoutDashboard, Clock, Folder, Link as LinkIcon, History, AlertTriangle, PlayCircle, Filter, Tag, Hash, FileCode, CheckCircle, Database, PackageSearch, PenTool, Wrench, ShieldCheck, LifeBuoy, FileSearch, Zap, TrendingUp, Sparkles, Building2, Fingerprint, Receipt, UserCheck, ShieldAlert, Key, HelpCircle, Share2, Users, Box, Calculator, Settings, 
- ShoppingCart, BarChart3, Bot, LogOut, Hexagon
+ ShoppingCart, BarChart3, Bot, LogOut, Hexagon, Server
 , Factory} from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { TranslationKey } from "@/i18n/dictionaries"
@@ -254,6 +254,7 @@ const items: MenuItem[] = [
 ]
 
 const settings: MenuItem[] = [
+ 
  { title: "Pengguna & Role", url: "/settings/users", icon: UserCheck, id: "settings" },
  { title: "Pengaturan Sistem", url: "/settings/company", icon: Settings, id: "settings" },
  { title: "Integrasi API", url: "/settings/integrations", icon: Share2, id: "settings" },
@@ -287,7 +288,7 @@ export function IkanSidebar() {
  <div className="h-9 w-9 bg-primary rounded-xl flex items-center justify-center text-sidebar-primary-foreground shadow-sm">
  <Hexagon className="h-5 w-5" />
  </div>
- <span className="font-bold text-lg tracking-tight text-sidebar-foreground">ERP Boostup</span>
+ <span className="font-bold text-lg tracking-tight text-sidebar-foreground">Tatalora Fish ERP</span>
  </SidebarHeader>
  
  <SidebarContent className="px-3 py-4 custom-scrollbar">

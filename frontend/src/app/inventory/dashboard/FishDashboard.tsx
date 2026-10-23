@@ -11,40 +11,62 @@ export default function FishDashboard() {
   const [recentMovements, setRecentMovements] = useState<any[]>([])
 
   useEffect(() => {
-    // We will just fetch standard stocks and movements to derive the dashboard
-    api.get('/inventory/stocks').then((res: any) => {
-      const stocks = Array.isArray(res.data) ? res.data : []
-      const totalStock = stocks.reduce((sum: number, s: any) => sum + (s.current_stock || 0), 0)
+    // 1. Instant load from local cache
+    try {
+      const cached = localStorage.getItem('fish_dashboard_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.kpi) setKpi(parsed.kpi);
+        if (parsed.warehouseSummary) setWarehouseSummary(parsed.warehouseSummary);
+        if (parsed.recentMovements) setRecentMovements(parsed.recentMovements);
+      }
+    } catch(e) {}
+
+    // 2. Fetch fresh stocks and movements
+    Promise.all([
+      api.get('/inventory/stocks').catch(() => ({ data: [] })),
+      api.get('/inventory/movements').catch(() => ({ data: [] }))
+    ]).then(([stockRes, movRes]) => {
+      const stocks = Array.isArray(stockRes.data) ? stockRes.data : [];
+      const totalStock = stocks.reduce((sum: number, s: any) => sum + (s.current_stock || 0), 0);
       
-      const whMap = new Map()
+      const whMap = new Map();
       stocks.forEach((s: any) => {
-        const wName = s.warehouse?.name || 'Unknown'
-        whMap.set(wName, (whMap.get(wName) || 0) + (s.current_stock || 0))
-      })
+        const wName = s.warehouse?.name || 'Unknown';
+        whMap.set(wName, (whMap.get(wName) || 0) + (s.current_stock || 0));
+      });
+      const whSummary = Array.from(whMap.entries()).map(([name, stock]) => ({ name, stock }));
       
-      setWarehouseSummary(Array.from(whMap.entries()).map(([name, stock]) => ({ name, stock })))
-      setKpi((prev: any) => ({ ...prev, totalStock }))
-    }).catch(console.error)
+      const items = Array.isArray(movRes.data) ? movRes.data : (movRes.data?.items || []);
+      const recentMovs = items.slice(0, 10);
 
-    api.get('/inventory/movements').then((res: any) => {
-      const items = Array.isArray(res.data) ? res.data : (res.data?.items || [])
-      setRecentMovements(items.slice(0, 10))
-
-      const today = new Date().toDateString()
-      let todayIn = 0
-      let todayOut = 0
+      const today = new Date().toDateString();
+      let todayIn = 0;
+      let todayOut = 0;
 
       items.forEach((m: any) => {
-        const mDate = new Date(m.created_at || m.date).toDateString()
+        const mDate = new Date(m.created_at || m.date).toDateString();
         if (mDate === today) {
-          todayIn += m.qty_in || 0
-          todayOut += m.qty_out || 0
+          todayIn += m.qty_in || 0;
+          todayOut += m.qty_out || 0;
         }
-      })
-      
-      setKpi((prev: any) => ({ ...prev, todayIn, todayOut }))
-    }).catch(console.error)
-  }, [])
+      });
+
+      const newKpi = { totalStock, todayIn, todayOut };
+      setKpi(newKpi);
+      setWarehouseSummary(whSummary);
+      setRecentMovements(recentMovs);
+
+      try {
+        localStorage.setItem('fish_dashboard_cache', JSON.stringify({
+          kpi: newKpi,
+          warehouseSummary: whSummary,
+          recentMovements: recentMovs
+        }));
+      } catch(e) {}
+    }).catch(console.error);
+  }, []);
+
 
   return (
     <div className="space-y-6 pb-10 p-4 md:p-8">

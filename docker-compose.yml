@@ -1,17 +1,47 @@
 version: '3.8'
-services:
-  db:
-    image: postgres:15
-    container_name: erp_inventory_db
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: erp_inventory_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    restart: unless-stopped
 
-volumes:
-  db_data:
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: erp_backend
+    restart: always
+    environment:
+      PORT: 5000
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://postgres.ujoagzizhhpjdgeggvdd:Avario050306@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+      DIRECT_URL: "postgresql://postgres.ujoagzizhhpjdgeggvdd:Avario050306@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres"
+      JWT_SECRET: "avario_erp_super_secret_key_2026"
+      NEXT_PUBLIC_SUPABASE_URL: "https://ujoagzizhhpjdgeggvdd.supabase.co"
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "sb_publishable_adcuxBRKgLDYNLxFhs2C1g_S2QVFvmA"
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+
+  frontend_fish:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "http://103.235.75.105:5000"
+    container_name: erp_fish_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  frontend_wood:
+    build:
+      context: ./frontend-wood
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "http://103.235.75.105:5000"
+    container_name: erp_wood_frontend
+    restart: always
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
