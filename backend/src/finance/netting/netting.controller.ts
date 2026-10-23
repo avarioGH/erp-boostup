@@ -8,8 +8,8 @@ export class NettingController {
   constructor(private readonly nettingService: NettingService) {}
 
   @Post()
-  async applyNetting(@Body() body: { partner_id: string, amount: number }, @Req() req: any) {
-    return this.nettingService.applyNetting(body.partner_id, body.amount, req.user);
+  async applyNetting(@Body() body: { partner_id: string, amount: number, notes?: string }, @Req() req: any) {
+    return this.nettingService.applyNetting(body.partner_id, body.amount, req.user, body.notes);
   }
 
   @Get('balance/:partner_id')

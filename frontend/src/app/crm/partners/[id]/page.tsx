@@ -44,6 +44,7 @@ export default function Customer360Page() {
   const [nettingModalOpen, setNettingModalOpen] = useState(false);
   const [nettingAmount, setNettingAmount] = useState('');
   const [nettingNotes, setNettingNotes] = useState('');
+  const [isNetting, setIsNetting] = useState(false);
   const [salesSearch, setSalesSearch] = useState('');
   const [salesStartDate, setSalesStartDate] = useState('');
   const [salesEndDate, setSalesEndDate] = useState('');
@@ -87,16 +88,24 @@ export default function Customer360Page() {
   };
 
   const handleNetting = async () => {
+    if (!nettingAmount || Number(nettingAmount) <= 0) return toast.error('Nominal kompensasi tidak valid');
+    setIsNetting(true);
     try {
-      if(!nettingAmount || Number(nettingAmount) <= 0) return toast.error('Nominal invalid');
-      await api.post('/finance/netting', { partner_id: partnerId, amount: Number(nettingAmount), notes: nettingNotes });
+      await api.post('/finance/netting', { 
+        partner_id: partnerId, 
+        amount: Number(nettingAmount), 
+        notes: nettingNotes 
+      });
       setNettingModalOpen(false);
       setNettingAmount('');
+      setNettingNotes('');
       const res = await CRMAPI.getPartner360(partnerId);
       setData(res);
-      toast.success('Kompensasi berhasil!');
-    } catch(err:any) {
-      toast.error('Gagal: ' + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message));
+      toast.success('Kompensasi hutang/piutang berhasil diproses!');
+    } catch(err: any) {
+      toast.error('Gagal kompensasi: ' + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message));
+    } finally {
+      setIsNetting(false);
     }
   };
   const handlePay = async () => {
@@ -947,37 +956,123 @@ export default function Customer360Page() {
 
         {/* NETTING MODAL */}
         <Dialog open={nettingModalOpen} onOpenChange={setNettingModalOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[480px]">
             <DialogHeader>
-              <DialogTitle>Kompensasi Hutang/Piutang</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                Kompensasi Hutang/Piutang (Potong Silang)
+              </DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <p className="text-sm text-muted-foreground">
-                Fitur ini akan memotong silang Piutang (AR) dan Hutang (AP) untuk nelayan/partner ini secara otomatis dari saldo tertua.
-              </p>
-              <div className="space-y-2">
-                <Label>Maksimal Kompensasi yang bisa dilakukan: {formatCurrency(Math.min(finance?.outstandingAmount || 0, finance?.outstandingAp || 0))}</Label>
-                <Input
-                  type="number"
-                  placeholder="Nominal Kompensasi"
-                  value={nettingAmount}
-                  onChange={(e) => setNettingAmount(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Catatan Tambahan</Label>
-                <Input
-                  type="text"
-                  placeholder="Opsional..."
-                  value={nettingNotes}
-                  onChange={(e) => setNettingNotes(e.target.value)}
-                />
-              </div>
-            </div>
+
+            {(() => {
+              const currentAr = Number(finance?.outstandingAmount || 0);
+              const currentAp = Number(finance?.outstandingAp || 0);
+              const maxNetting = Math.max(0, Math.min(currentAr, currentAp));
+              const enteredAmount = Number(nettingAmount) || 0;
+              const remainingAr = Math.max(0, currentAr - enteredAmount);
+              const remainingAp = Math.max(0, currentAp - enteredAmount);
+              const isExceeded = enteredAmount > maxNetting;
+
+              return (
+                <div className="grid gap-4 py-3">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Fitur ini memotong silang antara <strong>Piutang (Tagihan Pelanggan)</strong> dan <strong>Hutang (Tagihan Suplier)</strong> untuk partner/nelayan ini secara otomatis dari saldo terlama.
+                  </p>
+
+                  {/* Summary Box Saat Ini */}
+                  <div className="grid grid-cols-2 gap-2.5 p-3 rounded-lg bg-muted/50 border text-xs">
+                    <div>
+                      <span className="text-muted-foreground block text-[11px]">Total Piutang (AR):</span>
+                      <span className="font-bold text-destructive text-sm">{formatCurrency(currentAr)}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[11px]">Total Hutang (AP):</span>
+                      <span className="font-bold text-amber-600 dark:text-amber-400 text-sm">{formatCurrency(currentAp)}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold">Nominal Kompensasi (Rp)</Label>
+                      {maxNetting > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setNettingAmount(String(maxNetting))}
+                          className="text-[11px] text-primary hover:underline font-medium"
+                        >
+                          Gunakan Maksimal ({formatCurrency(maxNetting)})
+                        </button>
+                      )}
+                    </div>
+                    <Input
+                      type="number"
+                      placeholder="Masukkan nominal kompensasi..."
+                      value={nettingAmount}
+                      max={maxNetting}
+                      onChange={(e) => setNettingAmount(e.target.value)}
+                      className={`text-base font-bold ${isExceeded ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                    />
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span>Maksimal kompensasi: <strong>{formatCurrency(maxNetting)}</strong></span>
+                      {isExceeded && (
+                        <span className="text-destructive font-semibold">Melebihi batas maksimal!</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Simulasi Sisa Hutang / Piutang Setelah Kompensasi */}
+                  {enteredAmount > 0 && (
+                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
+                      <p className="text-[11px] font-semibold text-primary uppercase tracking-wider">
+                        Perkiraan Sisa Setelah Kompensasi:
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="p-2 bg-background/80 rounded border">
+                          <span className="text-muted-foreground block text-[10px]">Sisa Piutang (Pelanggan bayar ke kita):</span>
+                          <span className="font-bold text-foreground text-sm">{formatCurrency(remainingAr)}</span>
+                        </div>
+                        <div className="p-2 bg-background/80 rounded border">
+                          <span className="text-muted-foreground block text-[10px]">Sisa Hutang (Kita bayar ke nelayan):</span>
+                          <span className="font-bold text-foreground text-sm">{formatCurrency(remainingAp)}</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground italic">
+                        {remainingAr === 0 && remainingAp === 0 
+                          ? 'Kedua hutang dan piutang lunas impas.'
+                          : remainingAr === 0 
+                            ? 'Piutang lunas. Perusahaan masih memiliki sisa hutang ke partner.' 
+                            : 'Hutang lunas. Partner masih memiliki sisa piutang ke perusahaan.'}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Catatan Tambahan</Label>
+                    <Input
+                      type="text"
+                      placeholder="Misal: Kompensasi bon pembelian ikan vs sales"
+                      value={nettingNotes}
+                      onChange={(e) => setNettingNotes(e.target.value)}
+                      className="text-xs"
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setNettingModalOpen(false)}>Batal</Button>
-              <Button onClick={handleNetting} disabled={!nettingAmount}>
-                Proses Kompensasi
+              <Button type="button" variant="outline" onClick={() => setNettingModalOpen(false)} disabled={isNetting}>
+                Batal
+              </Button>
+              <Button 
+                onClick={handleNetting} 
+                disabled={
+                  !nettingAmount || 
+                  Number(nettingAmount) <= 0 || 
+                  Number(nettingAmount) > Math.min(finance?.outstandingAmount || 0, finance?.outstandingAp || 0) || 
+                  isNetting
+                }
+              >
+                {isNetting ? 'Memproses...' : 'Proses Kompensasi'}
               </Button>
             </DialogFooter>
           </DialogContent>
