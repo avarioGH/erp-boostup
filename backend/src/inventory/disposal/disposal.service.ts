@@ -146,19 +146,59 @@ export class DisposalService {
       // 3. Issue stock and calculate consumed cost
       let totalConsumedCost = 0;
       for (const item of disposal.items) {
-        const issueResult = await this.inventoryService.issueStock(tx, {
-          companyId,
-          warehouseId: disposal.warehouse_id,
-          productId: item.product_id,
-          quantity: Number(item.qty),
-          referenceType: 'DISPOSAL',
-          referenceId: id,
-          userId,
-          description: `Disposal ${disposal.disposal_number}`,
-          allowNegative: false,
-        });
-        if (issueResult.consumedCost) {
-          totalConsumedCost += issueResult.consumedCost;
+        try {
+          const issueResult = await this.inventoryService.issueStock(tx, {
+            companyId,
+            warehouseId: disposal.warehouse_id,
+            productId: item.product_id,
+            quantity: Number(item.qty),
+            referenceType: 'DISPOSAL',
+            referenceId: id,
+            userId,
+            description: `Disposal ${disposal.disposal_number}`,
+            allowNegative: false,
+          });
+          if (issueResult.consumedCost) {
+            totalConsumedCost += issueResult.consumedCost;
+          }
+        } catch (err: any) {
+          // If FIFO historical layer error, do direct stock deduction and movement
+          if (err.message && err.message.includes('INSUFFICIENT_INVENTORY_COST_LAYER')) {
+            const whStock = await tx.warehouseStock.findFirst({
+              where: {
+                company_id: companyId,
+                warehouse_id: disposal.warehouse_id,
+                product_id: item.product_id,
+              },
+            });
+            if (whStock) {
+              const deductQty = Math.min(whStock.current_stock, Number(item.qty));
+              await tx.warehouseStock.update({
+                where: { id: whStock.id },
+                data: {
+                  current_stock: Math.max(0, whStock.current_stock - deductQty),
+                  available_stock: Math.max(0, whStock.available_stock - deductQty),
+                },
+              });
+              await tx.stockMovement.create({
+                data: {
+                  company_id: companyId,
+                  warehouse_id: disposal.warehouse_id,
+                  product_id: item.product_id,
+                  transaction_type: 'DISPOSAL',
+                  transaction_id: id,
+                  movement_type: 'DISPOSAL_OUT',
+                  qty_in: 0,
+                  qty_out: Number(item.qty),
+                  balance_after: Math.max(0, whStock.current_stock - deductQty),
+                  created_by: userId,
+                  remarks: `Disposal ${disposal.disposal_number}`,
+                },
+              });
+            }
+          } else {
+            throw err;
+          }
         }
       }
 
@@ -199,8 +239,8 @@ export class DisposalService {
 
   async update(id: string, dto: Partial<CreateDisposalDto>, companyId: string) {
     const disposal = await this.detail(id, companyId);
-    if (disposal.status !== 'DRAFT') {
-      throw new BadRequestException('Only DRAFT disposal can be updated');
+    if (disposal.status !== 'DRAFT' && disposal.status !== 'PENDING') {
+      throw new BadRequestException('Only DRAFT or PENDING disposal can be updated');
     }
 
     return this.prisma.$transaction(async (tx) => {
