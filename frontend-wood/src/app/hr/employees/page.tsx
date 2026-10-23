@@ -153,25 +153,25 @@ export default function EmployeesPage() {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label>First Name</Label>
- <Input placeholder="Contoh: Julian" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} />
+ <Input  value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} />
  </div>
  <div className="space-y-2">
  <Label>Last Name</Label>
- <Input placeholder="Opsional" value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} />
+ <Input  value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} />
  </div>
  </div>
  <div className="space-y-2">
  <Label>Email</Label>
- <Input type="email" placeholder="Opsional: email@perusahaan.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+ <Input type="email"  value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
  </div>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
  <Label>Position</Label>
- <Input placeholder="Opsional: Sales, Staff, Operator..." value={formData.position} onChange={(e) => setFormData({...formData, position: e.target.value})} />
+ <Input  value={formData.position} onChange={(e) => setFormData({...formData, position: e.target.value})} />
  </div>
  <div className="space-y-2">
  <Label>Basic Salary</Label>
- <Input type="number" placeholder="Opsional (default: 0)" value={formData.basicSalary} onChange={(e) => setFormData({...formData, basicSalary: e.target.value})} />
+ <Input type="number"  value={formData.basicSalary} onChange={(e) => setFormData({...formData, basicSalary: e.target.value})} />
  </div>
  </div>
  <div className="flex gap-2">
