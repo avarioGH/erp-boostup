@@ -326,7 +326,7 @@ export function IkanSidebar() {
         ikan_sales: 'pos',
         generic_dashboard: 'dashboard'
       };
-      if (item.id === 'generic-dashboard') return true;
+      if (!item.id || item.id === 'generic-dashboard') return true;
       const reqId = idMap[item.id] || item.id;
       if (!user?.accessible_modules) return false;
       return user.accessible_modules.includes(reqId);
