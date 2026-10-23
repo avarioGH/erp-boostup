@@ -4,6 +4,9 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
+  Param,
   Body,
   UseGuards,
   Request,
@@ -27,8 +30,18 @@ export class UsersController {
   @Permissions('users.create')
   @Post('admin')
   async createAdmin(@Request() req, @Body() body: any) {
-    // Hanya Owner yang boleh bikin Admin
-    
     return this.usersService.createAdmin(body, req.user.companyId);
+  }
+
+  @Permissions('users.update')
+  @Patch(':id')
+  async updateUser(@Request() req, @Param('id') id: string, @Body() body: any) {
+    return this.usersService.updateUser(id, body, req.user.companyId);
+  }
+
+  @Permissions('users.delete')
+  @Delete(':id')
+  async deleteUser(@Request() req, @Param('id') id: string) {
+    return this.usersService.deleteUser(id, req.user.companyId);
   }
 }

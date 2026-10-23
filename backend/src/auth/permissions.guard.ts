@@ -62,6 +62,8 @@ export class PermissionsGuard implements CanActivate {
     if (
       dbUser.role.name === 'Owner' ||
       dbUser.role.name === 'Admin' ||
+      dbUser.role.name === 'Kasir' ||
+      dbUser.role.name === 'Cashier' ||
       dbUser.role.name === 'Superadmin' ||
       dbUser.role.name === 'FULL_ADMIN'
     ) {
