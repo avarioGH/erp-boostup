@@ -6,8 +6,9 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Loader2, Plus, Search, Filter, ChevronLeft, Send, CheckCircle2, FileText, Download, Truck, FileOutput } from 'lucide-react'
+import { Loader2, Plus, Search, Filter, ChevronLeft, Send, CheckCircle2, FileText, Download, Truck, FileOutput, Printer } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 export default function PurchaseOrdersPage() {
  const router = useRouter()
@@ -19,6 +20,7 @@ export default function PurchaseOrdersPage() {
  
  // detail state
  const [docLoading, setDocLoading] = useState(false)
+ const [showReceiptModal, setShowReceiptModal] = useState(false)
   const searchParams = useSearchParams()
   const poId = searchParams.get('id')
   
@@ -152,8 +154,14 @@ const getBillBadge = (status: string) => {
  <div className="flex items-center gap-2">
  <Button variant="outline" onClick={() => {
         const token = localStorage.getItem("erp_token");
-        window.open(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/documents/purchase-orders/${details.id}/pdf?token=${token}`, "_blank");
-      }}><Download className="w-4 h-4 mr-2" /> Export PDF</Button>
+        window.open(`/backend-api/documents/purchase-orders/${details.id}/pdf?token=${token}`, "_blank");
+      }}>
+   <Download className="w-4 h-4 mr-2" /> Export PDF
+ </Button>
+
+ <Button variant="outline" className="border-emerald-300 text-primary hover:bg-emerald-50" onClick={() => setShowReceiptModal(true)}>
+   <Printer className="w-4 h-4 mr-2" /> Cetak Nota / Receipt
+ </Button>
  
  {details.status === 'CONFIRMED' && details.receipt_status !== 'RECEIVED' && (
  <Button onClick={() => router.push(`/purchasing/receipts?po=${details.id}`)} className="">
@@ -282,6 +290,106 @@ const getBillBadge = (status: string) => {
  </Card>
  </div>
  )}
+
+  {/* DIALOG CETAK NOTA / RECEIPT */}
+  <Dialog open={showReceiptModal} onOpenChange={setShowReceiptModal}>
+    <DialogContent className="max-w-md">
+      <DialogHeader>
+        <DialogTitle>Nota Pembelian / Receipt</DialogTitle>
+      </DialogHeader>
+      <div id="po-print-receipt-area" className="p-4 bg-white text-black rounded border">
+        <div className="text-center border-b pb-4 mb-4">
+          <h2 className="text-xl font-bold uppercase tracking-wider">NOTA PEMBELIAN</h2>
+          <p className="text-sm font-mono mt-1">{details.order_number}</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Tgl: {new Date(details.order_date || details.createdAt || details.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+        <div className="mb-4 text-sm">
+          <p className="text-gray-600">Supplier / Nelayan:</p>
+          <p className="font-bold text-base">{details.supplier?.name || '-'}</p>
+          {details.supplier?.phone && <p className="text-xs text-gray-500">{details.supplier.phone}</p>}
+        </div>
+        <table className="w-full text-sm mb-4">
+          <thead>
+            <tr className="border-b text-xs uppercase text-gray-600">
+              <th className="text-left py-1">Produk</th>
+              <th className="text-center py-1">Qty</th>
+              <th className="text-right py-1">Harga</th>
+              <th className="text-right py-1">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(details.items || []).map((line: any, idx: number) => (
+              <tr key={idx} className="border-b border-dashed">
+                <td className="py-2 text-xs font-medium">{line.product?.name || line.product_id}</td>
+                <td className="text-center py-2 text-xs">{line.qty}</td>
+                <td className="text-right py-2 text-xs">Rp {Number(line.unit_price || 0).toLocaleString('id-ID')}</td>
+                <td className="text-right py-2 text-xs font-semibold">
+                  Rp {Number(line.subtotal || (line.qty * line.unit_price) || 0).toLocaleString('id-ID')}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="space-y-1.5 text-sm border-t pt-2">
+          <div className="flex justify-between font-bold text-base">
+            <span>TOTAL:</span>
+            <span>Rp {Number(details.total_amount || 0).toLocaleString('id-ID')}</span>
+          </div>
+          <div className="flex justify-between text-xs text-gray-600">
+            <span>Status Penerimaan:</span>
+            <span className="font-medium text-emerald-700">{details.receipt_status || 'RECEIVED'}</span>
+          </div>
+          <div className="flex justify-between text-xs text-gray-600">
+            <span>Status Pembayaran:</span>
+            <span className="font-medium">{details.payment_status || 'UNPAID'}</span>
+          </div>
+        </div>
+        <div className="mt-8 text-center text-xs text-gray-400">
+          <p>Terima kasih atas kerjasamanya.</p>
+        </div>
+      </div>
+      <DialogFooter className="gap-2 sm:gap-0">
+        <Button variant="outline" onClick={() => setShowReceiptModal(false)}>Tutup</Button>
+        <Button 
+          onClick={() => {
+            const printContent = document.getElementById("po-print-receipt-area");
+            if (!printContent) return;
+            const win = window.open('', '', 'width=800,height=600');
+            if (win) {
+              win.document.write(`
+                <html>
+                  <head>
+                    <title>Nota - ${details.order_number}</title>
+                    <style>
+                      body { font-family: sans-serif; padding: 20px; }
+                      table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                      th, td { padding: 6px; border-bottom: 1px dashed #ccc; text-align: left; }
+                      th { font-size: 12px; text-transform: uppercase; }
+                      .text-right { text-align: right; }
+                      .text-center { text-align: center; }
+                      .font-bold { font-weight: bold; }
+                    </style>
+                  </head>
+                  <body>
+                    ${printContent.innerHTML}
+                    <script>
+                      window.onload = function() { window.print(); window.close(); }
+                    </script>
+                  </body>
+                </html>
+              `);
+              win.document.close();
+            }
+          }} 
+          className="flex items-center gap-2 bg-primary text-white"
+        >
+          <Printer className="w-4 h-4" /> Cetak Nota Sekarang
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
  </div>
  )
  }

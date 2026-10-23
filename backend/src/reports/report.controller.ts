@@ -130,12 +130,19 @@ export class ReportController {
     @Param('id') id: string,
   ) {
     let docDef: any;
-    if (type === 'invoices')
+    if (type === 'invoices') {
       docDef = await this.documentService.getInvoicePdfDefinition(
         req.user.company_id,
         id,
       );
-    else throw new BadRequestException('Document type not supported');
+    } else if (type === 'purchase-orders' || type === 'purchase_orders') {
+      docDef = await this.documentService.getPurchaseOrderPdfDefinition(
+        req.user.company_id,
+        id,
+      );
+    } else {
+      throw new BadRequestException('Document type not supported');
+    }
 
     const buffer = await this.pdfService.generateDocument(docDef);
     res.setHeader('Content-Type', 'application/pdf');
