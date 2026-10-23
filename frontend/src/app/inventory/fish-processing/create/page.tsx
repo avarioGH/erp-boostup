@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import api from '@/lib/api'
-import { Plus, Trash2, Save, ArrowRightLeft } from 'lucide-react'
+import { Plus, Trash2, ArrowRightLeft } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function FishProcessingForm() {
@@ -29,8 +29,28 @@ export default function FishProcessingForm() {
           api.get('/inventory/warehouses'),
           api.get('/inventory/products')
         ])
-        setWarehouses(wRes.data || [])
-        setProducts(pRes.data || [])
+        const whList = wRes.data || []
+        const prodList = pRes.data || []
+        setWarehouses(whList)
+        setProducts(prodList)
+
+        // Pre-select active warehouse if available
+        const activeWarehouseJSON = typeof window !== 'undefined' ? localStorage.getItem("active_warehouse") : null
+        let defaultWhId = ""
+        if (activeWarehouseJSON && activeWarehouseJSON !== "null" && activeWarehouseJSON !== "undefined") {
+          try {
+            const activeWh = JSON.parse(activeWarehouseJSON)
+            if (activeWh && activeWh.id) defaultWhId = activeWh.id
+          } catch(e) {}
+        }
+        if (!defaultWhId && whList.length > 0) {
+          defaultWhId = whList[0].id
+        }
+
+        if (defaultWhId) {
+          setInputs([{ warehouse_id: defaultWhId, product_id: "", qty: 1 }])
+          setOutputs([{ warehouse_id: defaultWhId, product_id: "", qty: 1 }])
+        }
       } catch (err) {
         console.error(err)
       }
@@ -39,10 +59,33 @@ export default function FishProcessingForm() {
   }, [])
 
   const handleInputChange = (index: number, field: string, value: any) => {
-    const newArr = [...inputs]; newArr[index][field] = value; setInputs(newArr)
+    const newArr = [...inputs]
+    newArr[index][field] = value
+    // If warehouse changed, reset product if it doesn't belong/have stock
+    if (field === 'warehouse_id') {
+      newArr[index].product_id = ""
+    }
+    setInputs(newArr)
   }
+
   const handleOutputChange = (index: number, field: string, value: any) => {
-    const newArr = [...outputs]; newArr[index][field] = value; setOutputs(newArr)
+    const newArr = [...outputs]
+    newArr[index][field] = value
+    setOutputs(newArr)
+  }
+
+  // Get available products for a selected warehouse (showing its specific stock)
+  const getProductsForWarehouse = (warehouseId: string) => {
+    if (!warehouseId) return products;
+    // Return products and calculate available stock in this specific warehouse
+    return products.map(p => {
+      const stockItem = (p.warehouse_stocks || []).find((ws: any) => ws.warehouse_id === warehouseId);
+      const stockInWh = stockItem ? Number(stockItem.current_stock) : 0;
+      return {
+        ...p,
+        stockInWh
+      };
+    });
   }
 
   const handleSubmit = async (e: any) => {
@@ -58,8 +101,9 @@ export default function FishProcessingForm() {
         outputs
       })
       toast.success("Pengolahan stok (Repacking) berhasil disimpan!")
-      setInputs([{ warehouse_id: "", product_id: "", qty: 1 }])
-      setOutputs([{ warehouse_id: "", product_id: "", qty: 1 }])
+      const firstWhId = warehouses[0]?.id || ""
+      setInputs([{ warehouse_id: firstWhId, product_id: "", qty: 1 }])
+      setOutputs([{ warehouse_id: firstWhId, product_id: "", qty: 1 }])
       setFormData({...formData, notes: ""})
     } catch (err: any) {
       toast.error("Gagal: " + ((err.response?.data?.error?.message || err.response?.data?.message) || err.message))
@@ -97,45 +141,86 @@ export default function FishProcessingForm() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="text-lg text-rose-700 dark:text-rose-400">Bahan Baku (Stok Berkurang)</CardTitle>
-              <CardDescription>Pilih ikan utuh/mentah yang akan diproses.</CardDescription>
+              <CardDescription>Pilih ikan utuh/mentah dari stok gudang yang akan diproses.</CardDescription>
             </div>
-            <Button type="button" onClick={() => setInputs([...inputs, { warehouse_id: "", product_id: "", qty: 1 }])} variant="outline" size="sm"><Plus className="w-4 h-4 mr-2"/> Tambah</Button>
+            <Button 
+              type="button" 
+              onClick={() => {
+                const defaultWh = inputs[inputs.length - 1]?.warehouse_id || warehouses[0]?.id || ""
+                setInputs([...inputs, { warehouse_id: defaultWh, product_id: "", qty: 1 }])
+              }} 
+              variant="outline" 
+              size="sm"
+            >
+              <Plus className="w-4 h-4 mr-2"/> Tambah
+            </Button>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Dari Gudang</TableHead>
-                  <TableHead>Produk / Ikan Asal</TableHead>
-                  <TableHead>Berat (Kg)</TableHead>
+                  <TableHead className="w-[30%]">Dari Gudang</TableHead>
+                  <TableHead className="w-[45%]">Produk / Ikan Asal (Stok Gudang Ini)</TableHead>
+                  <TableHead className="w-[20%]">Berat (Kg)</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {inputs.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <select className="w-full border p-2 rounded-md bg-white dark:bg-background" value={item.warehouse_id} onChange={e => handleInputChange(index, 'warehouse_id', e.target.value)} required>
-                        <option value="">-- Pilih Gudang --</option>
-                        {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                      </select>
-                    </TableCell>
-                    <TableCell>
-                      <select className="w-full border p-2 rounded-md bg-white dark:bg-background" value={item.product_id} onChange={e => handleInputChange(index, 'product_id', e.target.value)} required>
-                        <option value="">-- Pilih Produk --</option>
-                        {products.map(pr => <option key={pr.id} value={pr.id}>{pr.name}</option>)}
-                      </select>
-                    </TableCell>
-                    <TableCell>
-                      <Input type="number" min="0.1" step="0.1" value={item.qty} onChange={e => handleInputChange(index, 'qty', parseFloat(e.target.value))} required />
-                    </TableCell>
-                    <TableCell>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => setInputs(inputs.filter((_, i) => i !== index))} disabled={inputs.length === 1}>
-                        <Trash2 className="w-4 h-4 text-rose-500" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {inputs.map((item, index) => {
+                  const availableProducts = getProductsForWarehouse(item.warehouse_id)
+                  return (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <select 
+                          className="w-full border p-2 rounded-md bg-white dark:bg-background text-sm font-medium" 
+                          value={item.warehouse_id} 
+                          onChange={e => handleInputChange(index, 'warehouse_id', e.target.value)} 
+                          required
+                        >
+                          <option value="">-- Pilih Gudang --</option>
+                          {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                        </select>
+                      </TableCell>
+                      <TableCell>
+                        <select 
+                          className="w-full border p-2 rounded-md bg-white dark:bg-background text-sm" 
+                          value={item.product_id} 
+                          onChange={e => handleInputChange(index, 'product_id', e.target.value)} 
+                          required
+                          disabled={!item.warehouse_id}
+                        >
+                          <option value="">{!item.warehouse_id ? '-- Pilih Gudang Dahulu --' : '-- Pilih Produk Ikan --'}</option>
+                          {availableProducts.map((pr: any) => (
+                            <option key={pr.id} value={pr.id}>
+                              {pr.name} {item.warehouse_id ? `[Stok: ${pr.stockInWh} kg]` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </TableCell>
+                      <TableCell>
+                        <Input 
+                          type="number" 
+                          min="0.1" 
+                          step="0.1" 
+                          value={item.qty} 
+                          onChange={e => handleInputChange(index, 'qty', parseFloat(e.target.value))} 
+                          required 
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => setInputs(inputs.filter((_, i) => i !== index))} 
+                          disabled={inputs.length === 1}
+                        >
+                          <Trash2 className="w-4 h-4 text-rose-500" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </CardContent>
@@ -146,17 +231,27 @@ export default function FishProcessingForm() {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="text-lg text-emerald-700 dark:text-emerald-400">Hasil Produksi (Stok Bertambah)</CardTitle>
-              <CardDescription>Pilih hasil potongan / fillet akhir (Yield).</CardDescription>
+              <CardDescription>Pilih gudang tujuan dan hasil potongan / fillet akhir (Yield).</CardDescription>
             </div>
-            <Button type="button" onClick={() => setOutputs([...outputs, { warehouse_id: "", product_id: "", qty: 1 }])} variant="outline" size="sm"><Plus className="w-4 h-4 mr-2"/> Tambah</Button>
+            <Button 
+              type="button" 
+              onClick={() => {
+                const defaultWh = outputs[outputs.length - 1]?.warehouse_id || warehouses[0]?.id || ""
+                setOutputs([...outputs, { warehouse_id: defaultWh, product_id: "", qty: 1 }])
+              }} 
+              variant="outline" 
+              size="sm"
+            >
+              <Plus className="w-4 h-4 mr-2"/> Tambah
+            </Button>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Simpan ke Gudang</TableHead>
-                  <TableHead>Produk / Ikan Hasil</TableHead>
-                  <TableHead>Berat Akhir (Kg)</TableHead>
+                  <TableHead className="w-[30%]">Simpan ke Gudang</TableHead>
+                  <TableHead className="w-[45%]">Produk / Ikan Hasil</TableHead>
+                  <TableHead className="w-[20%]">Berat Akhir (Kg)</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -164,22 +259,45 @@ export default function FishProcessingForm() {
                 {outputs.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell>
-                      <select className="w-full border p-2 rounded-md bg-white dark:bg-background" value={item.warehouse_id} onChange={e => handleOutputChange(index, 'warehouse_id', e.target.value)} required>
+                      <select 
+                        className="w-full border p-2 rounded-md bg-white dark:bg-background text-sm font-medium" 
+                        value={item.warehouse_id} 
+                        onChange={e => handleOutputChange(index, 'warehouse_id', e.target.value)} 
+                        required
+                      >
                         <option value="">-- Pilih Gudang --</option>
                         {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                       </select>
                     </TableCell>
                     <TableCell>
-                      <select className="w-full border p-2 rounded-md bg-white dark:bg-background" value={item.product_id} onChange={e => handleOutputChange(index, 'product_id', e.target.value)} required>
+                      <select 
+                        className="w-full border p-2 rounded-md bg-white dark:bg-background text-sm" 
+                        value={item.product_id} 
+                        onChange={e => handleOutputChange(index, 'product_id', e.target.value)} 
+                        required
+                      >
                         <option value="">-- Pilih Produk Hasil --</option>
                         {products.map(pr => <option key={pr.id} value={pr.id}>{pr.name}</option>)}
                       </select>
                     </TableCell>
                     <TableCell>
-                      <Input type="number" min="0.1" step="0.1" value={item.qty} onChange={e => handleOutputChange(index, 'qty', parseFloat(e.target.value))} required />
+                      <Input 
+                        type="number" 
+                        min="0.1" 
+                        step="0.1" 
+                        value={item.qty} 
+                        onChange={e => handleOutputChange(index, 'qty', parseFloat(e.target.value))} 
+                        required 
+                      />
                     </TableCell>
                     <TableCell>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => setOutputs(outputs.filter((_, i) => i !== index))} disabled={outputs.length === 1}>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => setOutputs(outputs.filter((_, i) => i !== index))} 
+                        disabled={outputs.length === 1}
+                      >
                         <Trash2 className="w-4 h-4 text-rose-500" />
                       </Button>
                     </TableCell>
