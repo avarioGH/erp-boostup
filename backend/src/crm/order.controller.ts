@@ -6,6 +6,7 @@ import {
   UseGuards,
   Request,
   Param,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
@@ -125,27 +126,127 @@ export class OrderController {
       }
 
       // Integrate with Inventory (Reduce Stock)
-      const warehouse = await tx.warehouse.findFirst({
-        where: { company_id: req.user.company_id },
-      });
+      // JIKA PRE-ORDER: Stok TIDAK dikurangi sekarang, tunggu sampai stok di storage diisi/masuk
+      const isPreorder = data.is_preorder === true || data.status === 'PREORDER';
 
-      if (warehouse) {
-        for (const item of orderItems) {
-          await this.inventoryService.issueStock(tx as any, {
-            companyId: req.user.company_id,
-            warehouseId: warehouse.id,
-            productId: item.product_id,
-            quantity: Number(item.qty),
-            referenceType: 'SALE',
-            referenceId: order.id,
-            description: `Sales Order ${order.order_number}`,
-            userId: req.user.userId,
-            allowNegative: true, // to preserve previous best-effort behavior
+      if (!isPreorder) {
+        // Validasi ketersediaan stok di storage
+        for (const item of data.items) {
+          const product = await tx.product.findUnique({
+            where: { id: item.product_id },
+            include: { warehouse_stocks: true },
           });
+          const availableStock = product?.warehouse_stocks?.reduce(
+            (sum, ws) => sum + (Number(ws.current_stock) || 0),
+            0,
+          ) || 0;
+
+          if (Number(item.qty) > availableStock) {
+            throw new BadRequestException(
+              `Stok "${product?.name || 'Produk'}" tidak mencukupi! Tersedia di storage: ${availableStock}, diminta: ${item.qty}. Silakan pilih mode Pre-Order jika ingin memesan terlebih dahulu.`,
+            );
+          }
         }
+
+        const warehouse = await tx.warehouse.findFirst({
+          where: { company_id: req.user.company_id },
+        });
+
+        if (warehouse) {
+          for (const item of orderItems) {
+            await this.inventoryService.issueStock(tx as any, {
+              companyId: req.user.company_id,
+              warehouseId: warehouse.id,
+              productId: item.product_id,
+              quantity: Number(item.qty),
+              referenceType: 'SALE',
+              referenceId: order.id,
+              description: `Sales Order ${order.order_number}`,
+              userId: req.user.userId,
+              allowNegative: false,
+            });
+          }
+        }
+      } else {
+        // Update status SO menjadi PREORDER
+        await tx.salesOrder.update({
+          where: { id: order.id },
+          data: {
+            status: 'PREORDER',
+            delivery_status: 'PENDING',
+          },
+        });
+        order.status = 'PREORDER';
       }
 
       return order;
+    });
+  }
+
+  @Post(':id/fulfill')
+  async fulfillPreorder(@Request() req, @Param('id') id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.salesOrder.findFirst({
+        where: { id, company_id: req.user.company_id },
+        include: {
+          items: {
+            include: {
+              product: {
+                include: { warehouse_stocks: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!order) throw new BadRequestException('Sales order tidak ditemukan');
+      if (order.status !== 'PREORDER') {
+        throw new BadRequestException('Hanya order berstatus Pre-Order yang dapat diproses kirim');
+      }
+
+      // Periksa apakah stok inventori sekarang sudah tersedia
+      for (const item of order.items) {
+        const availableStock = item.product?.warehouse_stocks?.reduce(
+          (sum, ws) => sum + (Number(ws.current_stock) || 0),
+          0,
+        ) || 0;
+
+        if (Number(item.qty) > availableStock) {
+          throw new BadRequestException(
+            `Stok "${item.product?.name}" belum cukup untuk dikirim! Saat ini tersedia: ${availableStock}, dibutuhkan: ${item.qty}. Silakan isi/tambah stok di inventori terlebih dahulu.`,
+          );
+        }
+      }
+
+      // Potong stok inventori
+      const warehouse = await tx.warehouse.findFirst({
+        where: { company_id: req.user.company_id },
+      });
+      if (!warehouse) throw new BadRequestException('Gudang tidak ditemukan');
+
+      for (const item of order.items) {
+        await this.inventoryService.issueStock(tx as any, {
+          companyId: req.user.company_id,
+          warehouseId: warehouse.id,
+          productId: item.product_id,
+          quantity: Number(item.qty),
+          referenceType: 'SALE',
+          referenceId: order.id,
+          description: `Pengiriman Pre-Order ${order.order_number}`,
+          userId: req.user.userId,
+          allowNegative: false,
+        });
+      }
+
+      const updated = await tx.salesOrder.update({
+        where: { id: order.id },
+        data: {
+          status: 'COMPLETED',
+          delivery_status: 'DELIVERED',
+        },
+      });
+
+      return updated;
     });
   }
 }

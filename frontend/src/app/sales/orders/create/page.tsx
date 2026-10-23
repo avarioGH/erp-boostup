@@ -10,8 +10,9 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Search, ArrowLeft, Plus, X } from 'lucide-react'
+import { Search, ArrowLeft, Plus, X, AlertCircle, Clock, ShoppingCart } from 'lucide-react'
 import { useRef } from "react"
+import { formatThousands, parseThousands } from "@/lib/utils"
 
 function SearchableSelect({ options, value, onChange, placeholder, disabled = false }: any) {
   const [open, setOpen] = useState(false)
@@ -30,11 +31,15 @@ function SearchableSelect({ options, value, onChange, placeholder, disabled = fa
   const getDisplay = (o: any) => {
     if (!o) return "";
     let text = o.name || o.code || "";
-    // Jika ada nomor HP, tambahkan di sebelah nama
     if (o.phone) text += ` (${o.phone})`;
-    // Jika ada kode dan BUKAN kode auto-generate panjang (CUST-/SUP-), tampilkan kodenya (misal untuk Produk)
     else if (o.code && !o.code.startsWith('CUST-') && !o.code.startsWith('SUP-') && !o.code.startsWith('VEND-')) {
       text = `${o.code} - ${text}`;
+    }
+    // Jika merupakan produk, tampilkan stok storage yang ada
+    if (o.warehouse_stocks !== undefined) {
+      const stock = o.warehouse_stocks?.reduce((s: number, ws: any) => s + (Number(ws.current_stock) || 0), 0) || 0;
+      const unitName = o.unit?.name || 'unit';
+      text += ` [Stok: ${stock} ${unitName}]`;
     }
     return text;
   };
@@ -139,6 +144,7 @@ export default function CreateSalesOrderPage() {
   ])
 
   const [paidAmount, setPaidAmount] = useState<number | "">("")
+  const [orderType, setOrderType] = useState<'DIRECT' | 'PREORDER'>('DIRECT')
 
   useEffect(() => {
     Promise.all([
@@ -150,6 +156,18 @@ export default function CreateSalesOrderPage() {
     })
   }, [])
 
+  const getProductStock = (productId: string) => {
+    const prod = products.find((p: any) => p.id === productId || p._id === productId);
+    if (!prod) return 0;
+    return prod.warehouse_stocks?.reduce((s: number, ws: any) => s + (Number(ws.current_stock) || 0), 0) || 0;
+  };
+
+  const hasInsufficientStock = items.some(item => {
+    if (!item.product_id) return false;
+    const stock = getProductStock(item.product_id);
+    return Number(item.qty) > stock;
+  });
+
   const totalAmount = items.reduce((sum, item) => sum + (Number(item.qty) * Number(item.unit_price)), 0)
   const dibayar = Number(paidAmount) || 0
   const piutang = Math.max(0, totalAmount - dibayar)
@@ -159,6 +177,22 @@ export default function CreateSalesOrderPage() {
     if (!form.partner_id) return toast({ title: "Pilih Pelanggan", variant: "destructive" })
     if (items.length === 0) return toast({ title: "Tambah minimal 1 barang", variant: "destructive" })
     
+    // Validasi stok jika penjualan langsung
+    if (orderType === 'DIRECT') {
+      for (const item of items) {
+        const prod = products.find((p: any) => p.id === item.product_id || p._id === item.product_id);
+        const stock = getProductStock(item.product_id);
+        if (Number(item.qty) > stock) {
+          toast({ 
+            title: "Stok Gudang Tidak Cukup", 
+            description: `Stok "${prod?.name || 'Produk'}" hanya ada ${stock}, tetapi Anda memesan ${item.qty}. Silakan ubah Qty atau ubah tipe order menjadi Pre-Order!`, 
+            variant: "destructive" 
+          });
+          return;
+        }
+      }
+    }
+
     setLoading(true)
     try {
       await B2BApi.createOrder({
@@ -166,12 +200,21 @@ export default function CreateSalesOrderPage() {
         customer_id: form.partner_id,
         items,
         total_amount: totalAmount,
-        paidAmount: paidAmount === "" ? undefined : Number(paidAmount)
+        paidAmount: paidAmount === "" ? undefined : Number(paidAmount),
+        is_preorder: orderType === 'PREORDER',
+        status: orderType === 'PREORDER' ? 'PREORDER' : 'COMPLETED'
       })
-      toast({ title: "Sales Order Berhasil dibuat" })
+      toast({ 
+        title: orderType === 'PREORDER' ? "Pre-Order Berhasil Dibuat!" : "Sales Order Berhasil Dibuat!",
+        description: orderType === 'PREORDER' ? "Pesanan dicatat tanpa memotong stok gudang." : undefined
+      })
       router.push("/sales/orders")
-    } catch(err) {
-      toast({ title: "Gagal membuat Order", variant: "destructive" })
+    } catch(err: any) {
+      toast({ 
+        title: "Gagal membuat Order", 
+        description: err?.response?.data?.message || err?.message,
+        variant: "destructive" 
+      })
     } finally {
       setLoading(false)
     }
@@ -243,11 +286,71 @@ export default function CreateSalesOrderPage() {
               </Select>
             </div>
             <div className="space-y-2">
+              <Label>Tipe Order Penjualan</Label>
+              <Select value={orderType} onValueChange={(v: any) => setOrderType(v || 'DIRECT')}>
+                <SelectTrigger className="font-semibold"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DIRECT">
+                    <div className="flex items-center gap-2">
+                      <ShoppingCart className="w-4 h-4 text-emerald-600" />
+                      <span>Penjualan Langsung (Kirim dari Stok Storage)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="PREORDER">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-purple-600" />
+                      <span>Pre-Order (PO Pelanggan - Tunggu Stok Masuk)</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {orderType === 'DIRECT' 
+                  ? 'Stok fisik gudang wajib mencukupi dan akan langsung dipotong.' 
+                  : 'Gunakan jika stok belum ada/kurang. Stok TIDAK dipotong sekarang, menunggu stok diisi di inventori.'}
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label>Catatan Tambahan</Label>
               <Input value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="Catatan opsional..." />
             </div>
           </CardContent>
         </Card>
+
+        {/* Warning Banner if Direct Order has insufficient stock */}
+        {hasInsufficientStock && orderType === 'DIRECT' && (
+          <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-300 dark:border-rose-800 text-rose-700 dark:text-rose-400 space-y-2">
+            <div className="flex items-center gap-2 font-semibold">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <span>Peringatan: Qty Order Melebihi Stok Storage Yang Tersedia!</span>
+            </div>
+            <p className="text-xs">
+              Ada barang dengan Qty yang diminta melebihi stok yang ada di gudang. Sistem melarang penjualan langsung jika stok kurang agar stok tidak minus.
+            </p>
+            <div className="pt-1">
+              <Button 
+                type="button" 
+                size="sm" 
+                onClick={() => setOrderType('PREORDER')}
+                className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8"
+              >
+                <Clock className="w-3.5 h-3.5 mr-1.5" /> Ubah Menjadi Pre-Order (PO)
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {orderType === 'PREORDER' && (
+          <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-400">
+            <div className="flex items-center gap-2 font-semibold text-sm">
+              <Clock className="w-4 h-4 shrink-0" />
+              <span>Mode Pre-Order Aktif</span>
+            </div>
+            <p className="text-xs mt-1">
+              Pesanan ini dicatat sebagai Pre-Order. Stok tidak akan dipotong sekarang. Nanti saat ikan/stok sudah dibeli & masuk ke storage, Anda bisa menekan tombol <strong>"Kirim Pre-Order"</strong> di halaman Detail Sales Order.
+            </p>
+          </div>
+        )}
 
         <Card className="overflow-visible">
           <CardHeader className="flex flex-row justify-between items-center pb-2">
@@ -257,46 +360,82 @@ export default function CreateSalesOrderPage() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {items.map((item, index) => (
-              <div key={index} className="grid grid-cols-12 gap-2 items-end border-b pb-4">
-                <div className="col-span-5 space-y-2">
-                  <Label className="text-xs">Barang</Label>
-                  <SearchableSelect 
-                    options={products}
-                    value={item.product_id}
-                    onChange={(v: any) => {
-                      const newItems = [...items]; 
-                      newItems[index].product_id = v;
-                      const prod = products.find((p: any) => p.id === v || p._id === v);
-                      if (prod && prod.sell_price) newItems[index].unit_price = prod.sell_price;
-                      setItems(newItems);
-                    }}
-                    placeholder="Pilih Produk..."
-                  />
+            {items.map((item, index) => {
+              const currentStock = item.product_id ? getProductStock(item.product_id) : null;
+              const isOverStock = currentStock !== null && Number(item.qty) > currentStock;
+              const prod = products.find((p: any) => p.id === item.product_id || p._id === item.product_id);
+
+              return (
+                <div key={index} className="grid grid-cols-12 gap-2 items-end border-b pb-4">
+                  <div className="col-span-5 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Barang</Label>
+                      {currentStock !== null && (
+                        <span className={`text-[11px] font-semibold ${isOverStock && orderType === 'DIRECT' ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+                          Tersedia: {currentStock} {prod?.unit?.name || 'unit'}
+                        </span>
+                      )}
+                    </div>
+                    <SearchableSelect 
+                      options={products}
+                      value={item.product_id}
+                      onChange={(v: any) => {
+                        const newItems = [...items]; 
+                        newItems[index].product_id = v;
+                        const p = products.find((pr: any) => pr.id === v || pr._id === v);
+                        if (p && p.sell_price) newItems[index].unit_price = p.sell_price;
+                        setItems(newItems);
+                      }}
+                      placeholder="Pilih Produk..."
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Qty</Label>
+                      {isOverStock && (
+                        <span className={`text-[10px] font-semibold ${orderType === 'DIRECT' ? 'text-rose-600' : 'text-purple-600'}`}>
+                          {orderType === 'DIRECT' ? 'Kurang!' : 'PO'}
+                        </span>
+                      )}
+                    </div>
+                    <Input 
+                      type="number" 
+                      step="any" 
+                      min="0" 
+                      value={item.qty} 
+                      onChange={e => {
+                        const newItems = [...items]; 
+                        newItems[index].qty = e.target.value as any; 
+                        setItems(newItems);
+                      }} 
+                      className={isOverStock && orderType === 'DIRECT' ? 'border-destructive focus-visible:ring-destructive font-bold' : ''}
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label className="text-xs">Harga Satuan (Rp)</Label>
+                    <Input 
+                      type="text"
+                      inputMode="numeric"
+                      value={formatThousands(item.unit_price)} 
+                      onChange={e => {
+                        const newItems = [...items]; 
+                        newItems[index].unit_price = parseThousands(e.target.value); 
+                        setItems(newItems);
+                      }} 
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label className="text-xs">Subtotal</Label>
+                    <Input type="text" readOnly disabled value={(Number(item.qty) * Number(item.unit_price)).toLocaleString('id-ID')} />
+                  </div>
+                  <div className="col-span-1 pb-1 flex justify-end">
+                    <Button type="button" variant="ghost" size="icon" className="text-red-500" onClick={() => setItems((Array.isArray(items) ? items : []).filter((_, i) => i !== index))}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-xs">Qty</Label>
-                  <Input type="number" step="any" min="0" value={item.qty} onChange={e => {
-                    const newItems = [...items]; newItems[index].qty = e.target.value as any; setItems(newItems);
-                  }} />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-xs">Harga Satuan (Rp)</Label>
-                  <Input type="number" value={item.unit_price} onChange={e => {
-                    const newItems = [...items]; newItems[index].unit_price = e.target.value as any; setItems(newItems);
-                  }} />
-                </div>
-                <div className="col-span-2 space-y-2">
-                  <Label className="text-xs">Subtotal</Label>
-                  <Input type="text" readOnly disabled value={(Number(item.qty) * Number(item.unit_price)).toLocaleString('id-ID')} />
-                </div>
-                <div className="col-span-1 pb-1 flex justify-end">
-                  <Button type="button" variant="ghost" size="icon" className="text-red-500" onClick={() => setItems((Array.isArray(items) ? items : []).filter((_, i) => i !== index))}>
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {items.length === 0 && <p className="text-center text-sm text-muted-foreground py-4">Belum ada barang ditambahkan.</p>}
           </CardContent>
         </Card>
@@ -316,15 +455,22 @@ export default function CreateSalesOrderPage() {
                     Dibayar Full
                   </Button>
                 </div>
-                <Input 
-                  type="number" 
-                  min="0" 
-                  placeholder="Kosongkan jika belum bayar sama sekali" 
-                  value={paidAmount} 
-                  onChange={e => setPaidAmount(e.target.value ? Number(e.target.value) : "")} 
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">Rp</span>
+                  <Input 
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0" 
+                    value={formatThousands(paidAmount)} 
+                    onChange={e => {
+                      const val = parseThousands(e.target.value);
+                      setPaidAmount(val > 0 ? val : "");
+                    }} 
+                    className="pl-10 text-base font-bold"
+                  />
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Isi sesuai nominal yang dibayar customer saat ini.
+                  Isi sesuai nominal yang dibayar customer saat ini (kosongkan jika tempo/belum bayar).
                 </p>
               </div>
               <div className="space-y-2">
@@ -341,8 +487,16 @@ export default function CreateSalesOrderPage() {
           </CardContent>
         </Card>
 
-        <Button type="submit" disabled={loading} className="w-full h-12 text-lg">
-          {loading ? "Menyimpan..." : "Buat Sales Order"}
+        <Button 
+          type="submit" 
+          disabled={loading || (orderType === 'DIRECT' && hasInsufficientStock)} 
+          className={`w-full h-12 text-lg font-semibold ${orderType === 'PREORDER' ? 'bg-purple-600 hover:bg-purple-700 text-white' : ''}`}
+        >
+          {loading 
+            ? "Menyimpan..." 
+            : orderType === 'PREORDER' 
+              ? "Buat Pre-Order (PO - Tunggu Stok Masuk)" 
+              : "Buat Sales Order (Kirim Langsung)"}
         </Button>
       </form>
     </div>

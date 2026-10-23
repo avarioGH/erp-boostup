@@ -6,8 +6,10 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Loader2, Plus, Printer, Search, Filter, ChevronLeft, Send, CheckCircle2, FileText, Download, Truck, FileOutput, Eye } from 'lucide-react'
+import { Loader2, Plus, Printer, Search, Filter, ChevronLeft, Send, CheckCircle2, FileText, Download, Truck, FileOutput, Eye, PackageCheck } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { api } from '@/lib/api'
+import { toast } from 'sonner'
 
 export default function SalesOrdersPage() {
  const router = useRouter()
@@ -22,6 +24,7 @@ export default function SalesOrdersPage() {
  // detail state
  const [docLoading, setDocLoading] = useState(false)
  const [docDetails, setDocDetails] = useState<any | null>(null)
+ const [isFulfilling, setIsFulfilling] = useState(false)
 
  useEffect(() => {
    const handleWhChange = () => {
@@ -80,6 +83,7 @@ export default function SalesOrdersPage() {
  const getStatusBadge = (status: string) => {
  switch (status) {
  case 'PENDING': return <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300">Pending</Badge>
+ case 'PREORDER': return <Badge className="bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 hover:bg-purple-100">Pre-Order (Menunggu Stok)</Badge>
  case 'CONFIRMED': return <Badge className="">Confirmed</Badge>
  case 'DELIVERED': return <Badge className="">Delivered</Badge>
  case 'INVOICED': return <Badge variant="outline" className="border-emerald-500 text-primary">Invoiced</Badge>
@@ -115,6 +119,30 @@ export default function SalesOrdersPage() {
  
  <div className="flex items-center gap-2">
  <Button variant="outline"><Download className="w-4 h-4 mr-2" /> Export</Button>
+ {details.status === 'PREORDER' && (
+   <Button 
+     onClick={async () => {
+       if (!confirm(`Proses pengiriman Pre-Order ${details.order_number}? Pastikan stok fisik di inventori sudah tersedia.`)) return;
+       setIsFulfilling(true);
+       try {
+         await api.post(`/sales/orders/${details.id}/fulfill`);
+         toast.success(`Pre-Order ${details.order_number} berhasil diproses! Stok gudang telah dipotong.`);
+         const updated = await B2BApi.getOrder(details.id);
+         setDocDetails(updated);
+         fetchOrders();
+       } catch(err: any) {
+         toast.error((err.response?.data?.message || err.message || 'Gagal memproses pengiriman Pre-Order'));
+       } finally {
+         setIsFulfilling(false);
+       }
+     }}
+     disabled={isFulfilling}
+     className="bg-purple-600 hover:bg-purple-700 text-white font-semibold"
+   >
+     <PackageCheck className="w-4 h-4 mr-2" />
+     {isFulfilling ? 'Memproses Stok...' : 'Kirim Pre-Order (Stok Sudah Masuk)'}
+   </Button>
+ )}
   <Button onClick={() => router.push(`/sales/deliveries/create?so_id=${details.id}`)} variant="outline"><Truck className="w-4 h-4 mr-2" /> Buat Surat Jalan (Pengiriman)</Button>
  
  
