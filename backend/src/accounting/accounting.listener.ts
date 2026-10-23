@@ -359,6 +359,7 @@ export class AccountingListener {
         referenceId: event.sourceEntityId,
         description: `Penjualan POS (Event ${event.eventId})`,
         items: items,
+        userId: event.payload.userId,
       });
     } catch (e: any) {
       if ((e?.code === 'P2028' || e?.message?.includes('Transaction not found')) && tx !== this.prisma) {
@@ -370,6 +371,7 @@ export class AccountingListener {
           referenceId: event.sourceEntityId,
           description: `Penjualan POS (Event ${event.eventId})`,
           items: items,
+          userId: event.payload.userId,
         });
       } else {
         throw e;

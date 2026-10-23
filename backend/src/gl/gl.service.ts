@@ -9,6 +9,7 @@ export interface CreateJournalDto {
   referenceType: string;
   referenceId: string;
   description?: string;
+  userId?: string;
   items: {
     accountId: string;
     debit: number;
@@ -93,6 +94,23 @@ export class GlService {
     }
 
     // 2. Create Journal Header
+    let validUserId = (data as any).userId;
+    if (validUserId) {
+      const userExists = await tx.user.findUnique({ where: { id: validUserId } });
+      if (!userExists) validUserId = undefined;
+    }
+    if (!validUserId) {
+      const fallbackUser = await tx.user.findFirst({
+        where: { company_id: data.companyId },
+        select: { id: true },
+      });
+      validUserId = fallbackUser?.id;
+    }
+    if (!validUserId) {
+      const anyUser = await tx.user.findFirst({ select: { id: true } });
+      validUserId = anyUser?.id;
+    }
+
     const journal = await tx.journalEntry.create({
       data: {
         company_id: data.companyId,
@@ -106,7 +124,7 @@ export class GlService {
             : undefined,
         description: data.description,
         status: 'Posted',
-        created_by: (data as any).userId || '000000000000000000000999',
+        created_by: validUserId,
       },
     });
 
