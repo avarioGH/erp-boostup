@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -11,6 +12,8 @@ import { InventoryValuationEvent } from '../../events/accounting.events';
 
 @Injectable()
 export class DisposalService {
+  private readonly logger = new Logger(DisposalService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly inventoryService: InventoryService,
@@ -156,49 +159,14 @@ export class DisposalService {
             referenceId: id,
             userId,
             description: `Disposal ${disposal.disposal_number}`,
-            allowNegative: false,
+            allowNegative: true,
           });
           if (issueResult.consumedCost) {
             totalConsumedCost += issueResult.consumedCost;
           }
         } catch (err: any) {
-          // If FIFO historical layer error, do direct stock deduction and movement
-          if (err.message && err.message.includes('INSUFFICIENT_INVENTORY_COST_LAYER')) {
-            const whStock = await tx.warehouseStock.findFirst({
-              where: {
-                company_id: companyId,
-                warehouse_id: disposal.warehouse_id,
-                product_id: item.product_id,
-              },
-            });
-            if (whStock) {
-              const deductQty = Math.min(whStock.current_stock, Number(item.qty));
-              await tx.warehouseStock.update({
-                where: { id: whStock.id },
-                data: {
-                  current_stock: Math.max(0, whStock.current_stock - deductQty),
-                  available_stock: Math.max(0, whStock.available_stock - deductQty),
-                },
-              });
-              await tx.stockMovement.create({
-                data: {
-                  company_id: companyId,
-                  warehouse_id: disposal.warehouse_id,
-                  product_id: item.product_id,
-                  transaction_type: 'DISPOSAL',
-                  transaction_id: id,
-                  movement_type: 'DISPOSAL_OUT',
-                  qty_in: 0,
-                  qty_out: Number(item.qty),
-                  balance_after: Math.max(0, whStock.current_stock - deductQty),
-                  created_by: userId,
-                  remarks: `Disposal ${disposal.disposal_number}`,
-                },
-              });
-            }
-          } else {
-            throw err;
-          }
+          this.logger.error(`Error issuing stock for disposal item ${item.product_id}: ${err.message}`, err);
+          throw err;
         }
       }
 
