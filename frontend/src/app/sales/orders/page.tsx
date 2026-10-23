@@ -54,7 +54,8 @@ export default function SalesOrdersPage() {
        params.warehouse_id = activeWarehouse.id;
      }
      const res = await B2BApi.getOrders(params)
- setData(res?.data || [])
+ const orders = Array.isArray(res) ? res : (res?.data || []);
+      setData(orders)
  } catch (error) {
  console.error(error)
  } finally {

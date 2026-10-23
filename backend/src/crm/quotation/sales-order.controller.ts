@@ -67,7 +67,7 @@ export class SalesOrderController {
           company_id: compId,
           ecommerce_session_id:
             'MANUAL_' + Date.now() + Math.random().toString(36).substring(7),
-          customer_id: body.customer_id,
+          customer_id: body.customer_id || body.partner_id,
           order_number: orderNo,
           order_date: new Date(body.order_date || new Date()),
           status: 'COMPLETED',
@@ -98,7 +98,7 @@ export class SalesOrderController {
         compId,
         {
           salesOrderId: so.id,
-          customerId: body.customer_id,
+          customerId: body.customer_id || body.partner_id,
           amount: paidAmount,
           paymentMethod: body.payment_method || 'Transfer',
           reference: orderNo,

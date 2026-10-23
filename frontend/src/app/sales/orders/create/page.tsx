@@ -163,6 +163,7 @@ export default function CreateSalesOrderPage() {
     try {
       await B2BApi.createOrder({
         ...form,
+        customer_id: form.partner_id,
         items,
         total_amount: totalAmount,
         paidAmount: paidAmount === "" ? undefined : Number(paidAmount)

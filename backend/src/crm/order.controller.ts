@@ -28,7 +28,7 @@ export class OrderController {
     if (query.warehouse_id) {
       whereParams.warehouse_id = query.warehouse_id;
     }
-    return this.prisma.salesOrder.findMany({
+    const orders = await this.prisma.salesOrder.findMany({
       where: whereParams,
       include: {
         customer: true,
@@ -38,6 +38,7 @@ export class OrderController {
       },
       orderBy: { order_date: 'desc' },
     });
+    return { data: orders };
   }
 
   @Post()
@@ -73,7 +74,7 @@ export class OrderController {
       const order = await tx.salesOrder.create({
         data: {
           company_id: req.user.company_id,
-          customer_id: data.customer_id,
+          customer_id: data.customer_id || data.partner_id,
           order_number: orderNumber,
           order_date: new Date(),
           status: 'COMPLETED',
