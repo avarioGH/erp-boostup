@@ -75,6 +75,11 @@ export class InventoryService {
   async getCategories(companyId: string) {
     return this.prisma.category.findMany({
       where: { company_id: companyId },
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
       orderBy: { created_at: 'desc' },
     });
   }
@@ -110,8 +115,8 @@ export class InventoryService {
       where: { category_id: id },
     });
     if (products > 0) {
-      throw new Error(
-        'Kategori tidak dapat dihapus karena sedang digunakan oleh produk.',
+      throw new BadRequestException(
+        'Kategori tidak dapat dihapus karena masih digunakan oleh produk. Silakan ubah atau hapus produk yang terkait terlebih dahulu.',
       );
     }
     return this.prisma.category.delete({

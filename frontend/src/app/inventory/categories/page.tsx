@@ -112,28 +112,42 @@ export default function InventoryCategories() {
  <thead>
  <tr className="border-b bg-muted/50">
  <th className="p-3 text-left font-medium">Nama Kategori</th>
- <th className="p-3 text-left font-medium">Deskripsi</th>
- <th className="p-3 text-right font-medium">Aksi</th>
- </tr>
- </thead>
- <tbody>
- {categories.map((c) => (
- <tr key={c.id} className="border-b last:border-0 hover:bg-muted/50">
- <td className="p-3 font-medium">{c.name}</td>
- <td className="p-3 text-muted-foreground">{c.description || '-'}</td>
- <td className="p-3 text-right">
- <div className="flex items-center justify-end gap-2">
- <Button variant="ghost" size="icon" onClick={() => openEditModal(c)}>
- <Edit className="w-4 h-4 text-muted-foreground" />
- </Button>
- <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)}>
- <Trash2 className="w-4 h-4 text-red-500" />
- </Button>
- </div>
- </td>
- </tr>
- ))}
- </tbody>
+                <th className="p-3 text-left font-medium">Deskripsi</th>
+                <th className="p-3 text-center font-medium">Jumlah Produk Terkait</th>
+                <th className="p-3 text-right font-medium">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categories.map((c) => {
+                const prodCount = c._count?.products || 0;
+                return (
+                  <tr key={c.id} className="border-b last:border-0 hover:bg-muted/50">
+                    <td className="p-3 font-medium">{c.name}</td>
+                    <td className="p-3 text-muted-foreground">{c.description || '-'}</td>
+                    <td className="p-3 text-center">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${prodCount > 0 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'}`}>
+                        {prodCount} Produk
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => openEditModal(c)} title="Edit Kategori">
+                          <Edit className="w-4 h-4 text-muted-foreground" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDelete(c.id)}
+                          title={prodCount > 0 ? "Kategori tidak bisa dihapus karena masih dipakai oleh produk" : "Hapus Kategori"}
+                        >
+                          <Trash2 className={`w-4 h-4 ${prodCount > 0 ? 'text-muted-foreground/40' : 'text-red-500'}`} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
  </table>
  </div>
  )}
