@@ -535,7 +535,7 @@ export default function CreatePackingPage() {
             <Label className="text-xs font-semibold">Jenis Kayu / Species</Label>
             <Select
               value={species || ""}
-              onValueChange={(val) => setSpecies(val)}
+              onValueChange={(val) => setSpecies(val || "")}
             >
               <SelectTrigger className="h-9 text-xs font-bold uppercase text-primary bg-background">
                 <SelectValue placeholder="Pilih Jenis Kayu">
