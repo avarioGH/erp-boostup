@@ -107,12 +107,73 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const [purchaseFilterSpecies, setPurchaseFilterSpecies] = useState<string>("ALL");
   const [purchaseFilterStartDate, setPurchaseFilterStartDate] = useState<string>("");
   const [purchaseFilterEndDate, setPurchaseFilterEndDate] = useState<string>("");
-  const [speciesList, setSpeciesList] = useState<any[]>([]);
-
-
   // DUKB selection & bulk trimming state
   const [selectedDukbLogIds, setSelectedDukbLogIds] = useState<string[]>([]);
   const [isBulkTrimming, setIsBulkTrimming] = useState(false);
+
+  // Excel Export Modal States
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportSheets, setExportSheets] = useState<{ dukb: boolean; trimming: boolean; input: boolean; output: boolean }>({
+    dukb: true,
+    trimming: true,
+    input: true,
+    output: true,
+  });
+  const [exportSpecies, setExportSpecies] = useState("ALL");
+  const [exportStartDate, setExportStartDate] = useState("");
+  const [exportEndDate, setExportEndDate] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportExcel = async () => {
+    const selected = Object.entries(exportSheets)
+      .filter(([_, val]) => val)
+      .map(([key]) => key);
+
+    if (selected.length === 0) {
+      toast({
+        title: "Pilih Minimal 1 Bagian",
+        description: "Centang minimal satu sheet (DUKB, Trimming, Input Log, atau Output).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const params: any = {
+        sheets: selected.join(","),
+      };
+      if (exportSpecies && exportSpecies !== "ALL") params.species = exportSpecies;
+      if (exportStartDate) params.startDate = exportStartDate;
+      if (exportEndDate) params.endDate = exportEndDate;
+
+      const blob = await PartaiAPI.exportExcel(id, params);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
+      link.href = url;
+      const safeCode = (partai?.code || id).replace(/[^a-zA-Z0-9_-]/g, "_");
+      link.setAttribute("download", `Laporan_Partai_${safeCode}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Ekspor Berhasil",
+        description: "File Excel berhasil diunduh.",
+      });
+      setExportModalOpen(false);
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Gagal Ekspor",
+        description: err?.response?.data?.message || err?.message || "Terjadi kesalahan saat mengekspor file.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
   
   const [grades, setGrades] = useState<any[]>([]);
   const [selectedOutputItems, setSelectedOutputItems] = useState<{id: string, outputId: string}[]>([]);
@@ -825,9 +886,19 @@ export default function PartaiDetailPage({ params }: { params: any }) {
             <p className="text-sm text-muted-foreground">{partai.name || "Tanpa Nama"}</p>
           </div>
         </div>
-        <Badge variant={partai.status === 'ACTIVE' ? 'default' : 'secondary'} className="text-sm px-3 py-1">
-          {partai.status}
-        </Badge>
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="outline"
+            className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 font-semibold shadow-xs flex items-center gap-1.5"
+            onClick={() => setExportModalOpen(true)}
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            Export Excel
+          </Button>
+          <Badge variant={partai.status === 'ACTIVE' ? 'default' : 'secondary'} className="text-sm px-3 py-1">
+            {partai.status}
+          </Badge>
+        </div>
       </div>
 
       {/* REKAP POSISI STOK PER GUDANG (LOG & SAWN TIMBER) */}
@@ -3363,6 +3434,138 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               ) : (
                 <>
                   <Check className="w-4 h-4 mr-2" /> Simpan Tally (POST)
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* EXPORT EXCEL MODAL DENGAN FILTER & CHECKLIST SHEET */}
+      <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-emerald-600">
+              <FileSpreadsheet className="w-5 h-5" />
+              Ekspor Laporan Partai ke Excel (.xlsx)
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Pilih lembar (sheet) dan filter data kayu yang ingin disertakan ke dalam file Excel.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Bagian / Sheet Checklist */}
+            <div className="space-y-2">
+              <Label className="text-xs font-bold text-foreground">
+                Pilih Bagian / Sheet yang Diekspor:
+              </Label>
+              <div className="grid grid-cols-2 gap-2.5 p-3 rounded-lg border bg-muted/20">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium">
+                  <Checkbox 
+                    checked={exportSheets.dukb} 
+                    onCheckedChange={(c) => setExportSheets(prev => ({ ...prev, dukb: !!c }))} 
+                  />
+                  <span>1. DUKB (Raw Logs)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium">
+                  <Checkbox 
+                    checked={exportSheets.trimming} 
+                    onCheckedChange={(c) => setExportSheets(prev => ({ ...prev, trimming: !!c }))} 
+                  />
+                  <span>2. Trimming Log</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium">
+                  <Checkbox 
+                    checked={exportSheets.input} 
+                    onCheckedChange={(c) => setExportSheets(prev => ({ ...prev, input: !!c }))} 
+                  />
+                  <span>3. Input Log (Sawmill)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-medium">
+                  <Checkbox 
+                    checked={exportSheets.output} 
+                    onCheckedChange={(c) => setExportSheets(prev => ({ ...prev, output: !!c }))} 
+                  />
+                  <span>4. Output Sawn Timber</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Filter Jenis Kayu / Species */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground">
+                Filter Jenis Kayu / Species:
+              </Label>
+              <Select value={exportSpecies} onValueChange={setExportSpecies}>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue placeholder="Semua Jenis Kayu" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Semua Jenis Kayu</SelectItem>
+                  <SelectItem value="MERANTI">Meranti</SelectItem>
+                  <SelectItem value="BENGKIRAI">Bengkirai</SelectItem>
+                  <SelectItem value="ULIN">Ulin</SelectItem>
+                  <SelectItem value="KERUING">Keruing</SelectItem>
+                  <SelectItem value="KAPUR">Kapur</SelectItem>
+                  <SelectItem value="CAMPURAN">Kayu Campuran / Rimba</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filter Rentang Tanggal */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground">
+                Filter Rentang Tanggal Transaksi:
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-[11px] text-muted-foreground block mb-0.5">Dari:</span>
+                  <Input 
+                    type="date" 
+                    value={exportStartDate} 
+                    onChange={(e) => setExportStartDate(e.target.value)} 
+                    className="h-8 text-xs" 
+                  />
+                </div>
+                <div>
+                  <span className="text-[11px] text-muted-foreground block mb-0.5">Sampai:</span>
+                  <Input 
+                    type="date" 
+                    value={exportEndDate} 
+                    onChange={(e) => setExportEndDate(e.target.value)} 
+                    className="h-8 text-xs" 
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground italic">
+                * Kosongkan filter tanggal jika ingin mengekspor seluruh riwayat partai ini.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setExportModalOpen(false)}
+              disabled={isExporting}
+            >
+              Batal
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleExportExcel} 
+              disabled={isExporting}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyiapkan Excel...
+                </>
+              ) : (
+                <>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" /> Download Excel (.xlsx)
                 </>
               )}
             </Button>

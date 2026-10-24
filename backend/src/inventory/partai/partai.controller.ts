@@ -8,16 +8,40 @@ import {
   Delete,
   UseGuards,
   Request,
+  Res,
+  Query,
 } from '@nestjs/common';
 import { PartaiService } from './partai.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../../auth/permissions.guard';
 import { Permissions } from '../../auth/permissions.decorator';
+import type { Response } from 'express';
 
 @Controller('inventory/timber-partai')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class PartaiController {
   constructor(private readonly partaiService: PartaiService) {}
+
+  @Get(':id/export-excel')
+  @Permissions('inventory.read')
+  async exportExcel(
+    @Param('id') id: string,
+    @Query('sheets') sheets: string,
+    @Query('species') species: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Request() req,
+    @Res() res: Response,
+  ) {
+    const companyId = req.user?.company_id || req.user?.companyId;
+    const sheetArray = sheets ? sheets.split(',').map((s) => s.trim().toLowerCase()) : [];
+    return this.partaiService.exportExcel(
+      id,
+      companyId,
+      { sheets: sheetArray, species, startDate, endDate },
+      res,
+    );
+  }
 
   @Post()
   @Permissions('inventory.create')

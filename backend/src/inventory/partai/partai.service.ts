@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import * as ExcelJS from 'exceljs';
+import type { Response } from 'express';
 
 @Injectable()
 export class PartaiService {
@@ -530,5 +532,307 @@ export class PartaiService {
     });
     if (!partai) throw new NotFoundException('Partai not found');
     return this.prisma.timberPartai.delete({ where: { id } });
+  }
+
+  async exportExcel(id: string, companyId: string, options: any, res: Response) {
+    const partai = await this.findOne(id, companyId);
+    if (!partai) throw new NotFoundException('Partai tidak ditemukan');
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'ERP Boostup Wood';
+    workbook.lastModifiedBy = 'ERP Boostup Wood';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+
+    const selectedSheets: string[] = Array.isArray(options?.sheets) && options.sheets.length > 0
+      ? options.sheets
+      : ['dukb', 'trimming', 'input', 'output'];
+
+    const filterSpecies = options?.species ? String(options.species).trim().toUpperCase() : null;
+    const filterStartDate = options?.startDate ? new Date(options.startDate) : null;
+    const filterEndDate = options?.endDate ? new Date(options.endDate) : null;
+
+    const headerFill: ExcelJS.Fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFEFEFEF' },
+    };
+    const headerFont: Partial<ExcelJS.Font> = { bold: true, size: 10, name: 'Calibri' };
+    const borderStyle: Partial<ExcelJS.Borders> = {
+      top: { style: 'thin', color: { argb: 'FFD3D3D3' } },
+      left: { style: 'thin', color: { argb: 'FFD3D3D3' } },
+      bottom: { style: 'thin', color: { argb: 'FFD3D3D3' } },
+      right: { style: 'thin', color: { argb: 'FFD3D3D3' } },
+    };
+
+    // 1. SHEET: DUKB (Raw Logs)
+    if (selectedSheets.includes('dukb')) {
+      const ws = workbook.addWorksheet('DUKB');
+      ws.addRow(['KODE PARTAI', ':', partai.code || '-']);
+      ws.addRow(['NAMA PARTAI', ':', partai.name || '-']);
+      ws.addRow(['TANGGAL EXPORT', ':', new Date().toLocaleDateString('id-ID')]);
+      ws.addRow([]);
+
+      const headers = [
+        'No. Urut', 'No. Log', 'Kode', 'Jenis Kayu', 'Qty', 'Panjang (m)',
+        'D1 (cm)', 'D2 (cm)', 'D3 (cm)', 'D4 (cm)', 'Ø Rata (cm)',
+        'Vol Bruto (m³)', 'Gerowong (cm)', 'Vol Gerowong (m³)', 'Vol Netto (m³)', 'Status'
+      ];
+      const hRow = ws.addRow(headers);
+      hRow.eachCell((cell) => {
+        cell.fill = headerFill;
+        cell.font = headerFont;
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = borderStyle;
+      });
+
+      let rawLogs = partai.rawLogs || [];
+      if (filterSpecies && filterSpecies !== 'ALL') {
+        rawLogs = rawLogs.filter((r: any) => (r.species || '').toUpperCase().includes(filterSpecies));
+      }
+      if (filterStartDate) {
+        rawLogs = rawLogs.filter((r: any) => new Date(r.createdAt) >= filterStartDate);
+      }
+      if (filterEndDate) {
+        rawLogs = rawLogs.filter((r: any) => new Date(r.createdAt) <= filterEndDate);
+      }
+
+      rawLogs.forEach((r: any, idx: number) => {
+        const d1 = r.d1 || 0;
+        const d2 = r.d2 || 0;
+        const d3 = r.d3 || 0;
+        const d4 = r.d4 || 0;
+        const avgD = (d1 || d2 || d3 || d4)
+          ? Number(((d1 + d2 + d3 + d4) / ([d1, d2, d3, d4].filter(x => x > 0).length || 1)).toFixed(2))
+          : (r.diameter || 0);
+
+        const row = ws.addRow([
+          idx + 1,
+          r.logNumber || '-',
+          r.code || '-',
+          r.species || '-',
+          1,
+          Number(r.length || 0),
+          d1 || '-',
+          d2 || '-',
+          d3 || '-',
+          d4 || '-',
+          avgD,
+          Number(r.grossVolume || 0),
+          r.hollowDiameter || 0,
+          Number(r.hollowVolume || 0),
+          Number(r.netVolume || r.grossVolume || 0),
+          r.status || 'AVAILABLE'
+        ]);
+        row.eachCell((cell) => { cell.border = borderStyle; cell.font = { size: 9, name: 'Calibri' }; });
+      });
+
+      ws.columns = [
+        { width: 10 }, { width: 14 }, { width: 10 }, { width: 16 }, { width: 8 },
+        { width: 12 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 },
+        { width: 12 }, { width: 14 }, { width: 14 }, { width: 16 }, { width: 14 }, { width: 14 }
+      ];
+    }
+
+    // 2. SHEET: Trimming log
+    if (selectedSheets.includes('trimming')) {
+      const ws = workbook.addWorksheet('Trimming log');
+      ws.addRow(['KODE PARTAI', ':', partai.code || '-']);
+      ws.addRow(['NAMA PARTAI', ':', partai.name || '-']);
+      ws.addRow(['LAPORAN', ':', 'TRIMMING LOG BULAT']);
+      ws.addRow([]);
+
+      const headers = [
+        'No', 'Tanggal', 'No. Log Asal', 'No. TRM', 'Kode', 'Jenis Kayu',
+        'Panjang (m)', 'D1 (cm)', 'D2 (cm)', 'D3 (cm)', 'D4 (cm)',
+        'Ø Rata (cm)', 'Vol Netto (m³)', 'Status'
+      ];
+      const hRow = ws.addRow(headers);
+      hRow.eachCell((cell) => {
+        cell.fill = headerFill;
+        cell.font = headerFont;
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = borderStyle;
+      });
+
+      let trimmedLogs = partai.trimmedLogs || [];
+      if (filterSpecies && filterSpecies !== 'ALL') {
+        trimmedLogs = trimmedLogs.filter((t: any) => (t.species || t.rawLog?.species || '').toUpperCase().includes(filterSpecies));
+      }
+      if (filterStartDate) {
+        trimmedLogs = trimmedLogs.filter((t: any) => new Date(t.createdAt) >= filterStartDate);
+      }
+      if (filterEndDate) {
+        trimmedLogs = trimmedLogs.filter((t: any) => new Date(t.createdAt) <= filterEndDate);
+      }
+
+      trimmedLogs.forEach((t: any, idx: number) => {
+        const d1 = t.d1 || 0;
+        const d2 = t.d2 || 0;
+        const d3 = t.d3 || 0;
+        const d4 = t.d4 || 0;
+        const avgD = (d1 || d2 || d3 || d4)
+          ? Number(((d1 + d2 + d3 + d4) / ([d1, d2, d3, d4].filter(x => x > 0).length || 1)).toFixed(2))
+          : 0;
+
+        const dateStr = t.createdAt ? new Date(t.createdAt).toLocaleDateString('id-ID') : '-';
+        const row = ws.addRow([
+          idx + 1,
+          dateStr,
+          t.rawLog?.logNumber || t.rawLogId || '-',
+          t.trimNumber || '-',
+          t.code || '-',
+          t.species || t.rawLog?.species || '-',
+          Number(t.length || 0),
+          d1 || '-',
+          d2 || '-',
+          d3 || '-',
+          d4 || '-',
+          avgD,
+          Number(t.netVolume || 0),
+          t.status || 'AVAILABLE'
+        ]);
+        row.eachCell((cell) => { cell.border = borderStyle; cell.font = { size: 9, name: 'Calibri' }; });
+      });
+
+      ws.columns = [
+        { width: 8 }, { width: 14 }, { width: 16 }, { width: 16 }, { width: 10 }, { width: 16 },
+        { width: 12 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 },
+        { width: 12 }, { width: 14 }, { width: 14 }
+      ];
+    }
+
+    // 3. SHEET: Input Log (Bahan Gesek Sawmill)
+    if (selectedSheets.includes('input')) {
+      const ws = workbook.addWorksheet('Input Log');
+      ws.addRow(['KODE PARTAI', ':', partai.code || '-']);
+      ws.addRow(['NAMA PARTAI', ':', partai.name || '-']);
+      ws.addRow(['LAPORAN', ':', 'INPUT LOG (GESEK SAWMILL)']);
+      ws.addRow([]);
+
+      const headers = [
+        'No', 'Tanggal Input', 'No. Dokumen / Batch', 'No. Log / TRM', 'Kode', 'Jenis Kayu',
+        'Panjang (m)', 'D1 (cm)', 'D2 (cm)', 'D3 (cm)', 'D4 (cm)', 'Ø Rata (cm)', 'Volume (m³)'
+      ];
+      const hRow = ws.addRow(headers);
+      hRow.eachCell((cell) => {
+        cell.fill = headerFill;
+        cell.font = headerFont;
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = borderStyle;
+      });
+
+      let rowCounter = 1;
+      (partai.inputLogs || []).forEach((inLog: any) => {
+        const inDate = inLog.date ? new Date(inLog.date).toLocaleDateString('id-ID') : (inLog.createdAt ? new Date(inLog.createdAt).toLocaleDateString('id-ID') : '-');
+        (inLog.items || []).forEach((item: any) => {
+          const logRef = item.trimmedLog || item.rawLog || {};
+          const spec = logRef.species || inLog.species || '-';
+          if (filterSpecies && filterSpecies !== 'ALL' && !spec.toUpperCase().includes(filterSpecies)) return;
+          if (filterStartDate && inLog.date && new Date(inLog.date) < filterStartDate) return;
+          if (filterEndDate && inLog.date && new Date(inLog.date) > filterEndDate) return;
+
+          const d1 = logRef.d1 || 0;
+          const d2 = logRef.d2 || 0;
+          const d3 = logRef.d3 || 0;
+          const d4 = logRef.d4 || 0;
+          const avgD = (d1 || d2 || d3 || d4)
+            ? Number(((d1 + d2 + d3 + d4) / ([d1, d2, d3, d4].filter(x => x > 0).length || 1)).toFixed(2))
+            : (logRef.diameter || 0);
+
+          const row = ws.addRow([
+            rowCounter++,
+            inDate,
+            inLog.inputNumber || inLog.code || inLog.id.slice(-6),
+            logRef.trimNumber || logRef.logNumber || '-',
+            logRef.code || '-',
+            spec,
+            Number(logRef.length || 0),
+            d1 || '-',
+            d2 || '-',
+            d3 || '-',
+            d4 || '-',
+            avgD,
+            Number(logRef.netVolume || logRef.grossVolume || 0)
+          ]);
+          row.eachCell((cell) => { cell.border = borderStyle; cell.font = { size: 9, name: 'Calibri' }; });
+        });
+      });
+
+      ws.columns = [
+        { width: 8 }, { width: 14 }, { width: 20 }, { width: 16 }, { width: 10 }, { width: 16 },
+        { width: 12 }, { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 },
+        { width: 12 }, { width: 14 }
+      ];
+    }
+
+    // 4. SHEET: Output Sawn timber
+    if (selectedSheets.includes('output')) {
+      const ws = workbook.addWorksheet('Output Sawn timber');
+      ws.addRow(['KODE PARTAI', ':', partai.code || '-']);
+      ws.addRow(['NAMA PARTAI', ':', partai.name || '-']);
+      ws.addRow(['LAPORAN', ':', 'OUTPUT SAWN TIMBER']);
+      ws.addRow([]);
+
+      const headers = [
+        'Tanggal', 'Shift / Operator', 'Gudang Lokasi', 'Bundel / Palet',
+        'No. Input Reff', 'Produk / Jenis', 'T (cm/mm)', 'L (cm/mm)', 'P (cm/mm)',
+        'Ukuran Dimensi', 'Qty (Pcs)', 'Volume (m³)', 'Partai', 'Keterangan'
+      ];
+      const hRow = ws.addRow(headers);
+      hRow.eachCell((cell) => {
+        cell.fill = headerFill;
+        cell.font = headerFont;
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = borderStyle;
+      });
+
+      (partai.sawnOutputs || []).forEach((out: any) => {
+        const outDate = out.outputDate ? new Date(out.outputDate).toLocaleDateString('id-ID') : (out.createdAt ? new Date(out.createdAt).toLocaleDateString('id-ID') : '-');
+        if (filterStartDate && out.outputDate && new Date(out.outputDate) < filterStartDate) return;
+        if (filterEndDate && out.outputDate && new Date(out.outputDate) > filterEndDate) return;
+
+        (out.items || []).forEach((item: any) => {
+          const spec = item.timberVariant?.species || item.productType || '-';
+          if (filterSpecies && filterSpecies !== 'ALL' && !spec.toUpperCase().includes(filterSpecies)) return;
+
+          const t = item.thickness || 0;
+          const w = item.width || 0;
+          const l = item.length || 0;
+          const dimStr = `${t} x ${w} x ${l}`;
+
+          const row = ws.addRow([
+            outDate,
+            out.operator || out.shift || '-',
+            out.location?.name || 'Gudang Sawmill',
+            out.bundleNumber || item.bundleNumber || '-',
+            out.inputLog?.inputNumber || out.inputLogId || '-',
+            spec,
+            t,
+            w,
+            l,
+            dimStr,
+            Number(item.quantityPcs || 0),
+            Number(item.volumeM3 || 0),
+            partai.code || '-',
+            item.notes || out.notes || '-'
+          ]);
+          row.eachCell((cell) => { cell.border = borderStyle; cell.font = { size: 9, name: 'Calibri' }; });
+        });
+      });
+
+      ws.columns = [
+        { width: 14 }, { width: 16 }, { width: 18 }, { width: 18 },
+        { width: 18 }, { width: 22 }, { width: 10 }, { width: 10 }, { width: 10 },
+        { width: 20 }, { width: 12 }, { width: 14 }, { width: 16 }, { width: 20 }
+      ];
+    }
+
+    const safeFilename = `Partai_${(partai.code || id).replace(/[^a-zA-Z0-9_-]/g, '_')}_Export_${Date.now()}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+
+    await workbook.xlsx.write(res);
+    res.end();
   }
 }
