@@ -107,6 +107,8 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const [purchaseFilterSpecies, setPurchaseFilterSpecies] = useState<string>("ALL");
   const [purchaseFilterStartDate, setPurchaseFilterStartDate] = useState<string>("");
   const [purchaseFilterEndDate, setPurchaseFilterEndDate] = useState<string>("");
+  const [speciesList, setSpeciesList] = useState<any[]>([]);
+
   // DUKB selection & bulk trimming state
   const [selectedDukbLogIds, setSelectedDukbLogIds] = useState<string[]>([]);
   const [isBulkTrimming, setIsBulkTrimming] = useState(false);
