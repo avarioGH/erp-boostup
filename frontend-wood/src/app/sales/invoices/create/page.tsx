@@ -615,26 +615,26 @@ export default function CreateSalesInvoicePage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-muted-foreground">Harga/M³: Rp</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+              <span className="text-xs font-semibold text-muted-foreground shrink-0">Harga/M³: Rp</span>
               <Input
                 type="number"
                 placeholder="misal: 12500000"
                 value={defaultPricePerM3 || ""}
                 onChange={(e) => handleApplyPriceToAll(Number(e.target.value) || 0)}
-                className="w-40 h-8 text-xs font-mono font-bold text-emerald-700 bg-background"
+                className="w-full sm:w-40 h-8 text-xs font-mono font-bold text-emerald-700 bg-background"
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-muted-foreground">PPN (%):</span>
+              <span className="text-xs font-semibold text-muted-foreground shrink-0">PPN (%):</span>
               <Input
                 type="number"
                 min="0"
                 max="100"
                 value={taxPercent || ""}
                 onChange={(e) => setTaxPercent(Number(e.target.value) || 0)}
-                className="w-20 h-8 text-xs font-mono text-center bg-background"
+                className="w-16 sm:w-20 h-8 text-xs font-mono text-center bg-background"
                 placeholder="11"
               />
             </div>

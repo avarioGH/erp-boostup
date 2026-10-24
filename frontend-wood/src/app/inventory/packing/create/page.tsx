@@ -11,8 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Save, Plus, Trash2, Package, Layers, FileSpreadsheet, Scale, Info, AlertCircle } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, Package, Layers, FileSpreadsheet, Scale, Info, AlertCircle, Columns, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+export interface CustomPackingColumn {
+  id: string;
+  label: string;
+}
 
 interface PackingRow {
   palletNo: string;
@@ -29,6 +34,7 @@ interface PackingRow {
   custPcs: string;
   custM3: number;
   notes: string;
+  [key: string]: any;
 }
 
 const DEFAULT_SPECIES = [
@@ -68,6 +74,46 @@ export default function CreatePackingPage() {
   const [speciesList, setSpeciesList] = useState<any[]>(DEFAULT_SPECIES);
   const [submitting, setSubmitting] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
+
+  // Dynamic custom columns state
+  const [customColumns, setCustomColumns] = useState<CustomPackingColumn[]>([]);
+  const [newColName, setNewColName] = useState("");
+  const [showAddColInput, setShowAddColInput] = useState(false);
+
+  const addCustomColumn = () => {
+    const trimmed = newColName.trim();
+    if (!trimmed) return;
+    const colId = `custom_${Date.now()}`;
+    setCustomColumns((prev) => [...prev, { id: colId, label: trimmed }]);
+    setNewColName("");
+    setShowAddColInput(false);
+  };
+
+  const removeCustomColumn = (colId: string) => {
+    setCustomColumns((prev) => prev.filter((c) => c.id !== colId));
+  };
+
+  const removeRow = (index: number) => {
+    setRows((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length > 0 ? next : [
+        {
+          palletNo: "01",
+          realT: "",
+          realL: "",
+          realP: "",
+          realPcs: "",
+          realM3: 0,
+          custT: "",
+          custL: "",
+          custP: "",
+          custPcs: "",
+          custM3: 0,
+          notes: "",
+        }
+      ];
+    });
+  };
 
   // Rows generator
   const [rows, setRows] = useState<PackingRow[]>(
@@ -289,18 +335,34 @@ export default function CreatePackingPage() {
         warehouseId: targetWarehouseId || undefined,
         notes,
         partaiId: selectedPartaiId || undefined,
-        items: validRows.map((r) => ({
-          palletNo: r.palletNo || "01",
-          realT: parseFloat(r.realT),
-          realL: parseFloat(r.realL),
-          realP: parseFloat(r.realP),
-          realPcs: parseInt(r.realPcs),
-          custT: parseFloat(r.custT || r.realT),
-          custL: parseFloat(r.custL || r.realL),
-          custP: parseFloat(r.custP || r.realP),
-          custPcs: parseInt(r.custPcs || r.realPcs),
-          notes: r.notes || "",
-        })),
+        items: validRows.map((r) => {
+          let itemNotes = r.notes || "";
+          if (customColumns.length > 0) {
+            const extraFields = customColumns
+              .map((c) => {
+                const val = r[c.id];
+                return val ? `${c.label}: ${val}` : null;
+              })
+              .filter(Boolean);
+            if (extraFields.length > 0) {
+              itemNotes = itemNotes
+                ? `${itemNotes} [${extraFields.join(", ")}]`
+                : `[${extraFields.join(", ")}]`;
+            }
+          }
+          return {
+            palletNo: r.palletNo || "01",
+            realT: parseFloat(r.realT),
+            realL: parseFloat(r.realL),
+            realP: parseFloat(r.realP),
+            realPcs: parseInt(r.realPcs),
+            custT: parseFloat(r.custT || r.realT),
+            custL: parseFloat(r.custL || r.realL),
+            custP: parseFloat(r.custP || r.realP),
+            custPcs: parseInt(r.custPcs || r.realPcs),
+            notes: itemNotes,
+          };
+        }),
       };
 
       await PackingAPI.createPacking(payload);
@@ -543,23 +605,74 @@ export default function CreatePackingPage() {
 
       {/* SPREADSHEET TABLE GAYA EXCEL 6 */}
       <Card className="shadow-sm border-purple-200/70 dark:border-purple-900/40">
-        <CardHeader className="bg-purple-50/40 dark:bg-purple-950/20 py-3 px-4 md:px-5 border-b flex flex-row items-center justify-between">
+        <CardHeader className="bg-purple-50/40 dark:bg-purple-950/20 py-3 px-4 md:px-5 border-b flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-purple-900 dark:text-purple-300 font-bold text-sm">
-            <Scale className="w-4 h-4 text-purple-600" />
+            <Scale className="w-4 h-4 text-purple-600 shrink-0" />
             <span>Tabel Packing List (Riil Pabrik vs Nominal Customer)</span>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => addRows(5)}
-            className="h-7 text-xs gap-1 border-purple-300 text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/40"
-          >
-            <Plus className="w-3.5 h-3.5" /> +5 Baris
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Popover / Inline tambah kolom custom */}
+            {showAddColInput ? (
+              <div className="flex items-center gap-1.5 bg-background border rounded px-2 py-1 shadow-sm">
+                <Input
+                  value={newColName}
+                  onChange={(e) => setNewColName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addCustomColumn();
+                    } else if (e.key === "Escape") {
+                      setShowAddColInput(false);
+                    }
+                  }}
+                  placeholder="Nama kolom baru..."
+                  className="h-7 text-xs w-36"
+                  autoFocus
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="default"
+                  onClick={addCustomColumn}
+                  className="h-7 text-xs px-2.5 bg-purple-600 hover:bg-purple-700"
+                >
+                  OK
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowAddColInput(false)}
+                  className="h-7 w-7 p-0 text-muted-foreground"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddColInput(true)}
+                className="h-7 text-xs gap-1 border-purple-300 text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+              >
+                <Columns className="w-3.5 h-3.5" /> + Kolom Baru
+              </Button>
+            )}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => addRows(5)}
+              className="h-7 text-xs gap-1 border-purple-300 text-purple-700 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+            >
+              <Plus className="w-3.5 h-3.5" /> +5 Baris
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto max-h-[600px]">
+          <div className="overflow-x-auto max-h-[600px] touch-pan-x">
             <Table className="min-w-[1250px]">
               <TableHeader className="bg-muted/70 sticky top-0 z-10 shadow-sm text-xs">
                 {/* Header Level 1 */}
@@ -573,8 +686,16 @@ export default function CreatePackingPage() {
                   <TableHead colSpan={5} className="border-r text-center font-bold bg-emerald-50/60 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300">
                     UKURAN CUSTOMER (NOMINAL INVOICE)
                   </TableHead>
-                  <TableHead rowSpan={2} className="w-[140px] text-center font-bold">
+                  {customColumns.length > 0 && (
+                    <TableHead colSpan={customColumns.length} className="border-r text-center font-bold bg-amber-50/60 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300">
+                      KOLOM TAMBAHAN (CUSTOM)
+                    </TableHead>
+                  )}
+                  <TableHead rowSpan={2} className="w-[140px] text-center font-bold border-r">
                     Keterangan
+                  </TableHead>
+                  <TableHead rowSpan={2} className="w-[45px] text-center font-bold">
+                    Aksi
                   </TableHead>
                 </TableRow>
                 {/* Header Level 2 */}
@@ -594,6 +715,24 @@ export default function CreatePackingPage() {
                   <TableHead className="w-[110px] text-right border-r font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50/30 dark:bg-emerald-950/20">
                     Vol M³
                   </TableHead>
+
+                  {customColumns.map((c) => (
+                    <TableHead key={c.id} className="min-w-[120px] text-center bg-amber-50/30 dark:bg-amber-950/20 border-r px-2">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="truncate font-semibold text-amber-950 dark:text-amber-200">{c.label}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeCustomColumn(c.id)}
+                          className="h-5 w-5 p-0 text-muted-foreground hover:text-destructive"
+                          title="Hapus kolom"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -717,8 +856,20 @@ export default function CreatePackingPage() {
                       {row.custM3 > 0 ? row.custM3.toFixed(4) : "-"}
                     </TableCell>
 
+                    {/* Custom dynamic columns */}
+                    {customColumns.map((c) => (
+                      <TableCell key={c.id} className="p-1.5 bg-amber-50/10 border-r">
+                        <Input
+                          value={row[c.id] || ""}
+                          onChange={(e) => handleRowChange(idx, c.id, e.target.value)}
+                          placeholder="..."
+                          className="h-8 text-xs text-center"
+                        />
+                      </TableCell>
+                    ))}
+
                     {/* Keterangan */}
-                    <TableCell className="p-1.5">
+                    <TableCell className="p-1.5 border-r">
                       <Input
                         id={`pkg-notes-${idx}`}
                         value={row.notes}
@@ -727,6 +878,20 @@ export default function CreatePackingPage() {
                         placeholder="Ket..."
                         className="h-8 text-xs"
                       />
+                    </TableCell>
+
+                    {/* Aksi Hapus Baris */}
+                    <TableCell className="p-1 text-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeRow(idx)}
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        title="Hapus baris ini"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

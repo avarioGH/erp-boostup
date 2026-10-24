@@ -4,9 +4,13 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ArrowDown, Copy, ClipboardPaste, RotateCcw, Camera, Loader2, Sparkles } from "lucide-react";
+import { Plus, Trash2, ArrowDown, Copy, ClipboardPaste, RotateCcw, Camera, Loader2, Sparkles, Columns, X } from "lucide-react";
 import { api } from "@/lib/api";
 
+export interface CustomColumn {
+  id: string;
+  label: string;
+}
 
 export interface SawnTallyRow {
   id?: string;
@@ -191,20 +195,39 @@ export function SawnTimberSpreadsheet({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Dynamic custom columns state
+  const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
+  const [newColName, setNewColName] = useState("");
+  const [showAddColInput, setShowAddColInput] = useState(false);
+
+  const addCustomColumn = () => {
+    const trimmed = newColName.trim();
+    if (!trimmed) return;
+    const colId = `custom_${Date.now()}`;
+    setCustomColumns((prev) => [...prev, { id: colId, label: trimmed }]);
+    setNewColName("");
+    setShowAddColInput(false);
+  };
+
+  const removeCustomColumn = (colId: string) => {
+    setCustomColumns((prev) => prev.filter((c) => c.id !== colId));
+  };
+
   // Column definitions in order
-  const colOrder: Array<"species" | "grade" | "productType" | "thickness" | "width" | "length" | "pcs" | "m3"> = [
-    ...(showSpecies ? (["species"] as const) : []),
-    ...(showGrade ? (["grade"] as const) : []),
+  const colOrder: string[] = [
+    ...(showSpecies ? ["species"] : []),
+    ...(showGrade ? ["grade"] : []),
     "thickness",
     "width",
     "length",
     "pcs",
-    ...(showProductType ? (["productType"] as const) : []),
+    ...(showProductType ? ["productType"] : []),
     "m3",
+    ...customColumns.map((c) => c.id),
   ];
 
   const getColIndex = useCallback((col: string) => {
-    return colOrder.indexOf(col as any);
+    return colOrder.indexOf(col);
   }, [colOrder]);
 
   const saveToHistory = useCallback((currentRows: SawnTallyRow[]) => {
@@ -627,7 +650,7 @@ export function SawnTimberSpreadsheet({
   };
 
   // Fill down column value from current cell to bottom
-  const handleFillDown = (colKey: "thickness" | "width" | "length" | "pcs" | "species" | "grade" | "productType", fromRow?: number) => {
+  const handleFillDown = (colKey: string, fromRow?: number) => {
     setRows(prev => {
       const targetRowIdx = typeof fromRow === "number" && fromRow >= 0 && fromRow < prev.length ? fromRow : 0;
       const sourceVal = prev[targetRowIdx]?.[colKey];
@@ -652,16 +675,17 @@ export function SawnTimberSpreadsheet({
   const handleKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
     rowIndex: number,
-    colKey: "species" | "grade" | "productType" | "thickness" | "width" | "length" | "pcs"
+    colKey: string
   ) => {
-    const navColOrder: Array<"species" | "grade" | "thickness" | "width" | "length" | "pcs" | "productType"> = [
-      ...(showSpecies ? (["species"] as const) : []),
-      ...(showGrade ? (["grade"] as const) : []),
+    const navColOrder: string[] = [
+      ...(showSpecies ? ["species"] : []),
+      ...(showGrade ? ["grade"] : []),
       "thickness",
       "width",
       "length",
       "pcs",
-      ...(showProductType ? (["productType"] as const) : []),
+      ...(showProductType ? ["productType"] : []),
+      ...customColumns.map((c) => c.id),
     ];
     const currentColIdx = navColOrder.indexOf(colKey);
 
@@ -874,6 +898,16 @@ export function SawnTimberSpreadsheet({
             </Button>
             <Button
               type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAddColInput(!showAddColInput)}
+              className="h-7 text-xs bg-background text-blue-700 dark:text-blue-400 border-blue-200 hover:bg-blue-50"
+              title="Tambah kolom baru seperti di Excel"
+            >
+              <Columns className="w-3.5 h-3.5 mr-1 text-blue-600" /> + Kolom Baru
+            </Button>
+            <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={clearEmptyRows}
@@ -885,6 +919,46 @@ export function SawnTimberSpreadsheet({
           </div>
         )}
       </div>
+
+      {/* Input Tambah Kolom Popup / Bar */}
+      {showAddColInput && !readOnly && (
+        <div className="flex items-center gap-2 bg-blue-50/70 dark:bg-blue-950/40 p-2 rounded-lg border border-blue-200 dark:border-blue-800 text-xs animate-in fade-in">
+          <Columns className="w-4 h-4 text-blue-600" />
+          <span className="font-semibold text-blue-900 dark:text-blue-300">Nama Kolom Baru:</span>
+          <Input
+            value={newColName}
+            onChange={(e) => setNewColName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCustomColumn();
+              } else if (e.key === "Escape") {
+                setShowAddColInput(false);
+              }
+            }}
+            placeholder="misal: Supplier, Lokasi Rak, No Bundel, dll..."
+            className="h-7 text-xs max-w-xs bg-background font-medium"
+            autoFocus
+          />
+          <Button
+            type="button"
+            size="sm"
+            onClick={addCustomColumn}
+            className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+          >
+            Tambah Kolom
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAddColInput(false)}
+            className="h-7 text-xs text-muted-foreground hover:text-foreground"
+          >
+            Batal
+          </Button>
+        </div>
+      )}
 
       {/* Spreadsheet Table */}
       <div
@@ -1001,6 +1075,34 @@ export function SawnTimberSpreadsheet({
                   </div>
                 </th>
               )}
+              {/* Custom Dynamic Columns */}
+              {customColumns.map((col) => (
+                <th key={col.id} className="py-2 px-2 text-left min-w-[120px] max-w-[160px] border-r border-border/50 bg-blue-500/[0.04] select-none">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="font-bold text-foreground truncate" title={col.label}>{col.label}</span>
+                    {!readOnly && (
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => handleFillDown(col.id, activeCell?.row ?? 0)}
+                          title={`Tarik nilai ${col.label} ke bawah`}
+                          className="text-muted-foreground hover:text-primary p-0.5 rounded hover:bg-muted"
+                        >
+                          <ArrowDown className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeCustomColumn(col.id)}
+                          title={`Hapus kolom ${col.label}`}
+                          className="text-muted-foreground hover:text-destructive p-0.5 rounded hover:bg-destructive/10"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </th>
+              ))}
               {/* M3 (Auto) */}
               <th className="py-2 px-3 text-right w-32 border-r border-border/50 font-bold text-foreground select-none">
                 M³ (Volume)
@@ -1230,6 +1332,34 @@ export function SawnTimberSpreadsheet({
                     </td>
                   )}
 
+                  {/* Custom Dynamic Columns Input */}
+                  {customColumns.map((col) => (
+                    <td
+                      key={col.id}
+                      data-cell-row={idx}
+                      data-cell-col={col.id}
+                      className={`py-0.5 px-1 border-r border-border/40 relative select-none ${getCellSelectionClasses(idx, col.id)}`}
+                      onMouseDown={(e) => handleCellMouseDown(idx, col.id, e)}
+                      onMouseEnter={() => handleCellMouseEnter(idx, col.id)}
+                    >
+                      <Input
+                        id={`tally-cell-${idx}-${col.id}`}
+                        disabled={readOnly}
+                        value={row[col.id] ?? ""}
+                        onFocus={(e) => {
+                          setActiveCell({ row: idx, col: col.id });
+                          setSelectionRange({ startRow: idx, startCol: col.id, endRow: idx, endCol: col.id });
+                          e.target.select();
+                        }}
+                        onKeyDown={(e) => handleKeyDown(e, idx, col.id)}
+                        onChange={(e) => handleCellChange(idx, col.id, e.target.value)}
+                        placeholder="-"
+                        className="h-7 text-xs text-left px-1.5 border-transparent hover:border-input focus:border-blue-500 bg-transparent font-medium"
+                      />
+                      {renderFillHandle(idx, col.id)}
+                    </td>
+                  ))}
+
                   {/* M3 (Computed) */}
                   <td
                     data-cell-row={idx}
@@ -1278,6 +1408,9 @@ export function SawnTimberSpreadsheet({
                 {totalPcs} Pcs
               </td>
               {showProductType && <td className="bg-emerald-500/10"></td>}
+              {customColumns.map((col) => (
+                <td key={col.id} className="bg-emerald-500/10"></td>
+              ))}
               <td className="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400 font-bold font-mono text-sm bg-emerald-500/10">
                 {totalM3.toFixed(4)} m³
               </td>
