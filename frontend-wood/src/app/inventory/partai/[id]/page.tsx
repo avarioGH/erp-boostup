@@ -3499,7 +3499,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               <Label className="text-xs font-semibold text-foreground">
                 Filter Jenis Kayu / Species:
               </Label>
-              <Select value={exportSpecies} onValueChange={setExportSpecies}>
+              <Select value={exportSpecies} onValueChange={(val) => setExportSpecies(val || "ALL")}>
                 <SelectTrigger className="h-9 text-xs">
                   <SelectValue placeholder="Semua Jenis Kayu" />
                 </SelectTrigger>
