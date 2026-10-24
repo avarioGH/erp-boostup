@@ -45,7 +45,9 @@ export class TimberGradeService {
   }
 
   async create(data: CreateTimberGradeDto) {
-    return this.prisma.timberGrade.create({ data: data as any });
+    const code = (data.code || '').trim() || (data.name ? data.name.substring(0, 4).toUpperCase() + '-' + Math.floor(Math.random() * 1000) : 'GRD-' + Date.now());
+    const sortOrder = typeof data.sortOrder === 'number' ? data.sortOrder : 0;
+    return this.prisma.timberGrade.create({ data: { ...data, code, sortOrder } as any });
   }
 
   async update(id: string, data: any, company_id: string) {

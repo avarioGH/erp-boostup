@@ -53,7 +53,8 @@ export class TimberSpeciesService {
   }
 
   async create(data: CreateTimberSpeciesDto) {
-    return this.prisma.timberSpecies.create({ data: data as any });
+    const code = (data.code || '').trim() || (data.name ? data.name.substring(0, 4).toUpperCase() + '-' + Math.floor(Math.random() * 1000) : 'SPC-' + Date.now());
+    return this.prisma.timberSpecies.create({ data: { ...data, code } as any });
   }
 
   async update(id: string, data: any, company_id: string) {

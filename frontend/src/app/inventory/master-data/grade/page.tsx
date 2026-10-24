@@ -179,12 +179,12 @@ export default function GradePage() {
           <form onSubmit={handleSave} className="space-y-4 pt-4">
             
             <div className="space-y-2">
-              <Label>Code</Label>
+              <Label>Code <span className="text-muted-foreground text-xs">(Opsional)</span></Label>
               <Input 
                 type="text" 
-                required 
                 value={formData.code} 
                 onChange={(e) => setFormData({...formData, code: e.target.value})} 
+                placeholder="Auto-generate jika kosong"
               />
             </div>
             
@@ -199,12 +199,11 @@ export default function GradePage() {
             </div>
             
             <div className="space-y-2">
-              <Label>Sort Order</Label>
+              <Label>Sort Order <span className="text-muted-foreground text-xs">(Opsional)</span></Label>
               <Input 
                 type="number" 
-                required 
-                value={formData.sortOrder} 
-                onChange={(e) => setFormData({...formData, sortOrder: Number(e.target.value)})} 
+                value={formData.sortOrder || 0} 
+                onChange={(e) => setFormData({...formData, sortOrder: Number(e.target.value) || 0})} 
               />
             </div>
             

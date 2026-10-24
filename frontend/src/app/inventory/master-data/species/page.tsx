@@ -179,12 +179,12 @@ export default function SpeciesPage() {
           <form onSubmit={handleSave} className="space-y-4 pt-4">
             
             <div className="space-y-2">
-              <Label>Code</Label>
+              <Label>Code <span className="text-muted-foreground text-xs">(Opsional)</span></Label>
               <Input 
                 type="text" 
-                required 
                 value={formData.code} 
                 onChange={(e) => setFormData({...formData, code: e.target.value})} 
+                placeholder="Auto-generate jika kosong"
               />
             </div>
             
@@ -199,12 +199,12 @@ export default function SpeciesPage() {
             </div>
             
             <div className="space-y-2">
-              <Label>Description</Label>
+              <Label>Description <span className="text-muted-foreground text-xs">(Opsional)</span></Label>
               <Input 
                 type="text" 
-                required 
                 value={formData.description} 
                 onChange={(e) => setFormData({...formData, description: e.target.value})} 
+                placeholder="Deskripsi spesies..."
               />
             </div>
             

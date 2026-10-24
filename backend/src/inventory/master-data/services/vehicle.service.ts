@@ -21,7 +21,9 @@ export class VehicleService {
   }
 
   async create(data: CreateVehicleDto) {
-    return this.prisma.vehicle.create({ data: data as any });
+    const code = (data.code || '').trim() || (data.plateNumber ? data.plateNumber.replace(/\s+/g, '').toUpperCase() : 'VEH-' + Date.now());
+    const vehicleType = (data.vehicleType || '').trim() || 'TRUCK';
+    return this.prisma.vehicle.create({ data: { ...data, code, vehicleType } as any });
   }
 
   async update(

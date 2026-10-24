@@ -189,22 +189,22 @@ export default function DriverPage() {
             </div>
             
             <div className="space-y-2">
-              <Label>Phone</Label>
+              <Label>Phone <span className="text-muted-foreground text-xs">(Opsional)</span></Label>
               <Input 
                 type="text" 
-                required 
                 value={formData.phone} 
                 onChange={(e) => setFormData({...formData, phone: e.target.value})} 
+                placeholder="No. HP / WhatsApp"
               />
             </div>
             
             <div className="space-y-2">
-              <Label>License Number</Label>
+              <Label>License Number <span className="text-muted-foreground text-xs">(Opsional)</span></Label>
               <Input 
                 type="text" 
-                required 
                 value={formData.licenseNumber} 
                 onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})} 
+                placeholder="No. SIM"
               />
             </div>
             

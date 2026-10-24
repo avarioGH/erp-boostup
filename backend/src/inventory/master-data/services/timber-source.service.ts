@@ -30,7 +30,9 @@ export class TimberSourceService {
   }
 
   async create(data: CreateTimberSourceDto) {
-    return this.prisma.timberSource.create({ data: data as any });
+    const code = (data.code || '').trim() || (data.name ? data.name.substring(0, 4).toUpperCase() + '-' + Math.floor(Math.random() * 1000) : 'SRC-' + Date.now());
+    const type = (data.type || '').trim() || 'SUPPLIER';
+    return this.prisma.timberSource.create({ data: { ...data, code, type } as any });
   }
 
   async update(id: string, data: any, company_id: string) {

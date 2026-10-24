@@ -27,6 +27,9 @@ export class LocationService {
   async create(data: CreateLocationDto) {
     const createData = { ...data };
     delete createData.company_id; // not in model
+    if (!createData.code || !createData.code.trim()) {
+      createData.code = (createData.name ? createData.name.substring(0, 4).toUpperCase() + '-' + Math.floor(Math.random() * 1000) : 'LOC-' + Date.now());
+    }
     return this.prisma.location.create({ data: createData as any });
   }
 

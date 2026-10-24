@@ -181,12 +181,12 @@ export default function VehiclePage() {
           <form onSubmit={handleSave} className="space-y-4 pt-4">
             
             <div className="space-y-2">
-              <Label>Code</Label>
+              <Label>Code <span className="text-muted-foreground text-xs">(Opsional)</span></Label>
               <Input 
                 type="text" 
-                required 
                 value={formData.code} 
                 onChange={(e) => setFormData({...formData, code: e.target.value})} 
+                placeholder="Auto-generate jika kosong"
               />
             </div>
             
@@ -201,22 +201,22 @@ export default function VehiclePage() {
             </div>
             
             <div className="space-y-2">
-              <Label>Vehicle Type</Label>
+              <Label>Vehicle Type <span className="text-muted-foreground text-xs">(Opsional)</span></Label>
               <Input 
                 type="text" 
-                required 
                 value={formData.vehicleType} 
                 onChange={(e) => setFormData({...formData, vehicleType: e.target.value})} 
+                placeholder="TRUCK, PICKUP, dll"
               />
             </div>
             
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label>Name <span className="text-muted-foreground text-xs">(Opsional)</span></Label>
               <Input 
                 type="text" 
-                required 
                 value={formData.name} 
                 onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                placeholder="Nama/keterangan armada"
               />
             </div>
             
