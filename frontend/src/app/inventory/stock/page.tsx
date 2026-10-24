@@ -65,6 +65,7 @@ export default function StockPage() {
  {loading ? (
  <div className="flex justify-center p-12"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div>
  ) : (
+  <>
  <div className="overflow-x-auto">
  <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
@@ -92,6 +93,7 @@ export default function StockPage() {
  </table>
  </div>
  <TablePagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} pageSizeOptions={[10, 25, 50, 100]} itemLabel="stok" />
+  </>
  )}
  </CardContent>
  </Card>
