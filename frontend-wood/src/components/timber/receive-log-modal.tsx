@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,8 +15,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { TimberAPI, PurchaseAPI, MasterDataAPI } from "@/lib/api";
-import { CheckCircle2, Ruler, PackageCheck, Plus, Trash2, TrendingUp, AlertCircle } from "lucide-react";
+import { TimberAPI, PurchaseAPI, MasterDataAPI, api } from "@/lib/api";
+import { CheckCircle2, Ruler, PackageCheck, Plus, Trash2, TrendingUp, AlertCircle, Camera, Loader2 } from "lucide-react";
 import { SawnTimberSpreadsheet, SawnTallyRow } from "@/components/timber/sawn-timber-spreadsheet";
 
 interface ReceiveLogModalProps {
@@ -40,9 +40,76 @@ export function ReceiveLogModal({
     new Date().toISOString().split("T")[0]
   );
   const [logRows, setLogRows] = useState<any[]>([]);
-  const [sawnRows, setSawnRows] = useState<any[]>([]);
   const [speciesList, setSpeciesList] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const logFileInputRef = useRef<HTMLInputElement>(null);
+  const [isScanningLog, setIsScanningLog] = useState(false);
+
+  const handleScanLogImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanningLog(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("workflowType", "RAW_LOG");
+
+      const res = await api.post("/api/ai/parse-tally", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const extractedItems = res.data?.items || [];
+      if (!Array.isArray(extractedItems) || extractedItems.length === 0) {
+        toast({
+          title: "Scan AI Selesai",
+          description: "Tidak ditemukan baris tabel log kayu pada foto tersebut. Pastikan foto jelas.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setLogRows((prev) => {
+        const newRows = extractedItems.map((it: any, idx: number) => {
+          const l = Number(it.length || 0);
+          const d1 = Number(it.d1 || 0);
+          const d2 = Number(it.d2 || 0);
+          const avg = it.rt ? Number(it.rt) : ((d1 + d2) / (d1 && d2 ? 2 : 1));
+          return {
+            purchaseLogItemId: undefined,
+            logNumber: it.logNumber || `LOG-SCAN-${prev.length + idx + 1}`,
+            species: it.species || "MERBAU",
+            speciesId: undefined,
+            length: l > 0 ? String(l) : "4",
+            d1: d1 > 0 ? String(d1) : "40",
+            d2: d2 > 0 ? String(d2) : "40",
+            d3: "",
+            d4: "",
+            avgDia: String(Math.round(avg || 40)),
+            gerowong: "0",
+            selected: true,
+            isAlreadyReceived: false,
+          };
+        });
+        return [...prev, ...newRows];
+      });
+
+      toast({
+        title: "Scan AI Berhasil!",
+        description: `${extractedItems.length} baris kayu bulat berhasil dibaca dari foto.`,
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast({
+        title: "Gagal Scan AI",
+        description: err?.response?.data?.message || err?.message || "Terjadi error saat membaca gambar",
+        variant: "destructive",
+      });
+    } finally {
+      setIsScanningLog(false);
+      if (logFileInputRef.current) logFileInputRef.current.value = "";
+    }
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem("erp_length_unit_pref");
@@ -539,11 +606,39 @@ export function ReceiveLogModal({
                   {logRows.filter((r) => r.selected && !r.isAlreadyReceived).length} dari {logRows.length} terpilih
                 </Badge>
               </div>
-              <div className="text-muted-foreground">
-                Total Net Volume:{" "}
-                <span className="font-bold text-sm text-blue-600 dark:text-blue-400">
-                  {totalNetLive.toFixed(4)} m³
-                </span>
+              <div className="flex items-center gap-3">
+                <input
+                  type="file"
+                  ref={logFileInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleScanLogImage}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isScanningLog}
+                  onClick={() => logFileInputRef.current?.click()}
+                  className="h-7 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800 font-semibold"
+                  title="Foto lembar DUKB atau upload gambar untuk diisi otomatis oleh AI"
+                >
+                  {isScanningLog ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Membaca Foto...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-3.5 h-3.5 mr-1" /> Scan Foto DUKB (AI)
+                    </>
+                  )}
+                </Button>
+                <div className="text-muted-foreground">
+                  Total Net Volume:{" "}
+                  <span className="font-bold text-sm text-blue-600 dark:text-blue-400">
+                    {totalNetLive.toFixed(4)} m³
+                  </span>
+                </div>
               </div>
             </div>
 

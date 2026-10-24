@@ -4,7 +4,8 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ArrowDown, Copy, ClipboardPaste, RotateCcw } from "lucide-react";
+import { Plus, Trash2, ArrowDown, Copy, ClipboardPaste, RotateCcw, Camera, Loader2, Sparkles } from "lucide-react";
+import { api } from "@/lib/api";
 
 
 export interface SawnTallyRow {
@@ -109,6 +110,65 @@ export function SawnTimberSpreadsheet({
     }
     return result;
   });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isScanning, setIsScanning] = useState(false);
+
+  const handleScanImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("workflowType", "SAWN_TIMBER");
+
+      const res = await api.post("/api/ai/parse-tally", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const extractedItems = res.data?.items || [];
+      if (!Array.isArray(extractedItems) || extractedItems.length === 0) {
+        alert("AI tidak mendeteksi baris ukuran kayu pada foto tersebut. Pastikan foto tegak dan jelas.");
+        return;
+      }
+
+      setRows(prev => {
+        const existingFilled = prev.filter(r => parseFlexibleNumber(r.pcs) > 0 || parseFlexibleNumber(r.thickness) > 0);
+        const newRows: SawnTallyRow[] = extractedItems.map((it: any) => {
+          const t = Number(it.thickness || 0);
+          const w = Number(it.width || 0);
+          const p = Number(it.length || 0);
+          const pcs = Number(it.pcs || 1);
+          return {
+            species: it.species || defaultSpecies,
+            grade: it.grade || defaultGrade,
+            productType: defaultProductType,
+            thickness: t > 0 ? t : "",
+            width: w > 0 ? w : "",
+            length: p > 0 ? p : "",
+            pcs: pcs > 0 ? pcs : "",
+            m3: calcRowM3(t, w, p, pcs),
+            notes: it.notes || "Hasil Scan AI",
+          };
+        });
+
+        const merged = [...existingFilled, ...newRows];
+        while (merged.length < 8) merged.push(createEmptyRow());
+        notifyParent(merged);
+        return merged;
+      });
+
+      alert(`Berhasil mengekstrak ${extractedItems.length} baris ukuran kayu dari foto.`);
+    } catch (err: any) {
+      console.error("Scan AI Error:", err);
+      alert(err?.response?.data?.message || err?.message || "Gagal memproses gambar dengan AI.");
+    } finally {
+      setIsScanning(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const [activeCell, setActiveCell] = useState<{ row: number; col: string } | null>(null);
   const [selectionRange, setSelectionRange] = useState<{
@@ -768,6 +828,32 @@ export function SawnTimberSpreadsheet({
         </div>
         {!readOnly && (
           <div className="flex items-center gap-1.5 flex-wrap">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={handleScanImage}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isScanning}
+              onClick={() => fileInputRef.current?.click()}
+              className="h-7 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800 font-semibold"
+              title="Foto lembar tally atau upload gambar untuk diisi otomatis oleh AI"
+            >
+              {isScanning ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Membaca Foto...
+                </>
+              ) : (
+                <>
+                  <Camera className="w-3.5 h-3.5 mr-1" /> Scan Foto Tally (AI)
+                </>
+              )}
+            </Button>
             <Button
               type="button"
               variant="outline"

@@ -608,34 +608,7 @@ HANYA jawab sesuai dengan pertanyaan yang diajukan. Jangan menawarkan hal lain. 
     mimeType: string,
     workflowType: 'RAW_LOG' | 'SAWN_TIMBER' = 'RAW_LOG',
   ) {
-    let extractedText = '';
-
-    // 1. If image, perform OCR with Tesseract
-    if (mimeType.startsWith('image/')) {
-      try {
-        const Tesseract = require('tesseract.js');
-        const { data: { text } } = await Tesseract.recognize(fileBuffer, 'ind+eng', {
-          logger: () => {},
-        });
-        extractedText = text;
-      } catch (ocrErr: any) {
-        this.logger.error('OCR Recognition failed:', ocrErr.message);
-        throw new Error('Gagal membaca gambar dengan OCR: ' + ocrErr.message);
-      }
-    } else if (mimeType.includes('text') || mimeType.includes('csv')) {
-      extractedText = fileBuffer.toString('utf-8');
-    } else {
-      // Fallback decode
-      extractedText = fileBuffer.toString('utf-8');
-    }
-
-    if (!extractedText || extractedText.trim().length < 5) {
-      throw new Error(
-        'Gambar atau dokumen tidak memiliki teks atau tabel kayu yang terbaca. Pastikan foto jelas dan beresolusi cukup.',
-      );
-    }
-
-    // 2. Fetch active species and grades from DB for contextual matching
+    // 1. Fetch active species and grades from DB for contextual matching
     const [speciesList, gradeList] = await Promise.all([
       this.prisma.timberSpecies.findMany({ select: { code: true, name: true } }).catch(() => []),
       this.prisma.timberGrade.findMany({ select: { code: true, name: true } }).catch(() => []),
@@ -643,6 +616,111 @@ HANYA jawab sesuai dengan pertanyaan yang diajukan. Jangan menawarkan hal lain. 
 
     const knownSpecies = speciesList.map(s => s.name).join(', ') || 'MERBAU, MERANTI, BENGKIRAI, ULIN, JATI, SONOKELING, MAHONI';
     const knownGrades = gradeList.map(g => g.name).join(', ') || 'A, B, C, EXPORT, STANDARD, AFKIR';
+
+    const base64Data = fileBuffer.toString('base64');
+    const dataUrl = `data:${mimeType};base64,${base64Data}`;
+
+    // Prompt for Direct Multimodal Vision
+    let visionPrompt = '';
+    if (workflowType === 'RAW_LOG') {
+      visionPrompt = `Kamu adalah sistem AI OCR spesialis industri kayu log bulat (DUKB / Raw Logs).
+Tugasmu: Periksa gambar lembar ukur/tabel kayu ini secara visual, baca tabel atau baris catatannya, dan ubah setiap baris log kayu menjadi JSON array.
+
+Daftar Jenis Kayu umum: [${knownSpecies}].
+
+Format Output (HANYA JSON array of objects, tanpa teks pengantar/markdown):
+[
+  {
+    "logNumber": "string (nomor log/trm dari tabel/foto, misal: '101' atau 'LOG-101')",
+    "species": "string (nama jenis kayu, misal: 'MERBAU' atau 'ULIN')",
+    "length": number (panjang dalam meter, misal: 4.5),
+    "d1": number (diameter pangkal D1 dalam cm, misal: 42),
+    "d2": number (diameter ujung D2 dalam cm, misal: 45),
+    "rt": number (rata-rata diameter dalam cm),
+    "notes": "string opsional"
+  }
+]
+
+ATURAN:
+1. Kembalikan HANYA JSON array valid [ ... ].
+2. Angka harus numerik murni tanpa satuan (contoh: 4.5, bukan '4.5m').
+3. Abaikan baris judul/header tabel.`;
+    } else {
+      visionPrompt = `Kamu adalah sistem AI OCR spesialis industri kayu gergajian (Sawn Timber Tally).
+Tugasmu: Periksa gambar lembar tally kayu ini secara visual, baca tabel catatan ukuran kayu, dan ubah setiap baris menjadi JSON array.
+
+Daftar Jenis Kayu: [${knownSpecies}].
+Daftar Grade: [${knownGrades}].
+
+Format Output (HANYA JSON array of objects, tanpa teks pengantar/markdown):
+[
+  {
+    "species": "string (jenis kayu, default: 'MERANTI')",
+    "grade": "string (kualitas, default: 'A')",
+    "thickness": number (Tebal T dalam cm, misal: 4 atau 4.2),
+    "width": number (Lebar L dalam cm, misal: 16 atau 21),
+    "length": number (Panjang P dalam cm, misal: 245 atau 400),
+    "pcs": number (Jumlah batang/PCS, misal: 24),
+    "notes": "string opsional"
+  }
+]
+
+ATURAN:
+1. Kembalikan HANYA JSON array valid [ ... ].
+2. Angka harus numerik murni tanpa satuan (contoh: 4.2, bukan '4.2cm').
+3. Abaikan baris judul/header tabel.`;
+    }
+
+    // 2. Try Direct Vision via Juan Router (gemma-4-31b-it)
+    try {
+      this.logger.log(`Calling Juan Router Vision (gemma-4-31b-it) for workflow: ${workflowType}...`);
+      const visionRes = await this.openai.chat.completions.create({
+        model: 'gemma-4-31b-it',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: visionPrompt },
+              { type: 'image_url', image_url: { url: dataUrl } }
+            ]
+          }
+        ],
+        max_tokens: 3500,
+        temperature: 0.1,
+      });
+
+      const responseText = visionRes.choices[0]?.message?.content || '';
+      const jsonMatch = responseText.match(/\[\s*\{[\s\S]*\}\s*\]/);
+      if (jsonMatch) {
+        const parsedItems = JSON.parse(jsonMatch[0]);
+        if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+          this.logger.log(`Vision OCR succeeded with ${parsedItems.length} items`);
+          return {
+            success: true,
+            workflowType,
+            engine: 'JuanRouter-Vision',
+            count: parsedItems.length,
+            items: parsedItems,
+          };
+        }
+      }
+    } catch (visionErr: any) {
+      this.logger.warn(`Direct Vision failed (${visionErr.message}), falling back to Tesseract OCR...`);
+    }
+
+    // 3. Fallback: Local Tesseract OCR + LLM
+    let extractedText = '';
+    if (mimeType.startsWith('image/')) {
+      try {
+        const Tesseract = require('tesseract.js');
+        const { data: { text } } = await Tesseract.recognize(fileBuffer, 'ind+eng', { logger: () => {} });
+        extractedText = text;
+      } catch (ocrErr: any) {
+        this.logger.error('OCR Recognition fallback failed:', ocrErr.message);
+      }
+    } else {
+      extractedText = fileBuffer.toString('utf-8');
+    }
 
     // 3. Construct LLM Prompt based on workflow
     let prompt = '';
