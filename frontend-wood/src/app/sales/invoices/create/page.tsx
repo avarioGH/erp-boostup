@@ -330,9 +330,11 @@ export default function CreateSalesInvoicePage() {
               <Receipt className="w-6 h-6 text-emerald-600" />
               Buat Invoice Penjualan Kayu (Ambil dari Packing)
             </h1>
-            {selectedPacking && (
+            {loadedPackings.length > 0 && (
               <Badge className="bg-purple-600 font-mono text-xs text-white">
-                Stok: {selectedPacking.packingNumber}
+                {loadedPackings.length === 1 
+                  ? `Stok: ${loadedPackings[0].packingNumber}` 
+                  : `${loadedPackings.length} Dokumen Packing Terpilih`}
               </Badge>
             )}
           </div>
