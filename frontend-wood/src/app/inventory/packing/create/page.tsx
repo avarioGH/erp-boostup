@@ -166,12 +166,12 @@ export default function CreatePackingPage() {
         setSelectedPartaiId(targetPId);
         await selectPartai(targetPId, spList);
       } else {
-        setSpecies(spList[0]?.name || "MERBAU");
+        setSpecies("");
       }
     } catch (e) {
       console.error(e);
       setSpeciesList(DEFAULT_SPECIES);
-      setSpecies(DEFAULT_SPECIES[0].name);
+      setSpecies("");
     }
   };
 
@@ -206,10 +206,10 @@ export default function CreatePackingPage() {
           if (matchedByCode) {
             setSpecies(matchedByCode.name || matchedByCode.code);
           } else {
-            setSpecies(spList[0]?.name || "MERBAU");
+            setSpecies("");
           }
         } else {
-          setSpecies(spList[0]?.name || "MERBAU");
+          setSpecies("");
         }
 
         if (p.warehouseId) {
@@ -534,12 +534,12 @@ export default function CreatePackingPage() {
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">Jenis Kayu / Species</Label>
             <Select
-              value={species || (speciesList[0]?.name || "MERBAU")}
+              value={species || ""}
               onValueChange={(val) => setSpecies(val)}
             >
               <SelectTrigger className="h-9 text-xs font-bold uppercase text-primary bg-background">
                 <SelectValue placeholder="Pilih Jenis Kayu">
-                  {species || (speciesList[0]?.name || "MERBAU")}
+                  {species || <span className="text-muted-foreground font-normal normal-case">Pilih Jenis Kayu</span>}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent searchable={true} className="min-w-[200px]">

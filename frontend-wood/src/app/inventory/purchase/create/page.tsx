@@ -804,9 +804,8 @@ export default function CreatePurchasePage() {
                   </Button>
                 </div>
                 <SawnTimberSpreadsheet
-
                   initialRows={form.items.map((it: any) => ({
-                    species: it.species || "MERBAU",
+                    species: it.species || "",
                     grade: it.grade || "A",
                     thickness: it.purchaseThickness || "",
                     width: it.purchaseWidth || "",
@@ -815,11 +814,11 @@ export default function CreatePurchasePage() {
                     m3: it.volumeM3 || 0,
                   }))}
                   speciesList={speciesList}
-                  defaultSpecies="MERBAU"
+                  defaultSpecies=""
                   showSpecies={true}
                   onChange={(updatedRows: SawnTallyRow[]) => {
                     const mappedItems = updatedRows.map(r => ({
-                      species: r.species || "MERBAU",
+                      species: r.species || "",
                       grade: r.grade || "A",
                       purchaseThickness: parseFloat(String(r.thickness).replace(",", ".")) || 0,
                       purchaseWidth: parseFloat(String(r.width).replace(",", ".")) || 0,
@@ -948,7 +947,7 @@ export default function CreatePurchasePage() {
                             </td>
                             <td className="py-1 px-2">
                               <Select
-                                value={item.species || "MERBAU"}
+                                value={item.species || ""}
                                 onValueChange={(val) => {
                                   const newLogItems = [...form.logItems];
                                   newLogItems[index].species = val;
@@ -961,7 +960,7 @@ export default function CreatePurchasePage() {
                                   onKeyDown={(e) => handleCellKeyDown(e as any, index, 'species', 'log', form.logItems.length, () => addLogRows(1))}
                                 >
                                   <SelectValue placeholder="Pilih Spesies">
-                                    {item.species || "MERBAU"}
+                                    {item.species || <span className="text-muted-foreground font-normal">Pilih Spesies</span>}
                                   </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent searchable={true} className="min-w-[180px]">

@@ -71,7 +71,7 @@ export function SawnTimberSpreadsheet({
   initialRows = [],
   onChange,
   speciesList = [],
-  defaultSpecies = "MERBAU",
+  defaultSpecies = "",
   defaultGrade = "A",
   defaultProductType = "BALOK",
   showSpecies = true,
@@ -1139,7 +1139,7 @@ export function SawnTimberSpreadsheet({
                       onMouseEnter={() => handleCellMouseEnter(idx, "species")}
                     >
                       <Select
-                        value={row.species || defaultSpecies}
+                        value={row.species || defaultSpecies || ""}
                         disabled={readOnly}
                         onValueChange={(val) => {
                           handleCellChange(idx, "species", val || "");
@@ -1155,7 +1155,7 @@ export function SawnTimberSpreadsheet({
                           onKeyDown={(e) => handleKeyDown(e as any, idx, "species")}
                         >
                           <SelectValue placeholder="Pilih Spesies">
-                            {row.species || defaultSpecies}
+                            {row.species || defaultSpecies || <span className="text-muted-foreground font-normal">Pilih Spesies</span>}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent searchable={true} className="min-w-[180px]">
