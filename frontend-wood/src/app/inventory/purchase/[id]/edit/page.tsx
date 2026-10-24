@@ -84,6 +84,33 @@ export default function EditPurchasePage() {
   const [creatingVariant, setCreatingVariant] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
+  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState("");
+  const [creatingSupplier, setCreatingSupplier] = useState(false);
+
+  const handleCreateSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSupplierName.trim()) return;
+    setCreatingSupplier(true);
+    try {
+      const res = await api.post("/inventory/master-data/timber-source", {
+        name: newSupplierName.trim(),
+        code: "SUP-" + Math.floor(Math.random() * 10000),
+        type: "SUPPLIER",
+      });
+      const created = res.data?.data || res.data;
+      setSources((prev) => [created, ...prev]);
+      setForm((prev) => ({ ...prev, sourceId: created.id }));
+      setIsSupplierModalOpen(false);
+      setNewSupplierName("");
+    } catch (err: any) {
+      console.error(err);
+      alert("Gagal menambahkan supplier: " + (err.response?.data?.message || err.message));
+    } finally {
+      setCreatingSupplier(false);
+    }
+  };
+
 
   const [form, setForm] = useState({
     partaiId: "",
@@ -706,25 +733,54 @@ export default function EditPurchasePage() {
                 <Input type="date" value={form.purchaseDate} onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })} required />
               </div>
               <div className="space-y-2">
-                <Label>Supplier / Sumber Kayu</Label>
-                <Select value={form.sourceId} onValueChange={(val) => setForm({ ...form, sourceId: val || "" })} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih Supplier">
-                      {(() => {
-                        const s = sources.find((item) => item.id === form.sourceId);
-                        if (s) return s.name ? `${s.name}${s.code ? ` (${s.code})` : ""}` : s.code || s.id;
-                        return form.sourceId ? "Memuat supplier..." : "Pilih Supplier";
-                      })()}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sources.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name ? `${s.name}${s.code ? ` (${s.code})` : ""}` : s.code || s.id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center justify-between">
+                  <Label>Supplier / Sumber Kayu *</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setNewSupplierName("");
+                      setIsSupplierModalOpen(true);
+                    }}
+                    className="h-6 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 px-2 flex items-center gap-1 font-semibold"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> + Supplier Baru
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Select value={form.sourceId} onValueChange={(val) => setForm({ ...form, sourceId: val || "" })} required>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Pilih Supplier">
+                        {(() => {
+                          const s = sources.find((item) => item.id === form.sourceId);
+                          if (s) return s.name ? `${s.name}${s.code ? ` (${s.code})` : ""}` : s.code || s.id;
+                          return form.sourceId ? "Memuat supplier..." : "Pilih Supplier";
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sources.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name ? `${s.name}${s.code ? ` (${s.code})` : ""}` : s.code || s.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setNewSupplierName("");
+                      setIsSupplierModalOpen(true);
+                    }}
+                    title="Tambah Supplier Baru Langsung"
+                    className="h-9 w-9 shrink-0 text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Gudang Penerima</Label>
@@ -1177,6 +1233,57 @@ export default function EditPurchasePage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* MODAL TAMBAH SUPPLIER BARU */}
+      <Dialog open={isSupplierModalOpen} onOpenChange={setIsSupplierModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5 text-emerald-600" />
+              <span>Tambah Supplier / Sumber Kayu Baru</span>
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateSupplier} className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-new-supplier-name">Nama Supplier / PT / CV *</Label>
+              <Input
+                id="edit-new-supplier-name"
+                value={newSupplierName}
+                onChange={(e) => setNewSupplierName(e.target.value)}
+                placeholder="misal: PT Rimba Sejahtera, Bpk. Joko, dll..."
+                required
+                autoFocus
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Supplier baru akan otomatis tersimpan ke Master Data dan langsung terpilih di formulir ini.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsSupplierModalOpen(false)}
+                disabled={creatingSupplier}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                disabled={creatingSupplier || !newSupplierName.trim()}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+              >
+                {creatingSupplier ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...
+                  </>
+                ) : (
+                  "Simpan Supplier"
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* AI TALLY IMPORT MODAL */}
       <AiTallyImportModal
