@@ -48,17 +48,7 @@ const items: MenuItem[] = [
    ]
  },
  
- { 
- title: "Pengolahan & Processing", 
- url: "/production/processing", 
- icon: Factory,
- id: "production",
- subItems: [
- { title: "Processing (KD, Molding, dll)", url: "/production/processing" },
- { title: "Sawn Timber Output", url: "/inventory/sawn-timber/output" },
- { title: "Produksi Sawmill (Re-sawing)", url: "/production/sawmill" }
- ]
- },
+
  
  { 
  title: "Penjualan (Outbound)", 
