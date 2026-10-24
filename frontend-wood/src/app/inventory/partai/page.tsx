@@ -138,6 +138,7 @@ export default function PartaiListPage() {
           <TablePagination currentPage={currentPage} totalItems={filteredPartais.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} pageSizeOptions={[10, 25, 50, 100]} itemLabel="partai" />
         </Card>
       ) : (
+        <>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {paginatedPartais.map((p: any) => (
             <Card 
@@ -169,6 +170,7 @@ export default function PartaiListPage() {
           )}
         </div>
         <TablePagination currentPage={currentPage} totalItems={filteredPartais.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} pageSizeOptions={[10, 25, 50, 100]} itemLabel="partai" />
+        </>
       )}
     </div>
   );

@@ -229,6 +229,7 @@ export default function ProcessingListPage() {
               </Button>
             </div>
           ) : (
+            <>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/40">
@@ -318,6 +319,7 @@ export default function ProcessingListPage() {
               </Table>
             </div>
             <TablePagination currentPage={currentPage} totalItems={filteredProcesses.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} pageSizeOptions={[10, 25, 50, 100]} itemLabel="proses" />
+            </>
           )}
         </CardContent>
       </Card>

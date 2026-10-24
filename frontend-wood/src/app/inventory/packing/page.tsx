@@ -229,6 +229,7 @@ export default function PackingListPage() {
               <p className="text-xs">Buat packing list baru setelah pengolahan/processing kayu selesai.</p>
             </div>
           ) : (
+            <>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-muted/50 text-xs">
@@ -329,6 +330,7 @@ export default function PackingListPage() {
               </Table>
             </div>
             <TablePagination currentPage={currentPage} totalItems={filteredPackings.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} pageSizeOptions={[10, 25, 50, 100]} itemLabel="packing" />
+            </>
           )}
         </CardContent>
       </Card>
