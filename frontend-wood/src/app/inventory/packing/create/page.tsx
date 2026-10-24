@@ -131,6 +131,7 @@ export default function CreatePackingPage() {
       custM3: 0,
       notes: "",
     }))
+  );
   const packingDraftKey = `draft_packing_${urlPartaiId || "general"}`;
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
   const [hasDraftLoaded, setHasDraftLoaded] = useState(false);

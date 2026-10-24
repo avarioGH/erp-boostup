@@ -306,6 +306,7 @@ export default function CreatePurchasePage() {
       purchaseDiameterAvg: 0,
       purchaseVolume: 0
     }]
+  });
   const draftKey = `draft_purchase_${partaiIdFromUrl || 'general'}`;
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
   const [hasDraftRestored, setHasDraftRestored] = useState(false);
