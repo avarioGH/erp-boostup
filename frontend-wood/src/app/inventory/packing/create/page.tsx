@@ -57,6 +57,8 @@ export default function CreatePackingPage() {
     `PKG-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`
   );
   const [packingDate, setPackingDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedPartaiId, setSelectedPartaiId] = useState(urlPartaiId);
+  const [allPartais, setAllPartais] = useState<any[]>([]);
   const [ownerName, setOwnerName] = useState("PT Daun Emas Multi Perkasa");
   const [species, setSpecies] = useState("");
   const [containerNo, setContainerNo] = useState("");
@@ -91,9 +93,10 @@ export default function CreatePackingPage() {
 
   const fetchInitial = async () => {
     try {
-      const [whRes, specRes] = await Promise.all([
+      const [whRes, specRes, partaisRes] = await Promise.all([
         InventoryAPI.getWarehouses().catch(() => []),
         MasterDataAPI.getSpecies().catch(() => []),
+        PartaiAPI.getPartais({ limit: 100 }).catch(() => []),
       ]);
 
       const whList = Array.isArray(whRes) ? whRes : (whRes?.data || whRes?.items || []);
@@ -109,49 +112,13 @@ export default function CreatePackingPage() {
           : DEFAULT_SPECIES;
       setSpeciesList(spList);
 
-      if (urlPartaiId) {
-        try {
-          const p = await PartaiAPI.getPartai(urlPartaiId);
-          if (p) {
-            setPartaiInfo(p);
-            // Search for species in order of relevance: rawLogs -> inputLogs -> sawnOutputs -> purchases -> partai code
-            const foundSpecies = 
-              p.rawLogs?.[0]?.species || 
-              p.inputLogs?.[0]?.species || 
-              p.sawnOutputs?.[0]?.species || 
-              p.purchases?.[0]?.species || 
-              "";
+      const pList = Array.isArray(partaisRes) ? partaisRes : (partaisRes?.data || []);
+      setAllPartais(pList);
 
-            // If found in partai records, match with speciesList or use directly
-            if (foundSpecies) {
-              const matched = spList.find((s: any) => 
-                (s.name || "").toUpperCase() === foundSpecies.toUpperCase() ||
-                (s.code || "").toUpperCase() === foundSpecies.toUpperCase()
-              );
-              setSpecies(matched ? (matched.name || matched.code) : foundSpecies.toUpperCase());
-            } else if (p.code) {
-              // Try matching code parts e.g. "A/01/L09/ULIN/D" contains "ULIN"
-              const codeUpper = p.code.toUpperCase();
-              const matchedByCode = spList.find((s: any) => 
-                (s.name && codeUpper.includes(s.name.toUpperCase())) ||
-                (s.code && codeUpper.includes(s.code.toUpperCase()))
-              );
-              if (matchedByCode) {
-                setSpecies(matchedByCode.name || matchedByCode.code);
-              } else {
-                setSpecies(spList[0]?.name || "MERBAU");
-              }
-            } else {
-              setSpecies(spList[0]?.name || "MERBAU");
-            }
-
-            if (p.warehouseId) {
-              setTargetWarehouseId(p.warehouseId);
-            }
-          }
-        } catch (e) {
-          console.error(e);
-        }
+      const targetPId = urlPartaiId || (pList.length > 0 ? pList[0].id : "");
+      if (targetPId) {
+        setSelectedPartaiId(targetPId);
+        await selectPartai(targetPId, spList);
       } else {
         setSpecies(spList[0]?.name || "MERBAU");
       }
@@ -159,6 +126,52 @@ export default function CreatePackingPage() {
       console.error(e);
       setSpeciesList(DEFAULT_SPECIES);
       setSpecies(DEFAULT_SPECIES[0].name);
+    }
+  };
+
+  const selectPartai = async (partId: string, spList: any[] = speciesList) => {
+    if (!partId) {
+      setPartaiInfo(null);
+      return;
+    }
+    try {
+      const p = await PartaiAPI.getPartai(partId);
+      if (p) {
+        setPartaiInfo(p);
+        const foundSpecies = 
+          p.rawLogs?.[0]?.species || 
+          p.inputLogs?.[0]?.species || 
+          p.sawnOutputs?.[0]?.species || 
+          p.purchases?.[0]?.species || 
+          "";
+
+        if (foundSpecies) {
+          const matched = spList.find((s: any) => 
+            (s.name || "").toUpperCase() === foundSpecies.toUpperCase() ||
+            (s.code || "").toUpperCase() === foundSpecies.toUpperCase()
+          );
+          setSpecies(matched ? (matched.name || matched.code) : foundSpecies.toUpperCase());
+        } else if (p.code) {
+          const codeUpper = p.code.toUpperCase();
+          const matchedByCode = spList.find((s: any) => 
+            (s.name && codeUpper.includes(s.name.toUpperCase())) ||
+            (s.code && codeUpper.includes(s.code.toUpperCase()))
+          );
+          if (matchedByCode) {
+            setSpecies(matchedByCode.name || matchedByCode.code);
+          } else {
+            setSpecies(spList[0]?.name || "MERBAU");
+          }
+        } else {
+          setSpecies(spList[0]?.name || "MERBAU");
+        }
+
+        if (p.warehouseId) {
+          setTargetWarehouseId(p.warehouseId);
+        }
+      }
+    } catch (e) {
+      console.error("Error loading partai info:", e);
     }
   };
 
@@ -275,7 +288,7 @@ export default function CreatePackingPage() {
         containerNo,
         warehouseId: targetWarehouseId || undefined,
         notes,
-        partaiId: urlPartaiId || undefined,
+        partaiId: selectedPartaiId || undefined,
         items: validRows.map((r) => ({
           palletNo: r.palletNo || "01",
           realT: parseFloat(r.realT),
@@ -297,10 +310,10 @@ export default function CreatePackingPage() {
       });
 
       setTimeout(() => {
-        if (urlPartaiId) {
-          router.push(`/inventory/partai/${urlPartaiId}?tab=packing`);
+        if (selectedPartaiId) {
+          router.push(`/inventory/partai/${selectedPartaiId}?tab=packing`);
         } else {
-          router.push(`/inventory/partai`);
+          router.push(`/inventory/packing`);
         }
       }, 700);
     } catch (err: any) {
@@ -400,7 +413,33 @@ export default function CreatePackingPage() {
             <Layers className="w-4 h-4 text-purple-600" /> Header Dokumen Packing
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4">
+        <CardContent className="p-4 md:p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Asal Partai Kayu</Label>
+            <Select 
+              value={selectedPartaiId} 
+              onValueChange={async (val) => {
+                setSelectedPartaiId(val || "");
+                if (val) await selectPartai(val);
+              }}
+            >
+              <SelectTrigger className="h-9 text-xs font-mono font-bold text-purple-700 bg-purple-50/40">
+                <SelectValue placeholder="Pilih Asal Partai">
+                  {allPartais.find((p: any) => p.id === selectedPartaiId)?.code || (selectedPartaiId ? "Partai Terpilih" : "Bebas / Multi-Partai")}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="max-h-[250px]">
+                <SelectItem value="none" className="text-xs">-- Tanpa Partai Tertentu (Stok Bebas) --</SelectItem>
+                {allPartais.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id} className="text-xs font-mono">
+                    <span className="font-bold">{p.code}</span>
+                    <span className="text-muted-foreground ml-1.5 text-[11px]">({p.supplier?.name || "Partai Kayu"})</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">No. Packing / SPK *</Label>
             <Input
@@ -455,11 +494,11 @@ export default function CreatePackingPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">No. Kontainer (Jika Ada)</Label>
+            <Label className="text-xs font-semibold">No. Kontainer</Label>
             <Input
               value={containerNo}
               onChange={(e) => setContainerNo(e.target.value)}
-              placeholder="Contoh: CONT-01 / SEGU12345"
+              placeholder="Contoh: CONT-01"
               className="h-9 text-xs font-mono"
             />
           </div>

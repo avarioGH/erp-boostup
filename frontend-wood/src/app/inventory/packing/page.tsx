@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { TablePagination } from "@/components/ui/table-pagination";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Package,
   Plus,
@@ -22,11 +23,13 @@ import {
   Loader2,
   Calendar,
   Warehouse,
+  CheckSquare,
 } from "lucide-react";
 
 export default function PackingListPage() {
   const router = useRouter();
   const [packings, setPackings] = useState<any[]>([]);
+  const [selectedPackingIds, setSelectedPackingIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -96,6 +99,18 @@ export default function PackingListPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          {selectedPackingIds.length > 0 && (
+            <Button
+              onClick={() => {
+                const query = selectedPackingIds.map((id) => `packingId=${id}`).join("&");
+                router.push(`/sales/invoices/create?${query}`);
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold gap-1.5 shadow-sm animate-pulse"
+            >
+              <Receipt className="w-4 h-4" />
+              Buat 1 Faktur dari ({selectedPackingIds.length}) Packing Terpilih
+            </Button>
+          )}
           <Button
             onClick={() => router.push("/sales/invoices/create")}
             variant="outline"
@@ -234,6 +249,22 @@ export default function PackingListPage() {
               <Table>
                 <TableHeader className="bg-muted/50 text-xs">
                   <TableRow>
+                    <TableHead className="w-[40px] text-center">
+                      <Checkbox
+                        checked={
+                          paginatedPackings.length > 0 &&
+                          paginatedPackings.every((p) => selectedPackingIds.includes(p.id))
+                        }
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            const newIds = Array.from(new Set([...selectedPackingIds, ...paginatedPackings.map((p) => p.id)]));
+                            setSelectedPackingIds(newIds);
+                          } else {
+                            setSelectedPackingIds((prev) => prev.filter((id) => !paginatedPackings.some((p) => p.id === id)));
+                          }
+                        }}
+                      />
+                    </TableHead>
                     <TableHead className="w-[110px]">Tgl Packing</TableHead>
                     <TableHead>No. Packing / SPK</TableHead>
                     <TableHead>Partai Asal</TableHead>
@@ -247,8 +278,20 @@ export default function PackingListPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedPackings.map((item) => (
-                    <TableRow key={item.id} className="hover:bg-muted/20 transition-colors">
+                  {paginatedPackings.map((item) => {
+                    const isChecked = selectedPackingIds.includes(item.id);
+                    return (
+                    <TableRow key={item.id} className={`hover:bg-muted/20 transition-colors ${isChecked ? 'bg-purple-50/40 dark:bg-purple-950/20' : ''}`}>
+                      <TableCell className="text-center">
+                        <Checkbox
+                          checked={isChecked}
+                          onCheckedChange={() => {
+                            setSelectedPackingIds((prev) =>
+                              prev.includes(item.id) ? prev.filter((id) => id !== item.id) : [...prev, item.id]
+                            );
+                          }}
+                        />
+                      </TableCell>
                       <TableCell className="text-xs font-mono">
                         {new Date(item.packingDate || item.createdAt).toLocaleDateString("id-ID")}
                       </TableCell>

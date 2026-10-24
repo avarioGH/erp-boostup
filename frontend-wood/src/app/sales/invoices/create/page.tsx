@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   ArrowLeft,
   Receipt,
@@ -26,11 +27,15 @@ import {
   Calculator,
   User,
   Calendar,
+  Filter,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface InvoiceLineItem {
   id: string;
+  packingId?: string;
+  packingNumber?: string;
+  partaiCode?: string;
   palletNo: string;
   description: string;
   tCm: number;
@@ -52,8 +57,10 @@ export default function CreateSalesInvoicePage() {
   const urlPartaiId = searchParams.get("partaiId") || "";
 
   const [packingList, setPackingList] = useState<any[]>([]);
-  const [selectedPackingId, setSelectedPackingId] = useState(urlPackingId);
-  const [selectedPacking, setSelectedPacking] = useState<any>(null);
+  const [selectedPackingIds, setSelectedPackingIds] = useState<string[]>(urlPackingId ? [urlPackingId] : []);
+  const [loadedPackings, setLoadedPackings] = useState<any[]>([]);
+  const [packingSearchFilter, setPackingSearchFilter] = useState("");
+  const [partaiFilter, setPartaiFilter] = useState("ALL");
 
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -92,34 +99,32 @@ export default function CreateSalesInvoicePage() {
       setCustomers(cList);
 
       if (urlPackingId) {
-        loadPacking(urlPackingId);
+        toggleSelectPacking(urlPackingId, true, pList);
       }
     } catch (e) {
       console.error("Gagal inisialisasi:", e);
     }
   };
 
-  const loadPacking = async (packId: string) => {
-    if (!packId) return;
-    try {
-      const res = await PackingAPI.getPacking(packId);
-      const data = res?.data || res;
-      setSelectedPacking(data);
-      setSelectedPackingId(packId);
-
-      // Extract packing items based on Nominal Customer
-      if (data?.items && Array.isArray(data.items)) {
-        const lines: InvoiceLineItem[] = data.items.map((it: any, idx: number) => {
+  const syncLineItemsFromPackings = (packingsData: any[]) => {
+    const allLines: InvoiceLineItem[] = [];
+    packingsData.forEach((pkg) => {
+      if (pkg?.items && Array.isArray(pkg.items)) {
+        pkg.items.forEach((it: any, idx: number) => {
           const t = Number(it.custT ?? it.realT ?? 0);
           const l = Number(it.custL ?? it.realL ?? 0);
           const p = Number(it.custP ?? it.realP ?? 0);
           const pcs = Number(it.custPcs ?? it.realPcs ?? 0);
           const vol = Number(it.custM3 ?? it.realM3 ?? (t * l * p * pcs) / 1000000);
-          const species = data.species || "KAYU";
-          const desc = `${species} - Plt ${it.palletNo || "01"} (${t}x${l}x${p} cm)`;
+          const species = pkg.species || "KAYU";
+          const partaiTag = pkg.partai?.code ? `[${pkg.partai.code}] ` : "";
+          const desc = `${partaiTag}${species} - Plt ${it.palletNo || "01"} (${t}x${l}x${p} cm)`;
 
-          return {
-            id: it.id || `line-${idx}`,
+          allLines.push({
+            id: it.id || `line-${pkg.id}-${idx}`,
+            packingId: pkg.id,
+            packingNumber: pkg.packingNumber,
+            partaiCode: pkg.partai?.code || "-",
             palletNo: it.palletNo || "01",
             description: desc,
             tCm: t,
@@ -128,26 +133,52 @@ export default function CreateSalesInvoicePage() {
             pcs,
             volumeM3: Number(vol.toFixed(4)),
             billingBasis: "M3",
-            unitPrice: 0,
-            subtotal: 0,
-          };
+            unitPrice: defaultPricePerM3 || 0,
+            subtotal: Math.round(Number(vol.toFixed(4)) * (defaultPricePerM3 || 0)),
+          });
         });
-        setLineItems(lines);
       }
+    });
+    setLineItems(allLines);
+  };
+
+  const toggleSelectPacking = async (packId: string, forceCheck?: boolean, sourceList: any[] = packingList) => {
+    let newSelected: string[];
+    const isCurrentlySelected = selectedPackingIds.includes(packId);
+    const shouldSelect = forceCheck !== undefined ? forceCheck : !isCurrentlySelected;
+
+    if (shouldSelect) {
+      if (!selectedPackingIds.includes(packId)) {
+        newSelected = [...selectedPackingIds, packId];
+      } else {
+        newSelected = [...selectedPackingIds];
+      }
+    } else {
+      newSelected = selectedPackingIds.filter((id) => id !== packId);
+    }
+
+    setSelectedPackingIds(newSelected);
+
+    // Fetch details for all selected packings
+    try {
+      const detailedPackings = await Promise.all(
+        newSelected.map(async (id) => {
+          const cached = loadedPackings.find((p) => p.id === id);
+          if (cached && cached.items) return cached;
+          const res = await PackingAPI.getPacking(id);
+          return res?.data || res;
+        })
+      );
+      setLoadedPackings(detailedPackings);
+      syncLineItemsFromPackings(detailedPackings);
     } catch (err: any) {
       console.error("Gagal memuat detail packing:", err);
       toast({
         title: "Gagal Mengambil Data Packing",
-        description: err.message || "Dokumen packing tidak ditemukan",
+        description: err.message || "Sebagian dokumen packing gagal dimuat",
         variant: "destructive",
       });
     }
-  };
-
-  const handleSelectPacking = (packId: string | null) => {
-    if (!packId) return;
-    setSelectedPackingId(packId);
-    loadPacking(packId);
   };
 
   // Bulk apply price per M3
@@ -236,13 +267,17 @@ export default function CreateSalesInvoicePage() {
     setSubmitting(true);
     setPageError(null);
     try {
+      const packingNotes = loadedPackings.length > 0 
+        ? `Packing: ${loadedPackings.map(p => `${p.packingNumber}${p.partai?.code ? ` (${p.partai.code})` : ''}`).join(', ')}`
+        : "";
+
       const payload = {
         customerId: selectedCustomerId || undefined,
         invoiceNumber,
         invoiceDate,
         dueDate,
         tax: taxAmount,
-        notes: notes || (selectedPacking ? `Packing List: ${selectedPacking.packingNumber}` : ""),
+        notes: notes ? (packingNotes ? `${notes} | ${packingNotes}` : notes) : packingNotes,
         items: lineItems.map((it) => ({
           description: it.description,
           qty: it.billingBasis === "M3" ? it.volumeM3 : it.pcs,
@@ -348,62 +383,134 @@ export default function CreateSalesInvoicePage() {
 
       {/* STEP 1: PILIH SUMBER PACKING & INFORMASI BUYER */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* KIRI: PILIH SUMBER PACKING LIST */}
-        <Card className="border-purple-200/80 dark:border-purple-900/40 shadow-sm">
+        {/* KIRI: PILIH SUMBER PACKING LIST (MULTI-SELECT / CROSS-PARTAI) */}
+        <Card className="border-purple-200/80 dark:border-purple-900/40 shadow-sm flex flex-col">
           <CardHeader className="bg-purple-50/40 dark:bg-purple-950/20 py-3.5 px-4 md:px-5 border-b">
-            <CardTitle className="text-sm font-bold flex items-center gap-2 text-purple-900 dark:text-purple-300">
-              <Package className="w-4 h-4 text-purple-600" /> 1. Sumber Stok Packing List
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 text-purple-900 dark:text-purple-300">
+                <Package className="w-4 h-4 text-purple-600" /> 1. Sumber Stok Packing
+              </CardTitle>
+              <Badge variant="outline" className="text-[11px] font-mono border-purple-300 text-purple-700 bg-purple-50">
+                {selectedPackingIds.length} Terpilih
+              </Badge>
+            </div>
             <CardDescription className="text-xs">
-              Pilih packing list kayu yang sudah selesai dipacking untuk ditarik ke tagihan.
+              Centang dokumen packing yang ingin dijual. Bisa pilih beberapa packing dari partai berbeda.
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-4 md:p-5 space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Pilih Dokumen Packing List *</Label>
-              <Select value={selectedPackingId} onValueChange={handleSelectPacking}>
-                <SelectTrigger className="h-9 text-xs font-mono font-medium">
-                  <SelectValue placeholder="-- Pilih Packing List --">
-                    {selectedPacking
-                      ? `${selectedPacking.packingNumber} (${selectedPacking.species || "KAYU"} - ${selectedPacking.palletCount || 1} PLT)`
-                      : "-- Pilih Packing List --"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {packingList.map((p) => (
-                    <SelectItem key={p.id} value={p.id} className="text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-purple-700">{p.packingNumber}</span>
-                        <span className="text-muted-foreground">({p.species || "KAYU"})</span>
-                        <span className="text-[11px] font-mono text-emerald-600">
-                          {Number(p.totalCustVolume || p.totalRealVolume || 0).toFixed(4)} M³
-                        </span>
-                        {p.partai?.code && <Badge variant="outline" className="text-[10px]">{p.partai.code}</Badge>}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <CardContent className="p-4 md:p-5 space-y-3 flex-1 flex flex-col">
+            {/* Filter pencarian & partai */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={packingSearchFilter}
+                  onChange={(e) => setPackingSearchFilter(e.target.value)}
+                  placeholder="Cari no. packing / kayu..."
+                  className="h-8 text-xs font-mono"
+                />
+                <Select value={partaiFilter} onValueChange={(val) => setPartaiFilter(val || "ALL")}>
+                  <SelectTrigger className="h-8 w-32 text-xs font-mono font-medium">
+                    <SelectValue placeholder="Partai" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[220px]">
+                    <SelectItem value="ALL" className="text-xs">Semua Partai</SelectItem>
+                    {Array.from(new Set(packingList.map((p) => p.partai?.code).filter(Boolean))).map((code: any) => (
+                      <SelectItem key={code} value={code} className="text-xs font-mono font-semibold">
+                        {code}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            {selectedPacking && (
-              <div className="p-3 bg-purple-50/60 dark:bg-purple-950/30 rounded-lg border border-purple-200 text-xs space-y-1.5">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Spesies / Kayu:</span>
-                  <strong className="font-mono uppercase text-foreground">{selectedPacking.species || "MERBAU"}</strong>
+            {/* List Packing dengan Checkbox */}
+            <div className="border rounded-md overflow-hidden flex-1 max-h-[240px] overflow-y-auto divide-y bg-background text-xs">
+              {(() => {
+                const filtered = packingList.filter((p) => {
+                  const matchSearch =
+                    !packingSearchFilter ||
+                    (p.packingNumber && p.packingNumber.toLowerCase().includes(packingSearchFilter.toLowerCase())) ||
+                    (p.species && p.species.toLowerCase().includes(packingSearchFilter.toLowerCase()));
+                  const matchPartai = partaiFilter === "ALL" || p.partai?.code === partaiFilter;
+                  return matchSearch && matchPartai;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="p-4 text-center text-muted-foreground text-xs">
+                      Tidak ada dokumen packing yang cocok.
+                    </div>
+                  );
+                }
+
+                return filtered.map((p) => {
+                  const isChecked = selectedPackingIds.includes(p.id);
+                  const custVol = Number(p.totalCustVolume || p.totalRealVolume || 0).toFixed(4);
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => toggleSelectPacking(p.id)}
+                      className={`p-2.5 flex items-center justify-between gap-2.5 cursor-pointer transition-colors ${
+                        isChecked
+                          ? "bg-purple-50/80 dark:bg-purple-950/40 font-medium"
+                          : "hover:bg-muted/40"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Checkbox
+                          checked={isChecked}
+                          onCheckedChange={() => toggleSelectPacking(p.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="min-w-0 truncate">
+                          <span className="font-mono font-bold text-purple-700 dark:text-purple-400 block truncate">
+                            {p.packingNumber}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {p.species || "KAYU"} • {p.palletCount || 1} Plt
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-mono font-bold text-emerald-600 block text-xs">
+                          {custVol} M³
+                        </span>
+                        {p.partai?.code && (
+                          <Badge variant="outline" className="text-[10px] px-1 py-0 border-purple-300 text-purple-700 bg-purple-50/40">
+                            {p.partai.code}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Rekap Sumber Terpilih */}
+            {loadedPackings.length > 0 && (
+              <div className="p-3 bg-purple-50/60 dark:bg-purple-950/30 rounded-lg border border-purple-200 text-xs space-y-1.5 mt-auto">
+                <div className="flex justify-between items-center text-purple-900 dark:text-purple-300 font-bold border-b pb-1">
+                  <span>Total Packing Terpilih:</span>
+                  <span className="font-mono">{loadedPackings.length} Dokumen ({loadedPackings.reduce((s, p) => s + (p.palletCount || 1), 0)} Plt)</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Palet:</span>
-                  <strong className="font-mono">{selectedPacking.palletCount || 1} Palet</strong>
+                  <span className="text-muted-foreground">Partai Asal:</span>
+                  <strong className="font-mono text-purple-700">
+                    {Array.from(new Set(loadedPackings.map((p) => p.partai?.code).filter(Boolean))).join(", ") || "Stok Bebas"}
+                  </strong>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Vol. Riil Pabrik:</span>
-                  <strong className="font-mono text-blue-600">{Number(selectedPacking.totalRealVolume || 0).toFixed(4)} M³</strong>
+                  <strong className="font-mono text-blue-600">
+                    {loadedPackings.reduce((s, p) => s + Number(p.totalRealVolume || 0), 0).toFixed(4)} M³
+                  </strong>
                 </div>
-                <div className="flex justify-between border-t pt-1.5">
-                  <span className="text-purple-900 dark:text-purple-300 font-semibold">Vol. Nominal Buyer:</span>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Vol. Nominal Buyer:</span>
                   <strong className="font-mono text-emerald-600 font-bold">
-                    {Number(selectedPacking.totalCustVolume || selectedPacking.totalRealVolume || 0).toFixed(4)} M³
+                    {loadedPackings.reduce((s, p) => s + Number(p.totalCustVolume || p.totalRealVolume || 0), 0).toFixed(4)} M³
                   </strong>
                 </div>
               </div>
@@ -578,9 +685,14 @@ export default function CreateSalesInvoicePage() {
                   lineItems.map((item, idx) => (
                     <TableRow key={item.id} className="hover:bg-muted/20 text-xs">
                       <TableCell className="text-center font-mono font-bold">
-                        <Badge variant="outline" className="text-[11px] font-mono">
+                        <Badge variant="outline" className="text-[11px] font-mono block">
                           {item.palletNo}
                         </Badge>
+                        {item.packingNumber && (
+                          <span className="text-[10px] text-muted-foreground block font-mono truncate max-w-[80px]" title={item.packingNumber}>
+                            {item.packingNumber}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="font-medium text-foreground">
                         <Input
