@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProductionAPI, MasterDataAPI } from "@/lib/api";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { 
   Search, 
   Loader2, 
@@ -38,6 +39,8 @@ const DEFAULT_PROCESSING_TYPES = [
 
 export default function ProcessingListPage() {
   const [processes, setProcesses] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [processingTypes, setProcessingTypes] = useState<any[]>(DEFAULT_PROCESSING_TYPES);
   const [selectedType, setSelectedType] = useState<string>("ALL");
   const [search, setSearch] = useState("");
@@ -242,7 +245,7 @@ export default function ProcessingListPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {processes.map((p) => {
+                  {processes.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((p) => {
                     const yieldPct = p.inputVolumeM3 > 0 ? ((p.outputVolumeM3 / p.inputVolumeM3) * 100).toFixed(1) : "0.0";
                     return (
                       <TableRow key={p.id} className="hover:bg-muted/30 transition-colors">
@@ -314,6 +317,7 @@ export default function ProcessingListPage() {
                 </TableBody>
               </Table>
             </div>
+            <TablePagination currentPage={currentPage} totalItems={filteredProcesses.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} pageSizeOptions={[10, 25, 50, 100]} itemLabel="proses" />
           )}
         </CardContent>
       </Card>

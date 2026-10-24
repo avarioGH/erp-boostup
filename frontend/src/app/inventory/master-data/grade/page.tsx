@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { MasterDataAPI } from "@/lib/api"
+import { TablePagination } from "@/components/ui/table-pagination"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,7 +31,7 @@ export default function GradePage() {
   const [formData, setFormData] = useState<any>({ code: "", name: "", sortOrder: 0, isActive: true })
   const [editingId, setEditingId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const fetchData = async () => {
     try {
@@ -114,7 +115,7 @@ export default function GradePage() {
             <Input 
               placeholder="Search..." 
               value={search} 
-              onChange={e => setSearch(e.target.value)} 
+              onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} 
               className="max-w-sm"
             />
           </div>
@@ -159,15 +160,15 @@ export default function GradePage() {
             </div>
           )}
 
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-muted-foreground">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} entries
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Previous</Button>
-              <Button variant="outline" size="sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next</Button>
-            </div>
-          </div>
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={filteredData.length}
+            pageSize={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setItemsPerPage}
+            pageSizeOptions={[10, 25, 50, 100]}
+            itemLabel="data"
+          />
         </CardContent>
       </Card>
 

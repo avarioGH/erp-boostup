@@ -18,7 +18,8 @@ import {
 } from"@/components/ui/table"
 import { Search, Plus, Download, Box, LayoutGrid, AlertTriangle, RefreshCcw
 , MoreHorizontal, Trash2, Edit2 } from "lucide-react"
-import { InventoryAPI } from"@/lib/api"
+import { InventoryAPI } from "@/lib/api"
+import { TablePagination } from "@/components/ui/table-pagination"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from"@/components/ui/select"
 import imageCompression from"browser-image-compression"
 
@@ -33,6 +34,8 @@ import {
 
 export default function ProductInventory() {
  const [searchQuery, setSearchQuery] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
  const [showForm, setShowForm] = useState(false)
  const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -278,6 +281,7 @@ export default function ProductInventory() {
  p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
  p.sku.toLowerCase().includes(searchQuery.toLowerCase())
  )
+ const paginatedProducts = filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
  return (
  <div className="space-y-6 animate-in fade-in duration-500 pb-10">
@@ -524,7 +528,7 @@ export default function ProductInventory() {
  placeholder="Cari nama produk atau SKU..." 
  className="pl-9 bg-background border-border"
  value={searchQuery}
- onChange={(e) => setSearchQuery(e.target.value)}
+ onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
  />
  </div>
  <div className="flex items-center gap-2">
@@ -601,7 +605,7 @@ export default function ProductInventory() {
  </TableCell>
  </TableRow>
  ) : (
- filteredProducts.map((p) => {
+ paginatedProducts.map((p) => {
  const totalStock = warehouses.reduce((sum, wh) => sum + (p.stockMap[wh.id] || 0), 0);
  return (
  <TableRow key={p.id} className="border-border/60 hover:bg-muted/30 dark:hover:bg-slate-800/50 transition-colors group">
@@ -663,6 +667,7 @@ export default function ProductInventory() {
  </TableBody>
  </Table>
  </div>
+ <TablePagination currentPage={currentPage} totalItems={filteredProducts.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} pageSizeOptions={[10, 25, 50, 100]} itemLabel="produk" />
  </Card>
  </div>
  )

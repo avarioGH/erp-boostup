@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Plus, Truck, ArrowRight, ArrowLeft, Search, FileBox, Printer, Trash2, CheckCircle2, MapPin, Calendar, UserSquare2, Layers, BarChart2, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useSearchParams, useRouter } from "next/navigation";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 export default function ShipmentListPage() {
   const router = useRouter();
@@ -20,6 +21,8 @@ export default function ShipmentListPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchShipments = () => {
     setLoading(true);
@@ -61,6 +64,8 @@ export default function ShipmentListPage() {
     const wh = (s.warehouse?.name || "").toLowerCase();
     return num.includes(q) || fuso.includes(q) || police.includes(q) || driver.includes(q) || dest.includes(q) || wh.includes(q);
   });
+
+  const paginatedShipments = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Calculate Aggregates
   const totalArmada = shipments.length;
@@ -221,7 +226,10 @@ export default function ShipmentListPage() {
                     placeholder="Cari No Fuso, Plat, Supir, Tujuan..." 
                     className="pl-9 bg-background h-10" 
                     value={search} 
-                    onChange={(e) => setSearch(e.target.value)} 
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setCurrentPage(1);
+                    }} 
                   />
                 </div>
               </div>
@@ -260,7 +268,7 @@ export default function ShipmentListPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.map(s => {
+                      {paginatedShipments.map(s => {
                         const sNum = s.shipmentNumber || s.code || "-";
                         const fuso = s.fusoName || sNum;
                         const plate = s.policeNumber || s.vehicle?.licensePlate || s.vehicle?.name || "-";
@@ -354,6 +362,19 @@ export default function ShipmentListPage() {
                       })}
                     </tbody>
                   </table>
+                  <div className="p-4 border-t border-border">
+                    <TablePagination
+                      currentPage={currentPage}
+                      totalItems={filtered.length}
+                      pageSize={pageSize}
+                      onPageChange={setCurrentPage}
+                      onPageSizeChange={(newSize) => {
+                        setPageSize(newSize);
+                        setCurrentPage(1);
+                      }}
+                      itemLabel="muatan"
+                    />
+                  </div>
                 </div>
               )}
             </CardContent>

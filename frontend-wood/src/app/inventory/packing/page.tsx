@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -28,6 +29,8 @@ export default function PackingListPage() {
   const [packings, setPackings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [filterSpecies, setFilterSpecies] = useState("ALL");
   const [speciesList, setSpeciesList] = useState<any[]>([]);
 
@@ -71,6 +74,7 @@ export default function PackingListPage() {
 
     return matchSearch && matchSpecies;
   });
+  const paginatedPackings = filteredPackings.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const totalPallets = packings.reduce((sum, p) => sum + (p.palletCount || 1), 0);
   const totalRealM3 = packings.reduce((sum, p) => sum + (p.totalRealVolume || 0), 0);
@@ -175,7 +179,7 @@ export default function PackingListPage() {
             <Input
               placeholder="Cari no. packing, customer, spesies, kontainer..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
               className="pl-9 h-9 text-xs"
             />
           </div>
@@ -242,7 +246,7 @@ export default function PackingListPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPackings.map((item) => (
+                  {paginatedPackings.map((item) => (
                     <TableRow key={item.id} className="hover:bg-muted/20 transition-colors">
                       <TableCell className="text-xs font-mono">
                         {new Date(item.packingDate || item.createdAt).toLocaleDateString("id-ID")}
@@ -324,6 +328,7 @@ export default function PackingListPage() {
                 </TableBody>
               </Table>
             </div>
+            <TablePagination currentPage={currentPage} totalItems={filteredPackings.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} pageSizeOptions={[10, 25, 50, 100]} itemLabel="packing" />
           )}
         </CardContent>
       </Card>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { TablePagination } from "@/components/ui/table-pagination";
 
 interface Customer {
   id: number;
@@ -32,14 +33,18 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
 
-  const fetchCustomers = async (searchQuery = "") => {
+  const fetchCustomers = async (page = currentPage, limit = pageSize, searchQuery = search) => {
     try {
       setLoading(true);
       const res = await api.get('/customers', {
-        params: { page: 1, limit: 50, search: searchQuery }
+        params: { page, limit, search: searchQuery }
       });
       setCustomers(res.data?.data || []);
+      setTotalItems(res.data?.total || 0);
     } catch (error) {
       console.error("Failed to fetch customers", error);
     } finally {
@@ -48,12 +53,13 @@ export default function CustomersPage() {
   };
 
   useEffect(() => {
-    fetchCustomers();
-  }, []);
+    fetchCustomers(currentPage, pageSize, search);
+  }, [currentPage, pageSize]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchCustomers(search);
+    setCurrentPage(1);
+    fetchCustomers(1, pageSize, search);
   };
 
   const formatCurrency = (value: number) => {
@@ -135,6 +141,15 @@ export default function CustomersPage() {
               </TableBody>
             </Table>
           </div>
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[10, 25, 50, 100]}
+            itemLabel="pelanggan"
+          />
         </CardContent>
       </Card>
     </div>

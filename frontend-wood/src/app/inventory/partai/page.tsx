@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { PartaiAPI } from "@/lib/api";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -13,6 +14,8 @@ export default function PartaiListPage() {
   const router = useRouter();
   const [partais, setPartais] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [viewMode, setViewMode] = useState<'list' | 'folder'>('list');  const fetchPartais = async () => {
     try {
       const res = await PartaiAPI.getPartais();
@@ -41,6 +44,7 @@ export default function PartaiListPage() {
     (p.code || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
     (p.name || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const paginatedPartais = filteredPartais.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -62,7 +66,7 @@ export default function PartaiListPage() {
             placeholder="Cari kode atau nama partai..." 
             className="pl-9 h-10"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
           />
         </div>
         <div className="flex items-center gap-2 bg-muted p-1 rounded-lg">
@@ -99,7 +103,7 @@ export default function PartaiListPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredPartais.map((p: any) => (
+                {paginatedPartais.map((p: any) => (
                   <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50 group" onClick={() => router.push(`/inventory/partai/${p.id}`)}>
                     <TableCell className="font-bold flex items-center gap-2">
                       <FolderOpen className="w-4 h-4 text-blue-500" />
@@ -131,10 +135,11 @@ export default function PartaiListPage() {
               </TableBody>
             </Table>
           </CardContent>
+          <TablePagination currentPage={currentPage} totalItems={filteredPartais.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} pageSizeOptions={[10, 25, 50, 100]} itemLabel="partai" />
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredPartais.map((p: any) => (
+          {paginatedPartais.map((p: any) => (
             <Card 
               key={p.id} 
               className="cursor-pointer hover:border-blue-500/50 hover:shadow-md transition-all duration-200 group bg-card"
@@ -163,6 +168,7 @@ export default function PartaiListPage() {
             </div>
           )}
         </div>
+        <TablePagination currentPage={currentPage} totalItems={filteredPartais.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} pageSizeOptions={[10, 25, 50, 100]} itemLabel="partai" />
       )}
     </div>
   );

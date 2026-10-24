@@ -1,6 +1,7 @@
 "use client"
 import { useEffect, useState } from 'react'
 import { api, PurchasingAPI, FinanceAPI } from '@/lib/api'
+import { TablePagination } from '@/components/ui/table-pagination'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,8 @@ export default function PurchaseOrdersPage() {
  const [data, setData] = useState<any[]>([])
  const [loading, setLoading] = useState(true)
  const [searchTerm, setSearchTerm] = useState("")
+ const [currentPage, setCurrentPage] = useState(1)
+ const [pageSize, setPageSize] = useState(10)
  const [selectedDoc, setSelectedDoc] = useState<any | null>(null)
  const [isKayu, setIsKayu] = useState(false)
  
@@ -130,6 +133,7 @@ const getBillBadge = (status: string) => {
  item.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
  item.supplier?.name?.toLowerCase().includes(searchTerm.toLowerCase())
  )
+ const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
  if (selectedDoc) {
  const details = docDetails || selectedDoc
@@ -416,7 +420,7 @@ const getBillBadge = (status: string) => {
  placeholder="Cari PO atau Supplier..." 
  className="pl-8" 
  value={searchTerm}
- onChange={(e) => setSearchTerm(e.target.value)}
+ onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
  />
  </div>
  <Button variant="outline" size="icon">
@@ -445,7 +449,7 @@ const getBillBadge = (status: string) => {
  <tbody>
  {filtered.length === 0 ? (
  <tr><td colSpan={7} className="text-center p-12 text-muted-foreground">Tidak ada order pembelian ditemukan.</td></tr>
- ) : filtered.map((item) => (
+ ) : paginated.map((item) => (
  <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => viewDetails(item)}>
  <td className="py-3.5 px-6 font-semibold text-primary text-[13px] dark:text-primary">{item.order_number}</td>
  <td className="p-4 px-6 font-medium">{item.supplier?.name || '-'}</td>
@@ -463,6 +467,7 @@ const getBillBadge = (status: string) => {
  </tbody>
  </table>
  </div>
+ <TablePagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} pageSizeOptions={[10, 25, 50, 100]} itemLabel="pembelian" />
  )}
  </CardContent>
  </Card>

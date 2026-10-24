@@ -1,6 +1,7 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from"react"
-import { api, InventoryAPI } from"@/lib/api"
+import { api, InventoryAPI } from "@/lib/api"
+import { TablePagination } from "@/components/ui/table-pagination"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from"@/components/ui/card"
 import { Button } from"@/components/ui/button"
 import { Input } from"@/components/ui/input"
@@ -12,6 +13,8 @@ export default function StockPage() {
  const [warehouses, setWarehouses] = useState<any[]>([])
  const [loading, setLoading] = useState(true)
  const [searchTerm, setSearchTerm] = useState("")
+ const [currentPage, setCurrentPage] = useState(1)
+ const [pageSize, setPageSize] = useState(10)
  const [selectedWarehouse, setSelectedWarehouse] = useState<string>("all")
 
  useEffect(() => {
@@ -26,6 +29,7 @@ export default function StockPage() {
  (item.product?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
  item.product?.sku?.toLowerCase().includes(searchTerm.toLowerCase()))
  )
+ const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
  return (
  <div className="space-y-6 pb-10">
@@ -41,7 +45,7 @@ export default function StockPage() {
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <CardTitle className="text-[16px] font-semibold flex items-center gap-2"><Box className="w-5 h-5" /> Stok Tersedia</CardTitle>
  <div className="flex items-center gap-2 w-full sm:w-auto">
- <Select value={selectedWarehouse} onValueChange={(val) => setSelectedWarehouse(val ||"")}>
+ <Select value={selectedWarehouse} onValueChange={(val) => { setSelectedWarehouse(val || ""); setCurrentPage(1); }}>
  <SelectTrigger className="w-[180px]">
  <SelectValue placeholder="Semua Gudang" />
  </SelectTrigger>
@@ -52,7 +56,7 @@ export default function StockPage() {
  </Select>
  <div className="relative w-full sm:w-64">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
- <Input type="search" placeholder="Cari produk atau SKU..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+ <Input type="search" placeholder="Cari produk atau SKU..." className="pl-8" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} />
  </div>
  </div>
  </div>
@@ -75,7 +79,7 @@ export default function StockPage() {
  <tbody>
  {filtered.length === 0 ? (
  <tr><td colSpan={5} className="text-center p-12 text-muted-foreground">Tidak ada data stok ikan ditemukan.</td></tr>
- ) : filtered.map((s, i) => (
+ ) : paginated.map((s, i) => (
  <tr key={s.id || i} className="border-b last:border-0 hover:bg-muted/20">
  <td className="p-4 px-6 font-medium">{s.product?.name || '-'}<br/><span className="text-[11px] text-muted-foreground font-mono">{s.product?.weight ? s.product.weight + " gr" : ""}</span></td>
  <td className="p-4 px-6 text-muted-foreground">{s.product?.sku || '-'}</td>
@@ -87,6 +91,7 @@ export default function StockPage() {
  </tbody>
  </table>
  </div>
+ <TablePagination currentPage={currentPage} totalItems={filtered.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} pageSizeOptions={[10, 25, 50, 100]} itemLabel="stok" />
  )}
  </CardContent>
  </Card>

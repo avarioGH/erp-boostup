@@ -9,6 +9,7 @@ const getBaseUrl = () => {
 
 export const api = axios.create({
   baseURL: getBaseUrl(),
+  timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -33,7 +34,16 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Cache successful GET responses in sessionStorage for instant offline/re-render fallback
+    if (typeof window !== 'undefined' && response.config.method?.toLowerCase() === 'get' && response.data) {
+      try {
+        const cacheKey = `erp_cache_${response.config.url}_${JSON.stringify(response.config.params || {})}`;
+        sessionStorage.setItem(cacheKey, JSON.stringify({ data: response.data, timestamp: Date.now() }));
+      } catch (e) {}
+    }
+    return response;
+  },
   (error) => {
     if (error.response && error.response.status === 401) {
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
@@ -43,6 +53,31 @@ api.interceptors.response.use(
         window.location.href = '/login';
       }
     }
+
+    // Offline / Network Error / Timeout fallback from cache for GET requests
+    if (typeof window !== 'undefined' && (!error.response || error.code === 'ECONNABORTED' || error.message?.includes('Network Error'))) {
+      const config = error.config;
+      if (config && config.method?.toLowerCase() === 'get') {
+        try {
+          const cacheKey = `erp_cache_${config.url}_${JSON.stringify(config.params || {})}`;
+          const cached = sessionStorage.getItem(cacheKey);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.data) {
+              console.warn(`[Offline Cache Fallback] serving cached response for ${config.url}`);
+              return Promise.resolve({
+                data: parsed.data,
+                status: 200,
+                statusText: 'OK (Cached)',
+                headers: {},
+                config,
+              });
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
     return Promise.reject(error);
   }
 );

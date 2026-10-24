@@ -1,5 +1,6 @@
 "use client"
-import { api } from"@/lib/api"
+import { api } from "@/lib/api"
+import { TablePagination } from "@/components/ui/table-pagination"
 
 import { useState, useEffect } from"react"
 import { Card, CardContent, CardHeader, CardTitle } from"@/components/ui/card"
@@ -10,6 +11,9 @@ import { Plus, Edit2, Trash2 } from "lucide-react"
 
 export default function WarehousesPage() {
  const [warehouses, setWarehouses] = useState<any[]>([])
+  const [search, setSearch] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
  const [loading, setLoading] = useState(true)
  const [showForm, setShowForm] = useState(false)
  const [editingId, setEditingId] = useState<string | null>(null)
@@ -32,7 +36,14 @@ export default function WarehousesPage() {
  fetchWarehouses()
  }, [])
 
- const handleSave = async (e: React.FormEvent) => {
+ const filteredWarehouses = (Array.isArray(warehouses) ? warehouses : []).filter(w =>
+    (w.name || "").toLowerCase().includes(search.toLowerCase()) ||
+    (w.code || "").toLowerCase().includes(search.toLowerCase()) ||
+    (w.address || "").toLowerCase().includes(search.toLowerCase())
+  )
+  const paginatedWarehouses = filteredWarehouses.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  const handleSave = async (e: React.FormEvent) => {
  e.preventDefault()
  try {
  const token = localStorage.getItem("erp_token")
@@ -124,12 +135,20 @@ export default function WarehousesPage() {
 
  <Card>
  <CardHeader>
- <CardTitle>Warehouse List</CardTitle>
+ <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+   <CardTitle>Warehouse List</CardTitle>
+   <Input 
+     placeholder="Cari gudang atau kode..." 
+     className="max-w-xs h-9 text-xs" 
+     value={search} 
+     onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} 
+   />
+ </div>
  </CardHeader>
  <CardContent>
  {loading ? (
  <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
- ) : warehouses.length === 0 ? (
+ ) : filteredWarehouses.length === 0 ? (
  <p className="text-sm text-muted-foreground text-center py-4">No warehouses found.</p>
  ) : (
  <div className="border rounded-md overflow-x-auto">
@@ -143,7 +162,7 @@ export default function WarehousesPage() {
  </tr>
  </thead>
  <tbody>
- {warehouses.map((w) => (
+ {paginatedWarehouses.map((w) => (
  <tr key={w.id} className="border-b last:border-0 hover:bg-muted/50">
  <td className="p-3 font-medium">{w.code}</td>
  <td className="p-3">{w.name}</td>

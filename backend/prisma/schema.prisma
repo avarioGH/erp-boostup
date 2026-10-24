@@ -325,6 +325,7 @@ model Warehouse {
   batchReclassifications     TimberBatchReclassification[]
 
   @@unique([company_id, code])
+  @@index([company_id])
 }
 
 model UserWarehouseAccess {
@@ -449,6 +450,7 @@ model Product {
 
   @@unique([company_id, code])
   @@unique([company_id, barcode])
+  @@index([company_id])
 }
 
 model ProductImage {
@@ -818,6 +820,7 @@ model InventoryTransaction {
   deleted_at DateTime?
 
   @@unique([company_id, transaction_no])
+  @@index([company_id])
 }
 
 model InventoryTransactionItem {
@@ -889,6 +892,7 @@ model WarehouseStock {
   updated_at DateTime @updatedAt
 
   @@unique([company_id, warehouse_id, product_id])
+  @@index([company_id])
 }
 
 // =======================
@@ -1712,6 +1716,7 @@ model SalesOrder {
 
   @@unique([company_id, order_number])
   @@unique([company_id, ecommerce_session_id])
+  @@index([company_id])
 }
 
 model SalesOrderItem {
@@ -2760,6 +2765,7 @@ model RawLog {
   inputLogId    String?
   inputLog      InputLog?      @relation(fields: [inputLogId], references: [id])
   inputLogItems InputLogItem[]
+  @@index([partaiId])
 }
 
 // --------------------------------------------------
@@ -2806,6 +2812,7 @@ model TrimmedLog {
   date      DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@index([partaiId])
 }
 
 // --------------------------------------------------
@@ -2846,6 +2853,7 @@ model InputLog {
   rawLogs     RawLog[]
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
+  @@index([partaiId])
 }
 
 // --------------------------------------------------
@@ -2930,6 +2938,7 @@ model SawnTimberOutput {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@index([partaiId])
 }
 
 model SawnTimberOutputItem {
@@ -3396,6 +3405,8 @@ model ProductionProcess {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@index([company_id])
+  @@index([partaiId])
 }
 
 model ProductionProcessInput {
@@ -3550,6 +3561,8 @@ model TimberShipment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@index([company_id])
+  @@index([partaiId])
 }
 
 model TimberShipmentItem {
@@ -3764,6 +3777,7 @@ model TimberPartai {
   updatedAt DateTime @updatedAt
 
   @@unique([company_id, code])
+  @@index([company_id])
 }
 
 // ==================================================
@@ -3799,6 +3813,8 @@ model TimberPacking {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  @@index([company_id])
+  @@index([partaiId])
 }
 
 model TimberPackingItem {
