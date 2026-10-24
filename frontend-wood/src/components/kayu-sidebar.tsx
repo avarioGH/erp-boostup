@@ -61,31 +61,15 @@ const items: MenuItem[] = [
  },
  
  { 
- title: "Manajemen Gudang (Stok)", 
- url: "/inventory/reports/movements", 
- icon: Box,
- id: "inventory",
- subItems: [
- { title: "Pergerakan Stok", url: "/inventory/reports/movements" },
- { title: "Penyesuaian Stok", url: "/inventory/adjustments" },
- { title: "Stock Opname & Audit", url: "/inventory/stock-opname" }
- ]
- },
- 
- { 
  title: "Penjualan (Outbound)", 
- url: "/sales/orders", 
+ url: "/inventory/packing", 
  icon: ShoppingCart,
  id: "outbound",
  subItems: [
- { title: "Penawaran (Quotation)", url: "/sales/quotations" },
- { title: "Sales Orders (SO)", url: "/sales/orders" },
  { title: "Packing List (Produk Jadi)", url: "/inventory/packing" },
  { title: "Invoice Penjualan (Buyer)", url: "/sales/invoices/create" },
  { title: "Data Muat & Rekap Fuso", url: "/inventory/shipment" },
- { title: "Monitoring Realisasi PO", url: "/sales/timber/reports/order-realization" },
- { title: "Surat Jalan (Pengiriman)", url: "/sales/deliveries" },
-  { title: "Daftar Pelanggan", url: "/sales/customers" }
+ { title: "Monitoring Realisasi PO", url: "/sales/timber/reports/order-realization" }
  ]
  },
  
