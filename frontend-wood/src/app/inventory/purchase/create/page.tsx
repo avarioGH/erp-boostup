@@ -403,7 +403,7 @@ export default function CreatePurchasePage() {
       const rowVals: string[] = [];
       for (let c = minCol; c <= maxCol; c++) {
         const colField = LOG_COL_ORDER[c];
-        const val = form.logItems[r]?.[colField] ?? "";
+        const val = (form.logItems[r] as any)?.[colField] ?? "";
         rowVals.push(String(val));
       }
       matrix.push(rowVals);
