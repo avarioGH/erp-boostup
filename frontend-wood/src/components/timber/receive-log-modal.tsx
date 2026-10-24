@@ -40,6 +40,7 @@ export function ReceiveLogModal({
     new Date().toISOString().split("T")[0]
   );
   const [logRows, setLogRows] = useState<any[]>([]);
+  const [sawnRows, setSawnRows] = useState<any[]>([]);
   const [speciesList, setSpeciesList] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const logFileInputRef = useRef<HTMLInputElement>(null);
