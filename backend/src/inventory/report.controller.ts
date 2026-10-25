@@ -9,8 +9,9 @@ export class ReportController {
   constructor(private readonly reportService: ReportService) {}
 
   @Get('summary')
-  async getDashboardSummary() {
-    return this.reportService.getDashboardSummary();
+  async getDashboardSummary(@Request() req: any) {
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.reportService.getDashboardSummary(companyId);
   }
 
   @Get('stock-summary')

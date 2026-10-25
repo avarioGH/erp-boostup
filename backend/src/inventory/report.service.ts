@@ -37,13 +37,14 @@ export class ReportService {
       recentActivity: { outputs: [], transfers: [], adjustments: [] },
     };
   }
-  async getDashboardSummary() {
-    return this.cache.getOrSet('timber_dashboard_summary', 30, async () => {
-      return this.computeDashboardSummary();
+  async getDashboardSummary(companyId?: string) {
+    const cacheKey = companyId ? `timber_dashboard_summary_${companyId}` : 'timber_dashboard_summary';
+    return this.cache.getOrSet(cacheKey, 30, async () => {
+      return this.computeDashboardSummary(companyId);
     });
   }
 
-  private async computeDashboardSummary() {
+  private async computeDashboardSummary(companyId?: string) {
     try {
       // 1. Aggregations for Timber Stock (Stok Kayu Jadi di Gudang)
 
@@ -164,6 +165,7 @@ export class ReportService {
       const [warehouses, allStocks]: [any[], any[]] = await Promise.all([
         this.prisma.warehouse
           .findMany({
+            where: companyId ? { company_id: companyId } : {},
             select: { id: true, code: true, name: true },
           })
           .catch(() => [] as any[]),
