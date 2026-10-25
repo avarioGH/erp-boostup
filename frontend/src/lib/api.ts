@@ -507,21 +507,25 @@ export const SalesReturnAPI: any = {
 
 export const AiAPI: any = {
   parseTallyDocument: async (fileOrBase64: File | string, workflowType: 'RAW_LOG' | 'SAWN_TIMBER' = 'RAW_LOG') => {
-    if (typeof fileOrBase64 === 'string') {
-      const res = await api.post('/api/ai/parse-tally', {
-        imageBase64: fileOrBase64,
-        workflowType,
-      });
-      return res.data;
-    } else {
-      const formData = new FormData();
-      formData.append('file', fileOrBase64);
-      formData.append('workflowType', workflowType);
-      const res = await api.post('/api/ai/parse-tally', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return res.data;
-    }
-  },
+      const config = {
+        timeout: 180000, // 3 minutes timeout for OCR + LLM analysis
+      };
+      if (typeof fileOrBase64 === 'string') {
+        const res = await api.post('/api/ai/parse-tally', {
+          imageBase64: fileOrBase64,
+          workflowType,
+        }, config);
+        return res.data;
+      } else {
+        const formData = new FormData();
+        formData.append('file', fileOrBase64);
+        formData.append('workflowType', workflowType);
+        const res = await api.post('/api/ai/parse-tally', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          ...config,
+        });
+        return res.data;
+      }
+    },
 };
 
