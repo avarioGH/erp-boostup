@@ -151,22 +151,38 @@ export function ReceiveLogModal({
 
     // 1. Raw Logs
     if (purchase.logItems && purchase.logItems.length > 0) {
-      const rows = purchase.logItems.map((li: any, idx: number) => ({
-        selected: true,
-        isAlreadyReceived: li.status === "RECEIVED",
-        purchaseLogItemId: li.id,
-        logNumber: li.logNumber || `LOG-${purchase.purchaseNumber || "PUR"}-${idx + 1}`,
-        species: li.species || "-",
-        speciesId: li.speciesId || null,
-        length: li.purchaseLength || li.length || "",
-        d1: li.purchaseDiameter1 || li.diameter1 || "",
-        d2: li.purchaseDiameter2 || li.diameter2 || "",
-        d3: li.purchaseDiameter3 || li.diameter3 || "",
-        d4: li.purchaseDiameter4 || li.diameter4 || "",
-        avgDia: "",
-        gerowong: "",
-        locationId: purchase.warehouseId || undefined,
-      }));
+      const rows = purchase.logItems.map((li: any, idx: number) => {
+        // Panjang normalisasi jika disimpan dalam cm (misal 400 cm -> 4 m saat unit m)
+        let rawLen = Number(li.purchaseLength || li.length || 0);
+        let displayLen = rawLen > 0 ? (rawLen >= 50 ? rawLen / 100 : rawLen) : "";
+
+        // Hitung rata-rata awal dari purchasing (supplier)
+        const pAvg = Number(li.purchaseDiameterAvg || 0);
+        const pD1 = Number(li.purchaseDiameter1 || 0);
+        const pD2 = Number(li.purchaseDiameter2 || 0);
+        const initialAvg = pAvg > 0 ? pAvg : (pD1 > 0 && pD2 > 0 ? (pD1 + pD2) / 2 : (pD1 || pD2 || 0));
+
+        return {
+          selected: true,
+          isAlreadyReceived: li.status === "RECEIVED",
+          purchaseLogItemId: li.id,
+          logNumber: li.logNumber || `LOG-${purchase.purchaseNumber || "PUR"}-${idx + 1}`,
+          species: li.species || "-",
+          speciesId: li.speciesId || null,
+          length: displayLen !== "" ? String(displayLen) : (rawLen ? String(rawLen) : ""),
+          // Kosongkan D1 & D2 agar admin bisa ukur ulang fisik DUKB lebih presisi
+          d1: "",
+          d2: "",
+          d3: "",
+          d4: "",
+          avgDia: initialAvg > 0 ? String(Math.round(initialAvg * 10) / 10) : "",
+          gerowong: "",
+          supplierD1: pD1 > 0 ? pD1 : null,
+          supplierD2: pD2 > 0 ? pD2 : null,
+          supplierAvg: initialAvg > 0 ? initialAvg : null,
+          locationId: purchase.warehouseId || undefined,
+        };
+      });
       setLogRows(rows);
     } else {
       setLogRows([]);
@@ -283,8 +299,11 @@ export function ReceiveLogModal({
   const calculateRow = (row: any) => {
     let lRaw = parseFloat(row.length) || 0;
     let l = lRaw;
-    if (lengthUnit === "cm") l = lRaw / 100;
-    if (lengthUnit === "mm") l = lRaw / 1000;
+    if (lengthUnit === "cm" || (lengthUnit === "m" && lRaw >= 50)) {
+      l = lRaw / 100;
+    } else if (lengthUnit === "mm") {
+      l = lRaw / 1000;
+    }
 
     const d1 = parseFloat(row.d1) || 0;
     const d2 = parseFloat(row.d2) || 0;
@@ -293,15 +312,18 @@ export function ReceiveLogModal({
     const manualAvg = parseFloat(row.avgDia) || 0;
     const g = parseFloat(row.gerowong) || 0;
 
+    // Hitung rata-rata hanya dari diameter yang terisi (> 0)
+    const filledDiameters = [d1, d2, d3, d4].filter((d) => d > 0);
     let avgDiaStrict = 0;
-    if (d1 > 0 || d2 > 0 || d3 > 0 || d4 > 0) {
-      avgDiaStrict = (d1 + d2 + d3 + d4) / 4;
+    if (filledDiameters.length > 0) {
+      const sum = filledDiameters.reduce((a, b) => a + b, 0);
+      avgDiaStrict = sum / filledDiameters.length;
     } else {
       avgDiaStrict = manualAvg;
     }
-    const rndDia = Math.round(avgDiaStrict);
 
-    const grossVol = l > 0 && rndDia > 0 ? (Math.pow(rndDia, 2) * l * 0.7854) / 10000 : 0;
+    // Hitung volume dengan formula resmi log kayu: (0.7854 * L(meter) * Avg^2) / 10000
+    const grossVol = l > 0 && avgDiaStrict > 0 ? (Math.pow(avgDiaStrict, 2) * l * 0.7854) / 10000 : 0;
     const gerowongVol = l > 0 && g > 0 ? (Math.pow(g, 2) * l * 0.7854) / 10000 : 0;
     const netVol = grossVol - gerowongVol;
 
@@ -318,13 +340,13 @@ export function ReceiveLogModal({
 
   const handleSaveLogs = async () => {
     const toSave = logRows.filter(
-      (r) => r.selected && r.length && (r.avgDia || (r.d1 && r.d2 && r.d3 && r.d4))
+      (r) => r.selected && r.length && (r.avgDia || r.d1 || r.d2 || r.d3 || r.d4)
     );
 
     if (toSave.length === 0) {
       toast({
         title: "Data belum lengkap",
-        description: "Pilih dan isi data dimensi minimal pada satu log (Panjang, serta D1-D4 atau Rata-rata).",
+        description: "Pilih dan isi data dimensi minimal pada satu log (Panjang, serta Diameter atau Rata-rata).",
         variant: "destructive",
       });
       return;
@@ -441,7 +463,7 @@ export function ReceiveLogModal({
   const handleSaveAll = async () => {
     if (hasLogItems && hasSawnItems) {
       const logsToSave = logRows.filter(
-        (r) => r.selected && r.length && (r.avgDia || (r.d1 && r.d2 && r.d3 && r.d4))
+        (r) => r.selected && r.length && (r.avgDia || r.d1 || r.d2 || r.d3 || r.d4)
       );
       const sawnToSave = sawnRows.filter((r) => r.selected);
 
@@ -668,9 +690,9 @@ export function ReceiveLogModal({
                     <TableHead className="w-[70px]">D3 (cm)</TableHead>
                     <TableHead className="w-[70px]">D4 (cm)</TableHead>
                     <TableHead className="w-[70px]">Grw (cm)</TableHead>
-                    <TableHead className="w-[70px] text-right">Avg (cm)</TableHead>
+                    <TableHead className="w-[85px] text-right font-bold text-blue-600 dark:text-blue-400">Avg / RT</TableHead>
                     <TableHead className="w-[80px] text-right">Gross (m³)</TableHead>
-                    <TableHead className="w-[80px] text-right text-blue-600 dark:text-blue-400 font-bold">
+                    <TableHead className="w-[80px] text-right text-emerald-600 dark:text-emerald-400 font-bold">
                       Net (m³)
                     </TableHead>
                     <TableHead className="w-[90px] text-center">Status</TableHead>
@@ -715,29 +737,31 @@ export function ReceiveLogModal({
                           <Input
                             type="number"
                             step="0.1"
-                            className="h-8 text-xs"
+                            className="h-8 text-xs font-mono"
                             value={r.d1}
                             disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "d1", e.target.value)}
-                            placeholder="D1"
+                            placeholder={r.supplierD1 ? `PO: ${r.supplierD1}` : "D1"}
+                            title={r.supplierD1 ? `Diameter Purchasing: ${r.supplierD1} cm` : "D1"}
                           />
                         </TableCell>
                         <TableCell className="p-1">
                           <Input
                             type="number"
                             step="0.1"
-                            className="h-8 text-xs"
+                            className="h-8 text-xs font-mono"
                             value={r.d2}
                             disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "d2", e.target.value)}
-                            placeholder="D2"
+                            placeholder={r.supplierD2 ? `PO: ${r.supplierD2}` : "D2"}
+                            title={r.supplierD2 ? `Diameter Purchasing: ${r.supplierD2} cm` : "D2"}
                           />
                         </TableCell>
                         <TableCell className="p-1">
                           <Input
                             type="number"
                             step="0.1"
-                            className="h-8 text-xs"
+                            className="h-8 text-xs font-mono"
                             value={r.d3}
                             disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "d3", e.target.value)}
@@ -748,7 +772,7 @@ export function ReceiveLogModal({
                           <Input
                             type="number"
                             step="0.1"
-                            className="h-8 text-xs"
+                            className="h-8 text-xs font-mono"
                             value={r.d4}
                             disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "d4", e.target.value)}
@@ -759,7 +783,7 @@ export function ReceiveLogModal({
                           <Input
                             type="number"
                             step="0.1"
-                            className="h-8 text-xs"
+                            className="h-8 text-xs font-mono"
                             value={r.gerowong}
                             disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "gerowong", e.target.value)}
@@ -770,17 +794,16 @@ export function ReceiveLogModal({
                           <Input
                             type="number"
                             step="0.1"
-                            className="h-8 text-xs text-right font-semibold bg-background"
+                            className="h-8 text-xs text-right font-bold text-blue-700 dark:text-blue-300 bg-background font-mono"
                             value={
-                              r.avgDia !== undefined && r.avgDia !== ""
-                                ? r.avgDia
-                                : calc.avg > 0
-                                ? calc.avg.toFixed(1)
-                                : ""
+                              r.d1 || r.d2 || r.d3 || r.d4
+                                ? (calc.avg > 0 ? (Math.round(calc.avg * 10) / 10) : "")
+                                : (r.avgDia !== undefined ? r.avgDia : (calc.avg > 0 ? (Math.round(calc.avg * 10) / 10) : ""))
                             }
                             disabled={!r.selected}
                             onChange={(e) => handleRowChange(idx, "avgDia", e.target.value)}
-                            placeholder={calc.avg > 0 ? calc.avg.toFixed(1) : "-"}
+                            placeholder={r.supplierAvg ? `PO: ${r.supplierAvg}` : "-"}
+                            title="Rata-rata diameter (RT) aktual"
                           />
                         </TableCell>
                         <TableCell className="p-2 text-right bg-muted/20 text-muted-foreground font-mono">
