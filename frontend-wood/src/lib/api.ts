@@ -515,6 +515,8 @@ export const AiAPI: any = {
       const res = await api.post('/api/ai/parse-tally', {
         imageBase64: fileOrBase64,
         workflowType,
+      }, {
+        timeout: 90000,
       });
       return res.data;
     } else {
@@ -523,6 +525,7 @@ export const AiAPI: any = {
       formData.append('workflowType', workflowType);
       const res = await api.post('/api/ai/parse-tally', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 90000,
       });
       return res.data;
     }

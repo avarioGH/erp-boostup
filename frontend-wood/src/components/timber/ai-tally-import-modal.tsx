@@ -112,10 +112,15 @@ export function AiTallyImportModal({
       }
     } catch (err: any) {
       console.error("AI Parse Error:", err);
-      const msg = err.response?.data?.message || err.message || "Gagal membaca gambar/dokumen kayu.";
+      let msg = err.response?.data?.message || err.message || "";
+      if (err.code === "ECONNABORTED" || msg.includes("timeout")) {
+        msg = "Proses membaca foto memakan waktu terlalu lama. Pastikan koneksi internet stabil dan coba kembali dengan resolusi foto yang jelas.";
+      } else if (!msg || msg.includes("Network Error") || msg.includes("500")) {
+        msg = "Data tidak bisa dibaca oleh AI. Pastikan foto tabel kayu/nota tegak lurus, tulisan angka jelas, dan tidak buram.";
+      }
       setErrorMsg(msg);
       toast({
-        title: "Gagal Membaca Dokumen",
+        title: "Data Tidak Bisa Dibaca AI",
         description: msg,
         variant: "destructive",
       });

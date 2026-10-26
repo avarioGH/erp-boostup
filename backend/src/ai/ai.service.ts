@@ -10,16 +10,11 @@ export class AiService {
   private openai: OpenAI;
   // Fallback models from Juan Router based on user request (prioritize working ones)
   private readonly fallbackModels = [
-    'gemma-4-31b-it',
     'laguna-s-2.1',
     'laguna-xs-2.1',
-    'gpt-oss:120b',
-    'agnes-2.5-flash',
-    'agnes-3.0-flash',
     'muse-glimmer',
     'nemotron-3.5-lightning',
-    'mistral-large',
-    'qwen3-8b',
+    'gemma-4-31b-it',
   ];
 
   constructor(
@@ -672,9 +667,10 @@ ATURAN:
     }
 
     // 2. Try Direct Vision via Juan Router (gemma-4-31b-it)
+    // 2. Try Direct Vision with 5-second timeout protection
     try {
-      this.logger.log(`Calling Juan Router Vision (gemma-4-31b-it) for workflow: ${workflowType}...`);
-      const visionRes = await this.openai.chat.completions.create({
+      this.logger.log(`Attempting Vision OCR for workflow: ${workflowType}...`);
+      const visionPromise = this.openai.chat.completions.create({
         model: 'gemma-4-31b-it',
         messages: [
           {
@@ -689,7 +685,12 @@ ATURAN:
         temperature: 0.1,
       });
 
-      const responseText = visionRes.choices[0]?.message?.content || '';
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Vision endpoint timeout after 5s')), 5000)
+      );
+
+      const visionRes: any = await Promise.race([visionPromise, timeoutPromise]);
+      const responseText = visionRes?.choices?.[0]?.message?.content || '';
       const jsonMatch = responseText.match(/\[\s*\{[\s\S]*\}\s*\]/);
       if (jsonMatch) {
         const parsedItems = JSON.parse(jsonMatch[0]);
@@ -705,7 +706,7 @@ ATURAN:
         }
       }
     } catch (visionErr: any) {
-      this.logger.warn(`Direct Vision failed (${visionErr.message}), falling back to Tesseract OCR...`);
+      this.logger.warn(`Direct Vision bypassed/failed (${visionErr.message}), switching to fast Local OCR...`);
     }
 
     // 3. Fallback: Local Tesseract OCR + LLM
@@ -829,28 +830,55 @@ ${extractedText.slice(0, 4000)}
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      // Search for rows with 3+ numbers (length, d1, d2 or T, L, P, pcs)
-      const numbers = line.match(/\d+([.,]\d+)?/g);
-      if (numbers && numbers.length >= 3) {
-        const nums = numbers.map(n => parseFloat(n.replace(',', '.')));
-        if (workflowType === 'RAW_LOG') {
+      // Skip header lines
+      if (/panjang|tebal|lebar|volume|sopir|pengiriman|almt|tujuan/i.test(line)) continue;
+
+      // Extract all numeric tokens and potential species codes
+      const tokens = line.split(/\s+/);
+      const nums: number[] = [];
+      let detectedSpecies = '';
+
+      for (const tok of tokens) {
+        const clean = tok.replace(/,/g, '.');
+        if (/^[0-9]+(\.[0-9]+)?$/.test(clean)) {
+          nums.push(parseFloat(clean));
+        } else if (/^[A-Za-z]{2,8}$/.test(tok) && !/^(NO|EX|DAN|TGL|DAN|VOL)$/i.test(tok)) {
+          detectedSpecies = tok.toUpperCase();
+        }
+      }
+
+      if (workflowType === 'RAW_LOG') {
+        if (nums.length >= 3) {
           results.push({
             logNumber: `LOG-${results.length + 1}`,
-            species: 'MERBAU',
+            species: detectedSpecies || 'MERBAU',
             length: nums[0],
             d1: nums[1],
             d2: nums[2] || nums[1],
             rt: nums[2] ? (nums[1] + nums[2]) / 2 : nums[1],
           });
-        } else {
-          results.push({
-            species: 'MERBAU',
-            grade: 'A',
-            thickness: nums[0],
-            width: nums[1],
-            length: nums[2],
-            pcs: nums[3] || 1,
-          });
+        }
+      } else {
+        // Sawn Timber standard nota: PANJANG TEBAL LEBAR PCS (VOLUME) (JENIS)
+        // Check if length is standard (e.g. 200, 300, 400, etc. or 2-6m)
+        if (nums.length >= 4) {
+          // Check if this line is an empty template row (e.g. 400 0.0000 or 0 pcs)
+          const pcs = nums[3];
+          if (pcs > 0 && nums[0] >= 50 && nums[1] > 0 && nums[2] > 0) {
+            let specName = detectedSpecies || 'MERANTI';
+            if (specName === 'MRT') specName = 'MERANTI';
+            if (specName === 'MB' || specName === 'MRB') specName = 'MERBAU';
+            if (specName === 'ULN') specName = 'ULIN';
+
+            results.push({
+              species: specName,
+              grade: 'A',
+              length: nums[0],
+              thickness: nums[1],
+              width: nums[2],
+              pcs: pcs,
+            });
+          }
         }
       }
     }
