@@ -852,32 +852,6 @@ export function SawnTimberSpreadsheet({
         </div>
         {!readOnly && (
           <div className="flex items-center gap-1.5 flex-wrap">
-            <input
-              type="file"
-              ref={fileInputRef}
-              accept="image/*"
-              className="hidden"
-              onChange={handleScanImage}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={isScanning}
-              onClick={() => fileInputRef.current?.click()}
-              className="h-7 text-xs bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800 font-semibold"
-              title="Foto lembar tally atau upload gambar untuk diisi otomatis oleh AI"
-            >
-              {isScanning ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Membaca Foto...
-                </>
-              ) : (
-                <>
-                  <Camera className="w-3.5 h-3.5 mr-1" /> Scan Foto Tally (AI)
-                </>
-              )}
-            </Button>
             <Button
               type="button"
               variant="outline"
