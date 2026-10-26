@@ -831,7 +831,7 @@ export default function CreatePurchasePage() {
       });
       // Clear offline draft on successful submit
       clearLocalDraft();
-      const targetTab = searchParams.get('tab') || (form.purchaseType === "raw-log" ? "rawlogs" : "purchase");
+      const targetTab = searchParams.get('tab') || "purchase";
       router.push(`/inventory/partai/${form.partaiId}?tab=${targetTab}`);
       router.refresh();
     } catch (err: any) {
@@ -977,8 +977,8 @@ export default function CreatePurchasePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-semibold text-foreground">Status Penerimaan Barang *</Label>
-                <Select value={form.status} onValueChange={val => setForm({...form, status: val || "RECEIVED"})}>
-                  <SelectTrigger className="font-medium h-10 border-emerald-300 dark:border-emerald-800">
+                <Select value={form.status} onValueChange={val => setForm({...form, status: val || "DRAFT"})}>
+                  <SelectTrigger className="font-medium h-10 border-amber-300 dark:border-amber-800">
                     <SelectValue placeholder="Pilih Status Penerimaan" />
                   </SelectTrigger>
                   <SelectContent>
