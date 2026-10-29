@@ -38,6 +38,7 @@ export class PosService {
       newCustomerName,
       newCustomerPhone,
       newCustomerAddress,
+      isPreorder,
     } = data;
     let customerId = data.customerId;
     let totalPosCogs = 0;
@@ -50,6 +51,29 @@ export class PosService {
             where: { company_id: companyId },
           });
           resolvedWarehouseId = defaultWh?.id;
+        }
+
+        // Validasi ketersediaan stok fisik: cegah stok minus jika bukan Pre-Order (PO)
+        if (!isPreorder && resolvedWarehouseId) {
+          for (const item of items) {
+            const stock = await tx.warehouseStock.findUnique({
+              where: {
+                company_id_warehouse_id_product_id: {
+                  company_id: companyId,
+                  warehouse_id: resolvedWarehouseId,
+                  product_id: item.productId,
+                },
+              },
+              include: { product: true },
+            });
+            const currentStock = stock ? Number(stock.available_stock ?? stock.current_stock) : 0;
+            if (currentStock < Number(item.qty)) {
+              const pName = stock?.product?.name || item.name || 'Produk';
+              throw new BadRequestException(
+                `Stok produk "${pName}" habis / tidak mencukupi (Tersedia: ${currentStock}, Diminta: ${item.qty}). Transaksi langsung tidak diperbolehkan menghasilkan stok minus. Silakan ubah pesanan menjadi Order Pre-Order (PO).`,
+              );
+            }
+          }
         }
       // 0. Idempotency Check
       if (idempotency_key) {
@@ -105,7 +129,9 @@ export class PosService {
           ecommerce_session_id: idempotency_key,
           customer_id: customerId,
           order_date: new Date(),
-          status: 'COMPLETED',
+          status: isPreorder ? 'PREORDER' : 'COMPLETED',
+          delivery_status: isPreorder ? 'PENDING' : 'DELIVERED',
+          notes: isPreorder ? 'Pesanan Pre-Order (PO) Kasir' : undefined,
           total_amount: totalAmount,
           payment_status: initialPaymentStatus,
           payment_method: paymentMethod || 'CASH',
@@ -127,7 +153,7 @@ export class PosService {
 
         
 
-        if (resolvedWarehouseId) {
+        if (resolvedWarehouseId && !isPreorder) {
           const issueRes = await this.inventoryService.issueStock(tx as any, {
             companyId,
             warehouseId: resolvedWarehouseId,
@@ -135,7 +161,7 @@ export class PosService {
             quantity: Number(item.qty),
             referenceType: 'POS_SALE',
             referenceId: salesOrder.id,
-            allowNegative: true,
+            allowNegative: false,
             description: `POS Sale ${soNo}`,
             userId: userId || '000000000000000000000000',
           });

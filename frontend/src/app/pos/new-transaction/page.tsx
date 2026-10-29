@@ -36,6 +36,7 @@ export default function PosTransaction() {
  const [isPaymentOpen, setIsPaymentOpen] = useState(false)
  const [paymentMethod, setPaymentMethod] = useState("CASH")
  const [paidAmount, setPaidAmount] = useState<number | "">(0)
+ const [isPoOrder, setIsPoOrder] = useState(false)
  const [customers, setCustomers] = useState<any[]>([])
  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(() => {
    if (typeof window !== 'undefined') {
@@ -176,6 +177,10 @@ export default function PosTransaction() {
  setCart(prev => prev.filter(item => item.id !== id))
  }
 
+ const hasOutOfStockItems = cart.some(item => {
+   const prod = products.find(p => p.id === item.id);
+   return !prod || (prod.stock || 0) < item.qty;
+ });
  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0)
  const taxAmount = subtotal * 0.11
  const tax = isTaxEnabled ? taxAmount : 0
@@ -242,9 +247,15 @@ export default function PosTransaction() {
  <h3 className="font-semibold text-sm text-foreground line-clamp-2 leading-tight">{p.name}</h3>
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-0 mt-2">
  <p className="font-bold text-primary text-sm">{formatIDR(p.price)}</p>
- <Badge variant="outline" className={`text-[10px] px-1.5 ${p.stock > 0 ? 'border-success/30 bg-success/10 text-success' : 'border-destructive/30 bg-destructive/10 text-destructive'}`}>
+ {p.stock <= 0 ? (
+ <Badge variant="outline" className="text-[10px] px-1.5 border-red-500/40 bg-red-500/10 text-red-600 font-bold animate-pulse">
+ STOK HABIS (PO)
+ </Badge>
+) : (
+ <Badge variant="outline" className="text-[10px] px-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 font-semibold">
  Stok: {p.stock}
  </Badge>
+)}
  </div>
  </CardContent>
  </Card>
@@ -338,13 +349,59 @@ export default function PosTransaction() {
  </div>
  </div>
  
- <Button 
- className="w-full h-12 text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-md shadow-primary/20"
- disabled={cart.length === 0}
- onClick={() => setIsPaymentOpen(true)}
- >
- BAYAR SEKARANG
- </Button>
+ {hasOutOfStockItems && !isPoOrder && (
+   <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-lg space-y-2">
+     <div className="flex items-start gap-2 text-xs font-semibold text-red-600 dark:text-red-400">
+       <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+       <span>Ada produk dalam keranjang yang stoknya habis / kurang! Penjualan langsung tidak dapat diproses.</span>
+     </div>
+     <Button 
+       type="button"
+       variant="outline"
+       size="sm"
+       className="w-full text-xs font-bold border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 bg-background shadow-sm"
+       onClick={() => { setIsPoOrder(true); setIsPaymentOpen(true); }}
+     >
+       Ubah ke Order Pre-Order (PO)
+     </Button>
+   </div>
+ )}
+
+ {isPoOrder && (
+   <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-lg flex items-center justify-between text-xs">
+     <span className="font-bold text-amber-700 dark:text-amber-300">Mode: Pesanan Pre-Order (PO)</span>
+     <button 
+       type="button" 
+       onClick={() => setIsPoOrder(false)} 
+       className="text-muted-foreground hover:text-foreground text-[11px] underline"
+     >
+       Batal PO
+     </button>
+   </div>
+ )}
+
+ <div className="flex gap-2">
+   <Button 
+     className={`flex-1 h-12 text-base font-bold shadow-md ${isPoOrder ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20' : 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20'}`}
+     disabled={cart.length === 0 || (hasOutOfStockItems && !isPoOrder)}
+     onClick={() => setIsPaymentOpen(true)}
+   >
+     {isPoOrder ? "PROSES ORDER PO" : "BAYAR SEKARANG"}
+   </Button>
+   
+   {!isPoOrder && (
+     <Button 
+       variant="outline"
+       className="h-12 px-3 border-amber-500/40 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-xs font-bold flex flex-col items-center justify-center leading-tight shrink-0"
+       disabled={cart.length === 0}
+       title="Buat sebagai order Pre-Order (PO)"
+       onClick={() => { setIsPoOrder(true); setIsPaymentOpen(true); }}
+     >
+       <span>ORDER</span>
+       <span>(PO)</span>
+     </Button>
+   )}
+ </div>
  </CardFooter>
  </Card>
 
@@ -455,6 +512,7 @@ export default function PosTransaction() {
  warehouseId: selectedWarehouse || undefined,
  paymentMethod,
  idempotency_key: idempotencyKey,
+ isPreorder: isPoOrder,
    customerId: !isNewCustomer ? selectedCustomerId : undefined,
    newCustomerName: isNewCustomer ? newCustomerName : undefined,
    newCustomerPhone: isNewCustomer ? newCustomerPhone : undefined,
@@ -485,6 +543,7 @@ export default function PosTransaction() {
  });
  setIsReceiptOpen(true);
  setCart([]);
+ setIsPoOrder(false);
  setIsPaymentOpen(false);
  setIdempotencyKey(crypto.randomUUID());
  } catch (error: any) {
@@ -492,6 +551,7 @@ export default function PosTransaction() {
  const errMessage = error?.response?.data?.error?.message || error?.response?.data?.message || error.message ||"Unknown error";
  alert(`Gagal terhubung ke Database. Error: ${errMessage}`);
  setCart([]);
+ setIsPoOrder(false);
  setIsPaymentOpen(false);
  setIdempotencyKey(crypto.randomUUID());
  } finally {

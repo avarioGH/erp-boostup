@@ -96,8 +96,19 @@ export default function ReportsStock() {
                     <TableRow key={stock.id}>
                       <TableCell className="font-medium">{stock.product?.name || "Produk Tanpa Nama"}</TableCell>
                       <TableCell>{stock.warehouse?.name || "Gudang Tidak Diketahui"}</TableCell>
-                      <TableCell className="text-right font-semibold">{stock.current_stock || 0}</TableCell>
-                      <TableCell className="text-right text-green-600 font-semibold">{stock.available_stock || 0}</TableCell>
+                      <TableCell className={`text-right font-semibold ${(stock.current_stock || 0) <= 0 ? 'text-red-500 font-bold' : ''}`}>
+                        {stock.current_stock || 0}
+                      </TableCell>
+                      <TableCell className={`text-right font-semibold ${(stock.available_stock || 0) <= 0 ? 'text-red-500 font-bold' : 'text-green-600'}`}>
+                        {(stock.available_stock || 0) <= 0 ? (
+                          <span className="inline-flex items-center gap-1 text-red-500">
+                            {stock.available_stock || 0}
+                            <span className="text-[10px] bg-red-100 dark:bg-red-950/60 text-red-600 px-1.5 py-0.5 rounded font-bold">KOSONG</span>
+                          </span>
+                        ) : (
+                          stock.available_stock
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
