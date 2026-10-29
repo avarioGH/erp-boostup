@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ReportsAPI } from "@/lib/api"
 import { PaginationControls } from "@/components/ui/pagination-controls"
-import { Search, FileSpreadsheet, Download, FileText } from "lucide-react"
+import { Search, FileSpreadsheet, Download, FileText, RotateCcw } from "lucide-react"
 
 export default function SalesReport() {
   const [report, setReport] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 10;
 
@@ -48,11 +50,20 @@ export default function SalesReport() {
   const data = report?.data || []
   const totals = report?.totals || {}
 
-  const filtered = data.filter((row: any) => 
-    Object.values(row).some((val: any) => 
-      String(val).toLowerCase().includes(search.toLowerCase())
-    )
-  )
+  const filtered = data.filter((row: any) => {
+    const q = search.toLowerCase();
+    const matchesSearch = !q || Object.values(row).some((val: any) => 
+      String(val).toLowerCase().includes(q)
+    );
+
+    const rawDate = row.date || row.order_date || row.createdAt || row.created_at;
+    const dStr = rawDate ? new Date(rawDate).toISOString().split('T')[0] : '';
+    let matchesDate = true;
+    if (startDate && dStr < startDate) matchesDate = false;
+    if (endDate && dStr > endDate) matchesDate = false;
+
+    return matchesSearch && matchesDate;
+  });
 
   const formatCurrency = (val: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(val)
 
@@ -106,15 +117,40 @@ export default function SalesReport() {
             <CardTitle>{report?.title || "Data Penjualan"}</CardTitle>
             <CardDescription>Menampilkan semua faktur penjualan yang sudah selesai</CardDescription>
           </div>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input 
-              type="search" 
-              placeholder="Cari transaksi..." 
-              className="pl-8" 
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-            />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-full sm:w-60">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input 
+                type="search" 
+                placeholder="Cari transaksi / pelanggan..." 
+                className="pl-8 h-9 text-xs sm:text-sm" 
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+              />
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>Dari:</span>
+              <Input 
+                type="date" 
+                className="w-auto h-9 text-xs" 
+                value={startDate} 
+                onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} 
+              />
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>Sampai:</span>
+              <Input 
+                type="date" 
+                className="w-auto h-9 text-xs" 
+                value={endDate} 
+                onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} 
+              />
+            </div>
+            {(search || startDate || endDate) && (
+              <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setStartDate(""); setEndDate(""); setCurrentPage(1); }} className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground">
+                <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>

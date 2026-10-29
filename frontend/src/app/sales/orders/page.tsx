@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Loader2, Plus, Printer, Search, Filter, ChevronLeft, Send, CheckCircle2, FileText, Download, Truck, FileOutput, Eye, PackageCheck } from 'lucide-react'
+import { Loader2, Plus, Printer, Search, Filter, ChevronLeft, Send, CheckCircle2, FileText, Download, Truck, FileOutput, Eye, PackageCheck, RotateCcw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
@@ -20,6 +20,8 @@ export default function SalesOrdersPage() {
 
  const [loading, setLoading] = useState(true)
  const [searchTerm, setSearchTerm] = useState("")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
  const [currentPage, setCurrentPage] = useState(1)
  const [pageSize, setPageSize] = useState(10)
  const [selectedDoc, setSelectedDoc] = useState<any | null>(null)
@@ -95,10 +97,19 @@ export default function SalesOrdersPage() {
  }
  }
 
- const filtered = (Array.isArray(data) ? data : []).filter(item => 
- item.order_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
- item.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
- )
+ const filtered = (Array.isArray(data) ? data : []).filter(item => {
+   const q = searchTerm.toLowerCase();
+   const matchesSearch = !q || 
+     item.order_number?.toLowerCase().includes(q) ||
+     item.customer?.name?.toLowerCase().includes(q);
+
+   const dStr = item.order_date ? new Date(item.order_date).toISOString().split('T')[0] : (item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : '');
+   let matchesDate = true;
+   if (startDate && dStr < startDate) matchesDate = false;
+   if (endDate && dStr > endDate) matchesDate = false;
+
+   return matchesSearch && matchesDate;
+ })
  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
  if (selectedDoc) {
@@ -276,20 +287,40 @@ export default function SalesOrdersPage() {
  <CardHeader className="pb-4 border-b border-border/40">
  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
  <CardTitle className="text-[16px] font-semibold">Sales Orders</CardTitle>
- <div className="flex items-center gap-2">
- <div className="relative w-full sm:w-64">
+ <div className="flex flex-wrap items-center gap-2">
+ <div className="relative w-full sm:w-60">
  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
  <Input 
  type="search" 
- placeholder="Search order..." 
- className="pl-8" 
+ placeholder="Cari No. Order / Pelanggan..." 
+ className="pl-8 h-9 text-xs sm:text-sm" 
  value={searchTerm}
  onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
  />
  </div>
- <Button variant="outline" size="icon">
- <Filter className="h-4 w-4" />
- </Button>
+ <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+   <span>Dari:</span>
+   <Input 
+     type="date" 
+     className="w-auto h-9 text-xs" 
+     value={startDate} 
+     onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} 
+   />
+ </div>
+ <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+   <span>Sampai:</span>
+   <Input 
+     type="date" 
+     className="w-auto h-9 text-xs" 
+     value={endDate} 
+     onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} 
+   />
+ </div>
+ {(searchTerm || startDate || endDate) && (
+   <Button variant="ghost" size="sm" onClick={() => { setSearchTerm(""); setStartDate(""); setEndDate(""); setCurrentPage(1); }} className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground">
+     <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+   </Button>
+ )}
  </div>
  </div>
  </CardHeader>

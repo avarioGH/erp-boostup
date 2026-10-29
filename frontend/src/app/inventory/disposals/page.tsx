@@ -4,14 +4,18 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { DisposalAPI, InventoryDisposalAPI } from '@/lib/api';
-import { Trash2, Plus, Loader2, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
+import { Trash2, Plus, Loader2, CheckCircle2, XCircle, ArrowLeft, Search, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function DisposalsPage() {
   const [disposals, setDisposals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const router = useRouter();
 
   const loadData = () => {
@@ -72,6 +76,28 @@ export default function DisposalsPage() {
     }
   };
 
+  const filteredDisposals = disposals.filter((d) => {
+    const q = search.toLowerCase();
+    const matchesSearch = !q ||
+      (d.disposal_number || '').toLowerCase().includes(q) ||
+      (d.warehouse?.name || '').toLowerCase().includes(q) ||
+      (d.reason || d.notes || '').toLowerCase().includes(q) ||
+      (d.items || []).some((it: any) => (it.product?.name || '').toLowerCase().includes(q));
+
+    const dateStr = d.disposal_date ? new Date(d.disposal_date).toISOString().split('T')[0] : (d.createdAt ? new Date(d.createdAt).toISOString().split('T')[0] : '');
+    let matchesDate = true;
+    if (startDate && dateStr < startDate) matchesDate = false;
+    if (endDate && dateStr > endDate) matchesDate = false;
+
+    return matchesSearch && matchesDate;
+  });
+
+  const handleReset = () => {
+    setSearch('');
+    setStartDate('');
+    setEndDate('');
+  };
+
   return (
     <div className="container mx-auto p-6 md:p-8 space-y-6 max-w-6xl">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -90,11 +116,49 @@ export default function DisposalsPage() {
 
       <Card className="shadow-sm">
         <CardHeader className="border-b pb-4">
-          <CardTitle className="text-base font-semibold">Riwayat Pemusnahan Stok</CardTitle>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <CardTitle className="text-base font-semibold">Riwayat Pemusnahan Stok</CardTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative w-full sm:w-60">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Cari No. Dokumen, Alasan, Produk..." 
+                  className="pl-8 h-9 text-xs sm:text-sm" 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span>Dari:</span>
+                <Input 
+                  type="date" 
+                  className="w-auto h-9 text-xs" 
+                  value={startDate} 
+                  onChange={(e) => setStartDate(e.target.value)} 
+                />
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span>Sampai:</span>
+                <Input 
+                  type="date" 
+                  className="w-auto h-9 text-xs" 
+                  value={endDate} 
+                  onChange={(e) => setEndDate(e.target.value)} 
+                />
+              </div>
+              {(search || startDate || endDate) && (
+                <Button variant="ghost" size="sm" onClick={handleReset} className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground">
+                  <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+                </Button>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
             <div className="flex justify-center p-12"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div>
+          ) : filteredDisposals.length === 0 ? (
+            <div className="text-center p-12 text-muted-foreground">Tidak ada riwayat pemusnahan yang cocok.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
@@ -109,7 +173,7 @@ export default function DisposalsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {disposals.map((d) => (
+                  {filteredDisposals.map((d) => (
                     <tr key={d.id} className="hover:bg-muted/40 transition-colors">
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-foreground">{d.disposal_number || d.id.slice(-6)}</div>
@@ -158,37 +222,24 @@ export default function DisposalsPage() {
                                 className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white gap-1 text-xs"
                                 onClick={(e) => handleApprove(d.id, e)}
                               >
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Setujui
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Setujui
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-rose-200 text-xs"
+                                className="h-8 border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 gap-1 text-xs"
                                 onClick={(e) => handleCancel(d.id, e)}
                               >
-                                Batalkan
+                                <XCircle className="w-3.5 h-3.5" />
+                                Batal
                               </Button>
                             </>
                           )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 text-xs"
-                            onClick={() => router.push(`/inventory/disposals/${d.id}`)}
-                          >
-                            Detail
-                          </Button>
                         </div>
                       </td>
                     </tr>
                   ))}
-                  {disposals.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-muted-foreground">
-                        Belum ada riwayat pemusnahan stok.
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>

@@ -3,13 +3,17 @@ import { useEffect, useState } from 'react'
 import { InventoryAPI } from '@/lib/api'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Plus, Trash2, ChevronLeft, ChevronRight, Search, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 import { useToast } from '@/hooks/use-toast'
 
 export default function InflowPage() {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -19,6 +23,7 @@ export default function InflowPage() {
 
   const fetchTallies = async () => {
     try {
+      setLoading(true)
       const res = await InventoryAPI.getStockInTallies()
       let fetchedData = res?.data || res || []
       
@@ -54,9 +59,33 @@ export default function InflowPage() {
     }
   }
 
+  // Filter logic: Search + Date
+  const filteredData = data.filter((item: any) => {
+    const q = search.toLowerCase()
+    const matchesSearch = !q || 
+      (item.tally_number || '').toLowerCase().includes(q) ||
+      (item.warehouse?.name || '').toLowerCase().includes(q) ||
+      (item.notes || '').toLowerCase().includes(q) ||
+      (item.items || []).some((it: any) => (it.product?.name || '').toLowerCase().includes(q))
+
+    const itemDate = item.tally_date ? new Date(item.tally_date).toISOString().split('T')[0] : ''
+    let matchesDate = true
+    if (startDate && itemDate < startDate) matchesDate = false
+    if (endDate && itemDate > endDate) matchesDate = false
+
+    return matchesSearch && matchesDate
+  })
+
   // Calculate pagination
-  const totalPages = Math.ceil(data.length / itemsPerPage)
-  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+
+  const handleReset = () => {
+    setSearch('')
+    setStartDate('')
+    setEndDate('')
+    setCurrentPage(1)
+  }
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -70,6 +99,46 @@ export default function InflowPage() {
         </Link>
       </div>
 
+      {/* Filter Bar */}
+      <Card className="shadow-sm p-4">
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input 
+              placeholder="Cari No. Teli, Gudang, atau Produk..." 
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>Dari:</span>
+              <Input 
+                type="date" 
+                className="w-auto h-9 text-xs" 
+                value={startDate} 
+                onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} 
+              />
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>Sampai:</span>
+              <Input 
+                type="date" 
+                className="w-auto h-9 text-xs" 
+                value={endDate} 
+                onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} 
+              />
+            </div>
+            {(search || startDate || endDate) && (
+              <Button variant="ghost" size="sm" onClick={handleReset} className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground">
+                <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+
       <Card className="shadow-sm">
         <CardContent className="p-0 flex flex-col min-h-[400px]">
           <div className="overflow-x-auto flex-1">
@@ -79,7 +148,7 @@ export default function InflowPage() {
                   <th className="px-6 py-4 font-medium text-muted-foreground">Nomor Teli</th>
                   <th className="px-6 py-4 font-medium text-muted-foreground">Tanggal</th>
                   <th className="px-6 py-4 font-medium text-muted-foreground">Gudang</th>
-                    <th className="px-6 py-4 font-medium text-muted-foreground">Keterangan</th>
+                  <th className="px-6 py-4 font-medium text-muted-foreground">Keterangan</th>
                   <th className="px-6 py-4 font-medium text-muted-foreground">Rincian Ikan</th>
                   <th className="px-6 py-4 font-medium text-muted-foreground text-right">Aksi</th>
                 </tr>
@@ -87,15 +156,15 @@ export default function InflowPage() {
               <tbody className="divide-y">
                 {loading ? (
                   <tr><td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">Memuat data...</td></tr>
-                ) : data.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">Belum ada data penerimaan.</td></tr>
+                ) : filteredData.length === 0 ? (
+                  <tr><td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">Belum ada data penerimaan yang cocok.</td></tr>
                 ) : (
                   paginatedData.map(item => (
                     <tr key={item.id} className="hover:bg-muted/50 transition-colors">
                       <td className="px-6 py-4 font-medium">{item.tally_number}</td>
                       <td className="px-6 py-4">{new Date(item.tally_date).toLocaleDateString('id-ID')}</td>
                       <td className="px-6 py-4">{item.warehouse?.name || '-'}</td>
-                        <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">{item.notes || '-'}</td>
+                      <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">{item.notes || '-'}</td>
                       <td className="px-6 py-4">
                         {item.items && item.items.length > 0 ? (
                           <div className="flex flex-wrap gap-1 max-w-[250px]">
@@ -122,10 +191,10 @@ export default function InflowPage() {
           </div>
           
           {/* Pagination Controls */}
-          {!loading && data.length > 0 && (
+          {!loading && filteredData.length > 0 && (
             <div className="border-t p-4 flex items-center justify-between bg-muted/20">
               <span className="text-sm text-muted-foreground">
-                Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, data.length)} dari {data.length} data
+                Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredData.length)} dari {filteredData.length} data
               </span>
               <div className="flex items-center space-x-2">
                 <Button 

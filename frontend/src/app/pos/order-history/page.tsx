@@ -1,21 +1,23 @@
 "use client"
 
-import { useState, useEffect } from"react"
+import { useState, useEffect } from "react"
 import { 
  Card, CardContent, CardDescription, CardHeader, CardTitle 
-} from"@/components/ui/card"
-import { Input } from"@/components/ui/input"
-import { Button } from"@/components/ui/button"
-import { ArrowLeft, Search, Filter, Receipt, Calendar, User, Clock, ArrowRight, CheckCircle, XCircle, PackageCheck, AlertCircle } from "lucide-react"
+} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft, Search, Filter, Receipt, Calendar, User, Clock, ArrowRight, CheckCircle, XCircle, PackageCheck, AlertCircle, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
-import { api } from"@/lib/api"
-import { formatIDR } from"@/lib/utils"
-import Link from"next/link"
+import { api } from "@/lib/api"
+import { formatIDR } from "@/lib/utils"
+import Link from "next/link"
 
 export default function PosOrderHistoryPage() {
  const [loading, setLoading] = useState(true)
  const [orders, setOrders] = useState<any[]>([])
  const [searchQuery, setSearchQuery] = useState("")
+ const [startDate, setStartDate] = useState("")
+ const [endDate, setEndDate] = useState("")
  const [statusFilter, setStatusFilter] = useState("ALL")
  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
 
@@ -66,16 +68,32 @@ export default function PosOrderHistoryPage() {
  }
 
  const filteredOrders = orders.filter(o => {
-   const matchesSearch = o.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     (o.customer?.name || "").toLowerCase().includes(searchQuery.toLowerCase());
+   const q = searchQuery.toLowerCase();
+   const matchesSearch = !q || 
+     (o.order_number || "").toLowerCase().includes(q) ||
+     (o.customer?.name || "").toLowerCase().includes(q);
+
    const matchesStatus = statusFilter === "ALL" ? true :
      statusFilter === "PO" ? o.status === "PREORDER" :
      statusFilter === "COMPLETED" ? o.status === "COMPLETED" :
      statusFilter === "CANCELLED" ? o.status === "CANCELLED" : true;
-   return matchesSearch && matchesStatus;
+
+   const orderDateStr = o.order_date ? new Date(o.order_date).toISOString().split('T')[0] : '';
+   let matchesDate = true;
+   if (startDate && orderDateStr < startDate) matchesDate = false;
+   if (endDate && orderDateStr > endDate) matchesDate = false;
+
+   return matchesSearch && matchesStatus && matchesDate;
  });
 
  const poCount = orders.filter(o => o.status === "PREORDER").length;
+
+ const handleReset = () => {
+   setSearchQuery("");
+   setStartDate("");
+   setEndDate("");
+   setStatusFilter("ALL");
+ };
 
  return (
  <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl mx-auto pb-10">
@@ -94,25 +112,46 @@ export default function PosOrderHistoryPage() {
  <Card className="border-border shadow-sm overflow-hidden">
  <div className="h-2 w-full bg-blue-500"></div>
  <CardHeader className="pb-4 border-b border-border/60">
- <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+ <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
  <div>
  <CardTitle className="flex items-center gap-2">
  <Receipt className="w-5 h-5 text-blue-500" /> Semua Transaksi
  </CardTitle>
  </div>
- <div className="flex items-center gap-2">
- <div className="relative w-full sm:w-64">
+ 
+ <div className="flex flex-wrap items-center gap-2">
+ <div className="relative w-full sm:w-60">
  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
  <Input 
  placeholder="Cari No. Order / Pelanggan..." 
  value={searchQuery}
  onChange={(e) => setSearchQuery(e.target.value)}
- className="pl-9 bg-card border-border"
+ className="pl-9 bg-card border-border h-9 text-xs sm:text-sm"
  />
  </div>
- <Button variant="outline" size="icon" className="shrink-0 border-border">
- <Filter className="w-4 h-4 text-muted-foreground" />
- </Button>
+ <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+   <span>Dari:</span>
+   <Input 
+     type="date" 
+     className="w-auto h-9 text-xs" 
+     value={startDate} 
+     onChange={(e) => setStartDate(e.target.value)} 
+   />
+ </div>
+ <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+   <span>Sampai:</span>
+   <Input 
+     type="date" 
+     className="w-auto h-9 text-xs" 
+     value={endDate} 
+     onChange={(e) => setEndDate(e.target.value)} 
+   />
+ </div>
+ {(searchQuery || startDate || endDate || statusFilter !== "ALL") && (
+   <Button variant="ghost" size="sm" onClick={handleReset} className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground">
+     <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+   </Button>
+ )}
  </div>
  </div>
 
@@ -157,7 +196,7 @@ export default function PosOrderHistoryPage() {
  {loading ? (
  <div className="py-20 text-center text-muted-foreground">Memuat riwayat transaksi...</div>
  ) : filteredOrders.length === 0 ? (
- <div className="py-20 text-center text-muted-foreground">Tidak ada transaksi yang ditemukan.</div>
+ <div className="py-20 text-center text-muted-foreground">Tidak ada transaksi yang cocok.</div>
  ) : (
  <div className="divide-y divide-slate-100 dark:divide-slate-800">
  {filteredOrders.map((order) => (
@@ -186,7 +225,7 @@ export default function PosOrderHistoryPage() {
  </div>
  <div className="flex items-center gap-1.5">
  <User className="w-3.5 h-3.5" />
- <span>{order.customer?.name ||"Pelanggan Umum"}</span>
+ <span>{order.customer?.name || "Pelanggan Umum"}</span>
  </div>
  </div>
  </div>
