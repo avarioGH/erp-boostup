@@ -339,6 +339,113 @@ export class PosService {
     });
   }
 
+  async fulfillPreorder(companyId: string, orderId: string, userId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.salesOrder.findFirst({
+        where: { id: orderId, company_id: companyId },
+        include: {
+          items: {
+            include: {
+              product: {
+                include: { warehouse_stocks: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!order) throw new BadRequestException('Pesanan tidak ditemukan');
+      if (order.status !== 'PREORDER') {
+        throw new BadRequestException('Hanya pesanan berstatus Pre-Order (PO) yang dapat diselesaikan');
+      }
+
+      const warehouseId = order.warehouse_id || (await tx.warehouse.findFirst({ where: { company_id: companyId } }))?.id;
+      if (!warehouseId) throw new BadRequestException('Gudang untuk pemenuhan PO tidak ditemukan');
+
+      // Validasi ketersediaan stok fisik terkini
+      for (const item of order.items) {
+        const whStock = item.product?.warehouse_stocks?.find((ws: any) => ws.warehouse_id === warehouseId);
+        const availableStock = whStock ? Number(whStock.available_stock ?? whStock.current_stock) : 0;
+        if (availableStock < Number(item.qty)) {
+          throw new BadRequestException(
+            `Stok untuk "${item.product?.name || 'Produk'}" belum cukup (Tersedia: ${availableStock}, Dibutuhkan: ${item.qty}). Harap isi / restock barang terlebih dahulu sebelum menyelesaikan PO.`,
+          );
+        }
+      }
+
+      // Potong stok fisik gudang
+      let totalCogs = 0;
+      for (const item of order.items) {
+        const issueRes = await this.inventoryService.issueStock(tx as any, {
+          companyId,
+          warehouseId,
+          productId: item.product_id,
+          quantity: Number(item.qty),
+          referenceType: 'POS_SALE',
+          referenceId: order.id,
+          allowNegative: false,
+          description: `Pemenuhan PO ${order.order_number}`,
+          userId: userId || '000000000000000000000000',
+        });
+        totalCogs += issueRes.consumedCost || 0;
+      }
+
+      const updated = await tx.salesOrder.update({
+        where: { id: order.id },
+        data: {
+          status: 'COMPLETED',
+          delivery_status: 'DELIVERED',
+        },
+      });
+
+      // Emit COGS jika ada
+      if (totalCogs > 0) {
+        try {
+          await this.eventEmitter.emitAsync(
+            'inventory.valuation',
+            new InventoryValuationEvent(
+              companyId,
+              order.id,
+              `VAL-POS-PO-${order.id}`,
+              new Date(),
+              {
+                type: 'COGS',
+                totalValue: totalCogs,
+                description: 'COGS for Fulfilled POS Preorder ' + order.order_number,
+              },
+              tx as any,
+            ),
+          );
+        } catch (_cogsErr) {}
+      }
+
+      return updated;
+    });
+  }
+
+  async cancelPreorder(companyId: string, orderId: string, userId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.salesOrder.findFirst({
+        where: { id: orderId, company_id: companyId },
+      });
+
+      if (!order) throw new BadRequestException('Pesanan tidak ditemukan');
+      if (order.status !== 'PREORDER') {
+        throw new BadRequestException('Hanya pesanan berstatus Pre-Order yang dapat dibatalkan');
+      }
+
+      const updated = await tx.salesOrder.update({
+        where: { id: order.id },
+        data: {
+          status: 'CANCELLED',
+          delivery_status: 'CANCELLED',
+        },
+      });
+
+      return updated;
+    });
+  }
+
   async closeShift(data: any) {
     const { companyId, userId, endingCash } = data;
 

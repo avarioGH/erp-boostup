@@ -6,7 +6,7 @@ import {
   Body,
   UseGuards,
   Request,
-  Get, Query,
+  Get, Query, Param,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PosService } from './pos.service';
@@ -58,5 +58,21 @@ export class PosController {
     data.companyId = req.user.company_id;
     data.userId = req.user.userId || req.user.id;
     return this.posService.closeShift(data);
+  }
+
+  @Permissions('pos.create')
+  @Post('orders/:id/fulfill')
+  async fulfillOrder(@Request() req, @Param('id') id: string) {
+    const companyId = req.user.company_id || req.user.companyId;
+    const userId = req.user.userId || req.user.id;
+    return this.posService.fulfillPreorder(companyId, id, userId);
+  }
+
+  @Permissions('pos.create')
+  @Post('orders/:id/cancel')
+  async cancelOrder(@Request() req, @Param('id') id: string) {
+    const companyId = req.user.company_id || req.user.companyId;
+    const userId = req.user.userId || req.user.id;
+    return this.posService.cancelPreorder(companyId, id, userId);
   }
 }
