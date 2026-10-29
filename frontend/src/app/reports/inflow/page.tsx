@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
-import { Search, RefreshCcw, PackagePlus, ArrowDownToLine } from 'lucide-react'
+import { Search, RefreshCcw, PackagePlus, ArrowDownToLine, RotateCcw } from 'lucide-react'
+import { TablePagination } from '@/components/ui/table-pagination'
 
 export default function InflowReportPage() {
   const [loading, setLoading] = useState(true)
@@ -16,6 +17,8 @@ export default function InflowReportPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const fetchData = async () => {
     setLoading(true)
@@ -57,6 +60,7 @@ export default function InflowReportPage() {
     t.tally_number?.toLowerCase().includes(search.toLowerCase()) ||
     t.warehouse?.name?.toLowerCase().includes(search.toLowerCase())
   )
+  const paginatedTallies = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="p-6 space-y-6">
@@ -95,14 +99,25 @@ export default function InflowReportPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cari no. tally / gudang..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Cari no. tally / gudang..." className="pl-9" value={search} onChange={e => { setSearch(e.target.value); setCurrentPage(1); }} />
         </div>
-        <Input type="date" className="w-auto" value={startDate} onChange={e => setStartDate(e.target.value)} />
-        <Input type="date" className="w-auto" value={endDate} onChange={e => setEndDate(e.target.value)} />
-        <Button onClick={fetchData} disabled={loading}>Tampilkan</Button>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span>Dari:</span>
+          <Input type="date" className="w-auto h-9 text-xs" value={startDate} onChange={e => { setStartDate(e.target.value); setCurrentPage(1); }} />
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span>Sampai:</span>
+          <Input type="date" className="w-auto h-9 text-xs" value={endDate} onChange={e => { setEndDate(e.target.value); setCurrentPage(1); }} />
+        </div>
+        <Button onClick={() => { setCurrentPage(1); fetchData(); }} disabled={loading}>Tampilkan</Button>
+        {(search || startDate || endDate) && (
+          <Button variant="ghost" size="sm" onClick={() => { setSearch(''); setStartDate(''); setEndDate(''); setCurrentPage(1); }} className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground">
+            <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
+          </Button>
+        )}
       </div>
 
       {/* Table */}
@@ -126,7 +141,7 @@ export default function InflowReportPage() {
               ) : filtered.length === 0 ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Belum ada data ikan masuk</TableCell></TableRow>
               ) : (
-                filtered.flatMap((tally: any) =>
+                paginatedTallies.flatMap((tally: any) =>
                   (tally.items || []).map((item: any, idx: number) => (
                     <TableRow key={`${tally.id}-${idx}`}>
                       {idx === 0 ? (
@@ -159,6 +174,15 @@ export default function InflowReportPage() {
               )}
             </TableBody>
           </Table>
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[10, 25, 50, 100]}
+            itemLabel="penerimaan ikan"
+          />
         </CardContent>
       </Card>
     </div>

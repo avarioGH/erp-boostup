@@ -4,9 +4,10 @@ import { InventoryAPI } from '@/lib/api'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Plus, Trash2, ChevronLeft, ChevronRight, Search, RotateCcw } from 'lucide-react'
+import { Plus, Trash2, Search, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 import { useToast } from '@/hooks/use-toast'
+import { TablePagination } from '@/components/ui/table-pagination'
 
 export default function InflowPage() {
   const [data, setData] = useState<any[]>([])
@@ -17,7 +18,7 @@ export default function InflowPage() {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const [pageSize, setPageSize] = useState(10)
   
   const { toast } = useToast()
 
@@ -77,8 +78,7 @@ export default function InflowPage() {
   })
 
   // Calculate pagination
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
-  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   const handleReset = () => {
     setSearch('')
@@ -192,32 +192,15 @@ export default function InflowPage() {
           
           {/* Pagination Controls */}
           {!loading && filteredData.length > 0 && (
-            <div className="border-t p-4 flex items-center justify-between bg-muted/20">
-              <span className="text-sm text-muted-foreground">
-                Menampilkan {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredData.length)} dari {filteredData.length} data
-              </span>
-              <div className="flex items-center space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Prev
-                </Button>
-                <div className="text-sm font-medium px-2">
-                  Halaman {currentPage} / {totalPages}
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
-            </div>
+            <TablePagination
+              currentPage={currentPage}
+              totalItems={filteredData.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[10, 25, 50, 100]}
+              itemLabel="teli penerimaan"
+            />
           )}
         </CardContent>
       </Card>

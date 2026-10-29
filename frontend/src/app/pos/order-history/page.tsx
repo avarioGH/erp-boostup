@@ -11,6 +11,7 @@ import { toast } from "sonner"
 import { api } from "@/lib/api"
 import { formatIDR } from "@/lib/utils"
 import Link from "next/link"
+import { TablePagination } from "@/components/ui/table-pagination"
 
 export default function PosOrderHistoryPage() {
  const [loading, setLoading] = useState(true)
@@ -20,6 +21,8 @@ export default function PosOrderHistoryPage() {
  const [endDate, setEndDate] = useState("")
  const [statusFilter, setStatusFilter] = useState("ALL")
  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null)
+ const [currentPage, setCurrentPage] = useState(1)
+ const [pageSize, setPageSize] = useState(10)
 
  const handleFulfill = async (orderId: string, orderNumber: string) => {
    if (!confirm(`Selesaikan Pesanan PO ${orderNumber}? Stok produk di inventori akan otomatis terpotong.`)) return;
@@ -87,12 +90,14 @@ export default function PosOrderHistoryPage() {
  });
 
  const poCount = orders.filter(o => o.status === "PREORDER").length;
+ const paginatedOrders = filteredOrders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
  const handleReset = () => {
    setSearchQuery("");
    setStartDate("");
    setEndDate("");
    setStatusFilter("ALL");
+   setCurrentPage(1);
  };
 
  return (
@@ -125,7 +130,7 @@ export default function PosOrderHistoryPage() {
  <Input 
  placeholder="Cari No. Order / Pelanggan..." 
  value={searchQuery}
- onChange={(e) => setSearchQuery(e.target.value)}
+ onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
  className="pl-9 bg-card border-border h-9 text-xs sm:text-sm"
  />
  </div>
@@ -135,7 +140,7 @@ export default function PosOrderHistoryPage() {
      type="date" 
      className="w-auto h-9 text-xs" 
      value={startDate} 
-     onChange={(e) => setStartDate(e.target.value)} 
+     onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} 
    />
  </div>
  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -144,7 +149,7 @@ export default function PosOrderHistoryPage() {
      type="date" 
      className="w-auto h-9 text-xs" 
      value={endDate} 
-     onChange={(e) => setEndDate(e.target.value)} 
+     onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} 
    />
  </div>
  {(searchQuery || startDate || endDate || statusFilter !== "ALL") && (
@@ -161,7 +166,7 @@ export default function PosOrderHistoryPage() {
      variant={statusFilter === "ALL" ? "default" : "outline"} 
      size="sm" 
      className="rounded-full text-xs h-7 px-3"
-     onClick={() => setStatusFilter("ALL")}
+     onClick={() => { setStatusFilter("ALL"); setCurrentPage(1); }}
    >
      Semua ({orders.length})
    </Button>
@@ -169,7 +174,7 @@ export default function PosOrderHistoryPage() {
      variant={statusFilter === "PO" ? "default" : "outline"} 
      size="sm" 
      className={`rounded-full text-xs h-7 px-3 gap-1.5 ${statusFilter === "PO" ? "bg-amber-600 hover:bg-amber-700 text-white" : "border-amber-500/40 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40"}`}
-     onClick={() => setStatusFilter("PO")}
+     onClick={() => { setStatusFilter("PO"); setCurrentPage(1); }}
    >
      <PackageCheck className="w-3.5 h-3.5" />
      Pesanan PO / Pre-Order ({poCount})
@@ -178,7 +183,7 @@ export default function PosOrderHistoryPage() {
      variant={statusFilter === "COMPLETED" ? "default" : "outline"} 
      size="sm" 
      className="rounded-full text-xs h-7 px-3"
-     onClick={() => setStatusFilter("COMPLETED")}
+     onClick={() => { setStatusFilter("COMPLETED"); setCurrentPage(1); }}
    >
      Selesai Lunas
    </Button>
@@ -186,7 +191,7 @@ export default function PosOrderHistoryPage() {
      variant={statusFilter === "CANCELLED" ? "default" : "outline"} 
      size="sm" 
      className="rounded-full text-xs h-7 px-3"
-     onClick={() => setStatusFilter("CANCELLED")}
+     onClick={() => { setStatusFilter("CANCELLED"); setCurrentPage(1); }}
    >
      Dibatalkan
    </Button>
@@ -198,8 +203,9 @@ export default function PosOrderHistoryPage() {
  ) : filteredOrders.length === 0 ? (
  <div className="py-20 text-center text-muted-foreground">Tidak ada transaksi yang cocok.</div>
  ) : (
+ <>
  <div className="divide-y divide-slate-100 dark:divide-slate-800">
- {filteredOrders.map((order) => (
+ {paginatedOrders.map((order) => (
  <div key={order.id} className="p-4 sm:p-6 hover:bg-muted/30 dark:hover:bg-slate-900/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
  <div className="space-y-2">
  <div className="flex items-center gap-2">
@@ -265,6 +271,16 @@ export default function PosOrderHistoryPage() {
  </div>
  ))}
  </div>
+ <TablePagination
+   currentPage={currentPage}
+   totalItems={filteredOrders.length}
+   pageSize={pageSize}
+   onPageChange={setCurrentPage}
+   onPageSizeChange={setPageSize}
+   pageSizeOptions={[10, 25, 50, 100]}
+   itemLabel="transaksi"
+ />
+ </>
  )}
  </CardContent>
  </Card>

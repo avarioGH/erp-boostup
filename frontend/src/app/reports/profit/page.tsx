@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ReportsAPI } from "@/lib/api"
-import { PaginationControls } from "@/components/ui/pagination-controls"
+import { TablePagination } from "@/components/ui/table-pagination"
 import { Search, FileSpreadsheet, Download, FileText, Banknote, ShoppingCart, Percent, RotateCcw } from "lucide-react"
 
 export default function ProfitReport() {
@@ -16,7 +16,7 @@ export default function ProfitReport() {
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const ITEMS_PER_PAGE = 10;
+  const [pageSize, setPageSize] = useState(10)
 
   useEffect(() => {
     fetchData()
@@ -67,8 +67,7 @@ export default function ProfitReport() {
 
   const formatCurrency = (val: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(val)
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
-  const paginatedData = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+  const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -200,7 +199,15 @@ export default function ProfitReport() {
               </TableBody>
             </Table>
           </div>
-          <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+          <TablePagination
+            currentPage={currentPage}
+            totalItems={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[10, 25, 50, 100]}
+            itemLabel="transaksi margin"
+          />
         </CardContent>
       </Card>
     </div>

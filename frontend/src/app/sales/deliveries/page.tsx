@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Loader2, Plus, Search, Filter, ChevronLeft, Truck, CheckCircle2, FileText, Download, RotateCcw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { TablePagination } from '@/components/ui/table-pagination'
 
 export default function DeliveriesPage() {
  const router = useRouter()
@@ -15,6 +16,8 @@ export default function DeliveriesPage() {
  const [searchTerm, setSearchTerm] = useState("")
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
  const [selectedDoc, setSelectedDoc] = useState<any | null>(null)
  
  // detail state
@@ -87,6 +90,7 @@ export default function DeliveriesPage() {
 
    return matchesSearch && matchesDate;
  })
+ const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
  if (selectedDoc) {
  const details = docDetails || selectedDoc
@@ -212,7 +216,7 @@ export default function DeliveriesPage() {
  placeholder="Cari Surat Jalan / Pelanggan..." 
  className="pl-8 h-9 text-xs sm:text-sm" 
  value={searchTerm}
- onChange={(e) => setSearchTerm(e.target.value)}
+ onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
  />
  </div>
  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -221,7 +225,7 @@ export default function DeliveriesPage() {
      type="date" 
      className="w-auto h-9 text-xs" 
      value={startDate} 
-     onChange={(e) => setStartDate(e.target.value)} 
+     onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }} 
    />
  </div>
  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -230,11 +234,11 @@ export default function DeliveriesPage() {
      type="date" 
      className="w-auto h-9 text-xs" 
      value={endDate} 
-     onChange={(e) => setEndDate(e.target.value)} 
+     onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }} 
    />
  </div>
  {(searchTerm || startDate || endDate) && (
-   <Button variant="ghost" size="sm" onClick={() => { setSearchTerm(""); setStartDate(""); setEndDate(""); }} className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground">
+   <Button variant="ghost" size="sm" onClick={() => { setSearchTerm(""); setStartDate(""); setEndDate(""); setCurrentPage(1); }} className="h-9 px-2 text-xs text-muted-foreground hover:text-foreground">
      <RotateCcw className="w-3.5 h-3.5 mr-1" /> Reset
    </Button>
  )}
@@ -245,6 +249,7 @@ export default function DeliveriesPage() {
  {loading ? (
  <div className="flex p-12 justify-center"><Loader2 className="animate-spin w-8 h-8 text-muted-foreground" /></div>
  ) : (
+ <>
  <div className="overflow-x-auto">
  <table className="min-w-[600px] md:min-w-full w-full text-sm">
  <thead className="bg-muted border-y border-border">
@@ -259,7 +264,7 @@ export default function DeliveriesPage() {
  <tbody>
  {filtered.length === 0 ? (
  <tr><td colSpan={5} className="text-center p-12 text-muted-foreground">No deliveries found.</td></tr>
- ) : filtered.map((item) => (
+ ) : paginated.map((item) => (
  <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors group cursor-pointer" onClick={() => viewDetails(item)}>
  <td className="py-3.5 px-6 font-semibold text-primary text-[13px] dark:text-primary">{item.delivery_number}</td>
  <td className="p-4 px-6 font-medium">{item.customer?.name || '-'}</td>
@@ -275,6 +280,16 @@ export default function DeliveriesPage() {
  </tbody>
  </table>
  </div>
+ <TablePagination
+   currentPage={currentPage}
+   totalItems={filtered.length}
+   pageSize={pageSize}
+   onPageChange={setCurrentPage}
+   onPageSizeChange={setPageSize}
+   pageSizeOptions={[10, 25, 50, 100]}
+   itemLabel="pengiriman"
+ />
+ </>
  )}
  </CardContent>
  </Card>
