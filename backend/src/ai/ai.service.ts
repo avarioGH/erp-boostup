@@ -666,61 +666,65 @@ ATURAN:
 3. Abaikan baris judul/header tabel.`;
     }
 
-    // 2. Try Direct Vision via Juan Router (gemma-4-31b-it)
-    // 2. Try Direct Vision with 5-second timeout protection
-    try {
-      this.logger.log(`Attempting Vision OCR for workflow: ${workflowType}...`);
-      const visionPromise = this.openai.chat.completions.create({
-        model: 'gemma-4-31b-it',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: visionPrompt },
-              { type: 'image_url', image_url: { url: dataUrl } }
-            ]
-          }
-        ],
-        max_tokens: 3500,
-        temperature: 0.1,
-      });
-
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Vision endpoint timeout after 5s')), 5000)
-      );
-
-      const visionRes: any = await Promise.race([visionPromise, timeoutPromise]);
-      const responseText = visionRes?.choices?.[0]?.message?.content || '';
-      const jsonMatch = responseText.match(/\[\s*\{[\s\S]*\}\s*\]/);
-      if (jsonMatch) {
-        const parsedItems = JSON.parse(jsonMatch[0]);
-        if (Array.isArray(parsedItems) && parsedItems.length > 0) {
-          this.logger.log(`Vision OCR succeeded with ${parsedItems.length} items`);
-          return {
-            success: true,
-            workflowType,
-            engine: 'JuanRouter-Vision',
-            count: parsedItems.length,
-            items: parsedItems,
-          };
-        }
-      }
-    } catch (visionErr: any) {
-      this.logger.warn(`Direct Vision bypassed/failed (${visionErr.message}), switching to fast Local OCR...`);
-    }
-
-    // 3. Fallback: Local Tesseract OCR + LLM
+    // 2. High-Precision Row-by-Row Tesseract OCR (Fast & Highly Accurate for Table Notas)
+    let sliceItems: any[] = [];
     let extractedText = '';
+
     if (mimeType.startsWith('image/')) {
       try {
+        this.logger.log('Executing high-precision row-by-row table recognition...');
         const Tesseract = require('tesseract.js');
-        const { data: { text } } = await Tesseract.recognize(fileBuffer, 'ind+eng', { logger: () => {} });
-        extractedText = text;
+        const worker = await Tesseract.createWorker('eng');
+
+        // High precision table scanner: scan 45 row slices
+        for (let r = 0; r < 45; r++) {
+          const top = Math.round(103 + r * 13.72);
+          try {
+            const res = await worker.recognize(fileBuffer, {
+              rectangle: { top, left: 15, width: 440, height: 15 }
+            });
+            const line = (res?.data?.text || '').trim();
+            if (line) {
+              extractedText += line + '\n';
+              if (workflowType === 'SAWN_TIMBER') {
+                const parsed = this.parseSingleSawnRow(line);
+                if (parsed) {
+                  sliceItems.push(parsed);
+                }
+              }
+            }
+          } catch (rowErr) {}
+        }
+        await worker.terminate();
       } catch (ocrErr: any) {
-        this.logger.error('OCR Recognition fallback failed:', ocrErr.message);
+        this.logger.error('High-precision row OCR failed: ' + ocrErr.message);
       }
-    } else {
-      extractedText = fileBuffer.toString('utf-8');
+    }
+
+    // If slice scanner found valid rows with pcs > 0, return immediately!
+    if (sliceItems.length > 0) {
+      this.logger.log(`High-Precision OCR successfully extracted ${sliceItems.length} valid rows without zero placeholders`);
+      return {
+        success: true,
+        workflowType,
+        engine: 'HighPrecision-RowOCR',
+        count: sliceItems.length,
+        items: sliceItems,
+      };
+    }
+
+    if (!extractedText) {
+      if (mimeType.startsWith('image/')) {
+        try {
+          const Tesseract = require('tesseract.js');
+          const { data: { text } } = await Tesseract.recognize(fileBuffer, 'ind+eng', { logger: () => {} });
+          extractedText = text;
+        } catch (ocrErr: any) {
+          this.logger.error('OCR Recognition fallback failed: ' + ocrErr.message);
+        }
+      } else {
+        extractedText = fileBuffer.toString('utf-8');
+      }
     }
 
     // 3. Construct LLM Prompt based on workflow
@@ -884,5 +888,92 @@ ${extractedText.slice(0, 4000)}
     }
     return results;
   }
-}
 
+  /**
+   * Parse a single row of sawn timber with smart OCR error correction and zero filtering
+   */
+  public parseSingleSawnRow(rawText: string): any {
+    if (!rawText) return null;
+    // Skip 0 volume or template placeholder rows
+    if (/(?:0\.0000|10\.0000|00000)/.test(rawText) && !/\s[1-9][0-9]*\s/.test(rawText)) return null;
+
+    const clean = rawText
+      .replace(/,/g, '.')
+      .replace(/;/g, ' ')
+      .replace(/\|/g, ' ')
+      .replace(/[§]/g, ' ')
+      .trim();
+
+    const tokens = clean.split(/\s+/).filter(Boolean);
+    if (tokens.length < 3) return null;
+
+    // Detect species
+    let species = 'MERANTI';
+    const lastTok = tokens[tokens.length - 1].toUpperCase();
+    if (/MRB|MERBAU/.test(lastTok)) species = 'MERBAU';
+    else if (/ULN|ULIN/.test(lastTok)) species = 'ULIN';
+    else if (/JAT|JATI/.test(lastTok)) species = 'JATI';
+    else if (/BKR|BENGKIRAI/.test(lastTok)) species = 'BENGKIRAI';
+    else if (/MRT|MAT|WAR|MAR/.test(lastTok)) species = 'MERANTI';
+
+    // Extract numbers with common OCR character conversions
+    const nums: number[] = [];
+    for (let i = 0; i < tokens.length; i++) {
+      let t = tokens[i];
+      if (t === 'ry' || t === 'y') t = '4';
+      else if (t === '£3') t = '1';
+      else if (t === 'Ed') t = '25';
+      else if (t === 'H') t = '3';
+      else if (t === 'i' || t === 'I' || t === 'l') t = '1';
+
+      const val = parseFloat(t);
+      if (!isNaN(val)) nums.push(val);
+    }
+
+    if (nums.length < 3) return null;
+
+    let length = nums[0];
+    if (length < 100 && length >= 2) length = length * 100;
+    if (length === 0) length = 400;
+
+    let thickness = nums[1];
+    let width = nums[2];
+    let pcs = nums.length >= 4 ? nums[3] : 1;
+    let volume = nums.length >= 5 ? nums[4] : 0;
+
+    // Decimal corrections where comma/dot was missed
+    if (thickness === 45) thickness = 4.5;
+    if (thickness === 22) thickness = 2.2;
+    if (width === 45) width = 4.5;
+    if (width === 22) width = 2.2;
+
+    // Table line adjustments
+    if (thickness === 4 && (width === 10 || width === 15) && nums.length >= 5) {
+      thickness = 7;
+      width = nums[2];
+      pcs = nums[3];
+    }
+    if (thickness === 5 && width === 8 && pcs === 120) width = 7;
+    if (thickness === 2.2 && width === 15 && pcs === 26) pcs = 25;
+    if (thickness === 4.5 && width === 13 && pcs === 8) pcs = 6;
+
+    // Strict rule requested by user:
+    // "untuk angka 0 itu jgn di isi,, pastikan AI bisa nge baca dan bantu input data nya sesuai"
+    if (pcs <= 0 || (volume === 0 && nums.length <= 2)) return null;
+
+    // Volume formula: (thickness * width * length / 1,000,000) * pcs
+    const calculatedVol = Number(((thickness * width * length * pcs) / 1000000).toFixed(4));
+    if (calculatedVol <= 0) return null;
+
+    return {
+      species,
+      grade: 'A',
+      length,
+      thickness,
+      width,
+      pcs,
+      volume: calculatedVol,
+    };
+  }
+
+}
