@@ -64,6 +64,13 @@ export class PartaiController {
     return this.partaiService.findAll(companyId);
   }
 
+  @Post(':id/auto-heal')
+  @Permissions('inventory.create')
+  autoHeal(@Param('id') id: string, @Request() req) {
+    const companyId = req.user?.company_id || req.user?.companyId;
+    return this.partaiService.repairPartaiData(id, companyId);
+  }
+
   @Get(':id')
   @Permissions('inventory.read')
   findOne(@Param('id') id: string, @Request() req) {
