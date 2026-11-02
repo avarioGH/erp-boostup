@@ -10,7 +10,7 @@ services:
     environment:
       PORT: 5000
       NODE_ENV: production
-      DATABASE_URL: "postgresql://postgres.ujoagzizhhpjdgeggvdd:Avario050306@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres"
+      DATABASE_URL: "postgresql://postgres.ujoagzizhhpjdgeggvdd:Avario050306@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
       DIRECT_URL: "postgresql://postgres.ujoagzizhhpjdgeggvdd:Avario050306@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres"
       JWT_SECRET: "avario_erp_super_secret_key_2026"
       NEXT_PUBLIC_SUPABASE_URL: "https://ujoagzizhhpjdgeggvdd.supabase.co"
@@ -19,6 +19,11 @@ services:
       - "5000:5000"
     volumes:
       - ./backend/uploads:/app/uploads
+    networks:
+      default:
+      tatalora_default:
+        aliases:
+          - backend
 
   frontend_fish:
     build:
@@ -30,8 +35,8 @@ services:
     restart: always
     ports:
       - "3000:3000"
-    depends_on:
-      - backend
+    networks:
+      - tatalora_default
 
   frontend_wood:
     build:
@@ -43,5 +48,10 @@ services:
     restart: always
     ports:
       - "3001:3000"
-    depends_on:
-      - backend
+    networks:
+      - tatalora_default
+
+networks:
+  default:
+  tatalora_default:
+    external: true
