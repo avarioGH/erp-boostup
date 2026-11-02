@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AiAPI } from "@/lib/api";
-import { Sparkles, UploadCloud, Image as ImageIcon, Loader2, CheckCircle2, AlertTriangle, X } from "lucide-react";
+import { Sparkles, UploadCloud, Image as ImageIcon, Loader2, CheckCircle2, AlertTriangle, X, Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AiTallyImportModalProps {
@@ -105,17 +106,22 @@ export function AiTallyImportModal({
         setParsedPreview(res.items);
         toast({
           title: "Berhasil Membaca Dokumen!",
-          description: `AI berhasil mengekstrak ${res.items.length} baris data kayu.`,
+          description: `AI berhasil mengekstrak ${res.items.length} baris data kayu. Anda dapat mengedit baris sebelum dimasukkan ke tabel.`,
         });
       } else {
         throw new Error("AI tidak menemukan baris data kayu yang valid pada dokumen ini.");
       }
     } catch (err: any) {
       console.error("AI Parse Error:", err);
-      const msg = err.response?.data?.message || err.message || "Gagal membaca gambar/dokumen kayu.";
+      let msg = err.response?.data?.message || err.message || "";
+      if (err.code === "ECONNABORTED" || msg.includes("timeout")) {
+        msg = "Proses membaca foto memakan waktu terlalu lama. Pastikan koneksi internet stabil dan coba kembali dengan resolusi foto yang jelas.";
+      } else if (!msg || msg.includes("Network Error") || msg.includes("500")) {
+        msg = "Data tidak bisa dibaca oleh AI. Pastikan foto tabel kayu/nota tegak lurus, tulisan angka jelas, dan tidak buram.";
+      }
       setErrorMsg(msg);
       toast({
-        title: "Gagal Membaca Dokumen",
+        title: "Data Tidak Bisa Dibaca AI",
         description: msg,
         variant: "destructive",
       });
@@ -124,9 +130,78 @@ export function AiTallyImportModal({
     }
   };
 
+  const handleCellChange = (index: number, field: string, value: any) => {
+    if (!parsedPreview) return;
+    const updated = [...parsedPreview];
+    updated[index] = {
+      ...updated[index],
+      [field]: value,
+    };
+    setParsedPreview(updated);
+  };
+
+  const handleDeleteRow = (index: number) => {
+    if (!parsedPreview) return;
+    const updated = parsedPreview.filter((_, i) => i !== index);
+    setParsedPreview(updated);
+  };
+
+  const handleAddRow = () => {
+    if (!parsedPreview) return;
+    if (workflowType === "RAW_LOG") {
+      setParsedPreview([
+        ...parsedPreview,
+        {
+          logNumber: `LOG-${parsedPreview.length + 1}`,
+          species: "MERBAU",
+          length: 400,
+          d1: 30,
+          d2: 30,
+          rt: 30,
+        },
+      ]);
+    } else {
+      setParsedPreview([
+        ...parsedPreview,
+        {
+          species: "MERANTI",
+          grade: "A",
+          thickness: 4,
+          width: 20,
+          length: 400,
+          pcs: 1,
+        },
+      ]);
+    }
+  };
+
   const handleApplyToTable = () => {
     if (!parsedPreview || parsedPreview.length === 0) return;
-    onDataParsed(parsedPreview);
+    // Format numeric values cleanly
+    const cleanedRows = parsedPreview.map((row) => {
+      if (workflowType === "RAW_LOG") {
+        const d1 = Number(row.d1) || 0;
+        const d2 = Number(row.d2) || d1;
+        const rt = Number(row.rt) || (d1 && d2 ? Math.round(((d1 + d2) / 2) * 10) / 10 : d1);
+        return {
+          ...row,
+          length: Number(row.length) || 0,
+          d1,
+          d2,
+          rt,
+        };
+      } else {
+        return {
+          ...row,
+          thickness: Number(row.thickness) || 0,
+          width: Number(row.width) || 0,
+          length: Number(row.length) || 0,
+          pcs: Number(row.pcs) || 1,
+        };
+      }
+    });
+
+    onDataParsed(cleanedRows);
     handleResetModal();
     onClose();
   };
@@ -141,7 +216,7 @@ export function AiTallyImportModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { handleResetModal(); onClose(); } }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-6 overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[92vh] flex flex-col p-6 overflow-hidden">
         <DialogHeader className="border-b pb-3">
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
@@ -228,9 +303,9 @@ export function AiTallyImportModal({
               </div>
 
               {selectedFile?.type.startsWith("image/") && (
-                <div className="relative max-h-56 overflow-hidden rounded-lg bg-black/5 flex items-center justify-center border">
+                <div className="relative max-h-52 overflow-hidden rounded-lg bg-black/5 flex items-center justify-center border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={previewUrl} alt="Preview Dokumen" className="max-h-56 object-contain" />
+                  <img src={previewUrl} alt="Preview Dokumen" className="max-h-52 object-contain" />
                 </div>
               )}
 
@@ -258,41 +333,54 @@ export function AiTallyImportModal({
             </div>
           )}
 
-          {/* PARSED DATA PREVIEW TABLE */}
+          {/* PARSED DATA EDITABLE PREVIEW TABLE */}
           {parsedPreview && (
-            <div className="border rounded-xl overflow-hidden shadow-sm bg-card space-y-2 p-3 border-emerald-500/40">
+            <div className="border rounded-xl overflow-hidden shadow-sm bg-card space-y-3 p-3 border-emerald-500/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm">
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Hasil Ekstraksi AI: {parsedPreview.length} Baris Kayu</span>
+                  <span>Hasil Ekstraksi AI: {parsedPreview.length} Baris Kayu (Bisa Diedit Langsung)</span>
                 </div>
-                <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                  Siap Dimasukkan ke Tabel
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddRow}
+                    className="h-7 text-xs border-dashed gap-1 text-primary hover:bg-primary/5"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Tambah Baris
+                  </Button>
+                  <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    Siap Dimasukkan ke Tabel
+                  </Badge>
+                </div>
               </div>
 
-              <div className="max-h-48 overflow-y-auto border rounded-lg">
+              <div className="max-h-72 overflow-y-auto border rounded-lg shadow-inner">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-muted/80 sticky top-0 border-b">
+                  <thead className="bg-muted/80 sticky top-0 border-b z-10">
                     <tr>
                       <th className="p-2 w-8 text-center">No</th>
                       {workflowType === "RAW_LOG" ? (
                         <>
-                          <th className="p-2">No Log</th>
-                          <th className="p-2">Spesies</th>
-                          <th className="p-2 text-right">P (cm/m)</th>
-                          <th className="p-2 text-right">D1 (cm)</th>
-                          <th className="p-2 text-right">D2 (cm)</th>
-                          <th className="p-2 text-right">RT</th>
+                          <th className="p-2 min-w-[100px]">No Log</th>
+                          <th className="p-2 min-w-[120px]">Spesies</th>
+                          <th className="p-2 w-20 text-right">P (cm/m)</th>
+                          <th className="p-2 w-20 text-right">D1 (cm)</th>
+                          <th className="p-2 w-20 text-right">D2 (cm)</th>
+                          <th className="p-2 w-20 text-right">RT (cm)</th>
+                          <th className="p-2 w-10 text-center">Aksi</th>
                         </>
                       ) : (
                         <>
-                          <th className="p-2">Spesies</th>
-                          <th className="p-2">Grade</th>
-                          <th className="p-2 text-right">T (cm)</th>
-                          <th className="p-2 text-right">L (cm)</th>
-                          <th className="p-2 text-right">P (cm)</th>
-                          <th className="p-2 text-right">Pcs</th>
+                          <th className="p-2 min-w-[120px]">Spesies</th>
+                          <th className="p-2 w-20">Grade</th>
+                          <th className="p-2 w-20 text-right">T (cm)</th>
+                          <th className="p-2 w-20 text-right">L (cm)</th>
+                          <th className="p-2 w-20 text-right">P (cm)</th>
+                          <th className="p-2 w-20 text-right">Pcs</th>
+                          <th className="p-2 w-10 text-center">Aksi</th>
                         </>
                       )}
                     </tr>
@@ -300,24 +388,140 @@ export function AiTallyImportModal({
                   <tbody className="divide-y divide-border">
                     {parsedPreview.map((row, idx) => (
                       <tr key={idx} className="hover:bg-muted/30">
-                        <td className="p-2 text-center text-muted-foreground">{idx + 1}</td>
+                        <td className="p-2 text-center text-muted-foreground font-mono">{idx + 1}</td>
                         {workflowType === "RAW_LOG" ? (
                           <>
-                            <td className="p-2 font-mono font-medium">{row.logNumber || `LOG-${idx + 1}`}</td>
-                            <td className="p-2">{row.species || "MERBAU"}</td>
-                            <td className="p-2 text-right">{row.length}</td>
-                            <td className="p-2 text-right">{row.d1}</td>
-                            <td className="p-2 text-right">{row.d2}</td>
-                            <td className="p-2 text-right">{row.rt || (row.d1 && row.d2 ? Math.round(((row.d1 + row.d2) / 2) * 10) / 10 : "-")}</td>
+                            <td className="p-1">
+                              <Input
+                                value={row.logNumber || ""}
+                                onChange={(e) => handleCellChange(idx, "logNumber", e.target.value)}
+                                className="h-7 text-xs font-mono font-medium"
+                                placeholder={`LOG-${idx + 1}`}
+                              />
+                            </td>
+                            <td className="p-1">
+                              <Input
+                                value={row.species || ""}
+                                onChange={(e) => handleCellChange(idx, "species", e.target.value.toUpperCase())}
+                                className="h-7 text-xs uppercase"
+                                placeholder="MERBAU"
+                              />
+                            </td>
+                            <td className="p-1">
+                              <Input
+                                type="number"
+                                step="any"
+                                value={row.length ?? ""}
+                                onChange={(e) => handleCellChange(idx, "length", e.target.value)}
+                                className="h-7 text-xs text-right"
+                              />
+                            </td>
+                            <td className="p-1">
+                              <Input
+                                type="number"
+                                step="any"
+                                value={row.d1 ?? ""}
+                                onChange={(e) => handleCellChange(idx, "d1", e.target.value)}
+                                className="h-7 text-xs text-right"
+                              />
+                            </td>
+                            <td className="p-1">
+                              <Input
+                                type="number"
+                                step="any"
+                                value={row.d2 ?? ""}
+                                onChange={(e) => handleCellChange(idx, "d2", e.target.value)}
+                                className="h-7 text-xs text-right"
+                              />
+                            </td>
+                            <td className="p-1">
+                              <Input
+                                type="number"
+                                step="any"
+                                value={row.rt ?? ""}
+                                onChange={(e) => handleCellChange(idx, "rt", e.target.value)}
+                                className="h-7 text-xs text-right"
+                              />
+                            </td>
+                            <td className="p-1 text-center">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteRow(idx)}
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                title="Hapus baris ini"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </td>
                           </>
                         ) : (
                           <>
-                            <td className="p-2">{row.species || "MERBAU"}</td>
-                            <td className="p-2">{row.grade || "A"}</td>
-                            <td className="p-2 text-right">{row.thickness}</td>
-                            <td className="p-2 text-right">{row.width}</td>
-                            <td className="p-2 text-right">{row.length}</td>
-                            <td className="p-2 text-right">{row.pcs}</td>
+                            <td className="p-1">
+                              <Input
+                                value={row.species || ""}
+                                onChange={(e) => handleCellChange(idx, "species", e.target.value.toUpperCase())}
+                                className="h-7 text-xs uppercase"
+                                placeholder="MERANTI"
+                              />
+                            </td>
+                            <td className="p-1">
+                              <Input
+                                value={row.grade || ""}
+                                onChange={(e) => handleCellChange(idx, "grade", e.target.value.toUpperCase())}
+                                className="h-7 text-xs uppercase"
+                                placeholder="A"
+                              />
+                            </td>
+                            <td className="p-1">
+                              <Input
+                                type="number"
+                                step="any"
+                                value={row.thickness ?? ""}
+                                onChange={(e) => handleCellChange(idx, "thickness", e.target.value)}
+                                className="h-7 text-xs text-right font-medium"
+                              />
+                            </td>
+                            <td className="p-1">
+                              <Input
+                                type="number"
+                                step="any"
+                                value={row.width ?? ""}
+                                onChange={(e) => handleCellChange(idx, "width", e.target.value)}
+                                className="h-7 text-xs text-right font-medium"
+                              />
+                            </td>
+                            <td className="p-1">
+                              <Input
+                                type="number"
+                                step="any"
+                                value={row.length ?? ""}
+                                onChange={(e) => handleCellChange(idx, "length", e.target.value)}
+                                className="h-7 text-xs text-right font-medium"
+                              />
+                            </td>
+                            <td className="p-1">
+                              <Input
+                                type="number"
+                                step="any"
+                                value={row.pcs ?? ""}
+                                onChange={(e) => handleCellChange(idx, "pcs", e.target.value)}
+                                className="h-7 text-xs text-right font-bold text-emerald-600 dark:text-emerald-400"
+                              />
+                            </td>
+                            <td className="p-1 text-center">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteRow(idx)}
+                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                title="Hapus baris ini"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </td>
                           </>
                         )}
                       </tr>

@@ -10,10 +10,8 @@ export class AiService {
   private openai: OpenAI;
   // Fallback models from Juan Router based on user request (prioritize working ones)
   private readonly fallbackModels = [
-    'laguna-s-2.1',
-    'laguna-xs-2.1',
-    'muse-glimmer',
     'nemotron-3.5-lightning',
+    'muse-glimmer',
     'gemma-4-31b-it',
   ];
 
