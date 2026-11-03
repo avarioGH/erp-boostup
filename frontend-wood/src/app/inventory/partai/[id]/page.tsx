@@ -25,7 +25,17 @@ export default function PartaiDetailPage({ params }: { params: any }) {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { id } = React.use(params as Promise<{ id: string }>);
-  const [partai, setPartai] = useState<any>(null);
+  const [partai, setPartai] = useState<any>(() => {
+    if (typeof window !== 'undefined' && id) {
+      try {
+        const cached = sessionStorage.getItem(`erp_partai_${id}`);
+        if (cached) return JSON.parse(cached);
+      } catch (e) {}
+    }
+    return null;
+  });
+  const [partaiLoading, setPartaiLoading] = useState<boolean>(!partai);
+  const [partaiError, setPartaiError] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState("purchase");
 
   // Receive inspection modal state
@@ -415,9 +425,21 @@ export default function PartaiDetailPage({ params }: { params: any }) {
 
   const fetchPartai = () => {
     if (id) {
+      setPartaiLoading(true);
+      setPartaiError(null);
       PartaiAPI.getPartai(id).then((res: any) => {
         setPartai(res);
-      }).catch(console.error);
+        setPartaiLoading(false);
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem(`erp_partai_${id}`, JSON.stringify(res));
+          } catch (e) {}
+        }
+      }).catch((err: any) => {
+        console.error("fetchPartai error:", err);
+        setPartaiLoading(false);
+        setPartaiError(err?.response?.data?.message || err?.message || "Gagal memuat data partai");
+      });
     }
   };
 
@@ -874,7 +896,50 @@ export default function PartaiDetailPage({ params }: { params: any }) {
     return allOutputItems.slice(start, start + outputPageSize);
   }, [allOutputItems, outputPage, outputPageSize]);
 
-  if (!partai) return <div className="p-8 text-center">Loading...</div>;
+  if (!partai && partaiLoading) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6 animate-pulse">
+        <div className="h-20 bg-muted/50 rounded-lg border flex items-center px-6 justify-between">
+          <div className="space-y-2">
+            <div className="h-6 w-48 bg-muted rounded"></div>
+            <div className="h-4 w-32 bg-muted/70 rounded"></div>
+          </div>
+          <div className="h-8 w-24 bg-muted rounded"></div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-24 bg-muted/40 rounded-lg border p-4 space-y-2">
+              <div className="h-3 w-20 bg-muted rounded"></div>
+              <div className="h-6 w-28 bg-muted rounded"></div>
+            </div>
+          ))}
+        </div>
+        <div className="h-96 bg-muted/30 rounded-lg border p-6 flex flex-col items-center justify-center gap-3">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm font-medium text-muted-foreground">Memuat data partai & inventaris...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!partai && partaiError) {
+    return (
+      <div className="p-8 max-w-xl mx-auto text-center space-y-4">
+        <div className="p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800 rounded-lg text-rose-700 dark:text-rose-400">
+          <p className="font-bold text-base">Gagal Memuat Data</p>
+          <p className="text-xs mt-1 text-muted-foreground">{partaiError}</p>
+        </div>
+        <div className="flex items-center justify-center gap-3">
+          <Button onClick={() => router.push('/inventory/partai')} variant="outline" size="sm">
+            Kembali ke Daftar Partai
+          </Button>
+          <Button onClick={fetchPartai} size="sm">
+            Coba Lagi
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
