@@ -110,6 +110,37 @@ export function SawnTimberSpreadsheet({
     return result;
   });
 
+  // Synchronize internal rows when initialRows changes (e.g. from AI Import)
+  useEffect(() => {
+    if (initialRows && initialRows.length > 0) {
+      const hasData = initialRows.some(r => parseFlexibleNumber(r.thickness) > 0 || parseFlexibleNumber(r.pcs) > 0);
+      if (hasData) {
+        const mapped = initialRows.map(r => {
+          const t = parseFlexibleNumber(r.thickness);
+          const w = parseFlexibleNumber(r.width);
+          const p = parseFlexibleNumber(r.length);
+          const pcs = parseFlexibleNumber(r.pcs);
+          const m3 = r.m3 !== undefined && Number(r.m3) > 0 ? Number(r.m3) : calcRowM3(t, w, p, pcs);
+          return {
+            ...r,
+            species: r.species || defaultSpecies,
+            grade: r.grade || defaultGrade,
+            productType: r.productType || defaultProductType,
+            thickness: t > 0 ? t : "",
+            width: w > 0 ? w : "",
+            length: p > 0 ? p : "",
+            pcs: pcs > 0 ? pcs : "",
+            m3,
+          };
+        });
+        while (mapped.length < 8) {
+          mapped.push(createEmptyRow());
+        }
+        setRows(mapped);
+      }
+    }
+  }, [initialRows, defaultSpecies, defaultGrade, defaultProductType, createEmptyRow]);
+
   const [activeCell, setActiveCell] = useState<{ row: number; col: string } | null>(null);
   const [selectionRange, setSelectionRange] = useState<{
     startRow: number;
