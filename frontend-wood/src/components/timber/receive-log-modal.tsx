@@ -269,6 +269,26 @@ export function ReceiveLogModal({
     });
   };
 
+  const handleAddLogRow = () => {
+    const defaultSpecies = speciesList[0]?.name || "MERANTI";
+    const newRow = {
+      purchaseLogItemId: undefined,
+      logNumber: `LOG-${Date.now().toString().slice(-4)}`,
+      species: defaultSpecies,
+      speciesId: undefined,
+      length: "4",
+      d1: "40",
+      d2: "40",
+      d3: "",
+      d4: "",
+      avgDia: "40",
+      gerowong: "0",
+      selected: true,
+      isAlreadyReceived: false,
+    };
+    setLogRows((prev) => [...prev, newRow]);
+  };
+
   const handleAddSawnRow = () => {
     const defaultSpecies = speciesList[0]?.name || "Meranti";
     const newRow = {
@@ -655,6 +675,15 @@ export function ReceiveLogModal({
                       <Camera className="w-3.5 h-3.5 mr-1" /> Scan Foto DUKB (AI)
                     </>
                   )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddLogRow}
+                  className="h-7 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800 font-semibold"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1 text-blue-600" /> + Tambah Baris Log
                 </Button>
                 <div className="text-muted-foreground">
                   Total Net Volume:{" "}
