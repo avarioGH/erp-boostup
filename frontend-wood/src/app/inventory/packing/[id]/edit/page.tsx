@@ -1368,4 +1368,3 @@ export default function EditPackingPage({ params }: { params: any }) {
     </div>
   );
 }
-}

@@ -1320,4 +1320,3 @@ export default function CreatePackingPage() {
     </div>
   );
 }
-}
