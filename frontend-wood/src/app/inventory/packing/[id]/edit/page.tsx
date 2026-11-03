@@ -524,7 +524,10 @@ export default function EditPackingPage({ params }: { params: any }) {
     [rows]
   );
   const totalRealM3 = useMemo(
-    () => rows.reduce((s, r) => s + (r.realM3 || 0), 0),
+    () => rows.reduce((s, r) => {
+      const m3 = r.realM3 > 0 ? r.realM3 : ((parseFloat(r.realT) || 0) * (parseFloat(r.realL) || 0) * (parseFloat(r.realP) || 0) * (parseFloat(r.realPcs) || 0)) / 1000000;
+      return s + m3;
+    }, 0),
     [rows]
   );
 
@@ -533,7 +536,14 @@ export default function EditPackingPage({ params }: { params: any }) {
     [rows]
   );
   const totalCustM3 = useMemo(
-    () => rows.reduce((s, r) => s + (r.custM3 || 0), 0),
+    () => rows.reduce((s, r) => {
+      const cT = parseFloat(r.custT || r.realT) || 0;
+      const cL = parseFloat(r.custL || r.realL) || 0;
+      const cP = parseFloat(r.custP || r.realP) || 0;
+      const cPcs = parseFloat(r.custPcs || r.realPcs) || 0;
+      const m3 = r.custM3 > 0 ? r.custM3 : (cT * cL * cP * cPcs) / 1000000;
+      return s + m3;
+    }, 0),
     [rows]
   );
 
@@ -1045,7 +1055,7 @@ export default function EditPackingPage({ params }: { params: any }) {
                         value={row.realT}
                         onChange={(e) => handleRowChange(idx, "realT", e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, idx, "realT")}
-                        placeholder="16"
+                        placeholder="0"
                         className="h-8 text-xs text-center"
                       />
                     </TableCell>
@@ -1057,7 +1067,7 @@ export default function EditPackingPage({ params }: { params: any }) {
                         value={row.realL}
                         onChange={(e) => handleRowChange(idx, "realL", e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, idx, "realL")}
-                        placeholder="16"
+                        placeholder="0"
                         className="h-8 text-xs text-center"
                       />
                     </TableCell>
@@ -1069,7 +1079,7 @@ export default function EditPackingPage({ params }: { params: any }) {
                         value={row.realP}
                         onChange={(e) => handleRowChange(idx, "realP", e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, idx, "realP")}
-                        placeholder="440"
+                        placeholder="0"
                         className="h-8 text-xs text-center"
                       />
                     </TableCell>
@@ -1081,12 +1091,15 @@ export default function EditPackingPage({ params }: { params: any }) {
                         value={row.realPcs}
                         onChange={(e) => handleRowChange(idx, "realPcs", e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, idx, "realPcs")}
-                        placeholder="15"
+                        placeholder="0"
                         className="h-8 text-xs text-center font-bold text-blue-700 dark:text-blue-400"
                       />
                     </TableCell>
                     <TableCell className="p-1.5 text-right font-mono font-bold text-xs text-blue-600 dark:text-blue-400 pr-3 border-r bg-blue-50/10">
-                      {row.realM3 > 0 ? row.realM3.toFixed(4) : "-"}
+                      {(() => {
+                        const m3 = row.realM3 > 0 ? row.realM3 : ((parseFloat(row.realT) || 0) * (parseFloat(row.realL) || 0) * (parseFloat(row.realP) || 0) * (parseFloat(row.realPcs) || 0)) / 1000000;
+                        return m3 > 0 ? m3.toFixed(4) : "-";
+                      })()}
                     </TableCell>
 
                     {/* CUSTOMER NOMINAL */}
@@ -1098,7 +1111,7 @@ export default function EditPackingPage({ params }: { params: any }) {
                         value={row.custT}
                         onChange={(e) => handleRowChange(idx, "custT", e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, idx, "custT")}
-                        placeholder="15"
+                        placeholder="0"
                         className="h-8 text-xs text-center"
                       />
                     </TableCell>
@@ -1110,7 +1123,7 @@ export default function EditPackingPage({ params }: { params: any }) {
                         value={row.custL}
                         onChange={(e) => handleRowChange(idx, "custL", e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, idx, "custL")}
-                        placeholder="15"
+                        placeholder="0"
                         className="h-8 text-xs text-center"
                       />
                     </TableCell>
@@ -1122,7 +1135,7 @@ export default function EditPackingPage({ params }: { params: any }) {
                         value={row.custP}
                         onChange={(e) => handleRowChange(idx, "custP", e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, idx, "custP")}
-                        placeholder="440"
+                        placeholder="0"
                         className="h-8 text-xs text-center"
                       />
                     </TableCell>
@@ -1134,12 +1147,19 @@ export default function EditPackingPage({ params }: { params: any }) {
                         value={row.custPcs}
                         onChange={(e) => handleRowChange(idx, "custPcs", e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, idx, "custPcs")}
-                        placeholder="15"
+                        placeholder="0"
                         className="h-8 text-xs text-center font-bold text-emerald-700 dark:text-emerald-400"
                       />
                     </TableCell>
                     <TableCell className="p-1.5 text-right font-mono font-bold text-xs text-emerald-600 dark:text-emerald-400 pr-3 border-r bg-emerald-50/10">
-                      {row.custM3 > 0 ? row.custM3.toFixed(4) : "-"}
+                      {(() => {
+                        const cT = parseFloat(row.custT || row.realT) || 0;
+                        const cL = parseFloat(row.custL || row.realL) || 0;
+                        const cP = parseFloat(row.custP || row.realP) || 0;
+                        const cPcs = parseFloat(row.custPcs || row.realPcs) || 0;
+                        const m3 = row.custM3 > 0 ? row.custM3 : (cT * cL * cP * cPcs) / 1000000;
+                        return m3 > 0 ? m3.toFixed(4) : "-";
+                      })()}
                     </TableCell>
 
                     {/* Custom dynamic columns */}
