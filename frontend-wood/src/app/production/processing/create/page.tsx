@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { InventoryAPI, ProductionAPI, MasterDataAPI, PartaiAPI } from "@/lib/api";
+import { InventoryAPI, ProductionAPI, MasterDataAPI, PartaiAPI, PackingAPI } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -566,9 +566,61 @@ export default function CreateProcessingProjectPage() {
         await ProductionAPI.confirmProcess(res.id).catch(() => {});
       }
 
+      // OTOMATIS GENERATE PACKING LIST JIKA TAHAP AKHIR ADALAH PACKING
+      const isPackingFinal = lastStep && (
+        lastStep.code?.toUpperCase().includes("PACK") || 
+        lastStep.name?.toUpperCase().includes("PACK") || 
+        lastStep.code?.toUpperCase().includes("BUNDL") ||
+        lastStep.name?.toUpperCase().includes("BUNDL")
+      );
+
+      let createdPackingNum: string | null = null;
+      if (isPackingFinal && validFinalOutputs.length > 0) {
+        try {
+          const autoPkgNumber = `PKG-PRD-${processNo.trim()}-${Date.now().toString().slice(-4)}`;
+          const packingPayload = {
+            packingNumber: autoPkgNumber,
+            packingDate: date ? new Date(date).toISOString() : new Date().toISOString(),
+            partaiId: urlPartaiId || null,
+            ownerName: partaiInfo?.name || "Hasil Processing",
+            species: validFinalOutputs[0]?.species || "KAYU",
+            containerNo: null,
+            warehouseId: targetWarehouseId || null,
+            notes: `Otomatis dibuat dari Hasil Akhir Processing ${processNo.trim()} (${pipelineCode})`,
+            items: validFinalOutputs.map((item, idx) => {
+              const rT = Number(item.t) || 0;
+              const rL = Number(item.w) || 0;
+              const rP = Number(item.l) || 0;
+              const rPcs = Number(item.pcs) || 0;
+              const rM3 = (rT * rL * rP * rPcs) / 1000000;
+              return {
+                palletNo: item.customData?.palletNo || item.bundleNo || String(idx + 1).padStart(2, '0'),
+                realT: rT,
+                realL: rL,
+                realP: rP,
+                realPcs: rPcs,
+                realM3: Number(rM3.toFixed(4)),
+                custT: rT,
+                custL: rL,
+                custP: rP,
+                custPcs: rPcs,
+                custM3: Number(rM3.toFixed(4)),
+                notes: `Asal Processing: ${processNo.trim()} (Tahap ${lastStep.name})`,
+              };
+            }),
+          };
+          const pkgRes = await PackingAPI.createPacking(packingPayload);
+          createdPackingNum = pkgRes?.packingNumber || autoPkgNumber;
+        } catch (pkgErr: any) {
+          console.warn("Auto create packing list failed:", pkgErr);
+        }
+      }
+
       toast({ 
         title: "Project Processing Berhasil Disimpan!", 
-        description: `Project ${processNo} (${pipelineCode}) berhasil disimpan ${status === "CONFIRMED" ? "dan mutasi stok fisik dieksekusi." : "sebagai DRAFT."}`
+        description: createdPackingNum 
+          ? `Project ${processNo} (${pipelineCode}) berhasil disimpan & otomatis masuk ke Packing List (${createdPackingNum}).` 
+          : `Project ${processNo} (${pipelineCode}) berhasil disimpan ${status === "CONFIRMED" ? "dan mutasi stok fisik dieksekusi." : "sebagai DRAFT."}`
       });
 
       setTimeout(() => {

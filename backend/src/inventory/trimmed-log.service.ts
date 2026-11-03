@@ -112,13 +112,13 @@ export class TrimmedLogService {
       if (existingCode)
         throw new BadRequestException(`Trim code ${trimNumber} already exists`);
 
-      // Calculations
-      let avgDia = this.calcService.calculateAverageDiameter(
-        Number(data.diameter1) || 0,
-        Number(data.diameter2) || 0,
-        Number(data.diameter3) || 0,
-        Number(data.diameter4) || 0,
-      );
+      // Calculations: inherit parent diameter values if not explicitly provided
+      const d1 = Number(data.diameter1) || Number(parent.diameter1) || 0;
+      const d2 = Number(data.diameter2) || Number(parent.diameter2) || 0;
+      const d3 = Number(data.diameter3) || Number(parent.diameter3) || 0;
+      const d4 = Number(data.diameter4) || Number(parent.diameter4) || 0;
+
+      let avgDia = this.calcService.calculateAverageDiameter(d1, d2, d3, d4);
       if (avgDia === 0 && data.averageDiameter) {
         avgDia = Number(data.averageDiameter);
       }

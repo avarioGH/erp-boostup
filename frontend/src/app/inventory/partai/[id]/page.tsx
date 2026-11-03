@@ -2916,11 +2916,29 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               const totalInputPcs = inputLogs.length;
               const totalInputVolM3 = inputLogs.reduce((s: number, i: any) => s + (Number(i.totalVolume || 0)), 0);
 
-              // 5. Output Sawn Timber
-              const allOutputItems = (partai.sawnOutputs || []).flatMap((o: any) => o.items || []);
+              // 5. Output Sawn Timber (gabungkan output partai langsung & output tally WIP inputLogs)
+              const directOutputs = (partai.sawnOutputs || []).flatMap((o: any) => 
+                (o.items || []).map((it: any) => ({ ...it, parentStatus: o.status }))
+              );
+              const wipOutputs = (partai.inputLogs || []).flatMap((inp: any) =>
+                (inp.sawnOutputs || []).flatMap((o: any) =>
+                  (o.items || []).map((it: any) => ({ ...it, parentStatus: o.status }))
+                )
+              );
+              // Deduplikasi output item berdasarkan id unik agar tidak double-count
+              const seenOutputIds = new Set<string>();
+              const allOutputItems: any[] = [];
+              [...directOutputs, ...wipOutputs].forEach((it: any) => {
+                const uniqueKey = it.id || `${it.lengthMm}_${it.widthMm}_${it.thicknessMm}_${it.quantityPcs}_${it.volumeM3}`;
+                if (!seenOutputIds.has(uniqueKey)) {
+                  seenOutputIds.add(uniqueKey);
+                  allOutputItems.push(it);
+                }
+              });
+
               const totalOutputPcs = allOutputItems.reduce((s: number, i: any) => s + (i.quantityPcs || 0), 0);
               const totalOutputM3 = allOutputItems.reduce((s: number, i: any) => s + (i.volumeM3 || 0), 0);
-              const postedItems = (partai.sawnOutputs || []).filter((o: any) => o.status === 'POSTED').flatMap((o: any) => o.items || []);
+              const postedItems = allOutputItems.filter((i: any) => i.parentStatus === 'POSTED');
               const postedPcs = postedItems.reduce((s: number, i: any) => s + (i.quantityPcs || 0), 0);
               const postedM3 = postedItems.reduce((s: number, i: any) => s + (i.volumeM3 || 0), 0);
 
@@ -2929,17 +2947,21 @@ export default function PartaiDetailPage({ params }: { params: any }) {
               const procOutputVolM3 = processingList.reduce((acc, p) => acc + (p.outputVolumeM3 || 0), 0);
               const procBatches = processingList.length;
 
-              // Rendemen Sawmill (Output Sawn Timber thdp Bahan Baku)
-              const baseLogVol = totalPurchaseVolM3 > 0 
-                ? totalPurchaseVolM3 
-                : (totalRawLogVolM3 > 0 ? totalRawLogVolM3 : (totalInputVolM3 > 0 ? totalInputVolM3 : totalTrimmedVolM3));
-              const rendemenSawmill = baseLogVol > 0 ? (totalOutputM3 / baseLogVol) * 100 : 0;
+              // 7. Rendemen Gergaji Sawmill:
+              // Sesuai standar industri sawmill, Rendemen Mesin Sawmill dihitung terhadap Log yang MASUK KE MESIN (Input WIP Gergaji).
+              // Jika belum ada Input WIP, gunakan log trimming yang siap gesek atau DUKB log.
+              const sawInputLogVol = totalInputVolM3 > 0 
+                ? totalInputVolM3 
+                : (totalTrimmedVolM3 > 0 ? totalTrimmedVolM3 : totalRawLogVolM3);
+              const rendemenSawmill = sawInputLogVol > 0 ? (totalOutputM3 / sawInputLogVol) * 100 : 0;
 
               // Rendemen Processing (Hasil Olahan Baru thdp Bahan Input Processing)
               const rendemenProcessing = procInputVolM3 > 0 ? (procOutputVolM3 / procInputVolM3) * 100 : 0;
 
-              // Total Kumulatif Akhir (Output Kayu Siap Jual / Hasil Olahan Akhir)
-              // Jika ada processing, hasil olahan akhir menggantikan kubikasi bahan yang dipotong
+              // Total Rendemen Kumulatif Partai (Output Terhadap Total Bahan Baku Beli/DUKB)
+              const baseLogVol = totalPurchaseVolM3 > 0 
+                ? totalPurchaseVolM3 
+                : (totalRawLogVolM3 > 0 ? totalRawLogVolM3 : sawInputLogVol);
               const totalFinalProducedM3 = (totalOutputM3 - procInputVolM3) + procOutputVolM3;
               const rendemenEndToEnd = baseLogVol > 0 
                 ? ((procOutputVolM3 > 0 ? totalFinalProducedM3 : totalOutputM3) / baseLogVol) * 100 
@@ -3009,21 +3031,21 @@ export default function PartaiDetailPage({ params }: { params: any }) {
 
                     <Card className="border-cyan-500/30 bg-cyan-50/30 dark:bg-cyan-900/10">
                       <CardContent className="pt-4 pb-3.5 px-4">
-                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">4. Hasil Processing</p>
-                        <p className="text-xl font-bold text-cyan-600 dark:text-cyan-400 font-mono">
-                          {procOutputVolM3.toFixed(4)} m³
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">4. Rendemen Sawmill</p>
+                        <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                          {rendemenSawmill.toFixed(1)}%
                         </p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">dari {procInputVolM3.toFixed(3)} m³ dipotong</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Output / Input WIP</p>
                       </CardContent>
                     </Card>
 
                     <Card className={rendemenEndToEnd >= 50 ? "border-purple-500/30 bg-purple-50/30 dark:bg-purple-900/10" : "border-red-500/30 bg-red-50/30 dark:bg-red-900/10"}>
                       <CardContent className="pt-4 pb-3.5 px-4">
-                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">Total Rendemen</p>
+                        <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">Total Rendemen Partai</p>
                         <p className={`text-xl font-bold font-mono ${rendemenEndToEnd >= 50 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600'}`}>
                           {rendemenEndToEnd.toFixed(1)}%
                         </p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">Hasil Jadi / Beli M³</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Hasil Jadi / Beli Bahan</p>
                       </CardContent>
                     </Card>
                   </div>
@@ -3081,7 +3103,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                             <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400">{totalOutputPcs}</TableCell>
                             <TableCell className="text-right font-bold text-emerald-700 dark:text-emerald-400 font-mono">{Number(totalOutputM3.toFixed(4))} m³</TableCell>
                             <TableCell className="text-right">
-                              {baseLogVol > 0 ? (
+                              {sawInputLogVol > 0 ? (
                                 <span className={`font-bold ${rendemenSawmill >= 50 ? 'text-emerald-600' : 'text-amber-600'}`}>Rendemen Gergaji {rendemenSawmill.toFixed(1)}%</span>
                               ) : '-'}
                             </TableCell>

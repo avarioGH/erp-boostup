@@ -9,10 +9,13 @@ export class TimberCalculationService {
   calculateAverageDiameter(
     d1: number,
     d2: number,
-    d3: number,
-    d4: number,
+    d3: number = 0,
+    d4: number = 0,
   ): number {
-    return (d1 + d2 + d3 + d4) / 4;
+    const valid = [d1, d2, d3, d4].filter((d) => typeof d === 'number' && d > 0);
+    if (valid.length === 0) return 0;
+    const sum = valid.reduce((a, b) => a + b, 0);
+    return sum / valid.length;
   }
 
   /**

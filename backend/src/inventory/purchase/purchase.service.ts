@@ -438,12 +438,17 @@ export class PurchaseService {
         if (firstCompany) targetCompanyId = firstCompany.id;
       }
 
-      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
-      const purchase = await tx.timberPurchase.findFirst({
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id) || /^[0-9a-fA-F-]{36}$/.test(id);
+      let purchase = await tx.timberPurchase.findFirst({
         where: isObjectId
           ? { id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) }
           : { purchaseNumber: id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) },
       });
+      if (!purchase) {
+        purchase = await tx.timberPurchase.findFirst({
+          where: isObjectId ? { id } : { purchaseNumber: id },
+        });
+      }
 
       if (!purchase) {
         throw new NotFoundException('Timber purchase not found');
@@ -469,13 +474,19 @@ export class PurchaseService {
         if (firstCompany) targetCompanyId = firstCompany.id;
       }
 
-      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
-      const purchase = await tx.timberPurchase.findFirst({
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id) || /^[0-9a-fA-F-]{36}$/.test(id);
+      let purchase = await tx.timberPurchase.findFirst({
         where: isObjectId
           ? { id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) }
           : { purchaseNumber: id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) },
         include: { items: { include: { timberVariant: true } }, logItems: true },
       });
+      if (!purchase) {
+        purchase = await tx.timberPurchase.findFirst({
+          where: isObjectId ? { id } : { purchaseNumber: id },
+          include: { items: { include: { timberVariant: true } }, logItems: true },
+        });
+      }
 
       if (!purchase) {
         throw new NotFoundException('Timber purchase not found');
@@ -906,13 +917,19 @@ export class PurchaseService {
         if (firstCompany) targetCompanyId = firstCompany.id;
       }
 
-      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
-      const purchase = await tx.timberPurchase.findFirst({
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id) || /^[0-9a-fA-F-]{36}$/.test(id);
+      let purchase = await tx.timberPurchase.findFirst({
         where: isObjectId
           ? { id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) }
           : { purchaseNumber: id, ...(targetCompanyId ? { company_id: targetCompanyId } : {}) },
         include: { items: true, logItems: true },
       });
+      if (!purchase) {
+        purchase = await tx.timberPurchase.findFirst({
+          where: isObjectId ? { id } : { purchaseNumber: id },
+          include: { items: true, logItems: true },
+        });
+      }
 
       if (!purchase) {
         throw new NotFoundException('Timber purchase not found');
