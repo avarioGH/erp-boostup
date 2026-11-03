@@ -16,8 +16,8 @@ async function runWithTransactionRetry<T>(
   while (true) {
     try {
       return await prisma.$transaction(fn, {
-        maxWait: 10000,
-        timeout: 20000,
+        maxWait: 30000,
+        timeout: 90000,
       });
     } catch (err: any) {
       attempt++;
