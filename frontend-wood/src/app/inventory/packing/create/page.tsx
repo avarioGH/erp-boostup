@@ -149,58 +149,9 @@ export default function CreatePackingPage() {
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
   const [hasDraftLoaded, setHasDraftLoaded] = useState(false);
 
-  // Auto-save packing rows to localStorage
-  useEffect(() => {
-    if (!hasDraftLoaded) return;
-    const timer = setTimeout(() => {
-      try {
-        const hasData = rows.some((r) => parseFloat(r.realT) > 0 || parseFloat(r.realL) > 0 || parseFloat(r.realP) > 0 || parseFloat(r.realPcs) > 0);
-        if (hasData && typeof window !== "undefined") {
-          localStorage.setItem(packingDraftKey, JSON.stringify({
-            rows,
-            species,
-            containerNo,
-            ownerName,
-            notes,
-            customColumns,
-            savedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-          }));
-          setLastSavedTime(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
-        }
-      } catch (e) {
-        console.warn("Gagal auto-save packing draft:", e);
-      }
-    }, 400);
+  // Auto-save disabled
 
-    return () => clearTimeout(timer);
-  }, [rows, species, containerNo, ownerName, notes, customColumns, hasDraftLoaded, packingDraftKey]);
-
-  // Restore draft on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem(packingDraftKey);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && Array.isArray(parsed.rows) && parsed.rows.length > 0) {
-            setRows(parsed.rows);
-            if (parsed.species) setSpecies(parsed.species);
-            if (parsed.containerNo) setContainerNo(parsed.containerNo);
-            if (parsed.ownerName) setOwnerName(parsed.ownerName);
-            if (parsed.notes) setNotes(parsed.notes);
-            if (Array.isArray(parsed.customColumns)) setCustomColumns(parsed.customColumns);
-            if (parsed.savedAt) setLastSavedTime(parsed.savedAt);
-          }
-        }
-      } catch (e) {
-        console.warn("Gagal restore packing draft:", e);
-      } finally {
-        setHasDraftLoaded(true);
-      }
-    } else {
-      setHasDraftLoaded(true);
-    }
-  }, [packingDraftKey]);
+  // Restore draft disabled
 
   const clearPackingDraft = () => {
     if (typeof window !== "undefined") {
@@ -832,20 +783,7 @@ export default function CreatePackingPage() {
               <Scale className="w-4 h-4 text-purple-600 shrink-0" />
               <span>Tabel Packing List (Riil Pabrik vs Nominal Customer)</span>
             </div>
-            {lastSavedTime && (
-              <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Draf Otomatis ({lastSavedTime})</span>
-                <button
-                  type="button"
-                  onClick={clearPackingDraft}
-                  title="Hapus draf lokal"
-                  className="text-muted-foreground hover:text-destructive ml-1"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
+            
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {/* Popover / Inline tambah kolom custom */}
