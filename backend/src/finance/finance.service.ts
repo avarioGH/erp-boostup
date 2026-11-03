@@ -24,46 +24,10 @@ export class FinanceService {
   ) {}
 
   async getCategories(companyId: string) {
-    let categories = await this.prisma.financeCategory.findMany({
+    return this.prisma.financeCategory.findMany({
       where: { company_id: companyId },
       orderBy: { name: 'asc' },
     });
-
-    if (categories.length === 0) {
-      const defaultCategories = [
-        { name: 'Gaji Pegawai (Bulanan)', type: 'EXPENSE' },
-        { name: 'Gaji / Upah Harian', type: 'EXPENSE' },
-        { name: 'Jasa Borongan & Komisi Kerja', type: 'EXPENSE' },
-        { name: 'Bahan Pembantu & Kemasan (Plastik, Lakban, Styrofoam)', type: 'EXPENSE' },
-        { name: 'Pembayaran / Beli Ikan (Suplier/Nelayan)', type: 'EXPENSE' },
-        { name: 'Es Balok & Pendingin', type: 'EXPENSE' },
-        { name: 'Listrik, Air & Internet', type: 'EXPENSE' },
-        { name: 'Bahan Bakar & Transportasi Logistik', type: 'EXPENSE' },
-        { name: 'Perawatan & Servis Mesin / Cold Storage', type: 'EXPENSE' },
-        { name: 'Konsumsi & Perlengkapan Operasional', type: 'EXPENSE' },
-        { name: 'Pengeluaran Lain-lain', type: 'EXPENSE' },
-        { name: 'Penjualan Ikan & Seafood', type: 'INCOME' },
-        { name: 'Pendapatan Jasa / Cold Storage', type: 'INCOME' },
-        { name: 'Pemasukan Lain-lain', type: 'INCOME' },
-      ];
-
-      for (const item of defaultCategories) {
-        await this.prisma.financeCategory.create({
-          data: {
-            company_id: companyId,
-            name: item.name,
-            type: item.type,
-          },
-        });
-      }
-
-      categories = await this.prisma.financeCategory.findMany({
-        where: { company_id: companyId },
-        orderBy: { name: 'asc' },
-      });
-    }
-
-    return categories;
   }
 
   async createCashIn(data: FinanceTransactionDto) {
@@ -87,22 +51,27 @@ export class FinanceService {
         cashAccountId = account.id;
       }
 
+      let debitId = data.debitAccountId;
+      let creditId = data.creditAccountId;
+      if (!debitId || !creditId) {
+        // GL Posting is skipped if accounts are not provided to avoid complex schema dependency here
+      }
+
       let catId = data.categoryId;
       if (!catId) {
         let cat = await tx.financeCategory.findFirst({
-          where: { company_id: data.companyId, type: 'INCOME' },
+          where: { company_id: data.companyId, name: 'General' },
         });
         if (!cat)
           cat = await tx.financeCategory.create({
             data: {
               company_id: data.companyId,
-              name: 'Pemasukan Lain-lain',
+              name: 'General',
               type: 'INCOME',
             },
           });
         catId = cat.id;
       }
-
       // 1. Create Immutable Transaction Header & Item
       const transaction = await tx.financeTransaction.create({
         data: {
@@ -111,7 +80,7 @@ export class FinanceService {
           transaction_type: 'Cash In',
           cash_account_id: cashAccountId,
           transaction_date: data.transactionDate,
-          status: 'Approved',
+          status: 'Approved', // Langsung approved untuk demo immutable
           description: data.description,
           total_amount: data.amount,
           created_by: data.userId,
@@ -129,35 +98,40 @@ export class FinanceService {
         },
       });
 
-      // 2. Update Cash Account Balance
+      // 2. Update cash account balance
       await tx.cashAccount.update({
         where: { id: cashAccountId },
         data: { current_balance: { increment: data.amount } },
       });
 
-      // 3. GL Double Entry (optional/graceful)
+      // 3. Audit Log
+      await tx.auditLog.create({
+        data: {
+          company_id: data.companyId,
+          user_id: data.userId,
+          action: 'CREATE_APPROVED',
+          entity: 'FinanceTransaction_CashIn',
+          entity_id: transaction.id,
+        },
+      });
+
+      // 4. Generate GL Double Entry (only if CoA accounts are configured)
       const accountRecord = await tx.cashAccount.findUnique({
         where: { id: cashAccountId },
       });
-      const debitId = data.debitAccountId || accountRecord?.chart_of_account_id;
-      const creditId = data.creditAccountId;
-
-      if (debitId && creditId) {
-        try {
-          await this.glService.createJournalEntryWithinTx(tx as any, {
-            companyId: data.companyId,
-            entryDate: data.transactionDate,
-            referenceType: 'FINANCE',
-            referenceId: transaction.id,
-            description: `Cash In: ${data.description || 'Penerimaan Kas'}`,
-            items: [
-              { accountId: debitId, debit: data.amount, credit: 0 },
-              { accountId: creditId, debit: 0, credit: data.amount },
-            ],
-          });
-        } catch (e) {
-          console.warn('GL Journal entry skipped for Cash In:', e);
-        }
+      if (accountRecord?.chart_of_account_id && creditId) {
+        debitId = debitId || accountRecord.chart_of_account_id;
+        await this.glService.createJournalEntryWithinTx(tx as any, {
+          companyId: data.companyId,
+          entryDate: data.transactionDate,
+          referenceType: 'FINANCE',
+          referenceId: transaction.id,
+          description: `Cash In: ${data.description}`,
+          items: [
+            { accountId: debitId, debit: data.amount, credit: 0 },
+            { accountId: creditId, debit: 0, credit: data.amount },
+          ],
+        });
       }
 
       return transaction;
@@ -185,20 +159,34 @@ export class FinanceService {
         cashAccountId = account.id;
       }
 
+      let debitId = data.debitAccountId;
+      let creditId = data.creditAccountId;
+      if (!debitId || !creditId) {
+        // GL Posting is skipped if accounts are not provided
+      }
+
       let catId = data.categoryId;
       if (!catId) {
         let cat = await tx.financeCategory.findFirst({
-          where: { company_id: data.companyId, type: 'EXPENSE' },
+          where: { company_id: data.companyId, name: 'General Expense' },
         });
         if (!cat)
           cat = await tx.financeCategory.create({
             data: {
               company_id: data.companyId,
-              name: 'Pengeluaran Lain-lain',
+              name: 'General Expense',
               type: 'EXPENSE',
             },
           });
         catId = cat.id;
+      }
+
+      // Validasi Saldo (Opsional: log warning jika saldo tidak mencukupi agar operasional bisnis tetap dapat berjalan)
+      const account = await tx.cashAccount.findUnique({
+        where: { id: cashAccountId },
+      });
+      if (!account) {
+        throw new BadRequestException('Akun kas/bank tidak ditemukan');
       }
 
       // 1. Create Transaction
@@ -227,35 +215,29 @@ export class FinanceService {
         },
       });
 
-      // 2. Update Cash Account Balance
+      // 2. Update cash account balance
       await tx.cashAccount.update({
         where: { id: cashAccountId },
         data: { current_balance: { decrement: data.amount } },
       });
 
-      // 3. GL Double Entry (optional/graceful)
+      // 3. GL Double Entry (only if CoA accounts are configured)
       const accountRecord = await tx.cashAccount.findUnique({
         where: { id: cashAccountId },
       });
-      const creditId = data.creditAccountId || accountRecord?.chart_of_account_id;
-      const debitId = data.debitAccountId;
-
-      if (debitId && creditId) {
-        try {
-          await this.glService.createJournalEntryWithinTx(tx as any, {
-            companyId: data.companyId,
-            entryDate: data.transactionDate,
-            referenceType: 'FINANCE',
-            referenceId: transaction.id,
-            description: `Cash Out: ${data.description || 'Pengeluaran Kas'}`,
-            items: [
-              { accountId: debitId, debit: data.amount, credit: 0 },
-              { accountId: creditId, debit: 0, credit: data.amount },
-            ],
-          });
-        } catch (e) {
-          console.warn('GL Journal entry skipped for Cash Out:', e);
-        }
+      if (accountRecord?.chart_of_account_id && debitId) {
+        creditId = creditId || accountRecord.chart_of_account_id;
+        await this.glService.createJournalEntryWithinTx(tx as any, {
+          companyId: data.companyId,
+          entryDate: data.transactionDate,
+          referenceType: 'FINANCE',
+          referenceId: transaction.id,
+          description: `Cash Out: ${data.description}`,
+          items: [
+            { accountId: debitId, debit: data.amount, credit: 0 },
+            { accountId: creditId, debit: 0, credit: data.amount },
+          ],
+        });
       }
 
       return transaction;
@@ -334,7 +316,7 @@ export class FinanceService {
 
   async getProfitLossReport(companyId: string, startDate?: Date, endDate?: Date) {
     const whereCondition: any = {
-      journal_entry: { company_id: companyId, status: 'Posted' },
+      journal_entry: { company_id: companyId, status: { in: ['Posted', 'Reversed'] } },
     };
     if (startDate || endDate) {
       whereCondition.journal_entry.journal_date = {};
@@ -529,21 +511,63 @@ export class FinanceService {
     const results: any[] = [];
 
     for (const ca of cashAccounts) {
-      const operationalBalance = ca.current_balance;
+      const operationalBalance = Math.round(Number(ca.current_balance || 0) * 100) / 100;
+      const openingBalance = Math.round(Number(ca.opening_balance || 0) * 100) / 100;
+
+      // Aggregate operational FinanceTransactions for this cash account
+      const txs = await this.prisma.financeTransaction.findMany({
+        where: {
+          company_id: companyId,
+          cash_account_id: ca.id,
+          status: { in: ['COMPLETED', 'Approved', 'Reversed'] },
+        },
+      });
+
+      let cashInflows = 0;
+      let cashOutflows = 0;
+      let reversalMovements = 0;
+
+      for (const t of txs) {
+        const amt = Number(t.total_amount || 0);
+        if (t.reference_type === 'PAYMENT_REVERSAL') {
+          reversalMovements += amt;
+        }
+        if (t.transaction_type === 'Cash In') {
+          cashInflows += amt;
+        } else if (t.transaction_type === 'Cash Out') {
+          cashOutflows += amt;
+        }
+      }
+
+      cashInflows = Math.round(cashInflows * 100) / 100;
+      cashOutflows = Math.round(cashOutflows * 100) / 100;
+      reversalMovements = Math.round(reversalMovements * 100) / 100;
+      const calculatedOperationalClosing = Math.round((openingBalance + cashInflows - cashOutflows) * 100) / 100;
 
       if (!ca.chart_of_account_id) {
         results.push({
+          company_id: companyId,
           cash_account_id: ca.id,
-          mapped_coa: null,
+          account_code: ca.code,
+          account_name: ca.name,
+          currency: ca.currency,
+          opening_balance: openingBalance,
+          cash_inflows: cashInflows,
+          cash_outflows: cashOutflows,
+          reversal_movements: reversalMovements,
+          calculated_closing_balance: calculatedOperationalClosing,
           operational_balance: operationalBalance,
+          mapped_coa: null,
           gl_balance: null,
           difference: null,
+          mapping_status: 'UNMAPPED',
           status: 'UNMAPPED',
         });
         continue;
       }
 
-      // Calculate GL Balance
+      // Calculate GL Balance: Posted active journals plus original Reversed journals
+      // (When a journal is reversed, its status becomes 'Reversed' and a compensating journal is created with status 'Posted' and swapped debit/credit. Both must be included so they cancel out).
       const glItems = await this.prisma.journalEntryItem.aggregate({
         where: {
           account_id: ca.chart_of_account_id,
@@ -555,29 +579,141 @@ export class FinanceService {
         _sum: { debit: true, credit: true },
       });
 
-      const debit = glItems._sum.debit || 0;
-      const credit = glItems._sum.credit || 0;
-      let glBalance = debit - credit;
+      const debit = Math.round(Number(glItems._sum.debit || 0) * 100) / 100;
+      const credit = Math.round(Number(glItems._sum.credit || 0) * 100) / 100;
+      let glNet = debit - credit;
       if (ca.chart_of_account?.account_type?.normal_balance === 'Credit') {
-        glBalance = credit - debit;
+        glNet = credit - debit;
       }
-      glBalance += Number(ca.opening_balance || 0);
-
-      const difference = operationalBalance - glBalance;
-
-      let status = 'MATCHED';
-      if (Math.abs(difference) > 0.0001) status = 'MISMATCH';
+      const glBalance = Math.round((openingBalance + glNet) * 100) / 100;
+      const difference = Math.round(Math.abs(operationalBalance - glBalance) * 100) / 100;
+      const isMatched = difference <= 0.01;
 
       results.push({
+        company_id: companyId,
         cash_account_id: ca.id,
-        mapped_coa: ca.chart_of_account?.account_name || null,
+        account_code: ca.code,
+        account_name: ca.name,
+        currency: ca.currency,
+        opening_balance: openingBalance,
+        cash_inflows: cashInflows,
+        cash_outflows: cashOutflows,
+        reversal_movements: reversalMovements,
+        calculated_closing_balance: calculatedOperationalClosing,
         operational_balance: operationalBalance,
+        mapped_coa: ca.chart_of_account
+          ? {
+              id: ca.chart_of_account.id,
+              code: ca.chart_of_account.account_code,
+              name: ca.chart_of_account.account_name,
+            }
+          : null,
         gl_balance: glBalance,
         difference: difference,
-        status: status,
+        mapping_status: 'MAPPED',
+        status: isMatched ? 'MATCHED' : 'MISMATCH',
       });
     }
 
     return results;
+  }
+
+  async transferCash(companyId: string, userId: string, data: {
+    fromAccountId: string;
+    toAccountId: string;
+    amount: number;
+    transactionDate?: Date;
+    description?: string;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const { fromAccountId, toAccountId, amount, description } = data;
+      const transactionDate = data.transactionDate ? new Date(data.transactionDate) : new Date();
+
+      if (fromAccountId === toAccountId) {
+        throw new BadRequestException('Rekening asal dan tujuan tidak boleh sama');
+      }
+
+      if (amount <= 0) {
+        throw new BadRequestException('Nominal transfer harus lebih besar dari 0');
+      }
+
+      const fromAccount = await tx.cashAccount.findFirst({
+        where: { id: fromAccountId, company_id: companyId },
+      });
+      if (!fromAccount) {
+        throw new BadRequestException('Rekening asal tidak ditemukan');
+      }
+
+      const toAccount = await tx.cashAccount.findFirst({
+        where: { id: toAccountId, company_id: companyId },
+      });
+      if (!toAccount) {
+        throw new BadRequestException('Rekening tujuan tidak ditemukan');
+      }
+
+      // 1. Update balances
+      await tx.cashAccount.update({
+        where: { id: fromAccountId },
+        data: { current_balance: { decrement: amount } },
+      });
+
+      await tx.cashAccount.update({
+        where: { id: toAccountId },
+        data: { current_balance: { increment: amount } },
+      });
+
+      // 2. Create outgoing & incoming FinanceTransaction
+      const transferOutNo = `TRF-OUT-${Date.now()}`;
+      const transferInNo = `TRF-IN-${Date.now()}`;
+
+      const outTx = await tx.financeTransaction.create({
+        data: {
+          company_id: companyId,
+          cash_account_id: fromAccountId,
+          transaction_no: transferOutNo,
+          transaction_date: transactionDate,
+          transaction_type: 'Transfer Out',
+          total_amount: amount,
+          description: description || `Transfer dana ke ${toAccount.name}`,
+          status: 'COMPLETED',
+          created_by: userId,
+        },
+      });
+
+      const inTx = await tx.financeTransaction.create({
+        data: {
+          company_id: companyId,
+          cash_account_id: toAccountId,
+          transaction_no: transferInNo,
+          transaction_date: transactionDate,
+          transaction_type: 'Transfer In',
+          total_amount: amount,
+          description: description || `Terima transfer dari ${fromAccount.name}`,
+          status: 'COMPLETED',
+          created_by: userId,
+        },
+      });
+
+      // 3. GL Double Entry if Chart of Accounts are mapped
+      if (fromAccount.chart_of_account_id && toAccount.chart_of_account_id) {
+        await this.glService.createJournalEntryWithinTx(tx as any, {
+          companyId,
+          entryDate: transactionDate,
+          referenceType: 'FINANCE',
+          referenceId: outTx.id,
+          description: `Transfer Dana: ${fromAccount.name} -> ${toAccount.name}`,
+          items: [
+            { accountId: toAccount.chart_of_account_id, debit: amount, credit: 0 },
+            { accountId: fromAccount.chart_of_account_id, debit: 0, credit: amount },
+          ],
+        });
+      }
+
+      return {
+        success: true,
+        transferOut: outTx,
+        transferIn: inTx,
+      };
+    });
   }
 }

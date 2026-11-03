@@ -4,7 +4,6 @@ import {
   Controller,
   Post,
   Get,
-  Put,
   Delete,
   Body,
   UseGuards,
@@ -31,84 +30,14 @@ export class FinanceController {
     return this.financeService.getCategories(req.user.company_id);
   }
 
-  @Permissions('finance.create')
-  @Post('categories')
-  async createCategory(@Request() req, @Body() data: any) {
-    if (!data.name) {
-      throw new BadRequestException('Nama kategori harus diisi');
-    }
-    return this.prisma.financeCategory.create({
-      data: {
-        company_id: req.user.company_id,
-        name: data.name,
-        type: data.type || 'EXPENSE',
-        color: data.color || null,
-        icon: data.icon || null,
-      },
-    });
-  }
-
-  @Permissions('finance.edit')
-  @Put('categories/:id')
-  async updateCategory(
-    @Request() req,
-    @Param('id') id: string,
-    @Body() data: any,
-  ) {
-    return this.prisma.financeCategory.updateMany({
-      where: { id, company_id: req.user.company_id },
-      data: {
-        name: data.name,
-        type: data.type,
-        color: data.color,
-        icon: data.icon,
-      },
-    });
-  }
-
-  @Permissions('finance.delete')
-  @Delete('categories/:id')
-  async deleteCategory(@Request() req, @Param('id') id: string) {
-    return this.prisma.financeCategory.deleteMany({
-      where: { id, company_id: req.user.company_id },
-    });
-  }
-
   @Permissions('finance.view')
   @Get('summary')
   async getSummary(@Request() req) {
     const companyId = req.user.company_id;
     // 1. Total Cash from all Cash Accounts
-    let cashAccounts = await this.prisma.cashAccount.findMany({
+    const cashAccounts = await this.prisma.cashAccount.findMany({
       where: { company_id: companyId },
-      orderBy: { code: 'asc' },
     });
-
-    if (cashAccounts.length === 0) {
-      const defaults = [
-        { code: 'KAS-01', name: 'Kasir POS (Retail)', account_type: 'Cash' },
-        { code: 'KAS-02', name: 'Kas Pembelian Ikan (Nelayan)', account_type: 'Cash' },
-        { code: 'KAS-03', name: 'Alokasi Gaji & Karyawan', account_type: 'Cash' },
-        { code: 'KAS-04', name: 'Operasional Gudang & Cold Storage', account_type: 'Cash' },
-        { code: 'BANK-01', name: 'Bank & Kas Utama', account_type: 'Bank' },
-      ];
-      for (const d of defaults) {
-        await this.prisma.cashAccount.create({
-          data: {
-            company_id: companyId,
-            code: d.code,
-            name: d.name,
-            account_type: d.account_type,
-            opening_balance: 0,
-            current_balance: 0,
-          },
-        }).catch(() => {});
-      }
-      cashAccounts = await this.prisma.cashAccount.findMany({
-        where: { company_id: companyId },
-        orderBy: { code: 'asc' },
-      });
-    }
 
     const totalCash = cashAccounts.reduce(
       (sum, acc) => sum + Number(acc.current_balance),
@@ -133,25 +62,12 @@ export class FinanceController {
           in: ['Approved', 'COMPLETED'],
         },
       },
-      include: {
-        items: {
-          include: {
-            category: true,
-          },
-        },
-      },
     });
 
     let totalIncomeMtd = 0;
     let totalExpensesMtd = 0;
     let totalIncomeLastMonth = 0;
     let totalExpensesLastMonth = 0;
-
-    // Category breakdown for expenses
-    const categoryExpenseMap = new Map<
-      string,
-      { categoryId: string; categoryName: string; amount: number; count: number }
-    >();
 
     // Chart Data Generation (Last 30 days)
     const chartMap = new Map<
@@ -176,23 +92,8 @@ export class FinanceController {
 
       // MTD Check
       if (txDate >= startOfMonth) {
-        if (isIncome) {
-          totalIncomeMtd += val;
-        } else {
-          totalExpensesMtd += val;
-          // Track expense category breakdown
-          const catName = tx.items?.[0]?.category?.name || 'Lain-lain / Operasional';
-          const catId = tx.items?.[0]?.category_id || 'unknown';
-          const existing = categoryExpenseMap.get(catName) || {
-            categoryId: catId,
-            categoryName: catName,
-            amount: 0,
-            count: 0,
-          };
-          existing.amount += val;
-          existing.count += 1;
-          categoryExpenseMap.set(catName, existing);
-        }
+        if (isIncome) totalIncomeMtd += val;
+        else totalExpensesMtd += val;
       }
       // Last Month Check
       else if (txDate >= startOfLastMonth && txDate <= endOfLastMonth) {
@@ -235,10 +136,6 @@ export class FinanceController {
       return Number(dayA) - Number(dayB);
     });
 
-    const expenseCategories = Array.from(categoryExpenseMap.values()).sort(
-      (a, b) => b.amount - a.amount,
-    );
-
     return {
       totalCash,
       cashGrowth,
@@ -249,8 +146,6 @@ export class FinanceController {
       netProfitMtd,
       profitGrowth,
       chartData,
-      cashAccounts,
-      expenseCategories,
     };
   }
 
@@ -258,41 +153,32 @@ export class FinanceController {
   @Get('transactions')
   async getTransactions(
     @Request() req,
+    @Query('cashAccountId') cashAccountId?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
-    @Query('type') type?: string,
-    @Query('categoryId') categoryId?: string,
+    @Query('search') search?: string,
   ) {
     const where: any = { company_id: req.user.company_id };
 
+    if (cashAccountId && cashAccountId !== 'all') {
+      where.cash_account_id = cashAccountId;
+    }
+
     if (startDate || endDate) {
       where.transaction_date = {};
-      if (startDate) {
-        where.transaction_date.gte = new Date(startDate);
-      }
+      if (startDate) where.transaction_date.gte = new Date(startDate);
       if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        where.transaction_date.lte = end;
+        const eDate = new Date(endDate);
+        eDate.setHours(23, 59, 59, 999);
+        where.transaction_date.lte = eDate;
       }
     }
 
-    if (type && type !== 'ALL') {
-      if (type === 'IN') {
-        where.transaction_type = { in: ['Cash In', 'Income'] };
-      } else if (type === 'OUT') {
-        where.transaction_type = { in: ['Cash Out', 'Expense'] };
-      } else {
-        where.transaction_type = type;
-      }
-    }
-
-    if (categoryId && categoryId !== 'ALL') {
-      where.items = {
-        some: {
-          category_id: categoryId,
-        },
-      };
+    if (search) {
+      where.OR = [
+        { transaction_no: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
     return this.prisma.financeTransaction.findMany({
@@ -302,11 +188,27 @@ export class FinanceController {
       include: {
         cash_account: true,
         user_created: { select: { name: true } },
-        items: {
-          include: {
-            category: true,
-          },
-        },
+      },
+    });
+  }
+
+  @Permissions('finance.create')
+  @Post('accounts')
+  async createCashAccount(@Request() req, @Body() data: any) {
+    const companyId = req.user.company_id;
+    if (!data.name || !data.code) {
+      throw new BadRequestException('Nama dan kode akun kas/bank wajib diisi');
+    }
+    return this.prisma.cashAccount.create({
+      data: {
+        company_id: companyId,
+        code: data.code,
+        name: data.name,
+        account_type: data.account_type || 'Cash',
+        opening_balance: Number(data.opening_balance || 0),
+        current_balance: Number(data.opening_balance || 0),
+        currency: data.currency || 'IDR',
+        status: true,
       },
     });
   }
@@ -368,9 +270,76 @@ export class FinanceController {
     return this.financeService.getBalanceSheetReport(req.user.company_id);
   }
 
+  @Permissions('finance.create')
+  @Post('transfer')
+  async createTransfer(@Request() req: any, @Body() data: any) {
+    const compId = req.user.company_id || req.user.companyId;
+    const userId = req.user.userId || req.user.id;
+    return this.financeService.transferCash(compId, userId, {
+      fromAccountId: data.fromAccountId || data.fromAccount,
+      toAccountId: data.toAccountId || data.toAccount,
+      amount: Number(data.amount),
+      transactionDate: data.date || data.transactionDate,
+      description: data.description,
+    });
+  }
+
   @Permissions('finance.view')
   @Get('cash-reconciliation')
   async getCashReconciliation(@Request() req: any) {
     return this.financeService.getCashReconciliation(req.user.company_id);
+  }
+
+  @Permissions('finance.view')
+  @Get('budgets')
+  async getBudgets(@Request() req: any, @Query('period') period?: string) {
+    const companyId = req.user.company_id;
+    return this.prisma.budget.findMany({
+      where: {
+        company_id: companyId,
+        ...(period ? { period } : {}),
+      },
+      include: {
+        category: true,
+      },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  @Permissions('finance.create')
+  @Post('budgets')
+  async createBudget(@Request() req: any, @Body() data: any) {
+    const companyId = req.user.company_id;
+    const budgetAmount = Number(data.budget_amount || 0);
+    const usedAmount = Number(data.used_amount || 0);
+    const remainingAmount = budgetAmount - usedAmount;
+
+    return this.prisma.budget.create({
+      data: {
+        company_id: companyId,
+        category_id: data.category_id,
+        department_id: data.department_id || null,
+        period: data.period || '2026',
+        budget_amount: budgetAmount,
+        used_amount: usedAmount,
+        remaining_amount: remainingAmount,
+        status: remainingAmount <= 0 ? 'EXHAUSTED' : 'ACTIVE',
+      },
+      include: {
+        category: true,
+      },
+    });
+  }
+
+  @Permissions('finance.delete')
+  @Delete('budgets/:id')
+  async deleteBudget(@Request() req: any, @Param('id') id: string) {
+    const companyId = req.user.company_id;
+    return this.prisma.budget.deleteMany({
+      where: {
+        id,
+        company_id: companyId,
+      },
+    });
   }
 }

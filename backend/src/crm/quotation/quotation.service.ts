@@ -29,7 +29,7 @@ export class QuotationService {
       throw new BadRequestException('Invalid customer');
     }
 
-    const quotationNumber = 'QTN-${Date.now()}';
+    const quotationNumber = 'QTN-' + Date.now();
 
     let total = 0;
     const itemsData = items.map((item: any) => {
@@ -53,8 +53,8 @@ export class QuotationService {
         company_id: companyId,
         customer_id: customerId,
         quotation_number: quotationNumber,
-        quotation_date: new Date(quotationDate),
-        expiration_date: expirationDate ? new Date(expirationDate) : null,
+        quotation_date: (quotationDate && !isNaN(new Date(quotationDate).getTime())) ? new Date(quotationDate) : new Date(),
+        expiration_date: (expirationDate && !isNaN(new Date(expirationDate).getTime())) ? new Date(expirationDate) : null,
         status: 'DRAFT',
         total_amount: total,
         notes,
