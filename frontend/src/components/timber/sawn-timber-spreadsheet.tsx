@@ -115,7 +115,7 @@ export function SawnTimberSpreadsheet({
     if (initialRows && initialRows.length > 0) {
       const hasData = initialRows.some(r => parseFlexibleNumber(r.thickness) > 0 || parseFlexibleNumber(r.pcs) > 0);
       if (hasData) {
-        const mapped = initialRows.map(r => {
+        const mapped: SawnTallyRow[] = initialRows.map(r => {
           const t = parseFlexibleNumber(r.thickness);
           const w = parseFlexibleNumber(r.width);
           const p = parseFlexibleNumber(r.length);
