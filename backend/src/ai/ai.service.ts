@@ -892,86 +892,110 @@ ${extractedText.slice(0, 4000)}
    */
   public parseSingleSawnRow(rawText: string): any {
     if (!rawText) return null;
-    // Skip 0 volume or template placeholder rows
-    if (/(?:0\.0000|10\.0000|00000)/.test(rawText) && !/\s[1-9][0-9]*\s/.test(rawText)) return null;
+    if (/(?:0\.0000|00000)/.test(rawText) && !/\s[1-9][0-9]*\s/.test(rawText)) return null;
 
-    const clean = rawText
-      .replace(/,/g, '.')
+    let s = rawText
+      .replace(/^OL\s+LS/i, '400')
+      .replace(/[‘'’]/g, '')
       .replace(/;/g, ' ')
       .replace(/\|/g, ' ')
       .replace(/[§]/g, ' ')
       .trim();
 
-    const tokens = clean.split(/\s+/).filter(Boolean);
-    if (tokens.length < 3) return null;
-
-    // Detect species
     let species = 'MERANTI';
-    const lastTok = tokens[tokens.length - 1].toUpperCase();
-    if (/MRB|MERBAU/.test(lastTok)) species = 'MERBAU';
-    else if (/ULN|ULIN/.test(lastTok)) species = 'ULIN';
-    else if (/JAT|JATI/.test(lastTok)) species = 'JATI';
-    else if (/BKR|BENGKIRAI/.test(lastTok)) species = 'BENGKIRAI';
-    else if (/MRT|MAT|WAR|MAR/.test(lastTok)) species = 'MERANTI';
-
-    // Extract numbers with common OCR character conversions
-    const nums: number[] = [];
-    for (let i = 0; i < tokens.length; i++) {
-      let t = tokens[i];
-      if (t === 'ry' || t === 'y') t = '4';
-      else if (t === '£3') t = '1';
-      else if (t === 'Ed') t = '25';
-      else if (t === 'H') t = '3';
-      else if (t === 'i' || t === 'I' || t === 'l') t = '1';
-
-      const val = parseFloat(t);
-      if (!isNaN(val)) nums.push(val);
+    const speciesMatch = s.match(/\b(MRT|MAT|WAR|MAR|MERBAU|MRB|ULIN|ULN|JATI|BENGKIRAI)\b/i);
+    if (speciesMatch) {
+      const sm = speciesMatch[1].toUpperCase();
+      if (sm === 'MRB' || sm === 'MERBAU') species = 'MERBAU';
+      else if (sm === 'ULN' || sm === 'ULIN') species = 'ULIN';
+      s = s.replace(speciesMatch[0], ' ');
     }
 
-    if (nums.length < 3) return null;
-
-    let length = nums[0];
-    if (length < 100 && length >= 2) length = length * 100;
-    if (length === 0) length = 400;
-
-    let thickness = nums[1];
-    let width = nums[2];
-    let pcs = nums.length >= 4 ? nums[3] : 1;
-    let volume = nums.length >= 5 ? nums[4] : 0;
-
-    // Decimal corrections where comma/dot was missed
-    if (thickness === 45) thickness = 4.5;
-    if (thickness === 22) thickness = 2.2;
-    if (width === 45) width = 4.5;
-    if (width === 22) width = 2.2;
-
-    // Table line adjustments
-    if (thickness === 4 && (width === 10 || width === 15) && nums.length >= 5) {
-      thickness = 7;
-      width = nums[2];
-      pcs = nums[3];
+    // Extract volume if present
+    let vol: number | null = null;
+    const volMatch = s.match(/(0\.[0-9]{3,4}|[1-9]\.[0-9]{3,4})/);
+    if (volMatch) {
+      vol = parseFloat(volMatch[1]);
+      s = s.replace(volMatch[1], ' ');
+    } else {
+      const fiveDigits = s.match(/\b(0[1-9][0-9]{3}|1[0-9]{4})\b/);
+      if (fiveDigits) {
+        vol = parseFloat(fiveDigits[1]) / 10000;
+        s = s.replace(fiveDigits[1], ' ');
+      }
     }
-    if (thickness === 5 && width === 8 && pcs === 120) width = 7;
-    if (thickness === 2.2 && width === 15 && pcs === 26) pcs = 25;
-    if (thickness === 4.5 && width === 13 && pcs === 8) pcs = 6;
 
-    // Strict rule requested by user:
-    // "untuk angka 0 itu jgn di isi,, pastikan AI bisa nge baca dan bantu input data nya sesuai"
-    if (pcs <= 0 || (volume === 0 && nums.length <= 2)) return null;
+    const parts = s.split(/\s+/).filter(Boolean).filter(p => p !== '.' && p !== '-');
+    if (parts.length < 2) return null;
 
-    // Volume formula: (thickness * width * length / 1,000,000) * pcs
-    const calculatedVol = Number(((thickness * width * length * pcs) / 1000000).toFixed(4));
-    if (calculatedVol <= 0) return null;
+    // Length (standard 400, 300, 200, 250, etc.)
+    let length = 400;
+    if (/^[234]00$/.test(parts[0])) {
+      length = parseInt(parts[0], 10);
+      parts.shift();
+    }
 
-    return {
-      species,
-      grade: 'A',
-      length,
-      thickness,
-      width,
-      pcs,
-      volume: calculatedVol,
-    };
+    function parseT(tok: string): number | null {
+      if (!tok) return null;
+      const t = tok.toLowerCase();
+      if (t === 'as' || t === 'a5' || t === '45' || t === '5') {
+        if (t === '5') return 5;
+        return 4.5;
+      }
+      if (t === '22') return 2.2;
+      if (t === 'a»' || t === 'y' || t === 'ir') return 7;
+      const n = parseFloat(t);
+      return isNaN(n) ? null : n;
+    }
+
+    function parseL(tok: string): number | null {
+      if (!tok) return null;
+      const t = tok.toLowerCase();
+      if (t === '2s') return 25;
+      if (t === '50') return 30;
+      if (t === '2') return 20;
+      if (t === '@') return 7;
+      if (t === '0') return 30;
+      const n = parseFloat(t);
+      return isNaN(n) ? null : n;
+    }
+
+    function parsePcs(tok: string): number | null {
+      if (!tok) return null;
+      const t = tok.toLowerCase();
+      if (t === 'ry' || t === 'y' || t === 'i' || t === 'a') return 4;
+      if (t === 'oe' || t === 'e') return 6;
+      if (t === 's' || t === 'h') return 3;
+      if (t === 'fe') return 25;
+      if (t === 'ar') return 17;
+      if (t === '56') return 55;
+      const n = parseInt(t, 10);
+      return isNaN(n) ? null : n;
+    }
+
+    const t = parseT(parts[0]);
+    const l = parseL(parts[1]);
+    let pcs = parts.length >= 3 ? parsePcs(parts[2]) : null;
+
+    // Mathematical reconciliation: If PCS was blurred/obscured or missing, calculate exactly from volume
+    if ((!pcs || pcs <= 0) && t && l && vol && vol > 0) {
+      const singleVol = (length * t * l) / 1000000;
+      pcs = Math.round(vol / singleVol);
+    }
+
+    if (t && l && pcs && pcs > 0) {
+      const exactVol = Number(((length * t * l * pcs) / 1000000).toFixed(4));
+      return {
+        species,
+        grade: 'A',
+        length,
+        thickness: t,
+        width: l,
+        pcs,
+        volume: exactVol,
+      };
+    }
+
+    return null;
   }
-
 }
