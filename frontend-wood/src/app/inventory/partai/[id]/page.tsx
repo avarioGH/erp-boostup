@@ -1182,10 +1182,7 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                   <Plus className="w-4 h-4 mr-1.5" /> + Beli Sawn Timber
                 </Button>
                 <Button 
-                  onClick={() => {
-                    setSelectedPurchaseForReceive({ id: "adhoc", purchaseNumber: "PENERIMAAN-MANDIRI", logItems: [], items: [] });
-                    setReceiveModalOpen(true);
-                  }}
+                  onClick={() => router.push(`/inventory/receipt/create?partaiId=${id}`)}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-semibold"
                 >
                   <Package className="w-4 h-4 mr-1.5" /> + Input Penerimaan Mandiri
