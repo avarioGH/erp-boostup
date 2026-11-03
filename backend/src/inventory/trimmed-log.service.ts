@@ -265,15 +265,18 @@ export class TrimmedLogService {
       throw new BadRequestException('logIds must be a non-empty array');
     }
 
+    const parents = await this.prisma.rawLog.findMany({
+      where: { id: { in: logIds } },
+      include: { trimmedLogs: true, partai: true },
+    });
+
     const results: any[] = [];
     const errors: any[] = [];
+    const parentsMap = new Map(parents.map((p) => [p.id, p]));
 
     for (const rawLogId of logIds) {
       try {
-        const parent = await this.prisma.rawLog.findUnique({
-          where: { id: rawLogId },
-          include: { trimmedLogs: true, partai: true },
-        });
+        const parent = parentsMap.get(rawLogId);
 
         if (!parent) {
           errors.push({ id: rawLogId, error: 'Raw log not found' });
