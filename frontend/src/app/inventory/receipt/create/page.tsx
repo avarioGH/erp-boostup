@@ -526,7 +526,7 @@ export default function CreateGoodsReceiptPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Gudang / Lokasi Bongkar</Label>
-              <Select value={selectedWarehouseId} onValueChange={setSelectedWarehouseId}>
+              <Select value={selectedWarehouseId} onValueChange={(val: any) => setSelectedWarehouseId(val || "")}>
                 <SelectTrigger className="h-8 text-xs font-medium">
                   <SelectValue placeholder="Pilih Gudang" />
                 </SelectTrigger>
@@ -539,7 +539,7 @@ export default function CreateGoodsReceiptPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Partai Terkait</Label>
-              <Select value={selectedPartaiId} onValueChange={setSelectedPartaiId}>
+              <Select value={selectedPartaiId} onValueChange={(val: any) => setSelectedPartaiId(val || "")}>
                 <SelectTrigger className="h-8 text-xs font-medium">
                   <SelectValue placeholder="Pilih Partai (Opsional)" />
                 </SelectTrigger>
@@ -554,7 +554,7 @@ export default function CreateGoodsReceiptPage() {
 
             <div className="space-y-1.5">
               <Label className="text-xs">Referensi PO (Opsional)</Label>
-              <Select value={selectedPurchaseId} onValueChange={setSelectedPurchaseId}>
+              <Select value={selectedPurchaseId} onValueChange={(val: any) => setSelectedPurchaseId(val || "")}>
                 <SelectTrigger className="h-8 text-xs font-medium">
                   <SelectValue placeholder="Pilih PO / Mandiri" />
                 </SelectTrigger>
