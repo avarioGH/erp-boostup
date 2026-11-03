@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Plus, X, ArrowLeft, Sparkles } from "lucide-react"
+import { Loader2, Plus, X, ArrowLeft, Sparkles, Save, RotateCcw, Copy, Clipboard, CheckCircle2, CloudOff } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SawnTimberSpreadsheet, SawnTallyRow } from "@/components/timber/sawn-timber-spreadsheet"
 import { AiTallyImportModal } from "@/components/timber/ai-tally-import-modal"
@@ -306,7 +306,186 @@ export default function CreatePurchasePage() {
       purchaseDiameterAvg: 0,
       purchaseVolume: 0
     }]
-  })
+  });
+  const draftKey = `draft_purchase_${partaiIdFromUrl || 'general'}`;
+  const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+  const [hasDraftRestored, setHasDraftRestored] = useState(false);
+
+  // Selection & Copy-Paste Range State for Log Table
+  const [logSelection, setLogSelection] = useState<{
+    startRow: number;
+    startCol: string;
+    endRow: number;
+    endCol: string;
+  } | null>(null);
+  const [isSelectingLog, setIsSelectingLog] = useState(false);
+  const [copiedData, setCopiedData] = useState<string[][] | null>(null);
+
+  const LOG_COL_ORDER = ["logNumber", "species", "purchaseLength", "purchaseDiameter1", "purchaseDiameter2", "purchaseDiameterAvg", "purchaseVolume"];
+
+  const getLogColIndex = (col: string) => LOG_COL_ORDER.indexOf(col);
+
+  // Bersihkan draf lokal dan form ke kondisi awal kosong
+  const clearLocalDraft = () => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(draftKey);
+        localStorage.removeItem("draft_purchase_general");
+        if (partaiIdFromUrl) {
+          localStorage.removeItem(`draft_purchase_${partaiIdFromUrl}`);
+        }
+      } catch (e) {}
+      setLastSavedTime(null);
+    }
+    setForm(prev => ({
+      ...prev,
+      items: [{
+        species: "",
+        grade: "A",
+        timberVariantId: "",
+        quantityPcs: 1,
+        volumeM3: 0,
+        purchaseThickness: 0,
+        purchaseWidth: 0,
+        purchaseLength: 0,
+        unitPrice: 0
+      }],
+      logItems: [{
+        logNumber: "",
+        species: "",
+        purchaseLength: 0,
+        purchaseDiameter1: 0,
+        purchaseDiameter2: 0,
+        purchaseDiameterAvg: 0,
+        purchaseVolume: 0
+      }]
+    }));
+  };
+
+  // Hapus semua draf pembelian lama saat masuk ke halaman agar data selalu fresh & bersih
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(draftKey);
+        localStorage.removeItem("draft_purchase_general");
+        if (partaiIdFromUrl) {
+          localStorage.removeItem(`draft_purchase_${partaiIdFromUrl}`);
+        }
+      } catch (e) {}
+    }
+    setHasDraftRestored(true);
+  }, [draftKey, partaiIdFromUrl]);
+
+  // Helper Copy Range untuk Log Table
+  const handleCopyLogSelection = () => {
+    if (!logSelection) return;
+    const minRow = Math.min(logSelection.startRow, logSelection.endRow);
+    const maxRow = Math.max(logSelection.startRow, logSelection.endRow);
+    const startCIdx = getLogColIndex(logSelection.startCol);
+    const endCIdx = getLogColIndex(logSelection.endCol);
+    const minCol = Math.min(startCIdx, endCIdx);
+    const maxCol = Math.max(startCIdx, endCIdx);
+
+    const matrix: string[][] = [];
+    const tsvLines: string[] = [];
+
+    for (let r = minRow; r <= maxRow; r++) {
+      const rowVals: string[] = [];
+      for (let c = minCol; c <= maxCol; c++) {
+        const colField = LOG_COL_ORDER[c];
+        const val = (form.logItems[r] as any)?.[colField] ?? "";
+        rowVals.push(String(val));
+      }
+      matrix.push(rowVals);
+      tsvLines.push(rowVals.join("\t"));
+    }
+
+    setCopiedData(matrix);
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(tsvLines.join("\n"));
+    }
+  };
+
+  // Helper Paste Range ke Log Table (bisa ke kolom lain dengan isi persis)
+  const handlePasteLogData = (targetRowIdx: number, targetColField: string, pastedTsvText?: string) => {
+    let matrix: string[][] = [];
+
+    if (pastedTsvText && pastedTsvText.includes("\t") || (pastedTsvText && pastedTsvText.includes("\n"))) {
+      matrix = pastedTsvText.trim().split(/\r?\n/).map(line => line.split("\t"));
+    } else if (pastedTsvText && pastedTsvText.trim().length > 0) {
+      matrix = [[pastedTsvText.trim()]];
+    } else if (copiedData && copiedData.length > 0) {
+      matrix = copiedData;
+    }
+
+    if (!matrix || matrix.length === 0) return;
+
+    const startCIdx = getLogColIndex(targetColField);
+    if (startCIdx === -1) return;
+
+    setForm(prev => {
+      const nextLogItems = [...prev.logItems];
+      const neededRows = targetRowIdx + matrix.length;
+      while (nextLogItems.length < neededRows) {
+        nextLogItems.push({
+          logNumber: "",
+          species: "",
+          purchaseLength: 0,
+          purchaseDiameter1: 0,
+          purchaseDiameter2: 0,
+          purchaseDiameterAvg: 0,
+          purchaseVolume: 0,
+        });
+      }
+
+      matrix.forEach((rowVals, rOffset) => {
+        const curRow = targetRowIdx + rOffset;
+        const targetItem = { ...nextLogItems[curRow] };
+
+        rowVals.forEach((val, cOffset) => {
+          const colIdx = startCIdx + cOffset;
+          if (colIdx < LOG_COL_ORDER.length) {
+            const field = LOG_COL_ORDER[colIdx];
+            const cleanVal = val.trim();
+
+            if (field === "purchaseLength" || field === "purchaseDiameter1" || field === "purchaseDiameter2" || field === "purchaseDiameterAvg" || field === "purchaseVolume") {
+              const numVal = parseFloat(cleanVal.replace(",", ".")) || 0;
+              (targetItem as any)[field] = numVal;
+            } else {
+              (targetItem as any)[field] = cleanVal;
+            }
+          }
+        });
+
+        // Recalculate diameter average & volume
+        const len = Number(targetItem.purchaseLength || 0);
+        const d1 = Number(targetItem.purchaseDiameter1 || 0);
+        const d2 = Number(targetItem.purchaseDiameter2 || 0);
+        const autoRt = (d1 > 0 && d2 > 0) ? Math.round(((d1 + d2) / 2) * 10) / 10 : (d1 || d2 || 0);
+        if (!targetItem.purchaseDiameterAvg || targetItem.purchaseDiameterAvg <= 0) {
+          targetItem.purchaseDiameterAvg = autoRt;
+        }
+        targetItem.purchaseVolume = calculateLogVolume(len, d1, d2, targetItem.purchaseDiameterAvg);
+
+        nextLogItems[curRow] = targetItem;
+      });
+
+      return { ...prev, logItems: nextLogItems };
+    });
+  };
+
+  const isLogCellSelected = (rIdx: number, colField: string) => {
+    if (!logSelection) return false;
+    const minRow = Math.min(logSelection.startRow, logSelection.endRow);
+    const maxRow = Math.max(logSelection.startRow, logSelection.endRow);
+    const startCIdx = getLogColIndex(logSelection.startCol);
+    const endCIdx = getLogColIndex(logSelection.endCol);
+    const minCol = Math.min(startCIdx, endCIdx);
+    const maxCol = Math.max(startCIdx, endCIdx);
+    const curCIdx = getLogColIndex(colField);
+
+    return rIdx >= minRow && rIdx <= maxRow && curCIdx >= minCol && curCIdx <= maxCol;
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -518,6 +697,36 @@ export default function CreatePurchasePage() {
           }
         }
       }
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+      if (type === 'log') {
+        if (!logSelection || logSelection.startRow === logSelection.endRow && logSelection.startCol === logSelection.endCol) {
+          // If no multi-cell selection, set selection to current cell then copy
+          setLogSelection({
+            startRow: rowIndex,
+            startCol: field,
+            endRow: rowIndex,
+            endCol: field,
+          });
+          const val = (form.logItems[rowIndex] as any)?.[field] ?? "";
+          setCopiedData([[String(val)]]);
+          navigator.clipboard?.writeText?.(String(val));
+        } else {
+          handleCopyLogSelection();
+        }
+      }
+    } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+      if (type === 'log') {
+        // Intercept paste to support multi-cell or single cell paste into another column
+        navigator.clipboard?.readText?.().then((text) => {
+          if (text) {
+            handlePasteLogData(rowIndex, field, text);
+          }
+        }).catch(() => {
+          if (copiedData) {
+            handlePasteLogData(rowIndex, field);
+          }
+        });
+      }
     }
   };
 
@@ -610,7 +819,9 @@ export default function CreatePurchasePage() {
           purchaseVolume: Number(li.purchaseVolume || 0)
         })) : []
       });
-      const targetTab = searchParams.get('tab') || (form.purchaseType === "raw-log" ? "rawlogs" : "purchase");
+      // Clear offline draft on successful submit
+      clearLocalDraft();
+      const targetTab = searchParams.get('tab') || "purchase";
       router.push(`/inventory/partai/${form.partaiId}?tab=${targetTab}`);
       router.refresh();
     } catch (err: any) {
@@ -681,25 +892,54 @@ export default function CreatePurchasePage() {
                 <Input type="date" value={form.purchaseDate} onChange={e => setForm({...form, purchaseDate: e.target.value})} required />
               </div>
               <div className="space-y-2">
-                <Label>Supplier / Sumber Kayu</Label>
-                <Select value={form.sourceId} onValueChange={val => setForm({...form, sourceId: val || ""})} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih Supplier">
-                      {(() => {
-                        const s = sources.find(item => item.id === form.sourceId);
-                        if (s) return s.name ? `${s.name}${s.code ? ` (${s.code})` : ''}` : (s.code || s.id);
-                        return form.sourceId ? "Memuat supplier..." : "Pilih Supplier";
-                      })()}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sources.map(s => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name ? `${s.name}${s.code ? ` (${s.code})` : ''}` : (s.code || s.id)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center justify-between">
+                  <Label>Supplier / Sumber Kayu *</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setNewSupplierName("");
+                      setIsSupplierModalOpen(true);
+                    }}
+                    className="h-6 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 px-2 flex items-center gap-1 font-semibold"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> + Supplier Baru
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Select value={form.sourceId} onValueChange={val => setForm({...form, sourceId: val || ""})} required>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Pilih Supplier">
+                        {(() => {
+                          const s = sources.find(item => item.id === form.sourceId);
+                          if (s) return s.name ? `${s.name}${s.code ? ` (${s.code})` : ''}` : (s.code || s.id);
+                          return form.sourceId ? "Memuat supplier..." : "Pilih Supplier";
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sources.map(s => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name ? `${s.name}${s.code ? ` (${s.code})` : ''}` : (s.code || s.id)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setNewSupplierName("");
+                      setIsSupplierModalOpen(true);
+                    }}
+                    title="Tambah Supplier Baru Langsung"
+                    className="h-9 w-9 shrink-0 text-emerald-600 border-emerald-300 hover:bg-emerald-50"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Gudang Penerima</Label>
@@ -727,8 +967,8 @@ export default function CreatePurchasePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-semibold text-foreground">Status Penerimaan Barang *</Label>
-                <Select value={form.status} onValueChange={val => setForm({...form, status: val || "RECEIVED"})}>
-                  <SelectTrigger className="font-medium h-10 border-emerald-300 dark:border-emerald-800">
+                <Select value={form.status} onValueChange={val => setForm({...form, status: val || "DRAFT"})}>
+                  <SelectTrigger className="font-medium h-10 border-amber-300 dark:border-amber-800">
                     <SelectValue placeholder="Pilih Status Penerimaan" />
                   </SelectTrigger>
                   <SelectContent>
@@ -792,21 +1032,33 @@ export default function CreatePurchasePage() {
                       Input tabel dimensi kayu: Tebal (T), Lebar (L), Panjang (P), dan Batang (Pcs). Otomatis hitung M³.
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="default"
-                    size="sm"
-                    onClick={() => setIsAiModalOpen(true)}
-                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold shadow-sm flex items-center gap-1.5 shrink-0"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>✨ AI Auto-Input (Foto / WA)</span>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearLocalDraft}
+                      className="text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      title="Bersihkan semua baris tabel"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                      Bersihkan Form
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={() => setIsAiModalOpen(true)}
+                      className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold shadow-sm flex items-center gap-1.5 shrink-0"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>✨ AI Auto-Input (Foto / WA)</span>
+                    </Button>
+                  </div>
                 </div>
                 <SawnTimberSpreadsheet
-
                   initialRows={form.items.map((it: any) => ({
-                    species: it.species || "MERBAU",
+                    species: it.species || "",
                     grade: it.grade || "A",
                     thickness: it.purchaseThickness || "",
                     width: it.purchaseWidth || "",
@@ -815,11 +1067,11 @@ export default function CreatePurchasePage() {
                     m3: it.volumeM3 || 0,
                   }))}
                   speciesList={speciesList}
-                  defaultSpecies="MERBAU"
+                  defaultSpecies=""
                   showSpecies={true}
                   onChange={(updatedRows: SawnTallyRow[]) => {
                     const mappedItems = updatedRows.map(r => ({
-                      species: r.species || "MERBAU",
+                      species: r.species || "",
                       grade: r.grade || "A",
                       purchaseThickness: parseFloat(String(r.thickness).replace(",", ".")) || 0,
                       purchaseWidth: parseFloat(String(r.width).replace(",", ".")) || 0,
@@ -849,6 +1101,17 @@ export default function CreatePurchasePage() {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Button
                       type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearLocalDraft}
+                      className="text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      title="Bersihkan semua baris tabel"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                      Bersihkan Form
+                    </Button>
+                    <Button
+                      type="button"
                       variant="default"
                       size="sm"
                       onClick={() => setIsAiModalOpen(true)}
@@ -873,18 +1136,49 @@ export default function CreatePurchasePage() {
                 </div>
 
 
-                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-lg p-2.5 text-xs text-blue-800 dark:text-blue-300 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-lg p-2.5 text-xs text-blue-800 dark:text-blue-300 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-base">⚡</span>
-                    <span><strong>Mode Excel Aktif:</strong> Ketik nilai (misal: isi kolom P terus menerus lalu pindah ke D1/D2), tekan <strong>Enter</strong> untuk turun. Baris kosong tidak perlu dihapus.</span>
+                    <span><strong>Mode Excel Aktif:</strong> Klik/drag sel untuk blok, tekan <strong>Ctrl+C</strong> untuk copy & <strong>Ctrl+V</strong> untuk paste (bisa paste ke kolom lain persis). Tekan <strong>Enter</strong> untuk turun.</span>
                   </div>
-                  <span className="font-mono font-bold bg-background/80 px-2 py-0.5 rounded border text-[11px]">
-                    {form.logItems.filter((li: any) => Number(li.purchaseLength || 0) > 0 || Number(li.purchaseDiameter1 || 0) > 0 || Number(li.purchaseDiameter2 || 0) > 0 || Number(li.purchaseVolume || 0) > 0 || (li.logNumber && li.logNumber.trim() !== '')).length} / {form.logItems.length} Log Terisi
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {/* Status Auto-Save Draf */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearLocalDraft}
+                      className="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive"
+                      title="Reset dan kosongkan semua baris"
+                    >
+                      <RotateCcw className="w-3 h-3 mr-1" /> Kosongkan Baris
+                    </Button>
+
+                    {/* Tombol Copy Range jika ada sel terblok */}
+                    {logSelection && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={handleCopyLogSelection}
+                        className="h-6 text-[11px] px-2 bg-blue-100 hover:bg-blue-200 text-blue-900 border border-blue-300 gap-1"
+                        title="Salin (Ctrl+C) area yang dipilih"
+                      >
+                        <Copy className="w-3 h-3" /> Salin Pilihan
+                      </Button>
+                    )}
+
+                    <span className="font-mono font-bold bg-background/80 px-2 py-0.5 rounded border text-[11px]">
+                      {form.logItems.filter((li: any) => Number(li.purchaseLength || 0) > 0 || Number(li.purchaseDiameter1 || 0) > 0 || Number(li.purchaseDiameter2 || 0) > 0 || Number(li.purchaseVolume || 0) > 0 || (li.logNumber && li.logNumber.trim() !== '')).length} / {form.logItems.length} Log Terisi
+                    </span>
+                  </div>
                 </div>
 
                 {/* RAW LOG SPREADSHEET TABLE */}
-                <div className="overflow-x-auto border rounded-xl shadow-sm bg-card">
+                <div 
+                  className="overflow-x-auto border rounded-xl shadow-sm bg-card select-none"
+                  onMouseUp={() => setIsSelectingLog(false)}
+                >
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="bg-muted/60 border-b text-muted-foreground font-semibold">
@@ -916,8 +1210,32 @@ export default function CreatePurchasePage() {
                             </button>
                           </div>
                         </th>
-                        <th className="py-2.5 px-2 text-center w-24">&Oslash; Pkl D1 (cm)</th>
-                        <th className="py-2.5 px-2 text-center w-24">&Oslash; Ujg D2 (cm)</th>
+                        <th className="py-2.5 px-2 text-center w-24">
+                          <div className="flex items-center justify-between">
+                            <span>&Oslash; Pkl D1 (cm)</span>
+                            <button
+                              type="button"
+                              onClick={() => handleFillDownLog("purchaseDiameter1", 0)}
+                              title="Tarik D1 ke semua baris di bawah"
+                              className="text-muted-foreground hover:text-primary p-0.5"
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        </th>
+                        <th className="py-2.5 px-2 text-center w-24">
+                          <div className="flex items-center justify-between">
+                            <span>&Oslash; Ujg D2 (cm)</span>
+                            <button
+                              type="button"
+                              onClick={() => handleFillDownLog("purchaseDiameter2", 0)}
+                              title="Tarik D2 ke semua baris di bawah"
+                              className="text-muted-foreground hover:text-primary p-0.5"
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        </th>
                         <th className="py-2.5 px-2 text-center w-24 text-blue-700 dark:text-blue-300 font-bold">RT (cm)</th>
                         <th className="py-2.5 px-2 text-right w-28 text-emerald-700 dark:text-emerald-400 font-bold">Vol (m³)</th>
                         <th className="py-2.5 px-2 text-center w-10"></th>
@@ -931,13 +1249,36 @@ export default function CreatePurchasePage() {
                             <td className="py-1 px-2 text-center font-mono text-muted-foreground font-medium">
                               {index + 1}
                             </td>
-                            <td className="py-1 px-2">
+                            {/* No Log */}
+                            <td 
+                              className={`py-1 px-2 border-r transition-colors ${isLogCellSelected(index, 'logNumber') ? 'bg-blue-100/70 dark:bg-blue-900/40 ring-1 ring-blue-500' : ''}`}
+                              onMouseDown={(e) => {
+                                if (e.shiftKey && logSelection) {
+                                  setLogSelection({ ...logSelection, endRow: index, endCol: 'logNumber' });
+                                } else {
+                                  setLogSelection({ startRow: index, startCol: 'logNumber', endRow: index, endCol: 'logNumber' });
+                                  setIsSelectingLog(true);
+                                }
+                              }}
+                              onMouseEnter={() => {
+                                if (isSelectingLog && logSelection) {
+                                  setLogSelection(prev => prev ? ({ ...prev, endRow: index, endCol: 'logNumber' }) : null);
+                                }
+                              }}
+                            >
                               <Input
                                 id={`log-logNumber-${index}`}
                                 value={item.logNumber || ""}
                                 placeholder={`LOG-${index + 1}`}
                                 onFocus={(e) => e.target.select()}
                                 onKeyDown={(e) => handleCellKeyDown(e, index, 'logNumber', 'log', form.logItems.length, () => addLogRows(1))}
+                                onPaste={(e) => {
+                                  const text = e.clipboardData.getData("text");
+                                  if (text && (text.includes("\t") || text.includes("\n"))) {
+                                    e.preventDefault();
+                                    handlePasteLogData(index, 'logNumber', text);
+                                  }
+                                }}
                                 onChange={(e) => {
                                   const newLogItems = [...form.logItems];
                                   newLogItems[index].logNumber = e.target.value;
@@ -946,9 +1287,26 @@ export default function CreatePurchasePage() {
                                 className="h-8 text-xs font-mono"
                               />
                             </td>
-                            <td className="py-1 px-2">
+
+                            {/* Spesies */}
+                            <td 
+                              className={`py-1 px-2 border-r transition-colors ${isLogCellSelected(index, 'species') ? 'bg-blue-100/70 dark:bg-blue-900/40 ring-1 ring-blue-500' : ''}`}
+                              onMouseDown={(e) => {
+                                if (e.shiftKey && logSelection) {
+                                  setLogSelection({ ...logSelection, endRow: index, endCol: 'species' });
+                                } else {
+                                  setLogSelection({ startRow: index, startCol: 'species', endRow: index, endCol: 'species' });
+                                  setIsSelectingLog(true);
+                                }
+                              }}
+                              onMouseEnter={() => {
+                                if (isSelectingLog && logSelection) {
+                                  setLogSelection(prev => prev ? ({ ...prev, endRow: index, endCol: 'species' }) : null);
+                                }
+                              }}
+                            >
                               <Select
-                                value={item.species || "MERBAU"}
+                                value={item.species || ""}
                                 onValueChange={(val) => {
                                   const newLogItems = [...form.logItems];
                                   newLogItems[index].species = val;
@@ -961,7 +1319,7 @@ export default function CreatePurchasePage() {
                                   onKeyDown={(e) => handleCellKeyDown(e as any, index, 'species', 'log', form.logItems.length, () => addLogRows(1))}
                                 >
                                   <SelectValue placeholder="Pilih Spesies">
-                                    {item.species || "MERBAU"}
+                                    {item.species || <span className="text-muted-foreground font-normal">Pilih Spesies</span>}
                                   </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent searchable={true} className="min-w-[180px]">
@@ -977,7 +1335,23 @@ export default function CreatePurchasePage() {
                               </Select>
                             </td>
 
-                            <td className="py-1 px-2">
+                            {/* Panjang P */}
+                            <td 
+                              className={`py-1 px-2 border-r transition-colors ${isLogCellSelected(index, 'purchaseLength') ? 'bg-blue-100/70 dark:bg-blue-900/40 ring-1 ring-blue-500' : ''}`}
+                              onMouseDown={(e) => {
+                                if (e.shiftKey && logSelection) {
+                                  setLogSelection({ ...logSelection, endRow: index, endCol: 'purchaseLength' });
+                                } else {
+                                  setLogSelection({ startRow: index, startCol: 'purchaseLength', endRow: index, endCol: 'purchaseLength' });
+                                  setIsSelectingLog(true);
+                                }
+                              }}
+                              onMouseEnter={() => {
+                                if (isSelectingLog && logSelection) {
+                                  setLogSelection(prev => prev ? ({ ...prev, endRow: index, endCol: 'purchaseLength' }) : null);
+                                }
+                              }}
+                            >
                               <Input
                                 id={`log-purchaseLength-${index}`}
                                 type="number"
@@ -986,6 +1360,13 @@ export default function CreatePurchasePage() {
                                 placeholder="cth: 400"
                                 onFocus={(e) => e.target.select()}
                                 onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseLength', 'log', form.logItems.length, () => addLogRows(1))}
+                                onPaste={(e) => {
+                                  const text = e.clipboardData.getData("text");
+                                  if (text && (text.includes("\t") || text.includes("\n"))) {
+                                    e.preventDefault();
+                                    handlePasteLogData(index, 'purchaseLength', text);
+                                  }
+                                }}
                                 onChange={(e) => {
                                   const newLogItems = [...form.logItems];
                                   const len = parseFloat(e.target.value) || 0;
@@ -999,15 +1380,39 @@ export default function CreatePurchasePage() {
                                 className="h-8 text-xs text-center font-mono"
                               />
                             </td>
-                            <td className="py-1 px-2">
+
+                            {/* D1 */}
+                            <td 
+                              className={`py-1 px-2 border-r transition-colors ${isLogCellSelected(index, 'purchaseDiameter1') ? 'bg-blue-100/70 dark:bg-blue-900/40 ring-1 ring-blue-500' : ''}`}
+                              onMouseDown={(e) => {
+                                if (e.shiftKey && logSelection) {
+                                  setLogSelection({ ...logSelection, endRow: index, endCol: 'purchaseDiameter1' });
+                                } else {
+                                  setLogSelection({ startRow: index, startCol: 'purchaseDiameter1', endRow: index, endCol: 'purchaseDiameter1' });
+                                  setIsSelectingLog(true);
+                                }
+                              }}
+                              onMouseEnter={() => {
+                                if (isSelectingLog && logSelection) {
+                                  setLogSelection(prev => prev ? ({ ...prev, endRow: index, endCol: 'purchaseDiameter1' }) : null);
+                                }
+                              }}
+                            >
                               <Input
                                 id={`log-purchaseDiameter1-${index}`}
                                 type="number"
                                 step="any"
                                 value={item.purchaseDiameter1 || ""}
-                                placeholder="D1"
+                                placeholder=""
                                 onFocus={(e) => e.target.select()}
                                 onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseDiameter1', 'log', form.logItems.length, () => addLogRows(1))}
+                                onPaste={(e) => {
+                                  const text = e.clipboardData.getData("text");
+                                  if (text && (text.includes("\t") || text.includes("\n"))) {
+                                    e.preventDefault();
+                                    handlePasteLogData(index, 'purchaseDiameter1', text);
+                                  }
+                                }}
                                 onChange={(e) => {
                                   const newLogItems = [...form.logItems];
                                   const d1 = parseFloat(e.target.value) || 0;
@@ -1021,15 +1426,39 @@ export default function CreatePurchasePage() {
                                 className="h-8 text-xs text-center font-mono"
                               />
                             </td>
-                            <td className="py-1 px-2">
+
+                            {/* D2 */}
+                            <td 
+                              className={`py-1 px-2 border-r transition-colors ${isLogCellSelected(index, 'purchaseDiameter2') ? 'bg-blue-100/70 dark:bg-blue-900/40 ring-1 ring-blue-500' : ''}`}
+                              onMouseDown={(e) => {
+                                if (e.shiftKey && logSelection) {
+                                  setLogSelection({ ...logSelection, endRow: index, endCol: 'purchaseDiameter2' });
+                                } else {
+                                  setLogSelection({ startRow: index, startCol: 'purchaseDiameter2', endRow: index, endCol: 'purchaseDiameter2' });
+                                  setIsSelectingLog(true);
+                                }
+                              }}
+                              onMouseEnter={() => {
+                                if (isSelectingLog && logSelection) {
+                                  setLogSelection(prev => prev ? ({ ...prev, endRow: index, endCol: 'purchaseDiameter2' }) : null);
+                                }
+                              }}
+                            >
                               <Input
                                 id={`log-purchaseDiameter2-${index}`}
                                 type="number"
                                 step="any"
                                 value={item.purchaseDiameter2 || ""}
-                                placeholder="D2"
+                                placeholder=""
                                 onFocus={(e) => e.target.select()}
                                 onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseDiameter2', 'log', form.logItems.length, () => addLogRows(1))}
+                                onPaste={(e) => {
+                                  const text = e.clipboardData.getData("text");
+                                  if (text && (text.includes("\t") || text.includes("\n"))) {
+                                    e.preventDefault();
+                                    handlePasteLogData(index, 'purchaseDiameter2', text);
+                                  }
+                                }}
                                 onChange={(e) => {
                                   const newLogItems = [...form.logItems];
                                   const d2 = parseFloat(e.target.value) || 0;
@@ -1043,15 +1472,39 @@ export default function CreatePurchasePage() {
                                 className="h-8 text-xs text-center font-mono"
                               />
                             </td>
-                            <td className="py-1 px-2">
+
+                            {/* RT */}
+                            <td 
+                              className={`py-1 px-2 border-r transition-colors ${isLogCellSelected(index, 'purchaseDiameterAvg') ? 'bg-blue-100/70 dark:bg-blue-900/40 ring-1 ring-blue-500' : ''}`}
+                              onMouseDown={(e) => {
+                                if (e.shiftKey && logSelection) {
+                                  setLogSelection({ ...logSelection, endRow: index, endCol: 'purchaseDiameterAvg' });
+                                } else {
+                                  setLogSelection({ startRow: index, startCol: 'purchaseDiameterAvg', endRow: index, endCol: 'purchaseDiameterAvg' });
+                                  setIsSelectingLog(true);
+                                }
+                              }}
+                              onMouseEnter={() => {
+                                if (isSelectingLog && logSelection) {
+                                  setLogSelection(prev => prev ? ({ ...prev, endRow: index, endCol: 'purchaseDiameterAvg' }) : null);
+                                }
+                              }}
+                            >
                               <Input
                                 id={`log-purchaseDiameterAvg-${index}`}
                                 type="number"
                                 step="any"
                                 value={item.purchaseDiameterAvg || (currentRt > 0 ? currentRt : "")}
-                                placeholder="RT"
+                                placeholder=""
                                 onFocus={(e) => e.target.select()}
                                 onKeyDown={(e) => handleCellKeyDown(e, index, 'purchaseDiameterAvg', 'log', form.logItems.length, () => addLogRows(1))}
+                                onPaste={(e) => {
+                                  const text = e.clipboardData.getData("text");
+                                  if (text && (text.includes("\t") || text.includes("\n"))) {
+                                    e.preventDefault();
+                                    handlePasteLogData(index, 'purchaseDiameterAvg', text);
+                                  }
+                                }}
                                 onChange={(e) => {
                                   const newLogItems = [...form.logItems];
                                   const customRt = parseFloat(e.target.value) || 0;
@@ -1143,6 +1596,57 @@ export default function CreatePurchasePage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* MODAL TAMBAH SUPPLIER BARU */}
+      <Dialog open={isSupplierModalOpen} onOpenChange={setIsSupplierModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5 text-emerald-600" />
+              <span>Tambah Supplier / Sumber Kayu Baru</span>
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateSupplier} className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="new-supplier-name">Nama Supplier / PT / CV *</Label>
+              <Input
+                id="new-supplier-name"
+                value={newSupplierName}
+                onChange={(e) => setNewSupplierName(e.target.value)}
+                placeholder="misal: PT Rimba Sejahtera, Bpk. Joko, dll..."
+                required
+                autoFocus
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Supplier baru akan otomatis tersimpan ke Master Data dan langsung terpilih di formulir ini.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsSupplierModalOpen(false)}
+                disabled={creatingSupplier}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                disabled={creatingSupplier || !newSupplierName.trim()}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+              >
+                {creatingSupplier ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...
+                  </>
+                ) : (
+                  "Simpan Supplier"
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* AI TALLY IMPORT MODAL */}
       <AiTallyImportModal

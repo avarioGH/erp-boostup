@@ -325,66 +325,56 @@ export default function CreatePurchasePage() {
 
   const getLogColIndex = (col: string) => LOG_COL_ORDER.indexOf(col);
 
-  // Auto-Save Effect: Simpan perubahan form & logItems ke localStorage setiap ada perubahan
-  useEffect(() => {
-    if (!hasDraftRestored) return; // Tunggu restore draf pertama selesai
-    const timer = setTimeout(() => {
-      try {
-        const hasContent = 
-          (form.logItems && form.logItems.some((li: any) => li.logNumber || Number(li.purchaseLength) > 0 || Number(li.purchaseDiameter1) > 0 || Number(li.purchaseDiameter2) > 0)) ||
-          (form.items && form.items.some((it: any) => Number(it.purchaseThickness) > 0 || Number(it.purchaseWidth) > 0 || Number(it.purchaseLength) > 0)) ||
-          form.sourceId ||
-          form.notes;
-
-        if (hasContent && typeof window !== "undefined") {
-          localStorage.setItem(draftKey, JSON.stringify({
-            form,
-            savedAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          }));
-          setLastSavedTime(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }));
-        }
-      } catch (err) {
-        console.warn("Gagal menyimpan auto-save draf:", err);
-      }
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [form, hasDraftRestored, draftKey]);
-
-  // Restore Draft On Mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const savedRaw = localStorage.getItem(draftKey);
-        if (savedRaw) {
-          const parsed = JSON.parse(savedRaw);
-          if (parsed && parsed.form) {
-            setForm(prev => ({
-              ...prev,
-              ...parsed.form,
-              partaiId: partaiIdFromUrl || parsed.form.partaiId || prev.partaiId,
-            }));
-            if (parsed.savedAt) {
-              setLastSavedTime(parsed.savedAt);
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("Gagal memuat draf tersimpan:", e);
-      } finally {
-        setHasDraftRestored(true);
-      }
-    } else {
-      setHasDraftRestored(true);
-    }
-  }, [draftKey, partaiIdFromUrl]);
-
+  // Bersihkan draf lokal dan form ke kondisi awal kosong
   const clearLocalDraft = () => {
     if (typeof window !== "undefined") {
-      localStorage.removeItem(draftKey);
+      try {
+        localStorage.removeItem(draftKey);
+        localStorage.removeItem("draft_purchase_general");
+        if (partaiIdFromUrl) {
+          localStorage.removeItem(`draft_purchase_${partaiIdFromUrl}`);
+        }
+      } catch (e) {}
       setLastSavedTime(null);
     }
+    setForm(prev => ({
+      ...prev,
+      items: [{
+        species: "",
+        grade: "A",
+        timberVariantId: "",
+        quantityPcs: 1,
+        volumeM3: 0,
+        purchaseThickness: 0,
+        purchaseWidth: 0,
+        purchaseLength: 0,
+        unitPrice: 0
+      }],
+      logItems: [{
+        logNumber: "",
+        species: "",
+        purchaseLength: 0,
+        purchaseDiameter1: 0,
+        purchaseDiameter2: 0,
+        purchaseDiameterAvg: 0,
+        purchaseVolume: 0
+      }]
+    }));
   };
+
+  // Hapus semua draf pembelian lama saat masuk ke halaman agar data selalu fresh & bersih
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(draftKey);
+        localStorage.removeItem("draft_purchase_general");
+        if (partaiIdFromUrl) {
+          localStorage.removeItem(`draft_purchase_${partaiIdFromUrl}`);
+        }
+      } catch (e) {}
+    }
+    setHasDraftRestored(true);
+  }, [draftKey, partaiIdFromUrl]);
 
   // Helper Copy Range untuk Log Table
   const handleCopyLogSelection = () => {
@@ -1042,16 +1032,29 @@ export default function CreatePurchasePage() {
                       Input tabel dimensi kayu: Tebal (T), Lebar (L), Panjang (P), dan Batang (Pcs). Otomatis hitung M³.
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="default"
-                    size="sm"
-                    onClick={() => setIsAiModalOpen(true)}
-                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold shadow-sm flex items-center gap-1.5 shrink-0"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>✨ AI Auto-Input (Foto / WA)</span>
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearLocalDraft}
+                      className="text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      title="Bersihkan semua baris tabel"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                      Bersihkan Form
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      onClick={() => setIsAiModalOpen(true)}
+                      className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold shadow-sm flex items-center gap-1.5 shrink-0"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>✨ AI Auto-Input (Foto / WA)</span>
+                    </Button>
+                  </div>
                 </div>
                 <SawnTimberSpreadsheet
                   initialRows={form.items.map((it: any) => ({
@@ -1098,6 +1101,17 @@ export default function CreatePurchasePage() {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Button
                       type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearLocalDraft}
+                      className="text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      title="Bersihkan semua baris tabel"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                      Bersihkan Form
+                    </Button>
+                    <Button
+                      type="button"
                       variant="default"
                       size="sm"
                       onClick={() => setIsAiModalOpen(true)}
@@ -1129,24 +1143,16 @@ export default function CreatePurchasePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {/* Status Auto-Save Draf */}
-                    {lastSavedTime ? (
-                      <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Draf Tersimpan ({lastSavedTime})</span>
-                        <button
-                          type="button"
-                          onClick={clearLocalDraft}
-                          title="Hapus draf lokal"
-                          className="text-muted-foreground hover:text-destructive ml-1"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-muted-foreground text-[11px]">
-                        <CloudOff className="w-3.5 h-3.5" /> Auto-save draf aktif
-                      </span>
-                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearLocalDraft}
+                      className="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive"
+                      title="Reset dan kosongkan semua baris"
+                    >
+                      <RotateCcw className="w-3 h-3 mr-1" /> Kosongkan Baris
+                    </Button>
 
                     {/* Tombol Copy Range jika ada sel terblok */}
                     {logSelection && (
