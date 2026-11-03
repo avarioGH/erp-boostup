@@ -11,7 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, Save, Plus, Trash2, Package, Layers, FileSpreadsheet, Scale, Info, AlertCircle, Columns, X, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, Package, Layers, FileSpreadsheet, Scale, Info, AlertCircle, Columns, X, CheckCircle2, Sparkles, Copy, ArrowDownToLine, CheckSquare } from "lucide-react";
+import { AiTallyImportModal } from "@/components/timber/ai-tally-import-modal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 export interface CustomPackingColumn {
@@ -74,6 +76,17 @@ export default function CreatePackingPage() {
   const [speciesList, setSpeciesList] = useState<any[]>(DEFAULT_SPECIES);
   const [submitting, setSubmitting] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
+  // AI OCR Import Modal State
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
+  // Ambil dari Output Stok Partai Modal State
+  const [isStockModalOpen, setIsStockModalOpen] = useState(false);
+  const [selectedStockOutputs, setSelectedStockOutputs] = useState<any[]>([]);
+
+  // Batch actions state
+  const [selectedRowIndices, setSelectedRowIndices] = useState<number[]>([]);
+  const [batchPalletTarget, setBatchPalletTarget] = useState("");
+
 
   // Dynamic custom columns state
   const [customColumns, setCustomColumns] = useState<CustomPackingColumn[]>([]);
@@ -329,6 +342,115 @@ export default function CreatePackingPage() {
     }
   };
 
+  
+  const handleAiParsedData = (parsedRows: any[]) => {
+    if (!Array.isArray(parsedRows) || parsedRows.length === 0) return;
+    const lastPallet = rows.find(r => r.palletNo)?.palletNo || "01";
+    const newItems: PackingRow[] = parsedRows.map((item: any) => {
+      const t = String(item.thickness || item.t || item.tebal || "");
+      const l = String(item.width || item.l || item.lebar || "");
+      const p = String(item.length || item.p || item.panjang || "");
+      const pcs = String(item.pcs || item.batang || "");
+      const rT = parseFloat(t) || 0;
+      const rL = parseFloat(l) || 0;
+      const rP = parseFloat(p) || 0;
+      const rPcs = parseFloat(pcs) || 0;
+      const m3 = (rT * rL * rP * rPcs) / 1000000;
+      return {
+        palletNo: item.palletNo || lastPallet,
+        realT: t,
+        realL: l,
+        realP: p,
+        realPcs: pcs,
+        realM3: m3,
+        custT: t,
+        custL: l,
+        custP: p,
+        custPcs: pcs,
+        custM3: m3,
+        notes: item.notes || item.keterangan || "Hasil Scan AI",
+      };
+    });
+
+    setRows((prev) => {
+      const nonEmpties = prev.filter(r => parseFloat(r.realT) > 0 || parseFloat(r.realL) > 0);
+      return nonEmpties.length > 0 ? [...nonEmpties, ...newItems] : newItems;
+    });
+
+    toast({
+      title: "AI Berhasil Mengimpor Data",
+      description: `${newItems.length} ukuran dari dokumen berhasil dimasukkan ke tabel packing.`,
+    });
+  };
+
+  const handleImportFromPartaiStock = () => {
+    if (selectedStockOutputs.length === 0) return;
+    const lastPallet = rows.find(r => r.palletNo)?.palletNo || "01";
+    const newItems: PackingRow[] = selectedStockOutputs.map((item: any) => {
+      const t = String(item.thicknessMm ? (item.thicknessMm / 10) : (item.thicknessCm || ""));
+      const l = String(item.widthMm ? (item.widthMm / 10) : (item.widthCm || ""));
+      const p = String(item.lengthMm ? (item.lengthMm / 10) : (item.lengthCm || ""));
+      const pcs = String(item.quantityPcs || item.pcs || "");
+      const rT = parseFloat(t) || 0;
+      const rL = parseFloat(l) || 0;
+      const rP = parseFloat(p) || 0;
+      const rPcs = parseFloat(pcs) || 0;
+      const m3 = (rT * rL * rP * rPcs) / 1000000;
+      return {
+        palletNo: lastPallet,
+        realT: t,
+        realL: l,
+        realP: p,
+        realPcs: pcs,
+        realM3: m3,
+        custT: t,
+        custL: l,
+        custP: p,
+        custPcs: pcs,
+        custM3: m3,
+        notes: `Dari Sawn Timber ${item.parentBundleNumber || item.productType || ""}`.trim(),
+      };
+    });
+
+    setRows((prev) => {
+      const nonEmpties = prev.filter(r => parseFloat(r.realT) > 0 || parseFloat(r.realL) > 0);
+      return nonEmpties.length > 0 ? [...nonEmpties, ...newItems] : newItems;
+    });
+
+    setIsStockModalOpen(false);
+    setSelectedStockOutputs([]);
+    toast({
+      title: "Stok Dimasukkan ke Packing",
+      description: `${newItems.length} ukuran hasil sawn timber partai berhasil dimasukkan.`,
+    });
+  };
+
+  const copyRealToCustomer = () => {
+    setRows(prev => prev.map(r => ({
+      ...r,
+      custT: r.realT,
+      custL: r.realL,
+      custP: r.realP,
+      custPcs: r.realPcs,
+      custM3: r.realM3,
+    })));
+    toast({
+      title: "Ukuran Disalin",
+      description: "Seluruh ukuran Asli Pabrik telah disalin ke ukuran Customer Nominal.",
+    });
+  };
+
+  const applyBatchPallet = (palletNo: string) => {
+    if (!palletNo || selectedRowIndices.length === 0) return;
+    setRows(prev => prev.map((r, i) => selectedRowIndices.includes(i) ? { ...r, palletNo } : r));
+    setSelectedRowIndices([]);
+    setBatchPalletTarget("");
+    toast({
+      title: "No. Palet Diperbarui",
+      description: `Palet ${palletNo} diterapkan untuk baris terpilih.`,
+    });
+  };
+
   const addRows = (count: number = 5) => {
     const lastPallet = rows[rows.length - 1]?.palletNo || "01";
     const newItems: PackingRow[] = Array.from({ length: count }, () => ({
@@ -489,7 +611,32 @@ export default function CreatePackingPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          {partaiInfo && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsStockModalOpen(true)}
+              className="text-xs border-purple-300 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/40 gap-1.5"
+            >
+              <ArrowDownToLine className="w-3.5 h-3.5 text-purple-600" />
+              Ambil Stok Sawn Timber Partai
+            </Button>
+          )}
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsAiModalOpen(true)}
+            className="text-xs border-purple-500/50 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/40 gap-1.5 shadow-sm font-semibold"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+            Scan Nota / Tally AI
+          </Button>
+
           <Button
             type="button"
             variant="outline"
@@ -757,7 +904,18 @@ export default function CreatePackingPage() {
               <TableHeader className="bg-muted/70 sticky top-0 z-10 shadow-sm text-xs">
                 {/* Header Level 1 */}
                 <TableRow className="border-b">
-                  <TableHead rowSpan={2} className="w-[100px] border-r text-center font-bold">
+                  <TableHead rowSpan={2} className="w-[45px] text-center border-r">
+                    <input
+                      type="checkbox"
+                      checked={rows.length > 0 && selectedRowIndices.length === rows.length}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedRowIndices(rows.map((_, i) => i));
+                        else setSelectedRowIndices([]);
+                      }}
+                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                    />
+                  </TableHead>
+                  <TableHead rowSpan={2} className="w-[95px] border-r text-center font-bold">
                     No. Palet
                   </TableHead>
                   <TableHead colSpan={5} className="border-r text-center font-bold bg-blue-50/60 dark:bg-blue-950/30 text-blue-900 dark:text-blue-300">
@@ -1004,6 +1162,142 @@ export default function CreatePackingPage() {
           </div>
         </CardContent>
       </Card>
+    
+      {/* AI TALLY OCR IMPORT MODAL */}
+      <AiTallyImportModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        workflowType="SAWN_TIMBER"
+        onDataParsed={handleAiParsedData}
+      />
+
+      {/* AMBIL STOK OUTPUT SAWN TIMBER PARTAI MODAL */}
+      <Dialog open={isStockModalOpen} onOpenChange={setIsStockModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <ArrowDownToLine className="w-5 h-5 text-purple-600" />
+              Ambil Stok Sawn Timber dari Partai {partaiInfo?.code}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Pilih hasil gergajian sawn timber partai untuk langsung dimasukkan ke dalam baris Packing List tanpa perlu ketik manual.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto max-h-[400px] border rounded-md my-2">
+            {(() => {
+              const allOutputs = (partaiInfo?.sawnOutputs || []).flatMap((o: any) =>
+                (o.items || []).map((it: any) => ({
+                  ...it,
+                  parentBundleNumber: o.bundleNumber,
+                  parentOutputDate: o.outputDate,
+                }))
+              );
+
+              if (allOutputs.length === 0) {
+                return (
+                  <div className="p-8 text-center text-muted-foreground text-xs">
+                    Belum ada data sawn timber output di partai ini.
+                  </div>
+                );
+              }
+
+              return (
+                <Table className="text-xs">
+                  <TableHeader className="bg-muted/50 sticky top-0">
+                    <TableRow>
+                      <TableHead className="w-10 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedStockOutputs.length === allOutputs.length}
+                          onChange={(e) => {
+                            if (e.target.checked) setSelectedStockOutputs(allOutputs);
+                            else setSelectedStockOutputs([]);
+                          }}
+                        />
+                      </TableHead>
+                      <TableHead>Bundle / Tgl</TableHead>
+                      <TableHead>Kategori</TableHead>
+                      <TableHead className="text-center">Ukuran (T × L × P cm)</TableHead>
+                      <TableHead className="text-right">Batang (Pcs)</TableHead>
+                      <TableHead className="text-right">Volume (M³)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allOutputs.map((it: any, idx: number) => {
+                      const isChecked = selectedStockOutputs.some(s => s.id === it.id);
+                      const t = it.thicknessMm ? it.thicknessMm / 10 : it.thicknessCm;
+                      const l = it.widthMm ? it.widthMm / 10 : it.widthCm;
+                      const p = it.lengthMm ? it.lengthMm / 10 : it.lengthCm;
+                      return (
+                        <TableRow
+                          key={it.id || idx}
+                          onClick={() => {
+                            if (isChecked) setSelectedStockOutputs(prev => prev.filter(s => s.id !== it.id));
+                            else setSelectedStockOutputs(prev => [...prev, it]);
+                          }}
+                          className={`cursor-pointer hover:bg-muted/40 ${isChecked ? "bg-purple-50/50 dark:bg-purple-950/20" : ""}`}
+                        >
+                          <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) setSelectedStockOutputs(prev => [...prev, it]);
+                                else setSelectedStockOutputs(prev => prev.filter(s => s.id !== it.id));
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell className="font-mono">
+                            <span className="font-bold text-foreground block">{it.parentBundleNumber || "-"}</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {it.parentOutputDate ? new Date(it.parentOutputDate).toLocaleDateString("id-ID") : "-"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-[10px] uppercase">
+                              {it.productType || "BALOK"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center font-mono">
+                            {t} × {l} × {p}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-bold">
+                            {it.quantityPcs || it.pcs || 0}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-bold text-emerald-600">
+                            {Number(it.volumeM3 || 0).toFixed(4)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              );
+            })()}
+          </div>
+
+          <DialogFooter className="flex items-center justify-between border-t pt-3">
+            <span className="text-xs text-muted-foreground font-medium">
+              {selectedStockOutputs.length} item sawn timber dipilih
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setIsStockModalOpen(false)}>
+                Batal
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleImportFromPartaiStock}
+                disabled={selectedStockOutputs.length === 0}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold"
+              >
+                Masukkan ke Tabel Packing ({selectedStockOutputs.length})
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
 }

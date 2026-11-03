@@ -2266,6 +2266,12 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                 >
                   {isPostingOutputs ? "Memposting..." : "Post Output ke Stok"}
                 </Button>
+                <Button 
+                  onClick={() => router.push(`/inventory/packing/create?partaiId=${id}`)} 
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-semibold shadow-sm"
+                >
+                  <Package className="w-4 h-4 mr-1.5" /> Masukkan ke Packing List
+                </Button>
               </div>
               <Table>
                 <TableHeader className="bg-muted/30">
@@ -2911,12 +2917,41 @@ export default function PartaiDetailPage({ params }: { params: any }) {
                                 Buat Invoice
                               </Button>
                               <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs px-2 text-muted-foreground hover:text-foreground"
+                                onClick={() => router.push(`/inventory/packing/${item.id}/edit`)}
+                              >
+                                <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                              </Button>
+                              <Button
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/10 px-2"
                                 onClick={() => router.push(`/inventory/packing/${item.id}`)}
                               >
                                 Detail
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs text-destructive hover:bg-destructive/10 px-2"
+                                onClick={async () => {
+                                  if (!confirm(`Hapus Packing List ${item.packingNumber}? Tindakan ini tidak dapat dibatalkan.`)) return;
+                                  try {
+                                    await PackingAPI.deletePacking(item.id);
+                                    toast({ title: "Berhasil", description: `Packing list ${item.packingNumber} berhasil dihapus` });
+                                    fetchPartai();
+                                  } catch (err: any) {
+                                    toast({
+                                      title: "Gagal Menghapus",
+                                      description: err?.response?.data?.message || err.message || "Gagal menghapus packing",
+                                      variant: "destructive"
+                                    });
+                                  }
+                                }}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
                               </Button>
                             </div>
                           </TableCell>

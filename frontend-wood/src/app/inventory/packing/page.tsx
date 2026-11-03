@@ -358,12 +358,36 @@ export default function PackingListPage() {
                             Buat Invoice
                           </Button>
                           <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs px-2 text-muted-foreground hover:text-foreground"
+                            onClick={() => router.push(`/inventory/packing/${item.id}/edit`)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
                             variant="ghost"
                             size="sm"
                             className="h-7 text-xs text-primary hover:text-primary hover:bg-primary/10 px-2"
                             onClick={() => router.push(`/inventory/packing/${item.id}`)}
                           >
                             Detail
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-destructive hover:bg-destructive/10 px-2"
+                            onClick={async () => {
+                              if (!confirm(`Hapus Packing List ${item.packingNumber}? Tindakan ini tidak dapat dibatalkan.`)) return;
+                              try {
+                                await PackingAPI.deletePacking(item.id);
+                                fetchPackings();
+                              } catch (err: any) {
+                                alert(err?.response?.data?.message || err.message || "Gagal menghapus packing");
+                              }
+                            }}
+                          >
+                            Hapus
                           </Button>
                         </div>
                       </TableCell>

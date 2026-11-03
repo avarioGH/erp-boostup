@@ -148,23 +148,108 @@ export class PackingService {
     if (!packing) throw new NotFoundException('Data Packing tidak ditemukan');
 
     const {
+      packingNumber,
+      packingDate,
+      partaiId,
       status,
       notes,
       containerNo,
       ownerName,
       species,
       warehouseId,
+      items,
     } = data;
+
+    // If items are provided, replace them and recalculate totals
+    if (Array.isArray(items)) {
+      let totalRealPcs = 0;
+      let totalRealVolume = 0;
+      let totalCustPcs = 0;
+      let totalCustVolume = 0;
+      const palletsSet = new Set<string>();
+
+      const processedItems = items.map((it: any) => {
+        const rT = Number(it.realT) || 0;
+        const rL = Number(it.realL) || 0;
+        const rP = Number(it.realP) || 0;
+        const rPcs = Number(it.realPcs) || 0;
+        const rM3 = (rT * rL * rP * rPcs) / 1000000;
+
+        const cT = it.custT !== undefined && it.custT !== '' ? Number(it.custT) : rT;
+        const cL = it.custL !== undefined && it.custL !== '' ? Number(it.custL) : rL;
+        const cP = it.custP !== undefined && it.custP !== '' ? Number(it.custP) : rP;
+        const cPcs = it.custPcs !== undefined && it.custPcs !== '' ? Number(it.custPcs) : rPcs;
+        const cM3 = (cT * cL * cP * cPcs) / 1000000;
+
+        if (it.palletNo) palletsSet.add(it.palletNo);
+
+        totalRealPcs += rPcs;
+        totalRealVolume += rM3;
+        totalCustPcs += cPcs;
+        totalCustVolume += cM3;
+
+        return {
+          palletNo: it.palletNo ? String(it.palletNo).trim() : null,
+          realT: rT,
+          realL: rL,
+          realP: rP,
+          realPcs: rPcs,
+          realM3: Number(rM3.toFixed(4)),
+          custT: cT,
+          custL: cL,
+          custP: cP,
+          custPcs: cPcs,
+          custM3: Number(cM3.toFixed(4)),
+          notes: it.notes || null,
+        };
+      });
+
+      // Transaction: delete old items, recreate new items, update header & totals
+      return this.prisma.$transaction(async (tx) => {
+        await tx.timberPackingItem.deleteMany({ where: { packingId: id } });
+
+        return tx.timberPacking.update({
+          where: { id },
+          data: {
+            ...(packingNumber ? { packingNumber } : {}),
+            ...(packingDate ? { packingDate: new Date(packingDate) } : {}),
+            ...(partaiId !== undefined ? { partaiId: partaiId || null } : {}),
+            ...(status ? { status } : {}),
+            ...(notes !== undefined ? { notes } : {}),
+            ...(containerNo !== undefined ? { containerNo } : {}),
+            ...(ownerName !== undefined ? { ownerName } : {}),
+            ...(species !== undefined ? { species } : {}),
+            ...(warehouseId !== undefined ? { warehouseId: warehouseId || null } : {}),
+            palletCount: palletsSet.size || 1,
+            totalRealPcs,
+            totalRealVolume: Number(totalRealVolume.toFixed(4)),
+            totalCustPcs,
+            totalCustVolume: Number(totalCustVolume.toFixed(4)),
+            items: {
+              create: processedItems,
+            },
+          },
+          include: {
+            items: true,
+            warehouse: true,
+            partai: true,
+          },
+        });
+      });
+    }
 
     return this.prisma.timberPacking.update({
       where: { id },
       data: {
+        ...(packingNumber ? { packingNumber } : {}),
+        ...(packingDate ? { packingDate: new Date(packingDate) } : {}),
+        ...(partaiId !== undefined ? { partaiId: partaiId || null } : {}),
         ...(status ? { status } : {}),
         ...(notes !== undefined ? { notes } : {}),
         ...(containerNo !== undefined ? { containerNo } : {}),
         ...(ownerName !== undefined ? { ownerName } : {}),
         ...(species !== undefined ? { species } : {}),
-        ...(warehouseId !== undefined ? { warehouseId } : {}),
+        ...(warehouseId !== undefined ? { warehouseId: warehouseId || null } : {}),
       },
       include: {
         items: true,
