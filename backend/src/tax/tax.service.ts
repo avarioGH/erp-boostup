@@ -710,7 +710,7 @@ export class TaxService {
 
       this.logger.log(`Seeding completed successfully for company ${companyId}`);
       return { success: true };
-    });
+    }, { timeout: 60000, maxWait: 10000 });
     } catch (err: any) {
       this.logger.error(`Error during seedDefaultTaxRegulationsAndRules: ${err?.message}`, err?.stack);
       throw err;
