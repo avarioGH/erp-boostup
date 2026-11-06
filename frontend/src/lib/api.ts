@@ -555,4 +555,11 @@ export const TaxAPI: any = {
     (await api.put('/tax/fish-classifications/' + productId, data)).data,
   seedStandards: async () => (await api.post('/tax/seed-standards', {})).data,
   simulateCalculate: async (payload: any) => (await api.post('/tax/calculate', payload)).data,
+  getTaxInvoices: async (params?: any) => (await api.get('/tax/invoices', { params })).data,
+  createTaxInvoice: async (data: any) => (await api.post('/tax/invoices', data)).data,
+  getWithholdingCertificates: async (params?: any) => (await api.get('/tax/withholding-certificates', { params })).data,
+  createWithholdingCertificate: async (data: any) => (await api.post('/tax/withholding-certificates', data)).data,
+  getFiscalAdjustments: async (fiscalYear: number) => (await api.get('/tax/fiscal-adjustments', { params: { fiscalYear } })).data,
+  createFiscalAdjustment: async (data: any) => (await api.post('/tax/fiscal-adjustments', data)).data,
+  calculateCorporateTax: async (data: { fiscalYear: number; isEligiblePasal31e?: boolean }) => (await api.post('/tax/corporate-tax/calculate', data)).data,
 };

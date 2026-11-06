@@ -130,6 +130,10 @@ model Company {
   taxAccountMappings      TaxAccountMapping[]
   taxAuditLogs            TaxAuditLog[]
   productTaxClassifications ProductTaxClassification[]
+  taxInvoices               TaxInvoice[]
+  withholdingCertificates   WithholdingCertificate[]
+  fiscalAdjustments         FiscalAdjustment[]
+  corporateTaxReturns       CorporateTaxReturn[]
 }
 
 model CompanySetting {
@@ -2066,6 +2070,7 @@ model Invoice {
   deleted_at        DateTime?
   PaymentAllocation PaymentAllocation[]
   NettingAllocation NettingAllocation[]
+  taxInvoice        TaxInvoice?
 
   @@unique([company_id, invoice_number])
 }
@@ -4322,4 +4327,148 @@ model ProductTaxClassification {
 
   @@index([company_id])
   @@index([fish_species_category, product_condition])
+}
+
+
+// =========================================================================
+// PHASE 3: VAT ENGINE & FAKTUR PAJAK (NSFP)
+// =========================================================================
+
+model TaxInvoice {
+  id                    String    @id @default(uuid())
+  company_id            String
+  company               Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  invoice_id            String?   @unique
+  invoice               Invoice?  @relation(fields: [invoice_id], references: [id], onDelete: SetNull)
+  
+  invoice_type          String    // OUTPUT (Keluaran), INPUT (Masukan)
+  transaction_code      String    // 01 (Standar), 02 (Pemungut Bendahara), 03 (Pemungut BUMN), 04 (DPP Nilai Lain), 07 (Tidak Dipungut), 08 (Dibebaskan PP 49), 09 (Aktiva)
+  status_code           String    // 0 (Normal), 1 (Pengganti)
+  nsfp                  String    // 16-digit Nomor Seri Faktur Pajak
+  
+  tax_period_month      Int       // 1 - 12
+  tax_period_year       Int       // e.g. 2026
+  invoice_date          DateTime
+  
+  // Counterparty Info
+  counterparty_name     String
+  counterparty_npwp     String    // 15 or 16 digit NPWP / 16 digit NIK
+  counterparty_nitku    String?   // 22 digit NITKU (Coretax)
+  counterparty_address  String?
+  
+  dpp_amount            Float     // Dasar Pengenaan Pajak
+  vat_amount            Float     // PPN Terutang
+  luxury_tax_amount     Float     @default(0) // PPnBM jika ada
+  
+  is_creditable         Boolean   @default(true) // Untuk PPN Masukan
+  approval_status       String    @default("DRAFT") // DRAFT, GENERATED, APPROVED, REJECTED, CANCELLED
+  djp_approval_code     String?   // Approval code dari DJP / Coretax
+  qr_code_url           String?
+  
+  reference_note        String?   // Keterangan tambahan / alasan penggantian
+  replacement_for_id    String?   // ID Faktur Pajak yang digantikan jika status 1
+  
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@unique([company_id, nsfp])
+  @@index([company_id, invoice_type, tax_period_year, tax_period_month])
+}
+
+// =========================================================================
+// PHASE 4: WITHHOLDING TAX (PPh 21, 22, 23, 25, 4(2))
+// =========================================================================
+
+model WithholdingCertificate {
+  id                    String    @id @default(uuid())
+  company_id            String
+  company               Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  certificate_no        String    // Nomor Bukti Pemotongan Unifikasi
+  tax_type              String    // PPH_21, PPH_22, PPH_23, PPH_4_2, PPH_26
+  tax_object_code       String    // Kode Objek Pajak (e.g. 24-104-01 Jasa Freight/Cooling, 22-100-02 Pembelian Ikan)
+  
+  period_month          Int
+  period_year           Int
+  transaction_date      DateTime
+  
+  taxpayer_type         String    // BADAN, ORANG_PRIBADI
+  taxpayer_id           String    // NPWP / NIK
+  taxpayer_name         String
+  taxpayer_address      String?
+  
+  gross_amount          Float     // Jumlah Penghasilan Bruto (DPP)
+  tax_rate              Float     // Tarif Efektif (e.g. 0.02 atau 0.0025)
+  withholding_amount    Float     // Jumlah PPh yang Dipotong / Dipungut
+  
+  reference_type        String    // VENDOR_BILL, PAYROLL, CASH_OUT
+  reference_id          String    // ID transaksi sumber
+  
+  status                String    @default("ACTIVE") // ACTIVE, CANCELLED, REVERSED
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@unique([company_id, certificate_no])
+  @@index([company_id, tax_type, period_year, period_month])
+}
+
+// =========================================================================
+// PHASE 5: CORPORATE TAX (KOREKSI FISKAL & PPH BADAN PASAL 31E)
+// =========================================================================
+
+model FiscalAdjustment {
+  id                    String    @id @default(uuid())
+  company_id            String
+  company               Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  fiscal_year           Int       // e.g. 2026
+  adjustment_type       String    // POSITIVE (Koreksi Fiskal Positif), NEGATIVE (Koreksi Fiskal Negatif)
+  category              String    // BIAYA_NATURA, SANKSI_PAJAK, BEDA_TEMPORER_PENYUSUTAN, PENGHASILAN_FINAL, BIAYA_PRIBADI_PEMILIK
+  
+  description           String
+  legal_reference       String    // UU PPh Pasal 9 ayat (1), Pasal 4 ayat (2), dll.
+  commercial_amount     Float     // Beban menurut Komersial
+  fiscal_amount         Float     // Beban menurut Fiskal
+  adjustment_amount     Float     // Selisih Koreksi
+  
+  gl_account_code       String?   // Akun beban GL terkait
+  audit_evidence        String?   // Catatan justifikasi / dokumen pembuktian
+  
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@index([company_id, fiscal_year, adjustment_type])
+}
+
+model CorporateTaxReturn {
+  id                    String    @id @default(uuid())
+  company_id            String
+  company               Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  fiscal_year           Int       // e.g. 2026
+  
+  commercial_gross_revenue Float   // Peredaran Usaha Bruto Komersial
+  commercial_net_income    Float   // Laba Bersih Komersial Sebelum Pajak
+  
+  total_positive_adj    Float     @default(0) // Total Koreksi Fiskal Positif
+  total_negative_adj    Float     @default(0) // Total Koreksi Fiskal Negatif
+  fiscal_net_income     Float     // Penghasilan Neto Fiskal (Taxable Income)
+  
+  is_eligible_pasal_31e Boolean   @default(true) // Fasilitas pengurangan tarif 50% untuk omzet s/d 4.8M / 50M
+  standard_cit_rate     Float     @default(0.22) // Tarif PPh Badan 22%
+  effective_cit_rate    Float     @default(0.11) // Tarif Efektif fasilitas (11%)
+  
+  calculated_cit_amount Float     // PPh Badan Terutang
+  total_tax_credits     Float     @default(0) // Kredit Pajak (PPh 22 + PPh 23 + Angsuran PPh 25)
+  underpayment_amount   Float     @default(0) // PPh Kurang Bayar (Pasal 29)
+  overpayment_amount    Float     @default(0) // PPh Lebih Bayar (Pasal 28A)
+  
+  monthly_pph25_next_year Float   @default(0) // Proyeksi Angsuran PPh 25 tahun berikutnya
+  
+  status                String    @default("DRAFT") // DRAFT, FINALIZED, FILED
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@unique([company_id, fiscal_year])
 }

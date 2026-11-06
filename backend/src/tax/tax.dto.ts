@@ -81,3 +81,64 @@ export interface UpdateProductTaxClassificationDto {
   effectiveFrom?: Date;
   effectiveTo?: Date;
 }
+
+
+export interface CreateTaxInvoiceDto {
+  companyId: string;
+  invoiceId?: string;
+  invoiceType: 'OUTPUT' | 'INPUT';
+  transactionCode: string; // 01, 04, 07, 08, etc.
+  statusCode?: string; // 0 normal, 1 pengganti
+  nsfp: string;
+  taxPeriodMonth: number;
+  taxPeriodYear: number;
+  invoiceDate: Date;
+  counterpartyName: string;
+  counterpartyNpwp: string;
+  counterpartyNitku?: string;
+  counterpartyAddress?: string;
+  dppAmount: number;
+  vatAmount: number;
+  luxuryTaxAmount?: number;
+  isCreditable?: boolean;
+  referenceNote?: string;
+  replacementForId?: string;
+}
+
+export interface CreateWithholdingCertificateDto {
+  companyId: string;
+  certificateNo: string;
+  taxType: 'PPH_21' | 'PPH_22' | 'PPH_23' | 'PPH_4_2' | 'PPH_26';
+  taxObjectCode: string;
+  periodMonth: number;
+  periodYear: number;
+  transactionDate: Date;
+  taxpayerType: 'BADAN' | 'ORANG_PRIBADI';
+  taxpayerId: string; // NPWP / NIK
+  taxpayerName: string;
+  taxpayerAddress?: string;
+  grossAmount: number;
+  taxRate: number;
+  withholdingAmount: number;
+  referenceType: string;
+  referenceId: string;
+}
+
+export interface CreateFiscalAdjustmentDto {
+  companyId: string;
+  fiscalYear: number;
+  adjustmentType: 'POSITIVE' | 'NEGATIVE';
+  category: string;
+  description: string;
+  legalReference: string;
+  commercialAmount: number;
+  fiscalAmount: number;
+  glAccountCode?: string;
+  auditEvidence?: string;
+}
+
+export interface CalculateCorporateTaxDto {
+  companyId: string;
+  fiscalYear: number;
+  isEligiblePasal31e?: boolean;
+}

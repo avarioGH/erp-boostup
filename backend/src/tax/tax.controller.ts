@@ -5,6 +5,7 @@ import {
   Put,
   Body,
   Param,
+  Query,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -125,4 +126,83 @@ export class TaxController {
       body.asOfDate ? new Date(body.asOfDate) : new Date(),
     );
   }
+
+  // =========================================================================
+  // PHASE 3: VAT ENGINE & FAKTUR PAJAK (NSFP) ENDPOINTS
+  // =========================================================================
+
+  @Get('invoices')
+  async getTaxInvoices(
+    @Request() req: any,
+    @Query('type') type?: 'OUTPUT' | 'INPUT',
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+  ) {
+    return this.taxService.getTaxInvoices(
+      req.user.company_id,
+      type,
+      year ? Number(year) : undefined,
+      month ? Number(month) : undefined,
+    );
+  }
+
+  @Post('invoices')
+  async createTaxInvoice(@Request() req: any, @Body() dto: any) {
+    dto.companyId = req.user.company_id;
+    return this.taxService.createTaxInvoice(dto, req.user.id || req.user.userId || 'SYSTEM');
+  }
+
+  // =========================================================================
+  // PHASE 4: WITHHOLDING TAX (PPh 21, 22, 23, 25, 4(2)) ENDPOINTS
+  // =========================================================================
+
+  @Get('withholding-certificates')
+  async getWithholdingCertificates(
+    @Request() req: any,
+    @Query('taxType') taxType?: string,
+    @Query('year') year?: string,
+  ) {
+    return this.taxService.getWithholdingCertificates(
+      req.user.company_id,
+      taxType,
+      year ? Number(year) : undefined,
+    );
+  }
+
+  @Post('withholding-certificates')
+  async createWithholdingCertificate(@Request() req: any, @Body() dto: any) {
+    dto.companyId = req.user.company_id;
+    return this.taxService.createWithholdingCertificate(dto, req.user.id || req.user.userId || 'SYSTEM');
+  }
+
+  // =========================================================================
+  // PHASE 5: CORPORATE TAX (KOREKSI FISKAL & PPH BADAN) ENDPOINTS
+  // =========================================================================
+
+  @Get('fiscal-adjustments')
+  async getFiscalAdjustments(@Request() req: any, @Query('fiscalYear') fiscalYear: string) {
+    return this.taxService.getFiscalAdjustments(
+      req.user.company_id,
+      fiscalYear ? Number(fiscalYear) : new Date().getFullYear(),
+    );
+  }
+
+  @Post('fiscal-adjustments')
+  async createFiscalAdjustment(@Request() req: any, @Body() dto: any) {
+    dto.companyId = req.user.company_id;
+    return this.taxService.createFiscalAdjustment(dto, req.user.id || req.user.userId || 'SYSTEM');
+  }
+
+  @Post('corporate-tax/calculate')
+  async calculateCorporateTax(
+    @Request() req: any,
+    @Body() body: { fiscalYear: number; isEligiblePasal31e?: boolean },
+  ) {
+    return this.taxService.calculateAndSaveCorporateTax(
+      req.user.company_id,
+      body.fiscalYear || new Date().getFullYear(),
+      body.isEligiblePasal31e ?? true,
+    );
+  }
+
 }

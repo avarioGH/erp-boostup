@@ -406,24 +406,55 @@ export class AccountingListener {
         ['Pendapatan Penjualan', 'Sales Revenue'],
       );
 
+      // Phase 6 Accounting Integration: Inspect if Invoice has tax component
+      let vatAmount = 0;
+      let dppAmount = event.payload.totalAmount;
+      try {
+        const inv = await tx.invoice.findUnique({
+          where: { id: event.sourceEntityId },
+          select: { tax: true, subtotal: true, total: true },
+        });
+        if (inv && inv.tax > 0) {
+          vatAmount = inv.tax;
+          dppAmount = Math.max(0, event.payload.totalAmount - vatAmount);
+        }
+      } catch (e) {}
+
+      const items: any[] = [
+        {
+          accountId: debitAccount,
+          debit: event.payload.totalAmount,
+          credit: 0,
+        },
+        {
+          accountId: creditAccount,
+          debit: 0,
+          credit: dppAmount,
+        },
+      ];
+
+      if (vatAmount > 0) {
+        const vatOutputAccount = await this.resolveAccount(
+          tx,
+          event.companyId,
+          ['2-1301', '2130', 'Hutang PPN'],
+          ['Hutang PPN Keluaran', 'VAT Output', 'PPN Keluaran'],
+        );
+        items.push({
+          accountId: vatOutputAccount,
+          debit: 0,
+          credit: vatAmount,
+          description: 'Hutang PPN Keluaran Faktur Pajak',
+        });
+      }
+
       await this.glService.createJournalEntryWithinTx(tx as any, {
         companyId: event.companyId,
         entryDate: event.occurredAt,
         referenceType: event.payload.type,
         referenceId: event.sourceEntityId,
         description: `Sales Invoice Posting (Event ${event.eventId})`,
-        items: [
-          {
-            accountId: debitAccount,
-            debit: event.payload.totalAmount,
-            credit: 0,
-          },
-          {
-            accountId: creditAccount,
-            debit: 0,
-            credit: event.payload.totalAmount,
-          },
-        ],
+        items: items,
       });
     } else if (event.payload.type === 'SALES_RETURN_REVENUE') {
       const arAccount = await this.resolveAccount(tx, event.companyId, ['1-1200', '1200'], ['Piutang Usaha', 'Accounts Receivable']);
