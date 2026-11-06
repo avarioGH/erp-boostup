@@ -540,3 +540,19 @@ export const AiAPI: any = {
     },
 };
 
+
+
+export const TaxAPI: any = {
+  getProfile: async () => (await api.get('/tax/profile')).data,
+  updateProfile: async (data: any) => (await api.post('/tax/profile', data)).data,
+  getRegulations: async () => (await api.get('/tax/regulations')).data,
+  createRegulation: async (data: any) => (await api.post('/tax/regulations', data)).data,
+  getCodes: async () => (await api.get('/tax/codes')).data,
+  createCode: async (data: any) => (await api.post('/tax/codes', data)).data,
+  createRule: async (data: any) => (await api.post('/tax/rules', data)).data,
+  getFishClassifications: async () => (await api.get('/tax/fish-classifications')).data,
+  updateFishClassification: async (productId: string, data: any) =>
+    (await api.put('/tax/fish-classifications/' + productId, data)).data,
+  seedStandards: async () => (await api.post('/tax/seed-standards', {})).data,
+  simulateCalculate: async (payload: any) => (await api.post('/tax/calculate', payload)).data,
+};

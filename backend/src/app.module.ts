@@ -1,3 +1,4 @@
+import { TaxModule } from './tax/tax.module';
 import { TimberSalesModule } from './sales/timber-sales.module';
 import { MasterDataModule } from './inventory/master-data/master-data.module';
 import { ApprovalModule } from './approval/approval.module';
@@ -102,6 +103,7 @@ import { SalesReturnModule } from './sales/sales-return/sales-return.module';
     OpnameModule,
     PackingModule,
     BatchReclassificationModule,
+    TaxModule,
   ],
   controllers: [AppController],
   providers: [AppService],

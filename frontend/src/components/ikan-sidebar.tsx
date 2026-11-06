@@ -224,7 +224,8 @@ const items: MenuItem[] = [
  { title: "Pengeluaran", url: "/finance/cash-out" },
  { title: "Buku Besar (GL)", url: "/finance/gl" },
  { title: "Periode Akuntansi", url: "/finance/accounting-periods" },
- { title: "Laporan Keuangan", url: "/finance/reports" }
+ { title: "Laporan Keuangan", url: "/finance/reports" },
+          { title: "Manajemen Pajak 2026", url: "/finance/taxes" }
  ]
  },
  {

@@ -122,6 +122,14 @@ model Company {
   PurchaseReturn      PurchaseReturn[]
   SalesReturn         SalesReturn[]
   batchReclassifications TimberBatchReclassification[]
+
+  // Tax Management System 2026 (Phase 1 & Phase 2)
+  taxProfiles             TaxProfile[]
+  taxRegulations          TaxRegulation[]
+  taxCodes                TaxCode[]
+  taxAccountMappings      TaxAccountMapping[]
+  taxAuditLogs            TaxAuditLog[]
+  productTaxClassifications ProductTaxClassification[]
 }
 
 model CompanySetting {
@@ -447,6 +455,8 @@ model Product {
   StockTransformationOutput StockTransformationOutput[]
   PurchaseReturnItem        PurchaseReturnItem[]
   SalesReturnItem           SalesReturnItem[]
+
+  taxClassification         ProductTaxClassification?
 
   @@unique([company_id, code])
   @@unique([company_id, barcode])
@@ -1105,6 +1115,9 @@ model ChartOfAccount {
   updated_at  DateTime      @updatedAt
   deleted_at  DateTime?
   CashAccount CashAccount[]
+
+  taxAccountMappingsDebit  TaxAccountMapping[] @relation("TaxDebitAccount")
+  taxAccountMappingsCredit TaxAccountMapping[] @relation("TaxCreditAccount")
 
   @@unique([company_id, account_code])
 }
@@ -4070,4 +4083,224 @@ model Shift {
   attendances          Attendance[]
 
   @@unique([company_id, code])
+}
+
+
+// =========================================================================
+// IKAN ERP — INDONESIA TAX MANAGEMENT SYSTEM 2026 (PHASE 1 & PHASE 2)
+// =========================================================================
+
+model TaxProfile {
+  id                    String    @id @default(uuid())
+  company_id            String
+  company               Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  npwp                  String    // 15 or 16 digit NPWP
+  nitku                 String?   // 22 digit Nomor Identitas Tempat Kegiatan Usaha (Coretax)
+  taxpayer_name         String
+  tax_office_code       String?   // Kode KPP (e.g. 054)
+  klu_code              String?   // Klasifikasi Lapangan Usaha (e.g. 03111 Perikanan Laut)
+  
+  is_pkp                Boolean   @default(false)
+  pkp_number            String?   // Nomor Pengukuhan Pengusaha Kena Pajak
+  pkp_date              DateTime? // Tanggal Pengukuhan PKP
+  
+  signer_name           String?   // Nama Penandatangan Faktur Pajak
+  signer_position       String?   // Jabatan Penandatangan
+  certificate_expiry    DateTime? // Masa Berlaku Sertifikat Elektronik
+  
+  effective_from        DateTime  @default(now())
+  effective_to          DateTime?
+  status                String    @default("ACTIVE") // ACTIVE, INACTIVE
+
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@index([company_id])
+}
+
+model TaxRegulation {
+  id                    String           @id @default(uuid())
+  company_id            String
+  company               Company          @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  regulation_number     String           // e.g. "PMK-131/PMK.03/2024", "PP-49/2022"
+  title                 String
+  law_type              String           // UU, PP, PMK, PER_DIRJEN
+  category              String           // VAT, PPH_21, PPH_22, PPH_23, PPH_FINAL, CORPORATE_TAX
+  
+  description           String?
+  source_document_url   String?
+  effective_from        DateTime
+  effective_to          DateTime?
+  status                String           @default("ACTIVE") // ACTIVE, SUPERSEDED, REVOKED
+
+  rules                 TaxRule[]
+  
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
+
+  @@unique([company_id, regulation_number])
+  @@index([company_id])
+}
+
+model TaxCode {
+  id                    String           @id @default(uuid())
+  company_id            String
+  company               Company          @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  code                  String           // e.g. "VAT-OUT-11", "VAT-OUT-12", "VAT-EXEMPT-PP49", "PPH22-FISH-025", "PPH23-SRV-2"
+  name                  String
+  tax_type              String           // VAT_OUTPUT, VAT_INPUT, WHT_21, WHT_22, WHT_23, WHT_4_2, PPH_25, CIT
+  
+  is_active             Boolean          @default(true)
+  description           String?
+
+  rules                 TaxRule[]
+  accountMappings       TaxAccountMapping[]
+  productClassifications ProductTaxClassification[]
+
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
+
+  @@unique([company_id, code])
+  @@index([company_id])
+}
+
+model TaxRule {
+  id                    String           @id @default(uuid())
+  regulation_id         String
+  regulation            TaxRegulation    @relation(fields: [regulation_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tax_code_id           String
+  tax_code              TaxCode          @relation(fields: [tax_code_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  tax_treatment         String           // STANDARD, SPECIAL_DPP, EXEMPT, NOT_COLLECTED, NON_TAXABLE
+  calculation_method    String           // PERCENTAGE, FLAT, PROGRESSIVE_TIER, TER_CATEGORY
+  
+  tariff_rate           Float            // e.g. 0.11 (11%), 0.12 (12%), 0.02 (2%), 0.0025 (0.25%)
+  dpp_factor            Float            @default(1.0) // 1.0 = 100%, 0.11/0.12 for Nilai Lain, etc.
+  minimum_threshold     Float            @default(0) // Minimum transaction value subject to tax
+  
+  is_creditable         Boolean          @default(true) // For VAT Input: can be credited vs non-creditable
+  requires_npwp         Boolean          @default(true)
+  non_npwp_penalty_rate Float            @default(0) // Extra surcharge e.g. 100% for PPh 23 without NPWP
+
+  effective_from        DateTime
+  effective_to          DateTime?
+  status                String           @default("ACTIVE") // ACTIVE, DEPRECATED
+
+  versions              TaxRuleVersion[]
+
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
+
+  @@index([tax_code_id])
+  @@index([regulation_id])
+}
+
+model TaxRuleVersion {
+  id                    String    @id @default(uuid())
+  rule_id               String
+  rule                  TaxRule   @relation(fields: [rule_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  version_number        Int       @default(1)
+  change_reason         String
+  tariff_rate_snapshot  Float
+  dpp_factor_snapshot   Float
+  formula_payload       String?   // JSON representation of computation parameters
+  
+  effective_from        DateTime
+  effective_to          DateTime?
+  approved_by           String?
+  
+  created_at            DateTime  @default(now())
+
+  @@unique([rule_id, version_number])
+}
+
+model TaxAccountMapping {
+  id                    String         @id @default(uuid())
+  company_id            String
+  company               Company        @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tax_code_id           String
+  tax_code              TaxCode        @relation(fields: [tax_code_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  transaction_type      String         // SALES_INVOICE, VENDOR_BILL, POS, PAYROLL, SALES_RETURN, PURCHASE_RETURN
+  
+  debit_account_id      String
+  debit_account         ChartOfAccount @relation("TaxDebitAccount", fields: [debit_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  credit_account_id     String
+  credit_account        ChartOfAccount @relation("TaxCreditAccount", fields: [credit_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  status                String         @default("ACTIVE")
+  created_at            DateTime       @default(now())
+  updated_at            DateTime       @updatedAt
+
+  @@unique([company_id, tax_code_id, transaction_type])
+  @@index([company_id])
+}
+
+model TaxAuditLog {
+  id                    String    @id @default(uuid())
+  company_id            String
+  company               Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  
+  entity_type           String    // TAX_PROFILE, TAX_RULE, TAX_CLASSIFICATION, TAX_CALCULATION, TAX_INVOICE
+  entity_id             String
+  action                String    // CREATE, UPDATE, DEPRECATE, OVERRIDE, REVERSE, COMPUTE
+  
+  performed_by          String
+  previous_state        String?   // JSON
+  new_state             String    // JSON
+  regulatory_evidence   String?   // Reference note or attached statutory ground
+  
+  ip_address            String?
+  user_agent            String?
+  created_at            DateTime  @default(now())
+
+  @@index([company_id, entity_type, entity_id])
+}
+
+// -------------------------------------------------------------------------
+// PHASE 2: FISH PRODUCT TAX CLASSIFICATION
+// -------------------------------------------------------------------------
+
+model ProductTaxClassification {
+  id                    String    @id @default(uuid())
+  company_id            String
+  company               Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  product_id            String    @unique
+  product               Product   @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  
+  fish_species_category String    // TUNA, KERAPU, MAHI_MAHI, UDANG, TENGGIRI, SALMON, OTHER
+  scientific_name       String?   // e.g. "Thunnus albacares" (Yellowfin Tuna)
+  
+  product_condition     String    // FRESH_CHILLED, FROZEN, PROCESSED_SMOKED, PROCESSED_CANNED, DRIED_SALTED
+  cutting_form          String    // WHOLE, ROUND, GUTTED_GILLED, FILLET_SKIN_ON, FILLET_SKINLESS, LOIN, STEAK, PORTION
+  origin_type           String    // WILD_CAPTURE_MARINE, AQUACULTURE_FRESHWATER, AQUACULTURE_BRACKISH, IMPORTED
+  
+  hs_code               String?   // Harmonized System Code (e.g. 0302.32.00 Yellowfin tuna segar)
+  
+  vat_classification    String    // EXEMPT_FACILITY, STANDARD_TAXABLE, NOT_SUBJECT, LUXURY_TAX
+  tax_facility          String?   // "DIBEBASKAN_PP_49_2022_PASAL_7", "TIDAK_DIPUNGUT_KAWASAN_BERIKAT", "NONE"
+  legal_reference       String    // Legal statutory reference string
+  
+  tax_code_id           String?
+  tax_code              TaxCode?  @relation(fields: [tax_code_id], references: [id], onDelete: SetNull)
+
+  review_status         String    @default("PENDING_REVIEW") // PENDING_REVIEW, VERIFIED, REJECTED
+  reviewed_by           String?
+  reviewed_at           DateTime?
+  review_notes          String?
+  regulatory_evidence   String?   // URL/Text justification of why it qualifies for the exemption
+  
+  effective_from        DateTime  @default(now())
+  effective_to          DateTime?
+
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@index([company_id])
+  @@index([fish_species_category, product_condition])
 }
