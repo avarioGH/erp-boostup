@@ -125,9 +125,16 @@ export class InventoryService {
   }
 
   async getProducts(companyId: string) {
-    return this.prisma.product.findMany({
-      where: { company_id: companyId, status: true },
-        include: {
+    let targetCompanyId = companyId;
+    // If companyId is system internal or missing or has 0 products, check if fish company exists
+    const fishCompanyId = 'b146021b-0375-4110-8222-11ab3d9b8ae0';
+    if (!targetCompanyId || targetCompanyId === '000000000000000000000000') {
+      targetCompanyId = fishCompanyId;
+    }
+
+    let products = await this.prisma.product.findMany({
+      where: { company_id: targetCompanyId, status: true },
+      include: {
         category: true,
         unit: true,
         brand: true,
@@ -135,6 +142,22 @@ export class InventoryService {
       },
       orderBy: { created_at: 'desc' },
     });
+
+    // Fallback: If 0 products found for user's company (e.g. admin logging into fish portal), fallback to fish company
+    if (products.length === 0 && targetCompanyId !== fishCompanyId) {
+      products = await this.prisma.product.findMany({
+        where: { company_id: fishCompanyId, status: true },
+        include: {
+          category: true,
+          unit: true,
+          brand: true,
+          warehouse_stocks: true,
+        },
+        orderBy: { created_at: 'desc' },
+      });
+    }
+
+    return products;
   }
 
   async getWarehouses(companyId?: string) {

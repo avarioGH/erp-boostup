@@ -10,6 +10,21 @@ async function bootstrap() {
   // 1. HTTP Security Headers (Anti XSS, Clickjacking, MIME-sniffing)
   app.use(helmet());
 
+  // Disable ETag on NestJS Express app to prevent 304 empty responses in Next.js API rewrites
+  const expressApp = (app.getHttpAdapter() as any).getInstance();
+  if (expressApp && typeof expressApp.set === 'function') {
+    expressApp.set('etag', false);
+  }
+
+  // Prevent caching for all API endpoints so fresh DB data is always returned on refresh
+  app.use((req: any, res: any, next: any) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+    next();
+  });
+
   // 2. Strict Rate Limiting on Login (Anti Brute-Force & Credential Stuffing)
   app.use(
     '/auth/login',

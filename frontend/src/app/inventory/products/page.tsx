@@ -79,52 +79,58 @@ export default function ProductInventory() {
     return () => window.removeEventListener("warehouse_changed", handleWarehouseChange);
   }, []);
 
-  useEffect(() => {
-   async function fetchData() {
- try {
- setLoading(true)
- setIsError(false)
- const storedActive = localStorage.getItem("active_warehouse");
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setIsError(false);
+      const storedActive = typeof window !== 'undefined' ? localStorage.getItem("active_warehouse") : null;
       if (storedActive && storedActive !== "null" && storedActive !== "undefined") {
-        setActiveWarehouse(JSON.parse(storedActive));
+        try { setActiveWarehouse(JSON.parse(storedActive)); } catch(e) {}
       } else {
         setActiveWarehouse(null);
       }
       
       const [dbProducts, whs, cats] = await Promise.all([
- InventoryAPI.getProducts(),
- InventoryAPI.getWarehouses(),
- InventoryAPI.getCategories()
- ])
- setWarehouses(whs)
- setCategories(cats)
- 
- // Map Prisma products to UI format
- const mapped = dbProducts.map((p: any) => {
- // Map stocks by warehouse ID
- const stockMap: Record<string, number> = {}
- p.warehouse_stocks?.forEach((ws: any) => {
- stockMap[ws.warehouse_id] = ws.current_stock
- })
- 
- return {
- id: p.id,
- sku: p.code,
- name: p.name,
- category: p.category?.name ||"-",
- price: Number(p.selling_price), weight: p.weight,
- stockMap, barcode: p.barcode, description: p.description, purchase_price: p.purchase_price, category_id: p.category_id }
- })
- setProducts(mapped)
- } catch (error) {
- console.error("Database connection failed:", error)
- setIsError(true)
- } finally {
- setLoading(false)
- }
- }
- fetchData()
- }, [])
+        InventoryAPI.getProducts(),
+        InventoryAPI.getWarehouses(),
+        InventoryAPI.getCategories()
+      ]);
+      setWarehouses(Array.isArray(whs) ? whs : []);
+      setCategories(Array.isArray(cats) ? cats : []);
+      
+      if (Array.isArray(dbProducts)) {
+        const mapped = dbProducts.map((p: any) => {
+          const stockMap: Record<string, number> = {};
+          p.warehouse_stocks?.forEach((ws: any) => {
+            stockMap[ws.warehouse_id] = ws.current_stock;
+          });
+          return {
+            id: p.id,
+            sku: p.code,
+            name: p.name,
+            category: p.category?.name || "-",
+            price: Number(p.selling_price),
+            weight: p.weight,
+            stockMap,
+            barcode: p.barcode,
+            description: p.description,
+            purchase_price: p.purchase_price,
+            category_id: p.category_id
+          };
+        });
+        setProducts(mapped);
+      }
+    } catch (error) {
+      console.error("Database connection failed:", error);
+      setIsError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
  const handleUnitChange = (newUnit: 'gr' | 'kg' | 'ons') => {
     if (!formData.weight) {
@@ -603,13 +609,22 @@ export default function ProductInventory() {
  </TableRow>
  </TableHeader>
  <TableBody>
- {filteredProducts.length === 0 ? (
- <TableRow>
- <TableCell colSpan={5 + warehouses.filter(wh => !activeWarehouse || activeWarehouse.id === wh.id).length} className="h-32 text-center text-muted-foreground">
- Tidak ada produk yang ditemukan.
- </TableCell>
- </TableRow>
- ) : (
+          {loading ? (
+            <TableRow>
+              <TableCell colSpan={6 + warehouses.filter(wh => !activeWarehouse || activeWarehouse.id === wh.id).length} className="h-32 text-center text-muted-foreground">
+                <div className="flex items-center justify-center gap-2">
+                  <RefreshCcw className="w-5 h-5 animate-spin text-primary" />
+                  <span>Memuat data produk...</span>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : filteredProducts.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6 + warehouses.filter(wh => !activeWarehouse || activeWarehouse.id === wh.id).length} className="h-32 text-center text-muted-foreground">
+                Tidak ada produk yang ditemukan.
+              </TableCell>
+            </TableRow>
+          ) : (
  paginatedProducts.map((p) => {
  const totalStock = warehouses.reduce((sum, wh) => sum + (p.stockMap[wh.id] || 0), 0);
  return (

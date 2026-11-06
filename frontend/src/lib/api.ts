@@ -10,7 +10,12 @@ const getBaseUrl = () => {
 export const api = axios.create({
   baseURL: getBaseUrl(),
   timeout: 15000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  },
 });
 
 // Update baseURL on client-side requests dynamically
@@ -18,15 +23,21 @@ api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     config.baseURL = getBaseUrl();
   }
-  const token = typeof window !== 'undefined' ? localStorage.getItem('erp_token') : null;
+  const token = typeof window !== 'undefined' ? (localStorage.getItem('erp_token') || localStorage.getItem('token')) : null;
   if (token) config.headers.Authorization = 'Bearer ' + token;
+  
+  config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+  config.headers['Pragma'] = 'no-cache';
+
   const activeWarehouse = typeof window !== 'undefined' ? localStorage.getItem('active_warehouse') : null;
-  if (activeWarehouse) {
+  if (activeWarehouse && activeWarehouse !== 'null' && activeWarehouse !== 'undefined') {
     try {
       const parsed = JSON.parse(activeWarehouse);
       if (parsed && parsed.id) {
         config.headers['X-Warehouse-Id'] = parsed.id;
-        config.params = { ...config.params, warehouseId: parsed.id };
+        if (config.url && !config.url.includes('/inventory/products') && !config.url.includes('/inventory/categories')) {
+          config.params = { ...config.params, warehouseId: parsed.id };
+        }
       }
     } catch(e) {}
   }
@@ -38,7 +49,7 @@ api.interceptors.response.use(
     // Cache successful GET responses in sessionStorage for instant offline/re-render fallback
     if (typeof window !== 'undefined' && response.config.method?.toLowerCase() === 'get' && response.data) {
       try {
-        const cacheKey = `erp_cache_${response.config.url}_${JSON.stringify(response.config.params || {})}`;
+        const cacheKey = `erp_cache_${response.config.url}`;
         sessionStorage.setItem(cacheKey, JSON.stringify({ data: response.data, timestamp: Date.now() }));
       } catch (e) {}
     }
@@ -59,7 +70,7 @@ api.interceptors.response.use(
       const config = error.config;
       if (config && config.method?.toLowerCase() === 'get') {
         try {
-          const cacheKey = `erp_cache_${config.url}_${JSON.stringify(config.params || {})}`;
+          const cacheKey = `erp_cache_${config.url}`;
           const cached = sessionStorage.getItem(cacheKey);
           if (cached) {
             const parsed = JSON.parse(cached);
