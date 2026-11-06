@@ -1642,6 +1642,8 @@ model Customer {
   billing_address  String?
   delivery_address String?
   tax_id           String?
+  credit_limit     Float?   @default(0)
+  credit_policy    String?
 
   orders               SalesOrder[]
   quotations           Quotation[]
@@ -1718,6 +1720,12 @@ model SalesOrder {
   delivery_address String?
   delivery_status  String? // PENDING, PARTIAL, DELIVERED
   invoice_status   String? // PENDING, PARTIAL, INVOICED
+  payment_terms    String?
+  currency         String?   @default("IDR")
+  subtotal         Float?    @default(0)
+  discount_percent Float?    @default(0)
+  discount_amount  Float?    @default(0)
+  tax              Float?    @default(0)
 
   items      SalesOrderItem[]
   deliveries DeliveryOrder[]
@@ -1942,6 +1950,12 @@ model Quotation {
   billing_address  String?
   delivery_address String?
   payment_terms    String?
+  email            String?
+  currency         String?   @default("IDR")
+  subtotal         Float?    @default(0)
+  discount_percent Float?    @default(0)
+  discount_amount  Float?    @default(0)
+  tax              Float?    @default(0)
 
   items        QuotationItem[]
   sales_orders SalesOrder[]
@@ -2033,6 +2047,11 @@ model Invoice {
   due_date       DateTime?
   status         String // DRAFT, POSTED, PARTIALLY PAID, PAID, CANCELLED
 
+  warehouse_id     String?
+  payment_terms    String?
+  currency         String?   @default("IDR")
+  discount_percent Float?    @default(0)
+  discount_amount  Float?    @default(0)
   subtotal         Float
   tax              Float
   total            Float
