@@ -382,8 +382,8 @@ export class TaxService {
 
   async seedDefaultTaxRegulationsAndRules(companyId: string, userId: string = 'SYSTEM') {
     this.logger.log(`Seeding Indonesian 2026 Tax Regulations and Rules for company: ${companyId}`);
-
-    return this.prisma.$transaction(async (tx) => {
+    try {
+      return await this.prisma.$transaction(async (tx) => {
       // 1. Ensure Standard COA Accounts exist for Tax
       const findOrCreateAccount = async (code: string, name: string, typeName: string, normalBalance: string) => {
         let acc = await tx.chartOfAccount.findUnique({
@@ -711,5 +711,9 @@ export class TaxService {
       this.logger.log(`Seeding completed successfully for company ${companyId}`);
       return { success: true };
     });
+    } catch (err: any) {
+      this.logger.error(`Error during seedDefaultTaxRegulationsAndRules: ${err?.message}`, err?.stack);
+      throw err;
+    }
   }
 }
