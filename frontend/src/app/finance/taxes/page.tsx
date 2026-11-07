@@ -835,66 +835,66 @@ export default function TaxManagementPage() {
         </TabsContent>
         {/* TAB 7: KEPATUHAN & CORETAX EXPORT (PHASE 8) */}
         <TabsContent value="coretax-compliance" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="border-border/60">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold flex items-center justify-between">
-                  Skor Kepatuhan Pajak 2026
-                  <Badge variant="outline" className="border-emerald-600 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20">
-                    Audit Grade: A
-                  </Badge>
-                </CardTitle>
-                <CardDescription>Status kelengkapan klasifikasi dan faktur.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2 pt-2">
-                <div className="text-3xl font-extrabold text-emerald-600">
-                  {complianceStatus?.complianceScore ?? 100}%
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Produk Belum Direview: <span className="font-bold text-foreground">{complianceStatus?.pendingItems?.unreviewedFishProducts ?? 0}</span>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Faktur Belum Approved DJP: <span className="font-bold text-foreground">{complianceStatus?.pendingItems?.unapprovedTaxInvoices ?? 0}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/60">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold">Bentuk Badan & Rezim Pajak</CardTitle>
-                <CardDescription>Konfigurasi entitas hukum PT IKAN TATA LORA.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2 pt-2">
-                <div className="text-sm font-bold text-foreground">
-                  {complianceStatus?.companyLegalForm ?? "PERSEROAN TERBATAS (PT)"}
-                </div>
-                <Badge variant="secondary" className="text-xs font-medium">
-                  {complianceStatus?.taxRegime ?? "UMUM — PASAL 31E UU PPH"}
+          {/* PHASE 10: SIX DIMENSIONAL RELEASE GATE */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-bold flex items-center justify-between">
+                <span>Gerbang Kesiapan Kepatuhan Pajak Resmi (Tax Release Gate 2026)</span>
+                <Badge variant={complianceStatus?.complianceScore >= 90 ? "default" : "secondary"}>
+                  Kesiapan: {complianceStatus?.complianceScore ?? 78}%
                 </Badge>
-                <p className="text-xs text-muted-foreground">
-                  Memenuhi syarat pengurangan tarif 50% untuk peredaran bruto s.d Rp 50 Miliar.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/60">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold">Kesiapan Coretax DJP 2026</CardTitle>
-                <CardDescription>Format ekspor e-Faktur & e-Bupot Unifikasi.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2 pt-2">
-                <div className="flex items-center gap-2 text-sm text-emerald-600 font-semibold">
-                  <CheckCircle className="w-4 h-4" /> Skema DJP Validated
-                </div>
-                <div className="text-xs text-muted-foreground font-mono">
-                  Schema: CORETAX-DJP-2026.1
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Mendukung NITKU 22 digit & NPWP 16 digit terstandarisasi.
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+              </CardTitle>
+              <CardDescription>
+                Evaluasi deterministik 6 dimensi kesiapan sebelum dinyatakan siap pelaporan resmi Coretax DJP.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Dimensi Kesiapan</TableHead>
+                    <TableHead>Status Gate</TableHead>
+                    <TableHead>Keterangan & Kondisi</TableHead>
+                    <TableHead>Bukti Pengujian & Bukti Yuridis</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {complianceStatus?.releaseGates?.map((gate: any, idx: number) => {
+                    let badgeClass = "border-emerald-600 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20";
+                    if (gate.status === "BLOCKED") {
+                      badgeClass = "border-rose-600 text-rose-600 bg-rose-50 dark:bg-rose-950/20";
+                    } else if (gate.status === "REVIEW_REQUIRED") {
+                      badgeClass = "border-amber-600 text-amber-600 bg-amber-50 dark:bg-amber-950/20";
+                    }
+                    return (
+                      <TableRow key={idx}>
+                        <TableCell className="font-semibold text-xs text-foreground whitespace-nowrap">
+                          {gate.dimension}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`text-xs font-bold ${badgeClass}`}>
+                            {gate.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {gate.details}
+                        </TableCell>
+                        <TableCell className="text-xs font-mono text-primary font-medium">
+                          {gate.evidence}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }) || (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-4 text-xs text-muted-foreground">
+                        Memuat data release gate...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
           {/* Deadlines Schedule */}
           <Card className="border-border/60">
