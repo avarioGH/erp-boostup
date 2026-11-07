@@ -936,10 +936,30 @@ export class TaxService {
     const fiscalNetIncome = Math.max(0, commercialNetIncome + totalPositive - totalNegative);
 
     // 4. Tax Calculation under Article 31E UU PPh
-    // If turnover <= 4.8 Billion, 50% discount on standard CIT rate (22% * 50% = 11%)
+    // Formulasi Pasal 31E UU PPh:
+    // a. Peredaran Bruto <= 4.8 Miliar: Seluruh PKP mendapat diskon 50% (Tarif 11%)
+    // b. 4.8 Miliar < Peredaran Bruto <= 50 Miliar: Sebagian PKP mendapat diskon 50%, sisanya tarif normal 22%
+    //    PKP Fasilitas = (4.8 Miliar / Peredaran Bruto) * PKP Total
+    //    PKP Non-Fasilitas = PKP Total - PKP Fasilitas
+    // c. Peredaran Bruto > 50 Miliar: Seluruh PKP tarif normal 22%
     const standardRate = 0.22;
-    const effectiveRate = isEligiblePasal31e && commercialGrossRevenue <= 4800000000 ? 0.11 : standardRate;
-    const calculatedCit = Math.round(fiscalNetIncome * effectiveRate);
+    let calculatedCit = 0;
+    let effectiveRate = standardRate;
+
+    if (isEligiblePasal31e && commercialGrossRevenue <= 4800000000) {
+      effectiveRate = 0.11;
+      calculatedCit = Math.round(fiscalNetIncome * effectiveRate);
+    } else if (isEligiblePasal31e && commercialGrossRevenue <= 50000000000) {
+      const facilityPkp = Math.round((4800000000 / commercialGrossRevenue) * fiscalNetIncome);
+      const nonFacilityPkp = Math.max(0, fiscalNetIncome - facilityPkp);
+      const taxFacility = Math.round(facilityPkp * 0.11);
+      const taxNonFacility = Math.round(nonFacilityPkp * standardRate);
+      calculatedCit = taxFacility + taxNonFacility;
+      effectiveRate = fiscalNetIncome > 0 ? Number((calculatedCit / fiscalNetIncome).toFixed(4)) : standardRate;
+    } else {
+      effectiveRate = standardRate;
+      calculatedCit = Math.round(fiscalNetIncome * standardRate);
+    }
 
     // 5. Fetch Tax Credits (PPh 22 & PPh 23 withholding certificates)
     const certificates = await this.prisma.withholdingCertificate.findMany({
@@ -992,4 +1012,154 @@ export class TaxService {
     return taxReturn;
   }
 
+
+  // =========================================================================
+  // PHASE 8: CORETAX EXPORT CENTER & COMPLIANCE HARDENING
+  // =========================================================================
+
+  async generateCoretaxPpnExport(companyId: string, taxPeriodMonth: number, taxPeriodYear: number) {
+    const invoices = await this.prisma.taxInvoice.findMany({
+      where: {
+        company_id: companyId,
+        tax_period_month: Number(taxPeriodMonth),
+        tax_period_year: Number(taxPeriodYear),
+      },
+      orderBy: { invoice_date: 'asc' },
+    });
+
+    // Generate Coretax XML-ready format & JSON structure adhering to PER-03/PJ/2022 stdd PER-11/PJ/2025
+    const outputRows = invoices.map((inv) => ({
+      KD_JENIS_TRANSAKSI: inv.transaction_code,
+      FG_PENGGANTI: inv.status_code,
+      NOMOR_FAKTUR: inv.nsfp,
+      MASA_PAJAK: inv.tax_period_month,
+      TAHUN_PAJAK: inv.tax_period_year,
+      TANGGAL_FAKTUR: inv.invoice_date.toISOString().split('T')[0],
+      NPWP_PENJUAL: inv.invoice_type === 'OUTPUT' ? '012345678011000' : inv.counterparty_npwp,
+      NAMA_PENJUAL: inv.invoice_type === 'OUTPUT' ? 'PT IKAN TATA LORA' : inv.counterparty_name,
+      NPWP_LAWAN_TRANSAKSI: inv.counterparty_npwp,
+      NITKU_LAWAN_TRANSAKSI: inv.counterparty_nitku || '0000000000000000',
+      NAMA_LAWAN_TRANSAKSI: inv.counterparty_name,
+      ALAMAT_LAWAN_TRANSAKSI: inv.counterparty_address || '-',
+      JUMLAH_DPP: inv.dpp_amount,
+      JUMLAH_PPN: inv.vat_amount,
+      JUMLAH_PPNBM: inv.luxury_tax_amount,
+      STATUS_APPROVAL: inv.approval_status,
+      KODE_APPROVAL_DJP: inv.djp_approval_code,
+      IS_CREDITABLE: inv.is_creditable ? 1 : 0,
+      FAKTUR_PENGGANTI_REF: inv.replacement_for_id || null,
+    }));
+
+    return {
+      schemaVersion: 'CORETAX-DJP-PPN-2026.1',
+      generatedAt: new Date().toISOString(),
+      companyId,
+      taxPeriodMonth: Number(taxPeriodMonth),
+      taxPeriodYear: Number(taxPeriodYear),
+      recordCount: outputRows.length,
+      totalDpp: outputRows.reduce((sum, r) => sum + r.JUMLAH_DPP, 0),
+      totalVat: outputRows.reduce((sum, r) => sum + r.JUMLAH_PPN, 0),
+      data: outputRows,
+    };
+  }
+
+  async generateCoretaxUnifikasiExport(companyId: string, taxPeriodMonth: number, taxPeriodYear: number) {
+    const certificates = await this.prisma.withholdingCertificate.findMany({
+      where: {
+        company_id: companyId,
+        period_month: Number(taxPeriodMonth),
+        period_year: Number(taxPeriodYear),
+        status: 'ACTIVE',
+      },
+      orderBy: { transaction_date: 'asc' },
+    });
+
+    // Format Coretax e-Bupot Unifikasi (PPh 21, 22, 23, 15, 4(2))
+    const bupotRows = certificates.map((b) => ({
+      NOMOR_BUKTI_POTONG: b.certificate_no,
+      JENIS_PPH: b.tax_type,
+      KODE_OBJEK_PAJAK: b.tax_object_code,
+      MASA_PAJAK: b.period_month,
+      TAHUN_PAJAK: b.period_year,
+      TANGGAL_DOKUMEN: b.transaction_date.toISOString().split('T')[0],
+      TIPE_IDENTITAS: b.taxpayer_id.length === 16 ? 'NIK_OR_NPWP16' : 'NPWP15',
+      NOMOR_IDENTITAS: b.taxpayer_id,
+      NAMA_PENERIMA: b.taxpayer_name,
+      ALAMAT_PENERIMA: b.taxpayer_address || '-',
+      JUMLAH_PENGHASILAN_BRUTO: b.gross_amount,
+      TARIF_PERSEN: b.tax_rate * 100,
+      JUMLAH_PPH_DIPOTONG: b.withholding_amount,
+      DOKUMEN_DASAR_PEMOTONGAN: b.reference_type + ':' + b.reference_id,
+      STATUS: b.status,
+    }));
+
+    return {
+      schemaVersion: 'CORETAX-DJP-EBUPOT-UNIFIKASI-2026.1',
+      generatedAt: new Date().toISOString(),
+      companyId,
+      taxPeriodMonth: Number(taxPeriodMonth),
+      taxPeriodYear: Number(taxPeriodYear),
+      recordCount: bupotRows.length,
+      totalGross: bupotRows.reduce((sum, r) => sum + r.JUMLAH_PENGHASILAN_BRUTO, 0),
+      totalWithheld: bupotRows.reduce((sum, r) => sum + r.JUMLAH_PPH_DIPOTONG, 0),
+      data: bupotRows,
+    };
+  }
+
+  async getComplianceStatus(companyId: string) {
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+
+    const [profile, unreviewedFish, pendingInvoices, latestReturn] = await Promise.all([
+      this.getActiveTaxProfile(companyId),
+      this.prisma.productTaxClassification.count({
+        where: { company_id: companyId, review_status: { in: ['PENDING_REVIEW', 'REVIEW_REQUIRED'] } },
+      }),
+      this.prisma.taxInvoice.count({
+        where: { company_id: companyId, approval_status: { not: 'APPROVED' } },
+      }),
+      this.prisma.corporateTaxReturn.findFirst({
+        where: { company_id: companyId, fiscal_year: currentYear },
+      }),
+    ]);
+
+    const vatDeadline = new Date(currentYear, currentMonth, 0);
+    const pph21Deadline = new Date(currentYear, currentMonth, 20);
+
+    return {
+      companyId,
+      taxpayerName: profile?.taxpayer_name || 'PT IKAN TATA LORA',
+      npwp: profile?.npwp || '01.234.567.8-011.000',
+      isPkp: profile?.is_pkp ?? true,
+      companyLegalForm: profile?.company_legal_form || 'PERSEROAN_TERBATAS',
+      taxRegime: profile?.tax_regime || 'UMUM_PASAL_31E',
+      complianceScore: unreviewedFish === 0 && pendingInvoices === 0 ? 100 : 85,
+      pendingItems: {
+        unreviewedFishProducts: unreviewedFish,
+        unapprovedTaxInvoices: pendingInvoices,
+      },
+      deadlines: [
+        {
+          taxType: 'SPT Masa PPN',
+          period: String(currentMonth) + '/' + String(currentYear),
+          paymentDeadline: vatDeadline.toISOString().split('T')[0],
+          filingDeadline: vatDeadline.toISOString().split('T')[0],
+          status: 'UPCOMING',
+        },
+        {
+          taxType: 'PPh Unifikasi & PPh 21',
+          period: String(currentMonth) + '/' + String(currentYear),
+          paymentDeadline: new Date(currentYear, currentMonth, 10).toISOString().split('T')[0],
+          filingDeadline: pph21Deadline.toISOString().split('T')[0],
+          status: 'UPCOMING',
+        },
+        {
+          taxType: 'SPT Tahunan PPh Badan (1771)',
+          period: 'Tahun Pajak ' + String(currentYear - 1),
+          filingDeadline: String(currentYear) + '-04-30',
+          status: latestReturn ? 'FILED' : 'DRAFTING',
+        },
+      ],
+    };
+  }
 }

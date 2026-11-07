@@ -205,4 +205,35 @@ export class TaxController {
     );
   }
 
+
+  // =========================================================================
+  // PHASE 8: CORETAX EXPORT & COMPLIANCE ENDPOINTS
+  // =========================================================================
+
+  @Get('coretax/ppn')
+  async exportCoretaxPpn(
+    @Request() req: any,
+    @Query('month') month: string,
+    @Query('year') year: string,
+  ) {
+    const m = month ? Number(month) : new Date().getMonth() + 1;
+    const y = year ? Number(year) : new Date().getFullYear();
+    return this.taxService.generateCoretaxPpnExport(req.user.company_id, m, y);
+  }
+
+  @Get('coretax/unifikasi')
+  async exportCoretaxUnifikasi(
+    @Request() req: any,
+    @Query('month') month: string,
+    @Query('year') year: string,
+  ) {
+    const m = month ? Number(month) : new Date().getMonth() + 1;
+    const y = year ? Number(year) : new Date().getFullYear();
+    return this.taxService.generateCoretaxUnifikasiExport(req.user.company_id, m, y);
+  }
+
+  @Get('compliance-status')
+  async getComplianceStatus(@Request() req: any) {
+    return this.taxService.getComplianceStatus(req.user.company_id);
+  }
 }

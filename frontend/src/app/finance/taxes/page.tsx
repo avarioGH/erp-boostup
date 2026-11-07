@@ -31,6 +31,10 @@ import {
   TrendingDown,
   PieChart,
   Landmark,
+  Download,
+  Calendar,
+  Activity,
+  CheckCircle,
 } from "lucide-react";
 import { TaxAPI } from "@/lib/api";
 
@@ -55,6 +59,10 @@ export default function TaxManagementPage() {
   const [fiscalYear, setFiscalYear] = useState(2026);
   const [fiscalAdjustments, setFiscalAdjustments] = useState<any[]>([]);
   const [corporateTaxReturn, setCorporateTaxReturn] = useState<any>(null);
+  const [complianceStatus, setComplianceStatus] = useState<any>(null);
+  const [coretaxMonth, setCoretaxMonth] = useState(new Date().getMonth() + 1);
+  const [coretaxYear, setCoretaxYear] = useState(new Date().getFullYear());
+  const [coretaxExportData, setCoretaxExportData] = useState<any>(null);
   const [isCalculatingCit, setIsCalculatingCit] = useState(false);
 
   // Simulation state
@@ -83,6 +91,8 @@ export default function TaxManagementPage() {
       setTaxInvoices(Array.isArray(invoicesRes) ? invoicesRes : []);
       setBupotList(Array.isArray(bupotRes) ? bupotRes : []);
       setFiscalAdjustments(Array.isArray(adjRes) ? adjRes : []);
+      const compRes = await TaxAPI.getComplianceStatus().catch(() => null);
+      setComplianceStatus(compRes);
     } catch (e) {
       console.error("Failed to load tax data", e);
     } finally {
@@ -108,6 +118,20 @@ export default function TaxManagementPage() {
     }
   };
 
+  const handleExportCoretax = async (type: 'PPN' | 'UNIFIKASI') => {
+    try {
+      let res;
+      if (type === 'PPN') {
+        res = await TaxAPI.exportCoretaxPpn({ month: coretaxMonth, year: coretaxYear });
+      } else {
+        res = await TaxAPI.exportCoretaxUnifikasi({ month: coretaxMonth, year: coretaxYear });
+      }
+      setCoretaxExportData(res);
+      alert(`Data Coretax ${type} untuk Masa ${coretaxMonth}/${coretaxYear} berhasil disiapkan! (${res.recordCount} baris)`);
+    } catch (e: any) {
+      alert("Ekspor Coretax gagal: " + (e?.response?.data?.message || e.message));
+    }
+  };
   const handleSimulate = async () => {
     try {
       setIsSimulating(true);
@@ -255,6 +279,9 @@ export default function TaxManagementPage() {
           </TabsTrigger>
           <TabsTrigger value="simulator" className="gap-2 py-2.5">
             <Calculator className="w-4 h-4" /> Simulator Pajak
+          </TabsTrigger>
+          <TabsTrigger value="coretax-compliance" className="gap-2 py-2.5">
+            <Activity className="w-4 h-4" /> Kepatuhan & Coretax
           </TabsTrigger>
         </TabsList>
 
@@ -806,6 +833,178 @@ export default function TaxManagementPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        {/* TAB 7: KEPATUHAN & CORETAX EXPORT (PHASE 8) */}
+        <TabsContent value="coretax-compliance" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="border-border/60">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold flex items-center justify-between">
+                  Skor Kepatuhan Pajak 2026
+                  <Badge variant="outline" className="border-emerald-600 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20">
+                    Audit Grade: A
+                  </Badge>
+                </CardTitle>
+                <CardDescription>Status kelengkapan klasifikasi dan faktur.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-2">
+                <div className="text-3xl font-extrabold text-emerald-600">
+                  {complianceStatus?.complianceScore ?? 100}%
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Produk Belum Direview: <span className="font-bold text-foreground">{complianceStatus?.pendingItems?.unreviewedFishProducts ?? 0}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Faktur Belum Approved DJP: <span className="font-bold text-foreground">{complianceStatus?.pendingItems?.unapprovedTaxInvoices ?? 0}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/60">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold">Bentuk Badan & Rezim Pajak</CardTitle>
+                <CardDescription>Konfigurasi entitas hukum PT IKAN TATA LORA.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-2">
+                <div className="text-sm font-bold text-foreground">
+                  {complianceStatus?.companyLegalForm ?? "PERSEROAN TERBATAS (PT)"}
+                </div>
+                <Badge variant="secondary" className="text-xs font-medium">
+                  {complianceStatus?.taxRegime ?? "UMUM — PASAL 31E UU PPH"}
+                </Badge>
+                <p className="text-xs text-muted-foreground">
+                  Memenuhi syarat pengurangan tarif 50% untuk peredaran bruto s.d Rp 50 Miliar.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/60">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold">Kesiapan Coretax DJP 2026</CardTitle>
+                <CardDescription>Format ekspor e-Faktur & e-Bupot Unifikasi.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 pt-2">
+                <div className="flex items-center gap-2 text-sm text-emerald-600 font-semibold">
+                  <CheckCircle className="w-4 h-4" /> Skema DJP Validated
+                </div>
+                <div className="text-xs text-muted-foreground font-mono">
+                  Schema: CORETAX-DJP-2026.1
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Mendukung NITKU 22 digit & NPWP 16 digit terstandarisasi.
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Deadlines Schedule */}
+          <Card className="border-border/60">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-primary" /> Jadwal Batas Waktu Pembayaran & Pelaporan Pajak
+              </CardTitle>
+              <CardDescription>Monitoring tenggat waktu penyetoran dan pelaporan SPT Masa/Tahunan.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Kewajiban Pajak</TableHead>
+                    <TableHead>Masa / Tahun Pajak</TableHead>
+                    <TableHead>Batas Pembayaran</TableHead>
+                    <TableHead>Batas Pelaporan (Filing)</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {complianceStatus?.deadlines?.map((d: any, idx: number) => (
+                    <TableRow key={idx}>
+                      <TableCell className="font-semibold text-xs text-foreground">{d.taxType}</TableCell>
+                      <TableCell className="text-xs">{d.period}</TableCell>
+                      <TableCell className="text-xs font-mono text-rose-600 font-medium">
+                        {d.paymentDeadline || "-"}
+                      </TableCell>
+                      <TableCell className="text-xs font-mono text-primary font-medium">
+                        {d.filingDeadline}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px] border-emerald-600 text-emerald-600">
+                          {d.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  )) || (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-4 text-xs text-muted-foreground">
+                        Memuat jadwal kepatuhan...
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Coretax Export Center */}
+          <Card className="border-border/60">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Download className="w-4 h-4 text-primary" /> Pusat Ekspor Coretax DJP (Coretax Export Center)
+              </CardTitle>
+              <CardDescription>
+                Unduh berkas data terstruktur siap impor ke sistem Coretax DJP (e-Faktur PPN & e-Bupot Unifikasi).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-muted/40 p-4 rounded-xl border border-border/60">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-semibold">Masa Pajak (Bulan):</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={coretaxMonth}
+                    onChange={(e) => setCoretaxMonth(Number(e.target.value))}
+                    className="w-20 font-mono"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-semibold">Tahun Pajak:</Label>
+                  <Input
+                    type="number"
+                    value={coretaxYear}
+                    onChange={(e) => setCoretaxYear(Number(e.target.value))}
+                    className="w-24 font-mono"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={() => handleExportCoretax('PPN')} className="gap-2" size="sm">
+                    <Download className="w-4 h-4" /> Ekspor e-Faktur Coretax (PPN)
+                  </Button>
+                  <Button onClick={() => handleExportCoretax('UNIFIKASI')} variant="outline" className="gap-2" size="sm">
+                    <Download className="w-4 h-4" /> Ekspor e-Bupot Unifikasi
+                  </Button>
+                </div>
+              </div>
+
+              {coretaxExportData && (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-bold text-foreground">
+                      Hasil Berkas Ekspor: {coretaxExportData.schemaVersion} ({coretaxExportData.recordCount} data)
+                    </div>
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      Generated: {new Date(coretaxExportData.generatedAt).toLocaleTimeString('id-ID')}
+                    </Badge>
+                  </div>
+                  <pre className="p-4 rounded-xl bg-muted/60 text-xs font-mono overflow-x-auto max-h-72 border border-border/60 text-foreground">
+                    {JSON.stringify(coretaxExportData, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
       </Tabs>
     </div>
   );

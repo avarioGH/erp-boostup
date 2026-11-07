@@ -562,4 +562,7 @@ export const TaxAPI: any = {
   getFiscalAdjustments: async (fiscalYear: number) => (await api.get('/tax/fiscal-adjustments', { params: { fiscalYear } })).data,
   createFiscalAdjustment: async (data: any) => (await api.post('/tax/fiscal-adjustments', data)).data,
   calculateCorporateTax: async (data: { fiscalYear: number; isEligiblePasal31e?: boolean }) => (await api.post('/tax/corporate-tax/calculate', data)).data,
+  getComplianceStatus: async () => (await api.get('/tax/compliance-status')).data,
+  exportCoretaxPpn: async (params?: any) => (await api.get('/tax/coretax/ppn', { params })).data,
+  exportCoretaxUnifikasi: async (params?: any) => (await api.get('/tax/coretax/unifikasi', { params })).data,
 };

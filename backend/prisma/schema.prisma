@@ -4119,6 +4119,9 @@ model TaxProfile {
   company_id            String
   company               Company   @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   
+  company_legal_form    String    @default("PERSEROAN_TERBATAS") // PERSEROAN_TERBATAS (PT), CV, PERORANGAN, KOPERASI
+  tax_regime            String    @default("UMUM_PASAL_31E") // UMUM_PASAL_31E, UMKM_PP_55_2022_PP_20_2026, TAX_HOLIDAY
+
   npwp                  String    // 15 or 16 digit NPWP
   nitku                 String?   // 22 digit Nomor Identitas Tempat Kegiatan Usaha (Coretax)
   taxpayer_name         String
