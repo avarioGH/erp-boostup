@@ -8,8 +8,12 @@ export interface CreateTaxProfileDto {
   isPkp?: boolean;
   pkpNumber?: string;
   pkpDate?: Date;
+  hasBranches?: boolean;
+  signerAuthType?: 'CERTIFICATE' | 'DJP_CODE';
   signerName?: string;
   signerPosition?: string;
+  signerNik?: string;
+  djpAuthCode?: string;
   certificateExpiry?: Date;
   effectiveFrom?: Date;
   effectiveTo?: Date;

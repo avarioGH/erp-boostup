@@ -4132,9 +4132,13 @@ model TaxProfile {
   pkp_number            String?   // Nomor Pengukuhan Pengusaha Kena Pajak
   pkp_date              DateTime? // Tanggal Pengukuhan PKP
   
+  has_branches          Boolean   @default(false) // True jika memiliki cabang, False jika hanya Kantor Pusat
+  signer_auth_type      String    @default("CERTIFICATE") // CERTIFICATE (Sertifikat Elektronik) atau DJP_CODE (Kode Otorisasi DJP)
   signer_name           String?   // Nama Penandatangan Faktur Pajak
   signer_position       String?   // Jabatan Penandatangan
-  certificate_expiry    DateTime? // Masa Berlaku Sertifikat Elektronik
+  signer_nik            String?   // NIK 16-digit penandatangan berwenang
+  djp_auth_code         String?   // Kode Otorisasi DJP (disimpan terenkripsi/tokenized)
+  certificate_expiry    DateTime? // Masa Berlaku Kredensial
   
   effective_from        DateTime  @default(now())
   effective_to          DateTime?
