@@ -4369,6 +4369,10 @@ model TaxInvoice {
   luxury_tax_amount     Float     @default(0) // PPnBM jika ada
   
   is_creditable         Boolean   @default(true) // Untuk PPN Masukan
+  commercial_status     String    @default("COMMERCIAL_INVOICE_ALLOWED") // COMMERCIAL_INVOICE_ALLOWED
+  accounting_status     String    @default("ACCOUNTING_POSTING_ALLOWED") // ACCOUNTING_POSTING_ALLOWED
+  tax_invoice_status    String    @default("TAX_INVOICE_ELIGIBLE") // TAX_INVOICE_ELIGIBLE, TAX_INVOICE_ISSUANCE_BLOCKED
+  coretax_export_status String    @default("CORETAX_EXPORT_BLOCKED") // CORETAX_EXPORT_READY, CORETAX_EXPORT_BLOCKED
   approval_status       String    @default("DRAFT") // DRAFT, GENERATED, APPROVED, REJECTED, CANCELLED
   djp_approval_code     String?   // Approval code dari DJP / Coretax
   qr_code_url           String?

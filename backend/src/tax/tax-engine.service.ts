@@ -74,9 +74,24 @@ export class TaxEngineService {
         });
       }
 
-      // If company is NOT PKP and it's a sales transaction, no Output VAT is charged
+      // Determine intrinsic product VAT classification regardless of seller PKP status
+      let intrinsicProductVat: 'TAXABLE' | 'EXEMPT' | 'ZERO_RATED' | 'NOT_SUBJECT' | 'REVIEW_REQUIRED' = 'TAXABLE';
+      if (productClassification) {
+        if (productClassification.vat_classification === 'EXEMPT_FACILITY') {
+          intrinsicProductVat = 'EXEMPT';
+        } else if (productClassification.vat_classification === 'NOT_SUBJECT') {
+          intrinsicProductVat = 'NOT_SUBJECT';
+        } else if (productClassification.review_status === 'REVIEW_REQUIRED') {
+          intrinsicProductVat = 'REVIEW_REQUIRED';
+        } else {
+          intrinsicProductVat = 'TAXABLE';
+        }
+      }
+
+      // If company is NOT PKP and it's a sales transaction:
+      // Product classification TAXABLE is RETAINED, but output VAT collection is ZERO / NOT_COLLECTED
       if (!isCompanyPkp && (transactionType === 'SALES_INVOICE' || transactionType === 'POS')) {
-        const trace = `Non-PKP seller (Profile NPWP: ${taxProfile?.npwp || 'N/A'}). PPN tidak dipungut sesuai UU KUP/HPP.`;
+        const trace = `Klasifikasi Produk Asli: ${intrinsicProductVat}. Penjual berstatus Non-PKP (UU PPN Pasal 3A): PPN Keluaran TIDAK DIPUNGUT (0). Penerbitan Faktur Pajak Resmi: DILARANG.`;
         lineOutputs.push({
           productId: item.productId,
           itemName: item.itemName,
@@ -84,13 +99,21 @@ export class TaxEngineService {
           unitPrice: item.unitPrice,
           subtotal: netSubtotal,
           dpp: netSubtotal,
+          product_vat_classification: intrinsicProductVat,
+          seller_pkp_status: false,
+          output_vat_treatment: 'NOT_COLLECTED',
+          output_vat_rate: 0,
+          output_vat_amount: 0,
+          input_vat_creditability: 'NOT_APPLICABLE',
+          vat_collection_eligible: false,
+          tax_invoice_issuance_eligible: false,
           taxTreatment: 'NON_TAXABLE',
           taxType: 'VAT_OUTPUT',
           tariffRate: 0,
           dppFactor: 1.0,
           taxAmount: 0,
           isCreditable: false,
-          legalReference: 'UU KUP Pasal 3A — Pengusaha Non-PKP tidak memungut PPN',
+          legalReference: 'UU KUP Pasal 3A jo. UU PPN Pasal 3A — Penjual Non-PKP dilarang memungut PPN',
           calculationTrace: trace,
         });
         dppNotCollected += netSubtotal;
@@ -107,6 +130,14 @@ export class TaxEngineService {
           unitPrice: item.unitPrice,
           subtotal: netSubtotal,
           dpp: netSubtotal,
+          product_vat_classification: 'EXEMPT',
+          seller_pkp_status: isCompanyPkp,
+          output_vat_treatment: 'EXEMPT',
+          output_vat_rate: 0,
+          output_vat_amount: 0,
+          input_vat_creditability: 'NON_CREDITABLE', // Pasal 16B ayat (3) UU PPN
+          vat_collection_eligible: true,
+          tax_invoice_issuance_eligible: true,
           taxTreatment: 'EXEMPT',
           taxType: 'VAT_OUTPUT',
           tariffRate: 0,
@@ -146,6 +177,14 @@ export class TaxEngineService {
           unitPrice: item.unitPrice,
           subtotal: netSubtotal,
           dpp: dpp,
+          product_vat_classification: 'TAXABLE',
+          seller_pkp_status: isCompanyPkp,
+          output_vat_treatment: 'TAXABLE',
+          output_vat_rate: tariff,
+          output_vat_amount: taxVal,
+          input_vat_creditability: 'CREDITABLE', // Pasal 9 ayat (2) UU PPN
+          vat_collection_eligible: isCompanyPkp,
+          tax_invoice_issuance_eligible: isCompanyPkp,
           taxTreatment: 'STANDARD',
           taxType: matchedRule.tax_code.tax_type,
           tariffRate: tariff,
@@ -168,6 +207,14 @@ export class TaxEngineService {
           unitPrice: item.unitPrice,
           subtotal: netSubtotal,
           dpp: netSubtotal,
+          product_vat_classification: 'NOT_SUBJECT',
+          seller_pkp_status: isCompanyPkp,
+          output_vat_treatment: 'NOT_COLLECTED',
+          output_vat_rate: 0,
+          output_vat_amount: 0,
+          input_vat_creditability: 'NOT_APPLICABLE',
+          vat_collection_eligible: false,
+          tax_invoice_issuance_eligible: false,
           taxTreatment: 'NON_TAXABLE',
           taxType: 'NONE',
           tariffRate: 0,
